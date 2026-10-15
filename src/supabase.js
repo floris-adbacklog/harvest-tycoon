@@ -2,6 +2,7 @@ import {createClient} from '@supabase/supabase-js';
 import {describeFailure,connectionMessage,safeToRepeat,withRetry} from './connection.js';
 import {enabledProviders} from './social-login.js';
 import {chosenLanguage} from '../public/i18n.js';
+import {LOAD_STALL_KEY} from '../public/loading-screen.js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
@@ -73,7 +74,18 @@ export function pagePlatform(win=globalThis.window,standalone=openedStandalone){
 let openedFrom=null;
 export function openedBy(source){if(source==='push'||source==='email')openedFrom=source;}
 const takeOpened=()=>{const source=openedFrom;openedFrom=null;return source?{opened:source}:{};};
-export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage(),platform:pagePlatform(),...takeOpened()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
+// A load that stalled (15 Oct 2026, the 12% report, option 5; public/loading-screen.js LOAD_STALL_KEY): the note the farm page or this page
+// left in this tab goes along with the next farm load, once, for farm-api's count of stalls (load-stall-service.js); one older than 6
+// hours is dropped. A page that went while still loading ('left'), with this page opened by a reload: the player refreshed by hand
+// ('refresh'). Not a note written after this page started (its farm frame, taken away while it loaded): that one stays 'left'.
+const STALL_MAX_AGE=6*3600000,pageStarted=Date.now();
+const takeStall=()=>{
+ let note=null;try{const store=globalThis.sessionStorage,raw=store?.getItem(LOAD_STALL_KEY);if(raw==null)return {};store.removeItem(LOAD_STALL_KEY);note=JSON.parse(raw);}catch{return {};}
+ const now=Date.now();if(!note||typeof note!=='object'||Array.isArray(note)||typeof note.at!=='number'||!(now-note.at>=0&&now-note.at<=STALL_MAX_AGE))return {};
+ let arrival='';try{arrival=globalThis.performance.getEntriesByType('navigation')[0]?.type??'';}catch{}
+ return {loadStall:note.kind==='left'&&arrival==='reload'&&note.at<=pageStarted?{...note,kind:'refresh'}:note};
+};
+export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage(),platform:pagePlatform(),...takeOpened(),...takeStall()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
 export async function paymentRequest(body){
  const {data,error}=await supabase.functions.invoke('diamond-checkout',{body,timeout:20000});
  if(error){let detail;try{detail=await error.context?.json();}catch{}throw new Error(detail?.error||'Could not connect to checkout. Please try again.');}

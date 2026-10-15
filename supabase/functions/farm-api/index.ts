@@ -10,6 +10,7 @@ import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-s
 import {linkPartner} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
 import {recordSource} from './source-service.js';
+import {recordLoadStall} from './load-stall-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,noteLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
@@ -116,6 +117,10 @@ Deno.serve(async(req)=>{
   // The reminder question's steps (13 Oct 2026, player-log.js noteLog) ride along with the game's next action or refresh: logged beside it,
   // whatever the request itself does. Never for an admin account (its farm is the showcase).
   if((body.operation==='load'||body.operation==='action')&&Array.isArray(body.notes)&&!isAdminAccount(user)){const noted=noteLog(body.notes);if(noted.length)later(writeLog(admin,user.id,noted));}
+  // A load that stalled before (15 Oct 2026, the 12% report, option 5; load-stall-service.js): the note the page left about it rides along
+  // with this load and is counted beside it, for every account (an admin account's marked staff), never tied to one. Never holds up or
+  // fails the load. A load sent again after a failure (src/connection.js withRetry) brings the same note: its own id counts it once.
+  if(body.operation==='load'&&body.loadStall)later(Promise.resolve().then(()=>recordLoadStall({admin,note:body.loadStall,platform:body.platform,agent:req.headers.get('user-agent'),portal:user.app_metadata?.portal,staff:isAdminAccount(user)})).catch(()=>{}));
   // Delete account (3 Oct 2026, account-delete-service.js): the signed-in farmer's own account, with their farmer name typed exactly; never
   // an admin account. Before the farm is read, so nothing here can make a farm or a name again.
   if(body.operation==='delete_account'){

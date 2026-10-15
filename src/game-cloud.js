@@ -20,6 +20,10 @@ import {portalSells} from '../public/portal.js';
 import {markAdminView,startAdminView} from './admin-view.js';
 import {createAccountDelete} from './account-delete.js';
 import {createDiscordLinkDialog,createDiscordSwitch,createDiscordUnlink} from '../public/discord-link-ui.js';
+// 15 Oct 2026 (the 12% report, option 5): room for every file's resource timing. The farm page asks for ~200 files before game.js runs,
+// and Chrome keeps only 250 entries by default, so the watch's count of arrived files (public/loading-screen.js filesIn) and its list of
+// files that never came (missingFiles) stay right.
+try{performance.setResourceTimingBufferSize?.(1000);}catch{}
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;

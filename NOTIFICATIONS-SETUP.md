@@ -125,3 +125,11 @@ push-token en apparaatgegevens (apparaattype en model, Android-versie, taal, tij
 gebruik van de app (sessies, duur). Vul Data safety daarnaar in: *Device or other IDs* verzameld voor *App functionality* en niet
 optioneel (gebeurt bij elke start); *User IDs* en *App interactions* verzameld voor *App functionality*, optioneel (alleen na Turn on);
 niet gedeeld (OneSignal en Google zijn verwerkers namens ons), versleuteld onderweg, te verwijderen op verzoek.
+
+Laadverslag (15 okt 2026, de 12%-melding, optie 5; `supabase/load-stalls.sql`): laadt de farm niet helemaal, dan stuurt de game bij
+de volgende keer laden een kort technisch verslag mee (hoe ver, hoe lang, welke bestanden niet kwamen, platform en apparaattype,
+online). Beide apps laden de site, dus vanaf de release van de site sturen ook de Android- en de iPhone-app het, zonder app-update.
+Het is niet aan het account gekoppeld (geen player id, IP-adres of user agent, de tijd alleen op het uur) en gaat na 90 dagen weg. Vul
+daarom vóór of bij die release ook in: Play Console, Data safety → *App info and performance* → *Diagnostics*, verzameld voor
+*App functionality* en *Analytics*, niet gedeeld, niet optioneel. App Store Connect (de iPhone-app), App Privacy → *Diagnostics* →
+*Performance Data*, *Not linked to the user*, niet voor tracking, voor *App Functionality* en *Analytics*.

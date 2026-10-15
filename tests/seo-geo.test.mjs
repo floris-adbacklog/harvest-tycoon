@@ -203,8 +203,8 @@ test('inside our apps /app shows only that the farmer is in the app: no About th
 test('the sitemap names /partners, and /privacy with the date the page says',()=>{
  const xml=read('public/sitemap.xml');
  assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/partners<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod><\/url>/);
- assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/privacy<\/loc><lastmod>2026-10-13<\/lastmod><\/url>/);
- assert.match(read('public/privacy.html'),/Last updated: 13 October 2026/,'13 Oct 2026: the app push mark (since when OneSignal could not deliver them)');
+ assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/privacy<\/loc><lastmod>2026-10-15<\/lastmod><\/url>/);
+ assert.match(read('public/privacy.html'),/Last updated: 15 October 2026/,'15 Oct 2026: the report of a load that stalled (supabase/load-stalls.sql)');
 });
 
 // ---- The wiki: breadcrumbs, the share card's address, /llms.txt ----

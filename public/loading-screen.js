@@ -78,7 +78,7 @@ export const ACCOUNT_STEPS=Object.freeze({'Checking your account…':4,'Signing 
 export const FRAME_FAILED_MS=3000;
 export const LOAD_FAILED_TEXT='Check your connection and try again.';
 export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.querySelector?.('#farm-host iframe'),reload=()=>win.location?.reload(),fail=()=>{screen.hidden=true;},track=()=>{},storage=pageStorage(win),now=()=>Date.now(),hidden=()=>Boolean(win.document?.hidden),timers=globalThis}={}){
- let timer=0,tick=0,shownDoc=null,shownSrc=null,seen=null,files=-1,still=0;
+ let timer=0,tick=0,shownDoc=null,shownSrc=null,seen=null,files=-1,still=0,since=0,inView=0,away=false,left=null;
  // 11 Oct 2026, review fix: a frame whose page cannot be read (doc null) is the browser's own error page, as when farm.html's own
  // request fails (a network switch, a reset connection): before, that read as no frame at all, and this screen stayed at 10% for good.
  const frameEl=()=>{try{return frame()??null;}catch{return null;}};
@@ -88,7 +88,10 @@ export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.quer
  const shown=()=>{timers.clearTimeout(timer);timer=0;screen.hidden=true;const at=view();if(at?.doc){shownDoc=at.doc;shownSrc=address(at.el);}};
  win.harvestFarmShown=shown;
  const stop=()=>{timers.clearTimeout(timer);timers.clearInterval(tick);timer=tick=0;};
+ // The note for the next farm load (15 Oct 2026, option 5, LOAD_STALL_KEY below): step 'frame', this page's bar, the frame's files.
+ const note=(kind,at=view())=>{try{return noteStall(storage,{kind,step:'frame',percent:screen.querySelector?.('progress')?.value,models:0,view:inView,total:Math.floor((now()-since)/1000),hidden:away,doc:at?.doc,win:at?.win,page:win,at:now()});}catch{return null;}};
  function check(){
+  if(hidden())away=true;else inView++;
   const at=view();if(!at||at.doc&&at.doc===shownDoc)return;
   // An unreadable page counts as a failed load while the farm page is awaited: before it has shown, or after the frame was sent to a
   // new address (a trip). The farm page that has shown and then went to another site itself (never ours: its links open a new tab)
@@ -98,20 +101,28 @@ export function farmHandOver(win,screen,{wait=20000,frame=()=>win.document?.quer
   const {doc}=at,farm=Boolean(doc?.getElementById?.('load-progress'));
   if(farm&&doc.body&&!doc.body.hidden){shown();return;}
   const page=doc??UNREADABLE,count=doc?filesIn(at.win):-1;
-  if(page!==seen||count!==files){seen=page;files=count;still=0;return;}
+  // A new page after the farm page showed (a trip's) starts the note's clock again.
+  if(page!==seen||count!==files){if(page!==seen&&shownDoc){since=now();inView=0;away=false;}seen=page;files=count;still=0;return;}
   if(hidden())return;
   const failed=!doc||farm&&doc.readyState==='complete';
   if((still+=1000)<(failed?FRAME_FAILED_MS:LOAD_STALL_MS))return;
   stop();const again=retriedLately(storage,now);
   try{track('farm_load_retry',{reason:failed?'failed':'stalled',again,step:'frame',models:0});}catch{}
+  note(again?'card':'auto',at);
   if(again)fail();else timers.setTimeout(reopen,400);
  }
  // The reload is watched too (15 Oct 2026, RELOAD_HUNG_MS below): this page stays until the new one arrives, and still here after 15
  // seconds it shows the pause card with Try again. A portal opens the farm again inside this page and stops this watch at once (its
  // phase 'checking'), and a farm page that shows itself meanwhile clears it too.
  function reopen(){timer=timers.setTimeout(hung,RELOAD_HUNG_MS);reload();}
- function hung(){timer=0;try{track('farm_load_retry',{reason:'reload_hung',again:true,step:'frame',models:0});}catch{}fail();}
- return {wait(){stop();screen.hidden=false;shownDoc=shownSrc=seen=null;files=-1;still=0;if(frameEl())tick=timers.setInterval(check,1000);else timer=timers.setTimeout(shown,wait);},stop};
+ function hung(){timer=0;try{track('farm_load_retry',{reason:'reload_hung',again:true,step:'frame',models:0});}catch{}note('reload_hung');fail();}
+ // This page going (a refresh, Back) while it still waits for a farm page that has not shown: 'left' (15 Oct 2026, option 5). A farm
+ // page that has shown has its own watch (watchLoading), which says so itself; back from the back/forward cache, the note goes again.
+ try{
+  win.addEventListener?.('pagehide',()=>{if(!tick)return;const at=view();if(!at||at.doc&&at.doc===shownDoc||!at.doc&&shownDoc&&address(at.el)===shownSrc||at.doc?.getElementById?.('load-progress')&&at.doc.body&&!at.doc.body.hidden)return;left=noteLeft(storage,win,()=>note('left',at));});
+  win.addEventListener?.('pageshow',event=>{if(event?.persisted&&left){forgetLeft(storage,left);left=null;}});
+ }catch{}
+ return {wait(){stop();screen.hidden=false;shownDoc=shownSrc=seen=null;files=-1;still=0;since=now();inView=0;away=false;left=null;if(frameEl())tick=timers.setInterval(check,1000);else timer=timers.setTimeout(shown,wait);},stop};
 }
 const UNREADABLE={};
 const pageStorage=win=>{try{return win.sessionStorage;}catch{return null;}};
@@ -194,16 +205,56 @@ function retriedLately(storage,now){
  if(!again)try{storage.setItem(LOAD_RETRY_KEY,String(now()));}catch{}
  return again;
 }
+// What a stalled load leaves for the next one (15 Oct 2026, the 12% report, option 5): farm_load_retry reaches Tag Manager only for players
+// who accepted cookies, and never from the iPhone app, so many stalls were never seen. Both watches now also leave a short note in this
+// tab (sessionStorage, which the farm page and the page around it share): what happened (kind: 'auto' opened again by itself, 'card' Try
+// again, 'reload_hung' its reload got no answer, 'left' the page went while still loading; src/supabase.js takeStall makes that 'refresh'
+// when the player refreshed by hand), the step and the bar, the seconds in view and in all, whether it was ever out of view, online, the
+// connection's protocol and which of the page's own files never arrived. The next farm load takes it along (farm-api
+// load-stall-service.js, supabase/load-stalls.sql): no account, no cookies, the same for every player and every platform.
+export const LOAD_STALL_KEY='harvest-tycoon:load-stall';
+// The page's own files its HTML asks for (modules, stylesheets, scripts) that have no resource timing yet: still on their way, or never
+// coming. By address without its ?v=, the first `max` named. Never throws: nothing known is none. A request the page's going cut off
+// gets its entry just before pagehide, without an answer (responseStart 0, lab 15 Oct 2026: a refresh's note named no file): not come.
+export function missingFiles(doc,win,max=5){
+ try{
+  const base=doc.baseURI||win.location.href,origin=new URL(base).origin,path=address=>{try{const url=new URL(address,base);return url.origin===origin?url.pathname:null;}catch{return null;}};
+  const came=new Set(Array.from(win.performance.getEntriesByType('resource')).filter(entry=>entry.responseStart!==0).map(entry=>path(entry.name)));
+  const asked=new Set(Array.from(doc.querySelectorAll('link[rel=modulepreload][href],link[rel=stylesheet][href],script[src]'),el=>path(el.getAttribute('href')??el.getAttribute('src'))));
+  const missing=[...asked].filter(file=>file&&!came.has(file));
+  return {waiting:missing.length,files:missing.slice(0,max)};
+ }catch{return {waiting:0,files:[]};}
+}
+const navProtocol=win=>{try{return String(win.performance.getEntriesByType('navigation')[0]?.nextHopProtocol??'');}catch{return '';}};
+// doc and win: the page whose files are counted (none when it cannot be read); page: where online and, failing win, the protocol come from.
+// 15 Oct 2026, review fix: each note has its own random id, so a load sent again (src/connection.js withRetry) counts its stall once.
+const stallId=()=>{try{return globalThis.crypto.randomUUID();}catch{return null;}};
+function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,page=win,at}){
+ try{
+  const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),at};
+  storage.setItem(LOAD_STALL_KEY,JSON.stringify(note));return note;
+ }catch{return null;}
+}
+// 15 Oct 2026, review fix: 'left' never takes the place of a note this page's load already left (written since this page began: the page
+// around it gave up on it and reloaded, or showed its pause card, and this page went with it). Before, the farm page that showed itself
+// meanwhile wrote 'left' over the 'auto' of that reload, and farm-api counted it as the player's own refresh. A note from before this page
+// (another load's, not yet taken) gives way, as before.
+function noteLeft(storage,win,write){try{const stored=JSON.parse(storage.getItem(LOAD_STALL_KEY)),began=win.performance?.timeOrigin;if(stored?.kind&&stored.kind!=='left'&&typeof began==='number'&&stored.at>=began)return null;}catch{}return write();}
+// A page back from the back/forward cache did not go after all: its own 'left' note goes (a newer note of another stays).
+function forgetLeft(storage,left){try{const stored=JSON.parse(storage.getItem(LOAD_STALL_KEY));if(stored?.kind==='left'&&stored.at===left.at)storage.removeItem(LOAD_STALL_KEY);}catch{}}
 export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=pageStorage(win),now=()=>Date.now()}={}){
  const reload=()=>{if(portal)portal.reopen();else win.parent.location.reload();};
  // Try again's only handler: farm.html has no onclick of its own since Oct 2026 (Discord runs no handler written in the page).
  const retry=doc.querySelector('#error .primary-button');if(retry)retry.onclick=reload;
- let last=null,still=0,over=false;
+ let last=null,still=0,over=false,inView=0,away=false,left=null;const since=now();
  const stop=()=>{over=true;win.clearInterval(timer);};
+ // The note for the next farm load (15 Oct 2026, option 5, LOAD_STALL_KEY): never in the way of the load itself.
+ const note=kind=>{try{const at=win.harvestLoading;return noteStall(storage,{kind,step:loadStep(at),percent:doc.getElementById('load-progress')?.value,models:at?.models??0,view:inView,total:Math.floor((now()-since)/1000),hidden:away,doc,win,at:now()});}catch{return null;}};
  function recover(reason){
   if(over)return;stop();
   const again=retriedLately(storage,now);
   const at=win.harvestLoading;try{bridge.trackGame?.('farm_load_retry',{reason,again,step:loadStep(at),models:at?.models??0});}catch{}
+  note(again?'card':'auto');
   if(again)showCard();else win.setTimeout(reopen,400);
  }
  // Over the loading screen, without its bar: the page under it only holds placeholders (level 1, 180 coins), not this farm. In the
@@ -218,15 +269,22 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
  function hung(){
   const at=win.harvestLoading;if(at?.finished)return;
   try{bridge.trackGame?.('farm_load_retry',{reason:'reload_hung',again:true,step:loadStep(at),models:at?.models??0});}catch{}
-  showCard();
+  note('reload_hung');showCard();
  }
  // Every second in view with the bar where it was counts; a second out of view counts for nothing, and does not start them again.
  // 11 Oct 2026: until public/game.js runs, each file of its code that arrives counts as moving too (about 1 MB packed: on a slow line
  // longer than 30 seconds at 12%, which was taken for a stuck page and opened again halfway), and a finished bar is never stuck (the
  // farm is on screen: opening it again would only lose it).
  const timer=win.setInterval(()=>{
+  if(doc.hidden)away=true;else inView++;
   const at=win.harvestLoading,value=`${Number(doc.getElementById('load-progress')?.value??0)} ${at?'':filesIn(win)}`;
   if(value!==last){last=value;still=0;}else if(!doc.hidden&&!at?.finished&&(still+=1000)>=LOAD_STALL_MS)recover('stalled');
  },1000);
+ // The page going while it still loads (a refresh, Back, another address): 'left', unless this watch is over (it opened the farm
+ // again itself, showed Try again, or the farm opened). Back from the back/forward cache, the note goes again.
+ try{
+  win.addEventListener?.('pagehide',()=>{if(!over)left=noteLeft(storage,win,()=>note('left'));});
+  win.addEventListener?.('pageshow',event=>{if(event?.persisted&&left){forgetLeft(storage,left);left=null;}});
+ }catch{}
  return {failed:()=>recover('failed'),done(ready){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}}};
 }

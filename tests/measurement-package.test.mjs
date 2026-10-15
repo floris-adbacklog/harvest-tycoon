@@ -41,7 +41,7 @@ test('the site says it once, with the next farm load; a reload or Back is no new
  assert.match(main,/addEventListener\?\.\('message',event=>\{if\(event\.data\?\.type!=='open'\)return;openedBy\(reminderSource\(String\(event\.data\.url\),location\.origin\)\);/,'a push tapped while the game is open counts for the next load');
  assert.match(supabase,/export function openedBy\(source\)\{if\(source==='push'\|\|source==='email'\)openedFrom=source;\}/);
  assert.match(supabase,/const takeOpened=\(\)=>\{const source=openedFrom;openedFrom=null;return source\?\{opened:source\}:\{\};\};/,'taken once');
- assert.match(supabase,/platform:pagePlatform\(\),\.\.\.takeOpened\(\)\}:body;/,'by a load only');
+ assert.match(supabase,/platform:pagePlatform\(\),\.\.\.takeOpened\(\),\.\.\.takeStall\(\)\}:body;/,'by a load only');
  assert.match(api,/from:body\.opened\}\);/);
  // Both apps open the push's own address (notify-hourly onesignal.js data.url): the parameter is all they need.
  assert.match(read('supabase/functions/notify-hourly/rules.js'),/url:giftParts===parts\.length&&!chestPush\?'\/\?source=push&open=today':'\/\?source=push'/);
