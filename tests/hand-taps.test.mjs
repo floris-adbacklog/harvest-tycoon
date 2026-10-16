@@ -81,3 +81,25 @@ test('an answer that changes nothing on the stop leaves its tiles in place, and 
   ui.refresh();assert.equal(writes,drawn+1,'and its answer leaves it as it is');
  }finally{delete globalThis.document;}
 });
+
+// 16 Oct 2026 (the owner's screenshot): the fourth stop's job finished the round, and the strip above "Round complete!" read 0 / 4 with no
+// stop ticked: the server starts the next round at once. While the result shows, the strip shows the round that was just finished, and
+// the window's button closes it instead of sending the farmer on to a stop of the new round.
+test('a finished round shows as 4 / 4 with every stop ticked beside "Round complete!", and its button closes the window',async()=>{
+ const s=at(12,createFarm,Date.now()),els=new Map();
+ const el=id=>{let html='';const e={id,textContent:'',open:false,targets:[],showModal(){this.open=true;},close(){this.open=false;},addEventListener(){},querySelector:()=>null,
+  querySelectorAll(sel){return sel!=='[data-activity-target]'?[]:this.targets=[...html.matchAll(/data-activity-target="(\d+)"/g)].map(m=>({dataset:{activityTarget:m[1]}}));}};
+  Object.defineProperty(e,'innerHTML',{get:()=>html,set(v){html=v;}});return e;};
+ globalThis.document={getElementById:id=>els.get(id)??els.set(id,el(id)).get(id),querySelector:()=>null,querySelectorAll:sel=>sel==='dialog[open]'?[...els.values()].filter(e=>e.open):[]};
+ try{
+  const stations=Object.keys(ACTIVE_STATIONS),last=stations[0];s.activities.round=stations.slice(1);
+  const {createActivitiesUI}=await import('../public/activities-ui.js');
+  const ui=createActivitiesUI({state:s,runAction:async a=>act(s,a,Date.now()),notify(){}}),panel=document.getElementById('activity-work'),strip=document.getElementById('activity-round');
+  ui.open(last);await new Promise(r=>setTimeout(r,0));
+  for(const target of [...s.activities.jobs[last].targets]){await panel.targets.find(b=>Number(b.dataset.activityTarget)===target).onclick();}
+  assert.deepEqual(s.activities.round,[],'the server started the next round');assert.match(panel.innerHTML,/Round complete!/);
+  assert.match(strip.innerHTML,/<b>4 \/ 4<\/b>/,'the finished round, not the new one');
+  assert.equal(strip.innerHTML.match(/class="round-tick"/g)?.length,stations.length,'every stop ticked');assert.doesNotMatch(strip.innerHTML,/All four stops:/,'its bonus is paid: no promise of it');
+  assert.match(panel.innerHTML,/data-activity-close>Close<\/button>/);assert.doesNotMatch(panel.innerHTML,/Next stop:/);
+ }finally{delete globalThis.document;}
+});

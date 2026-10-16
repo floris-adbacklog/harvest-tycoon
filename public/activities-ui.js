@@ -15,8 +15,11 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
  // Shared by the hub grid and the station dialog: every stop, clickable to jump straight there (except the one already open).
  // paidBonus: the round was just completed, and the result below says what its bonus paid (11 Oct 2026 review: the strip left out the
  // next round's bonus then, it is more after a level-up and read as a second, different amount).
+ // A round just finished (paidBonus) shows as finished, 4 / 4 with every stop ticked, while "Round complete!" is on screen (16 Oct 2026, the
+ // owner): the server starts the next round at once, and the strip showed it empty (0 / 4) beside the result.
  function roundStrip(all,round,paidBonus=false){
   const bonus=activityRoundReward(state);
+  if(paidBonus){all=all.map(stop=>({...stop,inRound:true}));round=all.map(stop=>stop.station);}
   return `<div class="activity-round-heading"><strong>Your farm round</strong><b>${round.length} / 4</b></div><div class="activity-round-stops" aria-label="Stops completed">${all.map(stop=>`<button type="button" class="round-stop ${stop.inRound?'complete':''}" data-round-station="${stop.station}" ${stop.station===selected?'disabled':''} aria-label="${stop.name}: ${stop.inRound?'complete':'not completed'}" title="${stop.name} · ${stop.inRound?'Complete':'Not completed'}">${art(`activity-${stop.station}`)}${stop.inRound?'<i data-lucide="check" class="round-tick" data-line-icon aria-hidden="true"></i>':''}</button>`).join('')}${paidBonus?'':`<span class="round-bonus">All four stops: +${bonus.coins} coins · +${bonus.xp} XP</span>`}</div>`;
  }
  // The rule, only while it applies (a guided farm below level 10).
