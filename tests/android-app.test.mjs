@@ -145,11 +145,13 @@ test('android.css hides what a Play app may not have or cannot do, only in the a
 });
 test('the sign-in card and the website\'s wiki: the same second lock, only in the app',()=>{
  const welcome=read('public/welcome.css'),wiki=read('public/wiki.css');
- for(const selector of ['#social-login','.social-button','.browser-tip'])assert.ok(hiddenBy(welcome).includes(`html[data-app=android] ${selector}`),selector);
+ // The sign-in buttons stay in the iPhone app from 1.3 (16 Oct 2026, html[data-app-sign-in]: it signs in through its own sheets).
+ for(const selector of ['#social-login','.social-button'])assert.ok(hiddenBy(welcome).includes(`html[data-app=android]:not([data-app-sign-in]) ${selector}`),selector);
+ assert.ok(hiddenBy(welcome).includes('html[data-app=android] .browser-tip'));
  const wikiHidden=hiddenBy(wiki);
  for(const selector of ['.wiki-install','.wiki-page :is(#sec-play-it-as-an-app,#sec-buying-diamonds,#sec-halloween-pass,#sec-your-account,[data-shop-only])'])assert.ok(wikiHidden.includes(`html[data-app=android] ${selector}`),selector);
  assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
- for(const css of [welcome,wiki])for(const selector of selectorsOf(css).filter(s=>s.includes('[data-app=')))assert.ok(selector.startsWith('html[data-app=android] '),selector);
+ for(const css of [welcome,wiki])for(const selector of selectorsOf(css).filter(s=>s.includes('[data-app=')))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app=android]:not([data-app-sign-in]) '),selector);
  // The sections those rules name exist on the website's wiki (their ids come from their titles).
  const site=WIKI_TOPICS.map(t=>wikiArticle(t.id,{now:SEASON_PASS.startsAt+3600000}).html).join('\n');
  for(const id of ['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'])assert.match(site,new RegExp(`id="${id}"`),id);
@@ -203,7 +205,9 @@ test('sign-in in the app: email and password only (Google and Facebook both refu
  assert.deepEqual(usableProviders(['google','facebook'],APP_UA,true),[]);assert.deepEqual(usableProviders(['google'],CHROME_UA,true),[]);
  assert.deepEqual(usableProviders(['google','facebook'],APP_UA,false),['facebook'],'a WebView outside our app: as before');
  assert.deepEqual(usableProviders(['google','facebook'],CHROME_UA),['google','facebook']);
- assert.match(read('src/main.js'),/if\(submitting\|\|!supabase\|\|inApp\)return;const provider=button\.dataset\.provider;/,'no OAuth can start in the app');
+ // Only the iPhone app from 1.3 (nativeSignIn, 16 Oct 2026) starts one, through its own sheets (tests/app-sign-in.test.mjs).
+ assert.match(read('src/main.js'),/if\(submitting\|\|!supabase\|\|inApp&&!nativeSignIn\)return;const provider=button\.dataset\.provider;/,'no OAuth can start in the app');
+ assert.match(read('src/main.js'),/\nconst nativeSignIn=inApp&&appSignIn\(\);\n/);
 });
 test('the tip to open the game in Chrome never comes in the app, though its WebView says "; wv)"; elsewhere it still does',()=>{
  const timers=[],win=extra=>({setTimeout:(fn,ms)=>timers.push(ms),navigator:{userAgent:APP_UA},...extra}),storage={get:()=>null,set(){}};

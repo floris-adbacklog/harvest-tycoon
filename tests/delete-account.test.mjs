@@ -181,14 +181,33 @@ test('/delete-account: in the game on the website and in both apps, the support 
  const page=read('public/delete-account.html');
  assert.match(page,/Open <strong>Settings<\/strong>, go to <strong>Privacy<\/strong> and tap <strong>Delete account<\/strong>\./);
  assert.match(page,/on our website, in the Harvest Tycoon app for Android on Google Play and in the Harvest Tycoon app for iPhone on the App Store\./);
+ // 16 Oct 2026 (review of the app 1.3, whose review notes send Apple here for every sign-in): all four sign-in services, how to remove
+ // each one's connection (which deletes nothing), and which address a Hide My Email player writes from.
+ assert.match(page,/whether you signed up with an email address, or with Google, Facebook, Apple or Discord, on our website/);
+ assert.match(page,/and any link to your Google, Facebook, Apple or Discord account\.<\/li>/);
+ assert.match(page,/<h2 id="google-facebook">Signed in with Google, Facebook, Apple or Discord\?<\/h2>/);
+ assert.match(page,/Removing Harvest Tycoon from the apps connected to your Google, Facebook, Apple or Discord account stops future sign-ins through that service, but it does <strong>not<\/strong> delete/);
+ assert.match(page,/<li><strong>Apple:<\/strong> iPhone Settings → your name → Sign-In &amp; Security → Sign in with Apple → Harvest Tycoon → Stop Using \(or on account\.apple\.com → Sign-In and Security → Sign in with Apple\)\.<\/li>/);
+ assert.match(page,/<li><strong>Discord:<\/strong> User Settings → Authorized Apps → Harvest Tycoon → Deauthorize\.<\/li>/);
+ assert.match(page,/if you signed in with Google, Facebook, Apple or Discord, that is the email address of that account; with Apple’s <em>Hide My Email<\/em> it is the private address Apple made for Harvest Tycoon/);
+ assert.doesNotMatch(page,/Google or (with )?Facebook/,'no line names only Google and Facebook');
  assert.match(page,/Your account is deleted <strong>at once<\/strong>/);
  assert.match(page,/<h2 id="no-sign-in">Can’t sign in any more\?<\/h2>/);assert.match(page,/<a href="\/support">support form<\/a> <strong>from the email address linked to your account<\/strong>/);
- assert.match(page,/generally <strong>seven years<\/strong>\. In our records they are no longer linked to your account, your email address or your player name; Stripe, Google and Kongregate keep their own payment records under their own privacy policies\. Purchases are not refunded/);
+ assert.match(page,/generally <strong>seven years<\/strong>\. In our records they are no longer linked to your account, your email address or your player name; Stripe, Google, Apple and Kongregate keep their own payment records under their own privacy policies\. Purchases are not refunded/);
+ assert.match(page,/the payment references of Stripe, Google Play, the App Store or Kongregate\)/,'16 Oct 2026: the iPhone app sells through the App Store since 1.1');
  assert.match(page,/If you are a partner: your partner account, and partner earnings that have not been paid out yet\. Request a payout first/);
  for(const part of ['farm and all your progress','VIP, medals','Your place in your farm family','your private messages (from both sides of the conversation)','Your invites'])assert.ok(page.includes(part),part);
  assert.doesNotMatch(page,/subject=Delete|Email a deletion request/,'no more emailed requests');
  const policy=read('public/privacy.html');
  assert.match(policy,/<h3 id="iphone-app">The iPhone app<\/h3>/);
+ // 16 Oct 2026 (review of the app 1.3): the iPhone app sells through the App Store since 1.1, so the policy says so wherever it named
+ // only Stripe and Google Play, and never again that the app sells nothing.
+ assert.doesNotMatch(policy,/No purchases:|you cannot buy anything with real money/);
+ assert.match(policy,/<li><strong>Purchases through the App Store:<\/strong> from version 1\.1 the app sells diamonds, packs and passes, paid through the App Store; Apple is the seller and handles the payment \(see <a href="#purchases">Purchases<\/a>\)\./);
+ assert.match(policy,/<p>In our iPhone app \(version 1\.1 and later\) you pay through the <strong>App Store<\/strong> instead\.[^<]*Apple’s references for the purchase \(the transaction ID and the original transaction ID\), linked to your account\. We check every purchase with Apple before your farm gets it\. When Apple refunds a purchase/);
+ assert.match(policy,/Payments are handled by Stripe on our website, by Google Play in our Android app and by the App Store in our iPhone app\./);
+ assert.match(policy,/Our iPhone app from the App Store works the same way, except that purchases go through the App Store and, from version 1\.3 on iOS 17\.4 or later, you can also sign in with Google, Facebook, Apple or Discord\./);
+ assert.match(policy,/\(Stripe, Google and Apple keep their own payment records\)/);
  assert.match(policy,/<strong>No Tag Manager, no cookies, no ad tracking:<\/strong> the app loads no Google Tag Manager, Google Analytics, Meta Pixel or TikTok Pixel, sets no cookies for statistics or ads and shows no cookie banner\./);
  assert.match(policy,/delivered by <strong>OneSignal<\/strong> on our behalf, through Apple Push Notification service/);
  assert.match(policy,/in the game under <strong>Settings<\/strong>, <strong>Privacy<\/strong>, <strong>Delete account<\/strong>, on the website, in the Android app and in the iPhone app\./);

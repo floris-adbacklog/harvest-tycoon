@@ -30,6 +30,11 @@
  // opened in the phone's browser (src/main.js webPay). Never the iPhone app, never a browser with ?app=android only.
  function webApp(ua){return /HarvestTycoonApp\//.test(ua||'')&&/ WebBilling\/\d/.test(ua||'')&&!iosApp(ua);}
  window.harvestWebApp=webApp;
+ // Every sign-in in the iPhone app (16 Oct 2026, the owner): the app 1.3 says it can sign in with Apple, Google, Facebook and Discord
+ // through the iPhone's own sheets with " AppSignIn/1" after its own token (ios-app HarvestApp.swift userAgentToken; the contract is in
+ // src/app-sign-in.js). Only with the iPhone app's token: never the Android apps, never a browser.
+ function appSignInApp(ua){return iosApp(ua)&&/ AppSignIn\/\d/.test(ua||'');}
+ window.harvestAppSignInApp=appSignInApp;
  var parent=null;try{if(window.parent!==window)parent=window.parent.document.documentElement;}catch(e){}
  if(html.hasAttribute('data-portal')||(parent&&parent.hasAttribute('data-portal')))return;
  var saved=null;try{saved=localStorage.getItem(KEY);}catch(e){}
@@ -47,4 +52,8 @@
  if(html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')!=='ios'&&(webApp(navigator.userAgent)||(parent&&parent.hasAttribute('data-web-billing'))))html.setAttribute('data-web-billing','');
  // Any of them: <html data-app-billing>, the one mark the shop's hide rules ask (public/android.css).
  if(html.hasAttribute('data-play-billing')||html.hasAttribute('data-app-store-billing')||html.hasAttribute('data-web-billing'))html.setAttribute('data-app-billing','');
+ // The iPhone app 1.3 signs in with every provider (<html data-app-sign-in>): the sign-in card and the help page show those buttons
+ // again (public/welcome.css, public/support.css). Only the page itself: the game frame has no sign-in, and public/android.js appSignIn
+ // asks the page around it.
+ if(window.parent===window&&html.getAttribute('data-app')==='android'&&html.getAttribute('data-app-os')==='ios'&&appSignInApp(navigator.userAgent))html.setAttribute('data-app-sign-in','');
 })();

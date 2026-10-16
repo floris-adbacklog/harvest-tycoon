@@ -493,7 +493,8 @@ test('the wiring: the website and our apps ask (the farmer\'s own session), a po
  const verify=/bridge\.discordVerify=async\(state,\{again=false\}=\{\}\)=>\{\n[\s\S]*?\n  \};/.exec(main)?.[0]??'';
  assert.match(verify,/const valid=discordTicket\(state\);\n\s+if\(!valid\)throw new Error\('We could not connect\. Please try again\.'\);\n\s+location\.assign\(discordAuthorizeUrl\(valid,again===true\)\);/);
  assert.doesNotMatch(verify,/sessionStorage|localStorage|window\.open|frame/);
- assert.doesNotMatch(main,/harvest-tycoon:discord-link|discordStarted|nonce/);
+ // The iPhone app's Apple sign-in (16 Oct 2026, src/app-sign-in.js) has a nonce of its own, for Apple; nothing else on this page does.
+ assert.doesNotMatch(main.replace(/\nasync function appSignInFlow\(provider\)\{\n[\s\S]*?\n\}\n/,'\n'),/harvest-tycoon:discord-link|discordStarted|nonce/);
  // Another account signed in than the one that tapped Link: the dialog's Sign out keeps Discord's answer (only what Discord sends,
  // with a state) as a link through a sign-in, and signs out; the sign-in card then says what it is for.
  assert.match(main,/bridge\.discordSignOut=answer=>\{\n\s+if\(ticket!==generation\)return;\n\s+const back=discordBack\(new Map\(Object\.entries\(Object\(answer\)\)\)\);\n\s+if\(!back\.state\)return;\n\s+pendingOpen=\{open:'discord-link',\.\.\.back\};keepOpen\(pendingOpen\);void signOut\(\);\n\s+\};/);

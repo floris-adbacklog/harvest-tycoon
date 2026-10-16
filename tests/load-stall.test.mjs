@@ -310,7 +310,7 @@ test('the privacy policy says what the report holds, that it is not linked to th
  assert.ok(kept.includes('<li><strong>Reports of a game that did not finish loading</strong>: 90 days, then they are deleted. They are not linked to your account.</li>'),'and in How long we keep data');
  const storage=policy.slice(policy.indexOf('<h2 id="cookies">'),policy.indexOf('<h3>Analytics and advertising</h3>'));
  assert.match(storage,/<tr><td data-label="Name"><code>harvest-tycoon:load-stall<\/code><\/td><td data-label="What it does">Session storage: [^<]*/);
- assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: 15 October 2026/);assert.doesNotMatch(policy,/ · /);
+ assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: 1[5-9] October 2026/,'15 Oct 2026 or a later update');assert.doesNotMatch(policy,/ · /);
 });
 // 15 Oct 2026, review fix: both store apps load this site, so from the site's release they send the report too, with no app update. The
 // owner's steps for their privacy answers (Play's Data safety, the App Store's App Privacy) are written down with the others.

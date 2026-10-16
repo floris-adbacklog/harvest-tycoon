@@ -134,6 +134,14 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 .social-button:hover:not(:disabled){background:#faf7f2}
 .social-button:disabled{opacity:.6;cursor:default}
 .social-button:focus-visible{outline:3px solid #d6ae4b;outline-offset:2px}
+/* The iPhone app from 1.3 (16 Oct 2026, the owner; html[data-app-sign-in]): Sign in with Apple as Apple's Human Interface Guidelines
+   ask, first and on a row of its own (src/main.js) and as tall as the buttons below it: the title "Continue with Apple" (one of the three
+   Apple allows, translated as its aria-label is), the "white with outline" style (logo and title both black on white, a thin black line,
+   white also under a finger) and the system font. The website keeps "Apple" in its two by two; the title stays hidden there. */
+.social-apple-title{display:none}
+html[data-app-sign-in] .social-button[data-provider=apple]{border-color:#000;background:#fff;color:#000;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-weight:600}
+html[data-app-sign-in] .social-button[data-provider=apple] span:not(.social-apple-title){display:none}
+html[data-app-sign-in] .social-apple-title{display:inline}
 .social-divider{display:flex;align-items:center;gap:10px;margin:14px 0 0;font-size:11px;color:#9a8f80}
 .social-divider::before,.social-divider::after{content:'';flex:1;height:1px;background:#e7e0d9}
 /* Privacy link on the sign-in card, and three small legal links at the foot of the page. */
@@ -198,8 +206,9 @@ html[data-app-mode=standalone]:has(body[data-phase=authenticated]),html[data-app
 .browser-tip-go{flex:1;border:0;background:#5f573f;color:#fffdf5}
 .browser-tip-later{border:1px solid #d8ccba;background:#fff;color:#5f573f}
 /* Our Android app (Oct 2026, public/android-app.js marks html[data-app=android]): no Google or Facebook sign-in (both refuse a WebView) and
-   no tip to open the game in Chrome; email and password stay. src/main.js leaves them out there; this is the second lock. */
-html[data-app=android] #social-login,html[data-app=android] .social-button,html[data-app=android] .browser-tip{display:none!important}
+   no tip to open the game in Chrome; email and password stay. src/main.js leaves them out there; this is the second lock. The iPhone app
+   from 1.3 (16 Oct 2026, the owner, html[data-app-sign-in]) signs in with every provider through its own sheets: its buttons stay. */
+html[data-app=android]:not([data-app-sign-in]) #social-login,html[data-app=android]:not([data-app-sign-in]) .social-button,html[data-app=android] .browser-tip{display:none!important}
 /* "Forgot your password?": a way back at the top of the card. */
 .account-back{display:inline-flex;align-items:center;gap:4px;margin:0 0 10px -6px;padding:6px 10px 6px 6px;min-height:36px;border:0;border-radius:10px;background:none;color:#5b5336;font:700 14px 'DM Sans',sans-serif;cursor:pointer;touch-action:manipulation}
 .account-back:hover{background:#f3ece2}

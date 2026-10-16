@@ -67,8 +67,9 @@ test('inside the Facebook, Instagram or other in-app browsers the Google button 
  for(const key of ['facebookIos','instagramAndroid','androidWebView']){assert.equal(embeddedBrowser(ua[key]),true,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['facebook'],key);}
  for(const key of ['chromeIphone','safariIphone','homeScreenIphone','chromeAndroid','desktop']){assert.equal(embeddedBrowser(ua[key]),false,key);assert.deepEqual(usableProviders(['google','facebook'],ua[key]),['google','facebook'],key);}
  assert.match(read('src/main.js'),/providers=usableProviders\(list,navigator\.userAgent,undefined,\{fromAd:adVisit\(pendingSource\)\}\)/);
- // Two by two, the last of an odd number across the row (10 Oct 2026).
- assert.match(read('src/main.js'),/if\(shown\.length%2\)shown\.at\(-1\)\.classList\.add\('is-wide'\);/);
+ // Two by two, the last of an odd number across the row (10 Oct 2026); in the iPhone app 1.3 for the buttons below Apple, which comes
+ // first on a row of its own (16 Oct 2026; on the website apple is null, so rest is every button shown, as before).
+ assert.match(read('src/main.js'),/const apple=nativeSignIn\?shown\.find\(b=>b\.dataset\.provider==='apple'\):null;if\(apple\)\{apple\.parentElement\?\.prepend\(apple\);apple\.classList\.add\('is-wide'\);\}\n const rest=shown\.filter\(b=>b!==apple\);if\(rest\.length%2\)rest\.at\(-1\)\.classList\.add\('is-wide'\);/);
  assert.match(read('public/welcome.css'),/\.social-buttons\{display:grid;grid-template-columns:1fr 1fr;gap:8px\}\n\.social-button\.is-wide\{grid-column:1\/-1\}/);
 });
 
@@ -107,9 +108,10 @@ test('Apple sign-in: only on an iPhone, iPad or Mac, never in an app or an app\'
  for(const key of ['facebookIphone','instagramIphone'])assert.deepEqual(usableProviders(all,ua[key],false),['facebook'],`${key}: only Facebook (and email)`);
  assert.deepEqual(usableProviders(all,ua.safariIphone,false,{fromAd:true}),['google','facebook'],'from an ad: no Apple, no Discord');
  assert.deepEqual(usableProviders(all,ua.safariIphone,true),[],'our apps (the iPhone app is marked like the Android app): none');
- // The button: Apple's logo in black on our white button, between Facebook and Discord; two by two with the others.
+ // The button: Apple's logo in black on our white button, between Facebook and Discord; two by two with the others. Its second title
+ // "Continue with Apple" only shows in the iPhone app 1.3 (16 Oct 2026, public/welcome.css html[data-app-sign-in]; tests/app-sign-in).
  const html=read('public/play.html');
- assert.match(html,/<span>Facebook<\/span><\/button><button type="button" class="social-button" data-provider="apple" aria-label="Continue with Apple" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M12\.152 6\.896[^"]+"\/><\/svg><span>Apple<\/span><\/button><button type="button" class="social-button" data-provider="discord"/);
+ assert.match(html,/<span>Facebook<\/span><\/button><button type="button" class="social-button" data-provider="apple" aria-label="Continue with Apple" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M12\.152 6\.896[^"]+"\/><\/svg><span>Apple<\/span><span class="social-apple-title">Continue with Apple<\/span><\/button><button type="button" class="social-button" data-provider="discord"/);
  // The privacy policy names Apple: an address (its own or Hide My Email) and an identifier, no picture; where to take the access back.
  const privacy=read('public/privacy.html');
  assert.match(privacy,/<h2 id="social-sign-in">3\. Signing in with Google, Facebook, Apple or Discord<\/h2>/);

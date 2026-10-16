@@ -110,6 +110,14 @@ export function webBilling(win=globalThis.window){
  if(marked(win))return true;
  try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
 }
+// Every sign-in in the iPhone app 1.3 (16 Oct 2026, the owner): " AppSignIn/1" after its token, marked <html data-app-sign-in> by
+// public/android-app.js (only the page around the game; the game frame asks it). Google, Facebook, Apple and Discord then go through the
+// app's own sheets (src/app-sign-in.js). Older iPhone apps and the Android apps keep email and password only; never in a browser.
+export function appSignIn(win=globalThis.window){
+ const marked=w=>{try{return w?.document?.documentElement?.hasAttribute?.('data-app-sign-in')===true;}catch{return false;}};
+ if(marked(win))return true;
+ try{return Boolean(win?.parent&&win.parent!==win&&marked(win.parent));}catch{return false;}
+}
 // The app sells, through its store or Stripe (<html data-app-billing> in public/android.css): the shop is open there (portalOff).
 export const appBilling=(win=globalThis.window)=>playBilling(win)||appStoreBilling(win)||webBilling(win);
 export const APP_STORE_LINKS=Object.freeze({prices:'appstoreprices://prices',buy:'appstorebuy://buy',pending:'appstorepending://pending',finish:'appstorefinish://finish'});

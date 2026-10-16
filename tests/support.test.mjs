@@ -92,9 +92,10 @@ test('the form: POST, the browser\'s own encoding, the fields the function reads
  const css=read('public/support.css');
  assert.match(css,/\.support-note\{display:none;/);assert.match(css,/\.support-note:target\{display:block\}/);assert.match(css,/#sent:target~\.support-form\{display:none\}/);
  assert.doesNotMatch(css,/font-size:(9|10|11)(\.\d+)?px/);
- // Our apps have no Google or Facebook sign-in: that card is hidden there (android-app.js marks html[data-app] in both apps).
+ // Our apps have no Google or Facebook sign-in: that card is hidden there (android-app.js marks html[data-app] in both apps), except in the
+ // iPhone app from 1.3, which signs in with every provider (16 Oct 2026, html[data-app-sign-in]).
  assert.match(html,/<li class="support-social"><a href="\/"><strong>Signed in with Google or Facebook\?<\/strong>/);
- assert.match(css,/html\[data-app\] \.support-social\{display:none\}/);
+ assert.match(css,/html\[data-app\]:not\(\[data-app-sign-in\]\) \.support-social\{display:none\}/);
 });
 
 test('the draft: a refused message comes back in the form in the same tab, #sent forgets it, no storage is no problem',()=>{

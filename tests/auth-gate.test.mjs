@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+import {webcrypto,createHash} from 'node:crypto';
 import {reminderSource} from '../public/app-links.js';
 const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8').split('\n').filter(line=>!line.startsWith('import ')).join('\n');
 const accountForm=readFileSync(new URL('../src/account-form.js',import.meta.url),'utf8').replace(/^export /gm,'');
@@ -11,6 +12,7 @@ const inviteModule=readFileSync(new URL('../src/invite-link.js',import.meta.url)
 const partnerModule=readFileSync(new URL('../src/partner-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const sourceModule=readFileSync(new URL('../src/source-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
+const appSignInModule=readFileSync(new URL('../src/app-sign-in.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 let uuid=0;
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
@@ -19,23 +21,28 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 // play: the app sells through Google Play (app 1.1, public/android.js playBilling); playStore: the fake app it talks to (src/play-store.js).
 // apple, appStore: the same for the iPhone app 1.1 and the App Store (Oct 2026, public/android.js appStoreBilling, src/app-store.js).
 // web: the Galaxy Store app, which sells through Stripe like the website (Oct 2026, public/android.js webBilling).
-function fixture({navigation=null,discarded=false,ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null,web=false,win={},
+// signIn: the iPhone app 1.3 signs in with every provider through its own sheets (16 Oct 2026, public/android.js appSignIn, src/app-sign-in.js);
+// tab: the tab's sessionStorage (OAUTH_KEY).
+function fixture({navigation=null,discarded=false,ua='',user=null,load,online=true,storage,authApi={},rpc,location={origin:'https://farm.example'},app=false,providers=[],buttons=false,paymentRequest,play=false,playStore=null,apple=false,appStore=null,web=false,win={},signIn=false,tab,
  playProducts={'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},appleProducts={'150':'diamonds_150','500':'diamonds_500',starter:'starter_pack'},appleSellsOffer=false}={}){
  const nodes=new Map(),events={},frames=[],calls=[],analytics=[],game=[],timers=[],lookups=[],opened=[];let authCallback,currentUser=user,clock=1_000_000,nextTimer=1;
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',disabled:false,dataset:{},children:[],textContent:'',setAttribute(){},toggleAttribute(name,on){(this.attrs??={})[name]=Boolean(on);},removeAttribute(name){if(this.attrs)delete this.attrs[name];},focus(){},scrollIntoView(){},replaceChildren(...items){for(const old of this.children)if(!items.includes(old))old.removed=true;this.children=items;},append(node){this.children.push(node);},remove(){this.removed=true;},classList:(set=>({add:name=>set.add(name),remove:name=>set.delete(name),contains:name=>set.has(name)}))(new Set()),contentWindow:{}});return nodes.get(id);};
- const providerButtons=buttons?['google','facebook'].map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
+ const providerButtons=buttons?(Array.isArray(buttons)?buttons:['google','facebook']).map(provider=>Object.assign(element(`provider-${provider}`),{dataset:{provider}})):[];
+ // Their row (.social-buttons): prepend moves a button to the front, as the page's DOM does (the iPhone app 1.3 puts Apple first).
+ const row={prepend(node){const i=providerButtons.indexOf(node);if(i>=0)providerButtons.splice(i,1);providerButtons.unshift(node);}};for(const button of providerButtons)button.parentElement=row;
  const document={body:{dataset:{}},hidden:false,wasDiscarded:discarded,getElementById:element,querySelector:element,querySelectorAll:selector=>selector==='[data-provider]'?providerButtons:[],createElement(tag){const frame=element('frame'+frames.length);frames.push(frame);return frame;},addEventListener(name,fn){events[name]=fn;}};
  const window={addEventListener(name,fn){events[name]=fn;},...win};
  const supabase={auth:{onAuthStateChange(fn){authCallback=fn;},async signOut(){currentUser=null;authCallback('SIGNED_OUT',null);return{};},...authApi},...(rpc?{rpc}:{})};
- const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,
+ const context=vm.createContext({createFarmPresence:()=>({dispose(){},snapshot(){return {};}}),document,window,navigator:{onLine:online,userAgent:ua},Date:{now:()=>clock},location,localStorage:storage&&{getItem:key=>storage[key]??null,setItem(key,value){storage[key]=String(value);},removeItem(key){delete storage[key];}},
+  sessionStorage:tab&&{getItem:key=>tab[key]??null,setItem(key,value){tab[key]=String(value);},removeItem(key){delete tab[key];}},clearInterval(){},URL,URLSearchParams,queueMicrotask,TextEncoder,appSignIn:()=>signIn,
   // A delay of 0 runs at once; a real delay waits until the test moves the clock (see advance).
   setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',playBadge:code=>`/assets/badges/google-play-${code}.webp`,appStoreBadge:code=>`/assets/badges/app-store-${code}.webp`,socialProviders:async()=>providers,androidApp:()=>app,listenAppPush:()=>null,playBilling:()=>play,createPlayStore:()=>playStore,PLAY_ERRORS:{unavailable:'Google Play is not available right now.',error:'Google Play could not start the purchase.',owned:'Unfinished purchase.'},PLAY_PRODUCTS:playProducts,
-  appStoreBilling:()=>apple,webBilling:()=>web,createAppStore:()=>appStore,APP_STORE_ERRORS:{unavailable:'The App Store is not available right now.',not_found:'Not in the App Store yet.',error:'The App Store could not start the purchase.'},APPLE_PRODUCTS:appleProducts,APPLE_SELLS_OFFER:appleSellsOffer,crypto:{randomUUID:()=>'00000000-0000-4000-8000-00000000000'+(++uuid)},forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackCommerce(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,reminderSource,openedBy:source=>{if(source)opened.push(source);},performance:navigation?{getEntriesByType:kind=>kind==='navigation'?[{type:navigation}]:[]}:undefined,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},farmHandOver:(win,screen)=>({wait(){screen.hidden=true;},stop(){}}),functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
+  appStoreBilling:()=>apple,webBilling:()=>web,createAppStore:()=>appStore,APP_STORE_ERRORS:{unavailable:'The App Store is not available right now.',not_found:'Not in the App Store yet.',error:'The App Store could not start the purchase.'},APPLE_PRODUCTS:appleProducts,APPLE_SELLS_OFFER:appleSellsOffer,crypto:{randomUUID:()=>'00000000-0000-4000-8000-00000000000'+(++uuid),getRandomValues:bytes=>webcrypto.getRandomValues(bytes),subtle:webcrypto.subtle},forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackCommerce(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,reminderSource,openedBy:source=>{if(source)opened.push(source);},performance:navigation?{getEntriesByType:kind=>kind==='navigation'?[{type:navigation}]:[]}:undefined,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},farmHandOver:(win,screen)=>({wait(){screen.hidden=true;},stop(){}}),functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
- vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(source,context);
+ vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(appSignInModule,context);vm.runInContext(source,context);
  // Moves the clock forward, running every timer that falls due on the way (and the ones they start).
  const advance=async ms=>{const end=clock+ms;for(;;){timers.sort((a,b)=>a.at-b.at);const next=timers[0];if(!next||next.at>end)break;timers.shift();clock=Math.max(clock,next.at);next.fn();await settle();}clock=end;await settle();};
- return {analytics,game,lookups,opened,context,document,window,frames,calls,nodes,events,timers,advance,goOffline(){context.navigator.onLine=false;},goOnline(){context.navigator.onLine=true;},async auth(event,next){currentUser=next;authCallback(event,next?{user:next}:null);await settle();}};
+ return {analytics,game,lookups,opened,context,document,window,frames,calls,nodes,events,timers,advance,buttons:providerButtons,goOffline(){context.navigator.onLine=false;},goOnline(){context.navigator.onLine=true;},async auth(event,next){currentUser=next;authCallback(event,next?{user:next}:null);await settle();}};
 }
 test('a new visitor does not load or initialize any farm',async()=>{
  const f=fixture();await settle();assert.equal(f.document.body.dataset.phase,'unauthenticated');assert.equal(f.calls.length,0);assert.equal(f.frames.length,0);
@@ -340,6 +347,146 @@ test('the Android app: only email and password, and a sign-in with Google or Fac
  assert.equal(site.nodes.get('provider-google').hidden,false);assert.equal(site.nodes.get('provider-facebook').hidden,false);assert.equal(site.nodes.get('social-login').hidden,false);
  assert.equal(site.nodes.get('provider-facebook').classList.contains('is-wide'),false,'two buttons side by side, none takes the whole row');
  await site.nodes.get('provider-google').onclick();assert.equal(oauth,1,'the website signs in with Google as before');
+});
+// Every sign-in in the iPhone app from 1.3 (16 Oct 2026, the owner; contract "AppSignIn/1" in src/app-sign-in.js): the page asks the app,
+// which signs in with the iPhone's own sheets. The live iPhone app 1.2 keeps email and password only, exactly as before.
+const IOS_12='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HarvestTycoonApp/1.2 AppStoreBilling/1';
+const IOS_13=IOS_12.replace('HarvestTycoonApp/1.2 AppStoreBilling/1','HarvestTycoonApp/1.3 AppStoreBilling/1 AppSignIn/1');
+const IOS_PAGE={origin:'https://www.harvesttycoon.com',pathname:'/',search:'?src=ios-app',hash:'',href:'https://www.harvesttycoon.com/?src=ios-app'};
+const ALL=['google','facebook','apple','discord'];
+// The address supabase-js 2.116 makes for it (16 Oct 2026, checked in node): skipBrowserRedirect adds nothing to it; redirect_to is
+// the redirectTo the page asked for, encoded.
+const authorize=({provider,options})=>`https://jnmdirvidffzxukbdmij.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(options.redirectTo)}`;
+// Apple's nonce is hashed with the real Web Crypto, which answers outside the microtask queue: wait until the page has gone to the app.
+const sent=async f=>{for(let i=0;i<200&&!/^appsignin:/.test(f.context.location.href??'');i++)await new Promise(r=>setTimeout(r,1));await settle();};
+test('the iPhone app 1.2 (live): email and password only, no button shows and none can start, as before',async()=>{
+ let oauth=0;const authApi={signInWithOAuth:async()=>{oauth++;return {};},signInWithIdToken:async()=>{oauth++;return {};}};
+ const f=fixture({ua:IOS_12,app:true,signIn:false,storage:{},tab:{},providers:ALL,buttons:ALL,authApi,location:{...IOS_PAGE}});await settle();
+ for(const provider of ALL)assert.equal(f.nodes.get(`provider-${provider}`).hidden,true,provider);
+ assert.equal(f.nodes.get('social-login').hidden,true);
+ for(const provider of ALL)await f.nodes.get(`provider-${provider}`).onclick();
+ assert.equal(oauth,0);assert.equal(f.context.location.href,IOS_PAGE.href,'no address for the app');assert.equal(f.nodes.get('account-submit').disabled,false);
+});
+test('the iPhone app 1.3: all four buttons; Google opens the system\'s sign-in sheet through appsignin://oauth, back to the website\'s return page on www; a closed sheet opens the form again',async()=>{
+ const started=[],tab={};const authApi={signInWithOAuth:async options=>{started.push(options);return {data:{provider:options.provider,url:authorize(options)},error:null};}};
+ const f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab,providers:ALL,buttons:ALL,authApi,location:{...IOS_PAGE}});await settle();
+ for(const provider of ALL)assert.equal(f.nodes.get(`provider-${provider}`).hidden,false,provider);
+ assert.equal(f.nodes.get('social-login').hidden,false);
+ const tapped=f.nodes.get('provider-google').onclick();await settle();
+ // The website's return page on www with the query a browser sign-in carries (16 Oct 2026, the owner: no custom scheme; the sheet's
+ // claimed https callback only answers for www/play.html).
+ assert.deepEqual(JSON.parse(JSON.stringify(started)),[{provider:'google',options:{redirectTo:'https://www.harvesttycoon.com/play.html?src=ios-app&rd=none',skipBrowserRedirect:true}}]);
+ const link=new URL(f.context.location.href);
+ assert.equal(`${link.protocol}//${link.host}`,'appsignin://oauth');assert.deepEqual([...link.searchParams.keys()],['provider','url'],'no return address');
+ assert.equal(link.searchParams.get('provider'),'google');assert.equal(link.searchParams.get('url'),authorize(started[0]));
+ assert.equal(f.context.location.href,'appsignin://oauth?provider=google&url=https%3A%2F%2Fjnmdirvidffzxukbdmij.supabase.co%2Fauth%2Fv1%2Fauthorize%3Fprovider%3Dgoogle%26redirect_to%3Dhttps%253A%252F%252Fwww.harvesttycoon.com%252Fplay.html%253Fsrc%253Dios-app%2526rd%253Dnone','every part encoded in full');
+ const back=new URL(new URL(link.searchParams.get('url')).searchParams.get('redirect_to'));assert.equal(back.origin+back.pathname,'https://www.harvesttycoon.com/play.html');assert.equal(back.searchParams.get('src'),'ios-app','the source comes back as from a browser');
+ assert.equal(tab['harvest-tycoon:oauth'],'google','kept as in a browser, so a failed return says so');
+ assert.equal(f.nodes.get('account-message').textContent,'Opening Google…');assert.equal(f.nodes.get('account-submit').disabled,true,'one sign-in at a time');
+ await f.nodes.get('provider-facebook').onclick();assert.equal(started.length,1,'a second tap while the sheet is open does nothing');
+ f.window.harvestAppSignIn({type:'cancelled',provider:'facebook'});await settle();assert.equal(f.nodes.get('account-submit').disabled,true,'another provider\'s answer is not this one');
+ // The farmer reads iOS's alert and closes it: not at once (an answer at once is iOS refusing the sheet, see below).
+ await f.advance(1500);f.window.harvestAppSignIn({type:'cancelled',provider:'google'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'');assert.equal(f.nodes.get('account-submit').disabled,false);assert.equal(tab['harvest-tycoon:oauth'],undefined);
+ assert.deepEqual(f.analytics.filter(e=>e.step==='error').map(({reason,method})=>({reason,method})),[{reason:'oauth_return',method:'google'}]);
+ // The app could not open the sheet (or another sign-in was open): the usual line, and the form opens again.
+ const again=f.nodes.get('provider-discord').onclick();await settle();assert.match(f.context.location.href,/^appsignin:\/\/oauth\?provider=discord&/);
+ f.window.harvestAppSignIn({type:'error',provider:'discord',reason:'busy'});await again;
+ assert.equal(f.nodes.get('account-message').textContent,'We could not open Discord. Please try again, or use your email address.');assert.equal(f.nodes.get('account-submit').disabled,false);
+ // An authorize address that is not our project's, or that comes back anywhere but the return page on www, never goes to the app.
+ for(const url of ['https://evil.example/auth/v1/authorize?provider=facebook&redirect_to=https%3A%2F%2Fwww.harvesttycoon.com%2Fplay.html',
+  'https://jnmdirvidffzxukbdmij.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=harvesttycoon%3A%2F%2Fauth-callback',
+  'https://jnmdirvidffzxukbdmij.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https%3A%2F%2Fharvesttycoon.com%2Fplay.html']){
+  f.context.supabase.auth.signInWithOAuth=async()=>({data:{url},error:null});const before=f.context.location.href;
+  await f.nodes.get('provider-facebook').onclick();assert.equal(f.context.location.href,before,url);assert.equal(f.nodes.get('account-message').textContent,'We could not open Facebook. Please try again, or use your email address.');
+  assert.equal(f.nodes.get('account-submit').disabled,false);assert.equal(tab['harvest-tycoon:oauth'],undefined);
+ }
+});
+// iOS refuses the Google, Facebook or Discord sheet when it knows no association with www.harvesttycoon.com (the
+// apple-app-site-association file not on Apple's CDN yet or gone, no Associated Domains): the app gets 'cancelled' at once, as if the
+// farmer closed it (16 Oct 2026, seen in the simulator). The app 1.3 sends that as error code 1; a cancel that still comes within 1.5
+// seconds is not a farmer either, so the card says it could not open the provider instead of only flashing "Opening Google…" (16 Oct
+// 2026, review); Apple's cancel stays silent.
+test('the iPhone app 1.3: a cancel that comes at once is iOS refusing the sheet: the "could not open" line, counted as app_cancelled_fast',async()=>{
+ const authApi={signInWithOAuth:async options=>({data:{provider:options.provider,url:authorize(options)},error:null})};
+ const f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:ALL,buttons:ALL,authApi,location:{...IOS_PAGE}});await settle();
+ let tapped=f.nodes.get('provider-google').onclick();await settle();assert.match(f.context.location.href,/^appsignin:\/\/oauth\?provider=google&/);
+ f.window.harvestAppSignIn({type:'cancelled',provider:'google'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'We could not open Google. Please try again, or use your email address.');assert.equal(f.nodes.get('account-submit').disabled,false);
+ // Just under the threshold is still iOS; at the threshold it is the farmer.
+ tapped=f.nodes.get('provider-facebook').onclick();await settle();await f.advance(1499);f.window.harvestAppSignIn({type:'cancelled',provider:'facebook'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'We could not open Facebook. Please try again, or use your email address.');
+ tapped=f.nodes.get('provider-discord').onclick();await settle();await f.advance(1500);f.window.harvestAppSignIn({type:'cancelled',provider:'discord'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'');assert.equal(f.nodes.get('account-submit').disabled,false);
+ // Apple has no alert and no association: a cancel at once is the farmer's, and says nothing.
+ f.context.location.href='';tapped=f.nodes.get('provider-apple').onclick();await sent(f);assert.match(f.context.location.href,/^appsignin:\/\/apple\?/);f.window.harvestAppSignIn({type:'cancelled',provider:'apple'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'');
+ assert.deepEqual(f.analytics.filter(e=>e.step==='error').map(({reason,method})=>({reason,method})),
+  [{reason:'app_cancelled_fast',method:'google'},{reason:'app_cancelled_fast',method:'facebook'},{reason:'oauth_return',method:'discord'},{reason:'oauth_return',method:'apple'}]);
+ // The app's own answer for it: the same line, counted with the app's code.
+ tapped=f.nodes.get('provider-google').onclick();await settle();f.window.harvestAppSignIn({type:'error',provider:'google',reason:'error',code:1});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'We could not open Google. Please try again, or use your email address.');assert.equal(f.analytics.at(-1).reason,'app_error_1');
+});
+test('the iPhone app 1.3 always sends Google, Facebook and Discord back to www, whatever origin the page itself is on; the website keeps its own',async()=>{
+ for(const origin of ['https://harvesttycoon.com','http://127.0.0.1:5401','https://harvest-tycoon.vercel.app']){
+  const started=[];const authApi={signInWithOAuth:async options=>{started.push(options);return {data:{provider:options.provider,url:authorize(options)},error:null};}};
+  const f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:ALL,buttons:ALL,authApi,location:{...IOS_PAGE,origin,href:`${origin}/?src=ios-app&utm_campaign=autumn`,search:'?src=ios-app&utm_campaign=autumn'}});await settle();
+  void f.nodes.get('provider-discord').onclick();await settle();
+  assert.equal(started[0].options.redirectTo,'https://www.harvesttycoon.com/play.html?src=ios-app&utm_campaign=autumn&rd=none',origin);
+  assert.match(f.context.location.href,/^appsignin:\/\/oauth\?provider=discord&url=https%3A%2F%2Fjnmdirvidffzxukbdmij\.supabase\.co%2F/,origin);
+ }
+ // The website (Safari) signs in in its own tab, back to the page's own origin, as before.
+ const started=[];const authApi={signInWithOAuth:async options=>{started.push(options);return {data:{},error:null};}};
+ const site=fixture({ua:IOS_13.replace(' HarvestTycoonApp/1.3 AppStoreBilling/1 AppSignIn/1',' Version/18.0 Safari/604.1'),storage:{},tab:{},providers:ALL,buttons:ALL,authApi,location:{origin:'https://harvesttycoon.com',pathname:'/',search:'?src=x',hash:'',href:'https://harvesttycoon.com/?src=x'}});await settle();
+ await site.nodes.get('provider-google').onclick();
+ assert.deepEqual(JSON.parse(JSON.stringify(started)),[{provider:'google',options:{redirectTo:'https://harvesttycoon.com/play.html?src=x&rd=none'}}]);
+});
+// The buttons' rows (16 Oct 2026, the owner): in the iPhone app 1.3 Apple first on a row of its own, then Google and Facebook side by
+// side and Discord across the row (an ad visit: no Discord, Google and Facebook still side by side). The website keeps its order and its
+// two by two (the last of an odd number across the row).
+test('the buttons\' rows: Apple first and wide in the iPhone app 1.3, the two-by-two rule for the ones below it; the website as before',async()=>{
+ const rows=f=>f.buttons.filter(b=>!b.hidden).map(b=>b.dataset.provider+(b.classList.contains('is-wide')?' (wide)':''));
+ const app=search=>fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:ALL,buttons:[...ALL],location:{...IOS_PAGE,search,href:`https://www.harvesttycoon.com/${search}`}});
+ let f=app('?src=ios-app');await settle();
+ assert.deepEqual(rows(f),['apple (wide)','google','facebook','discord (wide)']);assert.equal(f.nodes.get('social-login').hidden,false);
+ f=app('?src=ios-app&fbclid=abc');await settle();assert.deepEqual(rows(f),['apple (wide)','google','facebook'],'from an ad: no Discord, Apple still there (4.8)');
+ f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:['google','apple'],buttons:[...ALL],location:{...IOS_PAGE}});await settle();
+ assert.deepEqual(rows(f),['apple (wide)','google (wide)'],'one below Apple: across the row');
+ f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:['apple'],buttons:[...ALL],location:{...IOS_PAGE}});await settle();assert.deepEqual(rows(f),['apple (wide)']);
+ // The website: the page's own order, two by two, unchanged (Safari on an iPhone, a computer, an ad visit).
+ const SAFARI=IOS_13.replace(' HarvestTycoonApp/1.3 AppStoreBilling/1 AppSignIn/1',' Version/18.0 Safari/604.1'),WINDOWS='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36';
+ const site=(ua,search='')=>fixture({ua,storage:{},tab:{},providers:ALL,buttons:[...ALL],location:{origin:'https://www.harvesttycoon.com',pathname:'/',search,hash:'',href:`https://www.harvesttycoon.com/${search}`}});
+ f=site(SAFARI);await settle();assert.deepEqual(rows(f),['google','facebook','apple','discord']);
+ f=site(SAFARI,'?fbclid=abc');await settle();assert.deepEqual(rows(f),['google','facebook']);
+ f=site(WINDOWS);await settle();assert.deepEqual(rows(f),['google','facebook','discord (wide)']);
+ // Even with the mark but without the iPhone app (cannot happen: android-app.js only marks the iPhone app), nothing moves.
+ f=fixture({ua:SAFARI,signIn:true,storage:{},tab:{},providers:ALL,buttons:[...ALL],location:{origin:'https://www.harvesttycoon.com',pathname:'/',search:'',hash:'',href:'https://www.harvesttycoon.com/'}});await settle();
+ assert.deepEqual(rows(f),['google','facebook','apple','discord']);
+});
+test('the iPhone app 1.3: Apple asks Apple\'s own sheet with a hashed nonce, signs in with Apple\'s token and the nonce, and opens the farm as after a password',async()=>{
+ const asked=[];let user=null;const authApi={signInWithIdToken:async options=>{asked.push(options);user={id:'A'};f.context.verifiedUser=async()=>user;return {data:{session:{}},error:null};}};
+ const f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:ALL,buttons:ALL,authApi,location:{...IOS_PAGE},load:()=>({profile:{player_id:'A'},state:{coins:1},serverNow:1})});await settle();
+ const tapped=f.nodes.get('provider-apple').onclick();await sent(f);
+ const link=f.context.location.href,hash=/^appsignin:\/\/apple\?nonce=([0-9a-f]{64})$/.exec(link)?.[1];assert.ok(hash,link);
+ assert.equal(f.nodes.get('account-message').textContent,'Opening Apple…');
+ f.window.harvestAppSignIn({type:'apple',provider:'apple',token:'eyJhbGciOiJSUzI1NiJ9.eyJub25jZSI6IngifQ.c2ln',name:'Floris'});await tapped;
+ assert.equal(asked.length,1);assert.equal(asked[0].provider,'apple');assert.equal(asked[0].token,'eyJhbGciOiJSUzI1NiJ9.eyJub25jZSI6IngifQ.c2ln');
+ assert.match(asked[0].nonce,/^[0-9a-f]{64}$/);assert.notEqual(asked[0].nonce,hash,'the nonce itself, never its hash');
+ assert.equal(createHash('sha256').update(asked[0].nonce).digest('hex'),hash,'Apple got the SHA-256 of the nonce Supabase gets');
+ assert.ok(f.analytics.some(e=>e.step==='login'&&e.method==='apple'));assert.equal(f.calls[0]?.operation,'load','the farm opens');assert.equal(f.calls[0].source?.src,'ios-app','with where the farmer came from');
+ assert.equal(f.document.body.dataset.phase,'authenticated');assert.equal(f.nodes.get('account-submit').disabled,false);
+});
+test('the iPhone app 1.3: Apple cancelled opens the form again without a word; a refused token says Apple could not be opened',async()=>{
+ const authApi={signInWithIdToken:async()=>({data:{},error:{message:'Bad ID token'}})};
+ const f=fixture({ua:IOS_13,app:true,signIn:true,storage:{},tab:{},providers:ALL,buttons:ALL,authApi,location:{...IOS_PAGE}});await settle();
+ let tapped=f.nodes.get('provider-apple').onclick();await settle();f.window.harvestAppSignIn({type:'cancelled',provider:'apple'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'');assert.equal(f.nodes.get('account-submit').disabled,false);
+ f.context.location.href='';tapped=f.nodes.get('provider-apple').onclick();await sent(f);f.window.harvestAppSignIn({type:'apple',provider:'apple',token:'a.b.c'});await tapped;
+ assert.equal(f.nodes.get('account-message').textContent,'We could not open Apple. Please try again, or use your email address.');assert.equal(f.nodes.get('account-submit').disabled,false);
+ assert.equal(f.calls.length,0,'no farm');
+ // No answer at all (the app gone quiet): after 20 minutes, as the App Store's sheet, the form opens again.
+ f.context.location.href='';tapped=f.nodes.get('provider-apple').onclick();await sent(f);assert.equal(f.nodes.get('account-submit').disabled,true);await f.advance(20*60000-1);assert.equal(f.nodes.get('account-submit').disabled,true,'still waiting');await f.advance(1);await tapped;
+ assert.equal(f.nodes.get('account-submit').disabled,false);assert.equal(f.nodes.get('account-message').textContent,'We could not open Apple. Please try again, or use your email address.');
 });
 test('the Android app never shows the step to open the game in Chrome, not even for a user agent the step knows',async()=>{
  const storage={},app=fixture({ua:`${ANDROID_FB} HarvestTycoonApp/1.0`,app:true,storage,location:{...APP_PAGE}});await settle();

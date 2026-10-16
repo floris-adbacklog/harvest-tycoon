@@ -20,7 +20,8 @@ import {stopPageZoom,gameViewport} from './page-zoom.js';
 import {startTranslation,chosenLanguage} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
 import {playBadge,appStoreBadge} from '../public/languages.js';
-import {androidApp,listenAppPush,playBilling,appStoreBilling,webBilling} from '../public/android.js';
+import {androidApp,listenAppPush,playBilling,appStoreBilling,webBilling,appSignIn} from '../public/android.js';
+import {APP_SIGN_IN_ORIGIN,APP_SIGN_IN_REFUSED_MS,appOAuthLink,appAppleLink,appAuthorizeUrl,appleNonce,sha256Hex,waitForAppSignIn} from './app-sign-in.js';
 import {forgetAppPushLink} from './app-push.js';
 import {createPlayStore,PLAY_ERRORS} from './play-store.js';
 import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
@@ -28,6 +29,8 @@ import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER} from '../game/payments.j
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
+// The iPhone app from 1.3 (16 Oct 2026, the owner): every sign-in, through the app's own sheets (src/app-sign-in.js); older apps email only.
+const nativeSignIn=inApp&&appSignIn();
 // The game in a frame on another site (itch.io, Oct 2026): Google, Facebook and Stripe refuse to show their pages in a frame, so a
 // sign-in with them and a checkout open in a new tab (email and password work in the frame itself).
 const framed=(()=>{try{return Boolean(window.top)&&window.top!==window;}catch{return true;}})();
@@ -127,9 +130,10 @@ const linkKind=()=>/type=(recovery|signup|magiclink|invite|email_change)/.exec(l
 const linkError=()=>/error_code=|(?:^|[?#&])error=/.test(linkText());
 // Where a new farmer came from (src/source-link.js, 2 Oct 2026): read once from this address, in memory only (nothing on the device),
 // and sent with the sign-up and the first farm load. Google, Facebook and the email links come back to /play.html with it in their
-// address (redirectUrl(true)); the password reset does not need it.
+// address (redirectUrl(true)); the password reset does not need it. origin: the iPhone app's sign-in sheet always comes back to www
+// (16 Oct 2026, src/app-sign-in.js APP_SIGN_IN_ORIGIN), with the same query.
 let pendingSource=readSource({href:location.href,pathname:location.pathname,referrer:document.referrer,authReturn:Boolean(tabStore.get(OAUTH_KEY)||linkKind()||/access_token=/.test(location.hash??''))});
-const redirectUrl=(carry=false)=>{const url=new URL('/play.html',location.origin);if(carry)for(const [key,value] of sourceQuery(location.href,pendingSource))url.searchParams.set(key,value);return url.href;};
+const redirectUrl=(carry=false,origin=location.origin)=>{const url=new URL('/play.html',origin);if(carry)for(const [key,value] of sourceQuery(location.href,pendingSource))url.searchParams.set(key,value);return url.href;};
 // The Discord Activity's sign-in (supabase/functions/discord-auth): the website only asks it about a Discord link. In Frankfurt, next
 // to the database, as farm-api (src/supabase.js FARM_API).
 const DISCORD_AUTH='discord-auth?forceFunctionRegion=eu-central-1';
@@ -399,18 +403,63 @@ async function openFarm(){
  finally{checking=false;if(reopen){reopen=false;queueMicrotask(openFarm);}}
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{if(submitting)return;const next=button.dataset.mode;if(next!==mode)trackAuth('mode',{mode:next});setMode(next,true);});
-// In the Android app there is nothing to ask: neither provider can sign in there (src/social-login.js).
-(inApp?Promise.resolve([]):socialProviders()).then(list=>{providers=usableProviders(list,navigator.userAgent,undefined,{fromAd:adVisit(pendingSource)});const shown=[...document.querySelectorAll('[data-provider]')].filter(b=>{b.hidden=!providers.includes(b.dataset.provider);b.classList.remove('is-wide');return !b.hidden;});if(shown.length%2)shown.at(-1).classList.add('is-wide');showSocial();});
-// Never in the Android app (Oct 2026): Google and Facebook both refuse a WebView, so there the buttons stay hidden (src/social-login.js)
-// and a sign-in with them cannot even start.
+// In the Android apps and the iPhone app before 1.3 there is nothing to ask: no provider can sign in there (src/social-login.js). The
+// iPhone app from 1.3 (nativeSignIn) shows the buttons as Safari does, except that Apple always shows there next to the others, also after
+// an ad (App Review guideline 4.8, src/social-login.js usableProviders). There Apple also comes first, on a row of its own (16 Oct 2026,
+// the owner; Apple's Human Interface Guidelines: never less prominent than another sign-in; its look in public/welcome.css), moved to
+// the front so a screen reader meets it first too, and the two-by-two rule (an odd last button takes the whole row) is for the ones
+// below it: Google and Facebook side by side, Discord the whole row. The website keeps its order and its two by two.
+(inApp&&!nativeSignIn?Promise.resolve([]):socialProviders()).then(list=>{providers=usableProviders(list,navigator.userAgent,undefined,{fromAd:adVisit(pendingSource)});const shown=[...document.querySelectorAll('[data-provider]')].filter(b=>{b.hidden=!providers.includes(b.dataset.provider);b.classList.remove('is-wide');return !b.hidden;});
+ const apple=nativeSignIn?shown.find(b=>b.dataset.provider==='apple'):null;if(apple){apple.parentElement?.prepend(apple);apple.classList.add('is-wide');}
+ const rest=shown.filter(b=>b!==apple);if(rest.length%2)rest.at(-1).classList.add('is-wide');showSocial();});
+// Never in the Android apps or the iPhone app before 1.3 (Oct 2026): Google and Facebook both refuse a WebView, so there the buttons stay
+// hidden (src/social-login.js) and a sign-in with them cannot even start. The iPhone app from 1.3 asks the app (appSignInFlow).
 document.querySelectorAll('[data-provider]').forEach(button=>button.onclick=async()=>{
- if(submitting||!supabase||inApp)return;const provider=button.dataset.provider;
+ if(submitting||!supabase||inApp&&!nativeSignIn)return;const provider=button.dataset.provider;
  // In a frame (framed) the game opens in a new tab, where the sign-in works.
  if(framed){const tab=window.open(redirectUrl(true),'_blank');if(tab)tab.opener=null;$('account-message').textContent=tab?`Sign in with ${providerName(provider)} in the new tab.`:`To sign in with ${providerName(provider)}, open www.harvesttycoon.com.`;return;}
  trackAuth('submit',{mode,method:provider});submitting=true;lock(true);$('account-message').textContent=`Opening ${providerName(provider)}…`;
+ if(nativeSignIn){await appSignInFlow(provider);return;}
  try{tabStore.set(OAUTH_KEY,provider);const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl(true)}});if(error)throw error;}
  catch(error){tabStore.remove(OAUTH_KEY);const problem=oauthStartError(error,provider);trackAuth('error',{mode,reason:problem.reason,method:provider});$('account-message').textContent=problem.message;submitting=false;lock(false);}
 });
+// The iPhone app from 1.3 (16 Oct 2026, the owner; the contract is in src/app-sign-in.js). Apple: Apple's own sheet, checked with a
+// random value only this page knows (Apple gets its hash), then the farm opens as after a password, the first farm load taking the invite,
+// partner and source along as after any sign-in. Google, Facebook and Discord: the system's sign-in sheet, back to the website's return
+// page on www (redirectUrl(true,APP_SIGN_IN_ORIGIN), never this page's origin: the sheet only answers for www); on success the app loads
+// that address with the session in it, as a browser comes back, so OAUTH_KEY is kept as there (a failed return says so). Closing
+// a sheet opens the form again without a word (counted as a return without a sign-in, as a cancel on Google's page in a browser);
+// anything else says that provider could not be opened, as a sign-in that cannot start in a browser. iOS refusing the sheet (no
+// association with www) is a cancel at once: the app sends it as error code 1, and a Google, Facebook or Discord 'cancelled' within
+// APP_SIGN_IN_REFUSED_MS counts as "could not open" here too (counted as app_cancelled_fast; 16 Oct 2026, review), never a tap that
+// only flashes "Opening Google…".
+async function appSignInFlow(provider){
+ try{
+  let answer,asked=0;
+  if(provider==='apple'){
+   const nonce=appleNonce(),reply=waitForAppSignIn(provider);
+   location.href=appAppleLink(await sha256Hex(nonce));answer=await reply;
+   if(answer?.type==='apple'){
+    const {error}=await supabase.auth.signInWithIdToken({provider:'apple',token:answer.token,nonce});if(error)throw error;
+    trackAuth('login',{method:'apple'});$('account-message').textContent='';await openFarm();return;
+   }
+  }else{
+   tabStore.set(OAUTH_KEY,provider);
+   const {data,error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:redirectUrl(true,APP_SIGN_IN_ORIGIN),skipBrowserRedirect:true}});if(error)throw error;
+   if(!appAuthorizeUrl(data?.url))throw new Error('authorize_url');
+   const reply=waitForAppSignIn(provider);asked=Date.now();location.href=appOAuthLink({provider,url:data.url});answer=await reply;
+  }
+  tabStore.remove(OAUTH_KEY);
+  if(answer?.type==='cancelled'&&provider!=='apple'&&Date.now()-asked<APP_SIGN_IN_REFUSED_MS)throw Object.assign(new Error('cancelled_fast'),{appReason:'app_cancelled_fast'});
+  if(answer?.type==='cancelled'){trackAuth('error',{mode,reason:'oauth_return',method:provider});$('account-message').textContent='';return;}
+  // The app's error (error, busy, invalid) or no answer at all: as a sign-in that cannot start, on screen. Counted with the app's own
+  // reason and code (app_error_1000, app_busy, app_timeout; 16 Oct 2026, review: all of them were oauth_start, and the code was lost).
+  // The iPhone app loads no Tag Manager, so nothing reads it there yet; the app itself logs the same to the iPhone's console.
+  const reason=answer?.reason??'timeout',code=Number.isSafeInteger(answer?.code)&&answer.code>=0?`_${answer.code}`:'';
+  throw Object.assign(new Error(reason),{appReason:`app_${reason}${code}`});
+ }catch(error){tabStore.remove(OAUTH_KEY);const problem=oauthStartError(error,provider);trackAuth('error',{mode,reason:error?.appReason??problem.reason,method:provider});$('account-message').textContent=problem.message;}
+ finally{submitting=false;lock(false);}
+}
 $('forgot-link').onclick=()=>{if(submitting)return;trackAuth('mode',{mode:'forgot'});setMode('forgot',true);};
 // "Forgot your password?" has a way back at the top too: to the start of the card, as a first visit shows it.
 $('account-back').onclick=()=>{if(submitting)return;setMode(knownPlayer()?'signin':'register',true);};

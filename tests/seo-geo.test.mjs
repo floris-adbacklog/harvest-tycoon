@@ -203,8 +203,8 @@ test('inside our apps /app shows only that the farmer is in the app: no About th
 test('the sitemap names /partners, and /privacy with the date the page says',()=>{
  const xml=read('public/sitemap.xml');
  assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/partners<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod><\/url>/);
- assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/privacy<\/loc><lastmod>2026-10-15<\/lastmod><\/url>/);
- assert.match(read('public/privacy.html'),/Last updated: 15 October 2026/,'15 Oct 2026: the report of a load that stalled (supabase/load-stalls.sql)');
+ assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/privacy<\/loc><lastmod>2026-10-16<\/lastmod><\/url>/);
+ assert.match(read('public/privacy.html'),/Last updated: 16 October 2026/,'16 Oct 2026: every sign-in in the iPhone app from 1.3');
 });
 
 // ---- The wiki: breadcrumbs, the share card's address, /llms.txt ----
