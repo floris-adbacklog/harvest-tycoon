@@ -65,7 +65,9 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
   $('activity-icon').innerHTML=art(`activity-${s.station}`);
   $('activity-round').innerHTML=roundStrip(all,round,!!result?.roundComplete);bindRoundStrip($('activity-round'));
   const next=nextStop(s.station);
-  const nav=`<div class="activity-nav"><button type="button" class="small-button" data-activity-hub>‹ All stops</button>${next?`<button type="button" class="primary-button" data-activity-next="${next.station}">Next stop: ${next.name} ›</button>`:''}</div>`;
+  // A finished round ends here (16 Oct 2026, the owner): its button closes the window instead of sending the farmer to another stop.
+  const done=Boolean(result?.roundComplete);
+  const nav=`<div class="activity-nav"><button type="button" class="small-button" data-activity-hub>‹ All stops</button>${done?'<button type="button" class="primary-button" data-activity-close>Close</button>':next?`<button type="button" class="primary-button" data-activity-next="${next.station}">Next stop: ${next.name} ›</button>`:''}</div>`;
   let body;
   if(result){
    // The job is done: what it paid, the round bonus when this was the fourth stop, and where to go next. What it paid, at the level
@@ -90,6 +92,7 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
    $('activity-start')?.addEventListener('click',()=>act({type:'activity_start',station:s.station}));
    panel.querySelectorAll('[data-activity-target]').forEach(b=>b.onclick=()=>act({type:'activity_work',station:s.station,startedAt:activityStatus(state,s.station,farmNow()).job?.startedAt,target:Number(b.dataset.activityTarget)}));
    panel.querySelector('[data-activity-next]')?.addEventListener('click',e=>open(e.currentTarget.dataset.activityNext));
+   panel.querySelector('[data-activity-close]')?.addEventListener('click',()=>dialog.close());
    panel.querySelector('[data-activity-hub]')?.addEventListener('click',openHub);
   }
   $('activity-feedback').textContent=feedback;lastSignature=signature();refreshArt();tickButtons();

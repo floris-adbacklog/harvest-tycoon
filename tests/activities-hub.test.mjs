@@ -56,6 +56,10 @@ test('clearer helping hand: rewards and state on the hub cards, a job starts on 
  assert.match(ui,/if\(!s\.job&&!s\.remaining\)void act\(\{type:'activity_start',station:id\}\);/,'opening a ready stop starts it: no separate Start step');
  assert.match(ui,/function nextStop\(from\)\{/);
  assert.match(ui,/data-activity-next="\$\{next\.station\}">Next stop: \$\{next\.name\} ›<\/button>/);
+ // A finished round's button closes the window (16 Oct 2026, the owner), a finished job still leads to the next stop.
+ assert.match(ui,/const done=Boolean\(result\?\.roundComplete\);/);
+ assert.match(ui,/\$\{done\?'<button type="button" class="primary-button" data-activity-close>Close<\/button>':next\?`<button type="button" class="primary-button" data-activity-next=/);
+ assert.match(ui,/panel\.querySelector\('\[data-activity-close\]'\)\?\.addEventListener\('click',\(\)=>dialog\.close\(\)\);/);
  assert.match(ui,/data-activity-hub>‹ All stops<\/button>/);
  assert.match(ui,/result\.roundComplete\?'Round complete!':'Job complete!'/);
  assert.doesNotMatch(ui,/Leave as it is|Your progress is kept if you leave/,'the instruction is said once, at the top');
