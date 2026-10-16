@@ -1,4 +1,5 @@
 import {isAdminAccount} from './admin-service.js';
+import {appleTokensOf,revokeAppleTokens} from './apple-sign-in-service.js';
 // Delete account (3 Oct 2026): Settings › Privacy in the game, on the website and in both apps (the App Store asks for it inside the app).
 // Only ever the signed-in farmer (user.id from the verified token, never an id from the request), only with their farmer name typed
 // exactly, never an admin account, never a CrazyGames, Kongregate or Discord account (its sign-in would quietly make a new one; none has
@@ -25,7 +26,11 @@ export async function forgetOneSignal(player,{apiKey,fetchImpl=globalThis.fetch}
  try{const response=await fetchImpl(`https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users/by/external_id/${encodeURIComponent(player)}`,{method:'DELETE',headers:{Authorization:`Key ${apiKey}`,Accept:'application/json'}});return response.ok||response.status===404;}
  catch{return false;}
 }
-export async function handleDeleteAccount({admin,body,user,oneSignalKey='',fetchImpl}){
+// Sign in with Apple (16 Oct 2026, apple-sign-in-service.js): the Apple tokens kept at the sign-in are read before the account goes (their
+// row goes with it) and revoked at Apple after it, so Harvest Tycoon leaves the farmer's Apple Account. The answer then says apple:
+// 'revoked', or 'manual' when that could not be done for every one (the page tells the farmer where to remove it themselves); an
+// account without Apple gets no apple at all.
+export async function handleDeleteAccount({admin,body,user,oneSignalKey='',apple={},fetchImpl}){
  if(!user?.id)return {status:401,data:{error:'Please sign in.'}};
  if(isAdminAccount(user))return {status:403,data:{error:DELETE_ADMIN,code:'ACTION_REJECTED'}};
  if(user.app_metadata?.provider==='crazygames')return {status:403,data:{error:DELETE_PORTAL,code:'ACTION_REJECTED'}};
@@ -39,12 +44,13 @@ export async function handleDeleteAccount({admin,body,user,oneSignalKey='',fetch
  if(found.error)throw found.error;
  // No stats: a sign-in that never made a farm, so no name to compare; the database deletes the sign-in alone.
  if(found.data&&found.data.username!==typed)return {status:422,data:{error:DELETE_WRONG_NAME,code:'ACTION_REJECTED'}};
+ const appleTokens=await appleTokensOf(admin,user);
  const deleted=await admin.rpc('harvest_delete_account',{p_player:user.id,p_name:typed});
  if(deleted.error){
   const refused=REFUSALS.find(text=>String(deleted.error.message??'').includes(text));
   if(refused)return {status:refused===DELETE_ADMIN?403:422,data:{error:refused,code:'ACTION_REJECTED'}};
   throw deleted.error;
  }
- await forgetOneSignal(user.id,{apiKey:oneSignalKey,fetchImpl});
- return {status:200,data:{deleted:user.id}};
+ const [,appleState]=await Promise.all([forgetOneSignal(user.id,{apiKey:oneSignalKey,fetchImpl}),revokeAppleTokens(user,appleTokens,{...apple,...(fetchImpl?{fetchImpl}:{})})]);
+ return {status:200,data:{deleted:user.id,...(appleState?{apple:appleState}:{})}};
 }

@@ -22,9 +22,10 @@
 // - Apple: the page makes a random nonce, keeps it, and goes to appsignin://apple?nonce=<SHA-256 of it, 64 small hex characters>. The app
 //   asks Apple with that hash and answers {type:'apple',provider:'apple',token:<Apple's identity token>,name,code}; the page signs in with
 //   signInWithIdToken and the nonce itself, which Supabase hashes to check Apple's token. The name is not kept: the farmer name is
-//   chosen in the game, and the privacy policy promises nothing more. code: Apple's one-time authorization code (valid 5 minutes),
-//   unused for now and not read (readAppSignIn): sent from the app 1.3 on so that a later revoke of Apple's tokens on account deletion
-//   (Apple's advice for Sign in with Apple) needs no new app build (16 Oct 2026, review).
+//   chosen in the game, and the privacy policy promises nothing more. code: Apple's one-time authorization code (valid 5 minutes, good
+//   once), sent from the app 1.3 on so that Apple's tokens can be revoked on account deletion without a new app build (16 Oct 2026,
+//   review). After the sign-in the page sends it to farm-api once (src/main.js keepAppleToken), which exchanges it at Apple for the
+//   token it revokes when the account is deleted (supabase/functions/farm-api/apple-sign-in-service.js).
 // - Answers come as window.harvestAppSignIn({...}): {type:'cancelled',provider} when the farmer closes the sheet, {type:'error',provider,
 //   reason:'error'|'busy'|'invalid',code} otherwise. One sign-in at a time (busy); the app ignores an address from a frame or a page
 //   that is not the game. iOS ends the Google, Facebook or Discord sheet as a cancel when it refuses it outright (no association with
@@ -71,11 +72,12 @@ export function appleNonce(cryptoImpl=globalThis.crypto){const bytes=new Uint8Ar
 export async function sha256Hex(text,cryptoImpl=globalThis.crypto){return toHex(new Uint8Array(await cryptoImpl.subtle.digest('SHA-256',new TextEncoder().encode(String(text)))));}
 
 // What the app says, checked (the app is ours, but the page reads nothing it does not expect). Apple's identity token is a JWT of about
-// a kilobyte; anything else is no answer.
-const ID_TOKEN=/^[\w-]+\.[\w-]+\.[\w-]+$/;
+// a kilobyte; anything else is no answer. Apple's authorization code (letters, digits, dot, dash, underscore) only when it looks like
+// one; a sign-in without it still signs in.
+const ID_TOKEN=/^[\w-]+\.[\w-]+\.[\w-]+$/,APPLE_CODE=/^[\w.-]{8,1024}$/;
 export function readAppSignIn(raw){
  const provider=SIGN_IN_PROVIDERS.includes(raw?.provider)?raw.provider:'';
- if(raw?.type==='apple')return provider==='apple'&&typeof raw.token==='string'&&raw.token.length<=16384&&ID_TOKEN.test(raw.token)?{type:'apple',provider,token:raw.token}:null;
+ if(raw?.type==='apple')return provider==='apple'&&typeof raw.token==='string'&&raw.token.length<=16384&&ID_TOKEN.test(raw.token)?{type:'apple',provider,token:raw.token,...(typeof raw.code==='string'&&APPLE_CODE.test(raw.code)?{code:raw.code}:{})}:null;
  if(raw?.type==='cancelled')return {type:'cancelled',provider};
  if(raw?.type==='error')return {type:'error',provider,reason:SIGN_IN_REASONS.has(raw.reason)?raw.reason:'error',code:Number.isSafeInteger(raw.code)?raw.code:null};
  return null;

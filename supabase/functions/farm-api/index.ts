@@ -9,6 +9,7 @@ import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAd
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
+import {handleAppleToken} from './apple-sign-in-service.js';
 import {recordSource} from './source-service.js';
 import {recordLoadStall} from './load-stall-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,noteLog} from './player-log.js';
@@ -29,6 +30,9 @@ const freeName=(admin:any,name:string)=>firstFreeName(name,(candidate:string)=>n
 // Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
 const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+// The team's Sign in with Apple key (16 Oct 2026, apple-sign-in-service.js), set by the owner as secrets: without it no Apple token is
+// kept or revoked, and nothing else changes.
+const appleKey=()=>({keyId:Deno.env.get('APPLE_KEY_ID')??'',privateKey:Deno.env.get('APPLE_PRIVATE_KEY')??''});
 // Changing the email asks for the password (event-service.js sendEmailChange): a separate sign-in with the public key, whose session
 // is ended straight away. The farmer's own session is not touched. Too many sign-ins from here is said as such, not as a wrong password.
 async function passwordOk(email:string,password:string){
@@ -66,7 +70,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -124,7 +128,12 @@ Deno.serve(async(req)=>{
   // Delete account (3 Oct 2026, account-delete-service.js): the signed-in farmer's own account, with their farmer name typed exactly; never
   // an admin account. Before the farm is read, so nothing here can make a farm or a name again.
   if(body.operation==='delete_account'){
-   const removed=await handleDeleteAccount({admin,body,user,oneSignalKey:Deno.env.get('ONESIGNAL_REST_API_KEY')??''});return reply(removed.data,removed.status);
+   const removed=await handleDeleteAccount({admin,body,user,oneSignalKey:Deno.env.get('ONESIGNAL_REST_API_KEY')??'',apple:appleKey()});return reply(removed.data,removed.status);
+  }
+  // Sign in with Apple (16 Oct 2026, apple-sign-in-service.js): Apple's token for this farmer's own Apple sign-in, sent once by the page
+  // right after it, kept only to be revoked when the account is deleted. Before the farm is read: it never makes a farm.
+  if(body.operation==='apple_token'){
+   const kept=await handleAppleToken({admin,body,user,...appleKey()});return reply(kept.data,kept.status);
   }
   const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;

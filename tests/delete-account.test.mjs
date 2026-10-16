@@ -76,7 +76,7 @@ test('farm-api wiring: the operation is known, runs before the farm is read, and
  const index=read('supabase/functions/farm-api/index.ts');
  assert.match(index,/'rename','avatar','delete_account','family',/);
  assert.match(index,/import \{handleDeleteAccount\} from '\.\/account-delete-service\.js';/);
- assert.match(index,/if\(body\.operation==='delete_account'\)\{\n\s+const removed=await handleDeleteAccount\(\{admin,body,user,oneSignalKey:Deno\.env\.get\('ONESIGNAL_REST_API_KEY'\)\?\?''\}\);return reply\(removed\.data,removed\.status\);\n\s+\}\n\s+const profileResponse=/);
+ assert.match(index,/if\(body\.operation==='delete_account'\)\{\n\s+const removed=await handleDeleteAccount\(\{admin,body,user,oneSignalKey:Deno\.env\.get\('ONESIGNAL_REST_API_KEY'\)\?\?'',apple:appleKey\(\)\}\);return reply\(removed\.data,removed\.status\);\n\s+\}\n/);
  assert.ok(index.includes("  if(body.operation==='action'&&isAdminAccount(user))return reply({error:'This is your admin account, so playing is locked here. Play on your own farmer account.',code:'ACTION_REJECTED'},422);\n"));
  assert.equal(safeToRepeat({operation:'delete_account',username:'Sunny Acres'}),false,'never sent twice by itself');
 });
@@ -166,7 +166,7 @@ test('the wiring: the frame on the website and in both apps only, the page aroun
  assert.match(main,/bridge\.deleteAccount=async username=>\{\n\s+if\(ticket!==generation\|\|!navigator\.onLine\)throw new Error\('Your session is paused\. Reconnect to continue\.'\);\n\s+let data;try\{data=await farmRequest\(\{operation:'delete_account',username\},\{retry:false\}\);\}\n\s+catch\(error\)\{if\(!error\?\.transient\|\|await verifiedUser\(\)\.catch\(\(\)=>user\)\)throw error;data=\{deleted:user\.id\};\}/,'an answer lost on the way after the server deleted: the sign-in is gone, so it is a deletion');
  assert.match(main,/if\(ticket!==generation\|\|data\?\.deleted!==user\.id\)throw new Error\('Your session has ended\.'\);/);
  assert.match(main,/try\{await notifications\?\.push\?\.detach\(\);\}catch\{\}notifications\?\.dispose\?\.\(\);notifications=null;dispose\(\);\n\s+try\{await supabase\.auth\.signOut\(\{scope:'local'\}\);\}catch\{\}/,'the app lets go of its notifications; the session is only ended on this device (the server has none left)');
- assert.match(main,/store\.remove\(RETURNING_KEY\);landing\(\);setMode\('register'\);\$\('account-message'\)\.textContent='Your account has been deleted\.';/);
+ assert.match(main,/store\.remove\(RETURNING_KEY\);landing\(\);setMode\('register'\);\$\('account-message'\)\.textContent=data\?\.apple==='manual'\?DELETED_APPLE_LEFT:'Your account has been deleted\.';/,'with Sign in with Apple that could not be let go of: where to remove it (tests/apple-sign-in-revoke.test.mjs)');
  assert.doesNotMatch(session,/deleteAccount/,'the CrazyGames session has no way to delete (farm-api refuses it too)');
  assert.match(read('public/confirm-dialog.js'),/<input type="text" data-type autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus>/);
  assert.match(read('public/settings.css'),/#privacy-settings \.privacy-danger\{margin-top:14px\}/);

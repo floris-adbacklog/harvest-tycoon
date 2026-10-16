@@ -194,6 +194,16 @@ function browserGate(){
 // A Discord player who asked to play their farm from here in the Discord Activity (/discord-link, public/discord-link-ui.js) and is
 // not signed in on this browser: the sign-in card, with what it is for (they have a farm already).
 const DISCORD_SIGN_IN='Sign in to play your farm on Discord.';
+// Sign in with Apple, let go of when the account is deleted (16 Oct 2026, the owner; supabase/functions/farm-api/apple-sign-in-service.js):
+// right after an Apple sign-in the page sends farm-api what Apple gave for it, once: the iPhone app's one-time authorization code
+// ({code}, appSignInFlow) or, on the website, Apple's token that Supabase hands over once after the return from Apple's page
+// ({refreshToken}, the session's provider_refresh_token, at boot). farm-api keeps Apple's token only to revoke it when the account
+// is deleted. Never waited for, never repeated, and a failure changes nothing for the farmer.
+const keepAppleToken=proof=>{farmRequest({operation:'apple_token',...proof},{retry:false}).catch(()=>{});};
+const keepWebAppleToken=()=>{supabase?.auth.getSession().then(({data})=>{const token=data?.session?.provider_refresh_token;if(typeof token==='string'&&token)keepAppleToken({refreshToken:token});}).catch(()=>{});};
+// The deletion's answer says apple:'manual' when the account signed in with Apple and Apple could not be asked to forget Harvest Tycoon
+// (account-delete-service.js): the farmer is told where to remove it themselves.
+const DELETED_APPLE_LEFT='Your account has been deleted. Harvest Tycoon may still be listed under Sign in with Apple in your Apple Account, where you can remove it.';
 function landing(message=''){connection.stop();dispose();if(inApp)forgetAppPushLink(window);if(!message&&pendingOpen?.open==='discord-link')message=DISCORD_SIGN_IN;setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
 function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
 async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
@@ -356,7 +366,7 @@ async function openFarm(){
    if(ticket!==generation||data?.deleted!==user.id)throw new Error('Your session has ended.');
    connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();
    try{await supabase.auth.signOut({scope:'local'});}catch{}
-   store.remove(RETURNING_KEY);landing();setMode('register');$('account-message').textContent='Your account has been deleted.';
+   store.remove(RETURNING_KEY);landing();setMode('register');$('account-message').textContent=data?.apple==='manual'?DELETED_APPLE_LEFT:'Your account has been deleted.';
   };
   // Play this farm on Discord? (Oct 2026, public/discord-link-ui.js): who asks ({op:'peek'}), Link's state for the trip to Discord
   // ({op:'begin'}) and the farmer's yes ({op:'confirm'}, with that state and the code Discord gave after Link), to discord-auth with
@@ -441,6 +451,7 @@ async function appSignInFlow(provider){
    location.href=appAppleLink(await sha256Hex(nonce));answer=await reply;
    if(answer?.type==='apple'){
     const {error}=await supabase.auth.signInWithIdToken({provider:'apple',token:answer.token,nonce});if(error)throw error;
+    if(answer.code)keepAppleToken({code:answer.code});
     trackAuth('login',{method:'apple'});$('account-message').textContent='';await openFarm();return;
    }
   }else{
@@ -563,5 +574,6 @@ else if(linkError()){landing('That link has expired or was already used. Sign in
 else{
  if(kind==='signup'){trackAuth('email_confirmed');store.remove(CONFIRM_KEY);}
  if(oauthProvider)trackAuth('login',{method:oauthProvider});
+ if(oauthProvider==='apple')keepWebAppleToken();
  if(!kind&&!oauthProvider&&brandNewVisitor())landing();else openFarm();
 }

@@ -5388,6 +5388,7 @@
 "Your account":"public/wiki-content.js",
 "Your account could not be deleted. Please try again.":"src/account-delete.js",
 "Your account has been deleted.":"src/main.js",
+"Your account has been deleted. Harvest Tycoon may still be listed under Sign in with Apple in your Apple Account, where you can remove it.":"src/main.js",
 "Your account has no email address.":"supabase/functions/farm-api/event-service.js",
 "Your account, settings and privacy.":"public/wiki-content.js",
 "Your account, settings, invites and privacy.":"public/wiki-content.js",

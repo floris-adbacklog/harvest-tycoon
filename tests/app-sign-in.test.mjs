@@ -154,7 +154,7 @@ test('Apple\'s nonce: 32 random bytes as 64 hex characters, and SHA-256 as Supab
 test('what the app answers, checked: apple with a token, cancelled, error with a known reason; anything else is no answer',()=>{
  const token='eyJraWQiOiJXNldjT0tCIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIn0.c2lnbmF0dXJl';
  assert.deepEqual(readAppSignIn({type:'apple',provider:'apple',token,name:'Floris'}),{type:'apple',provider:'apple',token},'the name is not kept');
- assert.deepEqual(readAppSignIn({type:'apple',provider:'apple',token,name:'',code:'c0de.0.ABCD'}),{type:'apple',provider:'apple',token},'Apple\'s authorization code (app 1.3) is not read either');
+ assert.deepEqual(readAppSignIn({type:'apple',provider:'apple',token,name:'',code:'c0de.0.ABCD'}),{type:'apple',provider:'apple',token,code:'c0de.0.ABCD'},'Apple\'s authorization code (app 1.3) is kept for farm-api, which revokes Apple\'s token when the account is deleted (tests/apple-sign-in-revoke.test.mjs)');
  for(const bad of [{type:'apple',provider:'google',token},{type:'apple',provider:'apple',token:'no-jwt'},{type:'apple',provider:'apple',token:`${token}<script>`},{type:'apple',provider:'apple',token:'a'.repeat(16400)+'.b.c'},{type:'apple',provider:'apple'},{type:'purchase'},{type:'prices'},null,undefined,'apple',42])
   assert.equal(readAppSignIn(bad),null,JSON.stringify(bad));
  assert.deepEqual(readAppSignIn({type:'cancelled',provider:'google'}),{type:'cancelled',provider:'google'});
