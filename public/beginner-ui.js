@@ -175,6 +175,8 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   const kind={quest:'QUEST READY',daily:'DAILY CHALLENGE READY',build:'READY TO BUILD',field:'NEW FIELD',progress:'QUEST IN PROGRESS',level:'NEXT LEVEL'}[goal.kind];
   const title=goal.kind==='build'?`Build the ${goal.name}`:goal.kind==='field'?`Buy field ${goal.field}`:goal.kind==='level'?(goal.name?`Level ${goal.level}: ${goal.name}`:`Level ${goal.level}`):goal.title;
   $('next-goal-kind').textContent=kind;$('next-goal-title').textContent=title;
+  // Under a quest's title what to do for it (16 Oct 2026, the owner: the title alone did not say it), as Quests and Today say it.
+  const description=$('next-goal-description');if(description){description.textContent=goal.description??'';description.hidden=!goal.description;}
   $('next-goal-art').innerHTML=goal.kind==='quest'||goal.kind==='daily'||goal.kind==='progress'?questArt(goal.stat):art(goal.kind==='build'?goal.key:goal.kind==='field'?'estate':goal.art)||art('quests');
   // A daily challenge (Plan F, 13 Oct 2026): its coins, diamonds and XP, as in Today.
   $('next-goal-note').innerHTML=goal.kind==='quest'||goal.kind==='daily'?`<b class="reward-coins">${art('coins')}+${number(goal.coins)} coins</b>${goal.diamonds?`<b class="reward-diamonds">${art('diamonds')}+${number(goal.diamonds)} ${goal.diamonds===1?'diamond':'diamonds'}</b>`:''}${goal.xp?`<b class="reward-xp">${art('xp')}+${number(goal.xp)} XP</b>`:''}`:goal.kind==='build'||goal.kind==='field'?`<b class="reward-coins">${art('coins')}${number(goal.cost)} coins</b>`:'';

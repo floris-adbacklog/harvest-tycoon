@@ -19,7 +19,7 @@ test('the next goal: a quest to claim first, then a building to build, then the 
  const s=finisher(),ready=questGroups(s).ready;
  assert.ok(ready.length>=5,'a finisher has quests waiting');
  let goal=nextGoal(s);
- assert.deepEqual(goal,{kind:'quest',id:ready[0].id,title:QUESTS[ready[0].id].title,stat:QUESTS[ready[0].id].stat,coins:QUESTS[ready[0].id].reward,xp:questXp(QUESTS[ready[0].id]),ready:ready.length});
+ assert.deepEqual(goal,{kind:'quest',id:ready[0].id,title:QUESTS[ready[0].id].title,description:QUESTS[ready[0].id].description,stat:QUESTS[ready[0].id].stat,coins:QUESTS[ready[0].id].reward,xp:questXp(QUESTS[ready[0].id]),ready:ready.length});
  assert.ok(actNow(goal));
  // Claimed one by one: each claim takes exactly one quest, and the goal moves on to the next.
  for(let i=0;i<ready.length;i++){const before=s.claimed.length;act(s,{type:'quest',id:nextGoal(s).id},now);assert.equal(s.claimed.length,before+1);}
@@ -32,6 +32,7 @@ test('the next goal: a quest to claim first, then a building to build, then the 
  // Without the coins for it: the open quest closest to done, with its progress and where Show me points.
  s.coins=0;goal=nextGoal(s);
  assert.equal(goal.kind,'progress');assert.ok(goal.value<goal.target);assert.equal(actNow(goal),false);
+ assert.equal(goal.description,QUESTS[goal.id].description,'what to do for it, for the card (16 Oct 2026)');assert.ok(goal.description);
  const shares=questGroups(s).active.map(e=>e.value/e.quest.target);assert.equal(goal.value/goal.target,Math.max(...shares),'the one closest to done');
  assert.equal(goal.guide,questGuide(goal.stat));
 });
@@ -69,6 +70,9 @@ test('the next-goal card claims one quest per tap and the phone line opens Quest
    claimQuest:async id=>{claims.push(id);act(s,{type:'quest',id},now);},openQuest:id=>opened.push(id),storage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v)}});
   assert.equal(get('.beginner-card').hidden,true,'the guide is done');assert.equal(get('next-goal-card').hidden,false);assert.equal(get('next-goal-mobile').hidden,false,'a quest to claim: the phone shows the line');
   const first=nextGoal(s);assert.equal(get('next-goal-title').textContent,first.title);assert.equal(get('next-goal-button').textContent,'Claim');
+  // Under the title what to do for it (16 Oct 2026, the owner), as Quests says it.
+  assert.equal(get('next-goal-description').textContent,QUESTS[first.id].description);assert.equal(get('next-goal-description').hidden,false);
+  assert.match(read('public/farm.html'),/<h3 id="next-goal-title"><\/h3><\/div><p id="next-goal-description" class="next-goal-description" hidden><\/p><p id="next-goal-note"/);
   assert.equal(get('next-goal-mobile-copy').textContent,`Quest ready: ${first.title}`);
   get('next-goal-button').click();await new Promise(r=>setTimeout(r,0));
   assert.deepEqual(claims,[first.id],'one quest, the one shown');assert.notEqual(get('next-goal-title').textContent,first.title,'then the next goal');
@@ -78,6 +82,7 @@ test('the next-goal card claims one quest per tap and the phone line opens Quest
   // Nothing to claim or build: outside the phone layout the line steps aside and the card stays (a phone keeps one line since Plan F,
   // 13 Oct 2026: tests/goal-line-wait.test.mjs).
   s.claimed=QUESTS.map((_,i)=>i);s.coins=0;ui.refresh();assert.equal(get('next-goal-mobile').hidden,true);assert.equal(get('next-goal-card').hidden,false);
+  assert.equal(nextGoal(s).kind,'level');assert.equal(get('next-goal-description').hidden,true,'the next level has no description: none shows');
  }finally{globalThis.document=previous;}
  // Never a Claim all: the card and the line only ever claim one quest.
  const ui=read('public/beginner-ui.js');assert.doesNotMatch(ui,/Claim all/i);assert.match(ui,/try\{await claimQuest\(goal\.id\);\}/);

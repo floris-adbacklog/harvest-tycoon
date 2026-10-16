@@ -13,15 +13,16 @@ import {nextUnlock} from './progression-ui.js';
 // 4. what the next level opens, with the XP bar.
 // A quest is claimed on its own, one tap per quest (never all at once): the card then shows the next goal. It only shows what is already
 // in the game; it pays nothing itself.
+// 16 Oct 2026 (the owner): a quest or daily challenge also brings its description, what to do for it, for the card under its title.
 // What a quest counts → where Show me points (public/guide-steps.js and the guide's own targets in game.js).
 const QUEST_GUIDE={harvested:'harvest',planted:'plant',watered:'water',tended:'tend',earned:'market',sold:'market',produced:'produce',made_eggs:'produce',collected:'collect'};
 export const questGuide=stat=>QUEST_GUIDE[stat]??(/^harvest_/.test(stat??'')?'harvest':null);
 export function nextGoal(state,now=farmNow()){
  const groups=questGroups(state),ready=groups.ready[0];
- if(ready)return {kind:'quest',id:ready.id,title:ready.quest.title,stat:ready.quest.stat,coins:ready.quest.reward,xp:questXp(ready.quest),ready:groups.ready.length};
+ if(ready)return {kind:'quest',id:ready.id,title:ready.quest.title,description:ready.quest.description,stat:ready.quest.stat,coins:ready.quest.reward,xp:questXp(ready.quest),ready:groups.ready.length};
  // Its rewards as Today shows them (XP doubled while an XP boost runs); the card opens Today, where it is claimed.
  const dailies=readyDailies(state,now),daily=dailies[0];
- if(daily)return {kind:'daily',id:daily.id,title:daily.title,stat:daily.stat,coins:daily.reward,diamonds:daily.diamonds,xp:daily.xp*(state.boosts?.xpUntil>now?2:1),ready:dailies.length};
+ if(daily)return {kind:'daily',id:daily.id,title:daily.title,description:daily.description,stat:daily.stat,coins:daily.reward,diamonds:daily.diamonds,xp:daily.xp*(state.boosts?.xpUntil>now?2:1),ready:dailies.length};
  const open=Object.keys(BUILDINGS).filter(key=>!worldTwoBuilding(key)&&buildingEligible(state,key)&&!buildingUnlocked(state,key)&&buildingCost(state,key)>0);
  const build=open.filter(key=>buildingCost(state,key)<=state.coins&&!constructionNeeds(state,key).length).sort((a,b)=>buildingCost(state,a)-buildingCost(state,b)||a.localeCompare(b))[0];
  if(build)return {kind:'build',key:build,name:BUILDINGS[build].name,cost:buildingCost(state,build)};
@@ -29,7 +30,7 @@ export function nextGoal(state,now=farmNow()){
  const field=EARLY_FIELDS[state.plots.length-STARTER_FIELDS];
  if(field&&!open.length&&levelOf(state)>=field.level&&state.coins>=field.coins)return {kind:'field',field:state.plots.length+1,cost:field.coins};
  const near=[...groups.active].sort((a,b)=>b.value/b.quest.target-a.value/a.quest.target||a.quest.reward-b.quest.reward||a.id-b.id)[0];
- if(near)return {kind:'progress',id:near.id,title:near.quest.title,stat:near.quest.stat,value:near.value,target:near.quest.target,guide:questGuide(near.quest.stat)};
+ if(near)return {kind:'progress',id:near.id,title:near.quest.title,description:near.quest.description,stat:near.quest.stat,value:near.value,target:near.quest.target,guide:questGuide(near.quest.stat)};
  const next=nextUnlock(state),lp=levelProgress(state);
  return {kind:'level',level:next?.level??lp.level+1,name:next?.name??'',art:next?.art??'xp',current:Math.max(0,lp.current),target:lp.target};
 }

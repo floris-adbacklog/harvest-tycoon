@@ -155,6 +155,7 @@
 .next-goal-main{display:flex;align-items:center;gap:10px;min-width:0}
 .next-goal-art{flex:none;width:40px;height:40px;display:grid;place-items:center}.next-goal-art>.game-art{width:40px;height:40px}
 .next-goal-card #next-goal-title{margin:0;font-size:17px;line-height:1.25;overflow-wrap:break-word;min-width:0}
+.next-goal-card .next-goal-description{margin:8px 0 0;padding:0;font-size:13px;line-height:1.45;overflow-wrap:break-word}
 .next-goal-card .next-goal-note{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0}
 .next-goal-note b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border-radius:999px;background:#f6efdc;color:#6b4712;font-size:12px}
 .next-goal-note .game-art{width:18px;height:18px}

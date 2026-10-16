@@ -34,7 +34,7 @@ test('the next goal: a quest to claim, then a daily challenge to claim, then a b
  assert.equal(nextGoal(s,now).kind,'quest','a quest that is ready still comes first');
  s.claimed.push(quest);
  const goal=nextGoal(s,now),q=dailyTasks(s,now)[1];
- assert.deepEqual(goal,{kind:'daily',id:q.id,title:q.title,stat:q.stat,coins:q.reward,diamonds:q.diamonds,xp:q.xp,ready:1});
+ assert.deepEqual(goal,{kind:'daily',id:q.id,title:q.title,description:q.description,stat:q.stat,coins:q.reward,diamonds:q.diamonds,xp:q.xp,ready:1});
  assert.ok(actNow(goal),'the phone shows its line for it');
  // While an XP boost runs, its XP as Today shows it.
  s.boosts.xpUntil=now+60000;assert.equal(nextGoal(s,now).xp,q.xp*2);s.boosts.xpUntil=0;
