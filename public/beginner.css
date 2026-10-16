@@ -143,8 +143,9 @@
    wait for the first sale, and before the first harvest the Market shows no stock number (starter stock that cannot be sold yet). */
 #game.first-sale-waits :is(#task-dot,#today-dot,#more-dot),#game.first-harvest-waits #stock-count{display:none}
 /* A13: the next goal in the guide's place once it is done: a small cream card on a computer, the guide's one-line banner on a phone (only
-   while there is a quest to claim or a building to build). */
-.next-goal-card{box-sizing:border-box;overflow:hidden}
+   while there is a quest to claim or a building to build). Fully opaque at every size (16 Oct 2026, the owner: the building label "Packing
+   Shed" showed through it); it already sits above every label on the map (z-index 6 against at most 5). */
+.next-goal-card{box-sizing:border-box;overflow:hidden;background:#fffdf5}
 @media(min-width:901px){.next-goal-card{width:270px;inset-inline-end:20px}}
 .next-goal-card .quest-heading{display:grid;grid-template-columns:30px minmax(0,1fr) 28px;gap:10px;align-items:center;padding:10px 14px}
 .next-goal-card .quest-heading>span:nth-child(2){min-width:0;font-size:14px;line-height:1.3}

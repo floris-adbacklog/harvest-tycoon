@@ -96,3 +96,59 @@
    were cut off mid-number ("Harvest hero 10 /"). */
 @media(min-width:901px) and (max-width:1000px){.topbar .level-card{flex:0 1 auto;min-width:0}.topbar .coin-counter{min-width:0;gap:6px}.topbar .level-info>div{min-width:0}.topbar .level-info>div>*{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar #xp-text{flex-shrink:100}}
 @media(min-width:901px) and (max-width:960px){.topbar #xp-text{display:none}}
+/* The farm's Full screen button (public/small-window.js) shows only on Kongregate in a small window; [hidden] beats the camera buttons' grid. */
+#fullscreen-button[hidden]{display:none}
+/* ---- Small windows (16 Oct 2026, the owner, from Kongregate without full screen: about 1000 x 620) ----
+   A computer window 700 px high or less. These words are SMALL_WINDOW in public/small-window.js, which game.js asks too (the field timers,
+   the full-screen offer); the phone layout runs to 900 px wide, so it starts at 901 px. Phones and bigger windows keep their own layout. */
+@media(min-width:901px) and (max-height:700px) and (min-height:551px),(min-width:901px) and (max-height:700px) and (pointer:fine){
+ /* The map, smaller (a click on it still goes there: minimap.js measures the picture as it is shown). */
+ .topbar .brand,.minimap{width:150px;height:90px}
+ .minimap{border-radius:13px}
+ /* Field timers (game.js positionLabels): fields that stand together with the same crop and time are one label with how many; the
+    others step aside until the keyboard reaches one. */
+ .plot-label.is-grouped:not(:focus-visible){opacity:0}
+ .plot-timer-count{font-style:normal;color:#7c7164}
+ /* The Next goal card ("Packing Shed" showed through it, and it was big): narrower, with its title, the reward or the bar, and its
+    button. */
+ .next-goal-card{width:220px}
+ .next-goal-card .quest-heading{grid-template-columns:24px minmax(0,1fr) 24px;gap:8px;padding:7px 10px}
+ .next-goal-card .quest-icon{width:24px;height:24px}
+ .next-goal-card .quest-heading>span:nth-child(2){font-size:13px}
+ #next-goal-body{padding:0 10px 10px}
+ .next-goal-main{gap:8px}
+ .next-goal-art,.next-goal-art>.game-art{width:30px;height:30px}
+ .next-goal-card #next-goal-title{font-size:15px}
+ .next-goal-card .next-goal-note,.next-goal-card #next-goal-meter{margin-top:7px}
+ .next-goal-card #next-goal-button{min-height:32px;margin-top:8px;font-size:12px}
+ /* Names under the mouse only where there is a mouse (16 Oct 2026 review: on a touch screen this short, an older tablet on its side,
+    they could never be seen): a touch screen keeps the side tools' two columns with names, the buildings' names and the whole Next goal
+    card as before. */
+ @media(hover:hover){
+  /* The side tools: one column of smaller buttons, the name in a cream label beside its button while the mouse is on it or it has focus
+     (still the button's name for a screen reader); the numbers on them (the Market's stock, Buildings ready) stay. Sized so 12 (the most
+     there are) end 8 px above the window's bottom: under the map from 492 px high, without it (under 501 px) from 448. */
+  .side-tools{--tool:clamp(26px,calc((100dvh - 180px)/12),38px);top:120px;bottom:auto;grid-template-columns:var(--tool);gap:4px;max-height:none;overflow:visible;padding:4px}
+  .side-tools .side-tool{position:relative;width:var(--tool);gap:0}
+  .side-tools .side-tool>span{width:var(--tool);height:var(--tool);border-radius:12px}
+  .side-tools .side-tool>span>.game-art{width:calc(var(--tool) - 8px);height:calc(var(--tool) - 8px)}
+  .side-tools .side-tool b,.side-tools .side-tool.active b{position:absolute;inset-inline-start:calc(100% + 8px);top:50%;translate:0 -50%;max-width:none;overflow:visible;padding:5px 10px;border:1px solid #dbd1c6;border-radius:10px;background:#fffdf5;box-shadow:0 3px 8px #44372418;color:#4d4635;font-size:12px;letter-spacing:0;line-height:1.2;text-shadow:none;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
+  .side-tools .side-tool:is(:hover,:focus-visible) b{opacity:1}
+  .side-tools .side-tool em{min-width:17px;height:17px;font-size:9px;inset-inline-end:-6px;top:-5px}
+  /* Building names (Windmill and Chicken Coop touched): the picture only, the name in the farm's own tooltip while the mouse is on it
+     (game.js) and in full while it has focus; its aria-label keeps the name. Batches ready to collect keep their number on the picture. */
+  .building-label{gap:0;padding:3px;min-width:34px;min-height:34px;justify-content:center}
+  .building-label>span:nth-child(2){display:none}
+  .building-label:focus-visible{gap:6px;padding:4px 10px 4px 4px}
+  .building-label:focus-visible>span:nth-child(2){display:block}
+  .building-label[data-ready]:not([data-ready=""])::before{content:attr(data-ready);position:absolute;top:-7px;inset-inline-end:-7px;display:grid;place-items:center;box-sizing:border-box;min-width:18px;height:18px;padding:0 4px;border:2px solid #fffdf5;border-radius:8px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:700 10px/1 'DM Sans',sans-serif}
+  /* The Next goal card: what to do shows while the mouse is on the card or it has focus, under its button, so the button never moves away
+     from the mouse aiming at it (16 Oct 2026 review: it went 32 px down); the kind of goal while the mouse is on the card's heading. */
+  #next-goal-body:not([hidden]){display:flex;flex-direction:column}
+  #next-goal-description{order:1}
+  .next-goal-card:not(:hover,:focus-within) #next-goal-description{display:none}
+  .next-goal-card .quest-heading:not(:hover,:focus-within) #next-goal-kind{display:none}
+  /* Under 501 px (landscape, a mouse) there is no map above the side tools (as before). */
+  @media(max-height:500px){.side-tools{--tool:clamp(24px,calc((100dvh - 160px)/12),38px);top:100px}}
+ }
+}

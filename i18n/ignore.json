@@ -83,5 +83,6 @@
  "Kreds",
  "{0} Kreds",
  "Only a diamond pack",
- "Purchase without a farmer"
+ "Purchase without a farmer",
+ "(min-width:901px) and (max-height:700px) and (min-height:551px),(min-width:901px) and (max-height:700px) and (pointer:fine)"
 ]

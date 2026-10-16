@@ -58,6 +58,7 @@ import { guideSteps } from './guide-steps.js';
 import { guardWheel } from './wheel-guard.js';
 import { nextGoal, readyAllAt } from './next-goal.js';
 import { createWaitTip } from './wait-tip.js';
+import { smallWindow,timerKey,timerGroups,createFullScreenOffer } from './small-window.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -689,7 +690,7 @@ function drawCrop(i,cut=0){
   if(v.label.dataset.crop!==p.crop||!v.label.querySelector('.plot-timer-ring')){v.label.innerHTML=`<span class="plot-timer-ring">${art(p.crop)}</span><b class="plot-timer-time"></b>`;v.label.dataset.crop=p.crop;}
   const grown=Math.min(1,Math.max(0,(farmNow()-p.plantedAt)/Math.max(1,p.readyAt-p.plantedAt))),careReady=!p.tended&&farmNow()>=p.careAt;
   v.label.style.setProperty('--grow',(grown*100).toFixed(1));v.label.querySelector('.plot-timer-time').textContent=time;
-  v.label.className=`plot-label plot-timer${p.watered?' watered':''}${careReady?' care-ready':''}${p.tended?' tended':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
+  v.label.className=`plot-label plot-timer${p.watered?' watered':''}${careReady?' care-ready':''}${p.tended?' tended':''}${v.grouped?' is-grouped':''}`;v.label.setAttribute('aria-label',`${CROPS[p.crop].name}, field ${i+1}, ${formatDuration(p.readyAt-farmNow())} remaining${p.watered?', watered':''}`);
  }
  v.lastReady=ripe;
 }
@@ -1081,6 +1082,17 @@ function positionLabels(){
   v.label.style.left=`${(point.x*.5+.5)*width}px`;v.label.style.top=`${(-point.y*.5+.5)*height}px`;
   v.label.hidden=point.z>1||point.z< -1||Math.abs(point.x)>1||Math.abs(point.y)>1;
  }
+ // Small windows (16 Oct 2026, the owner: 16 red cabbages at "7h 33m" piled up over the fields; public/small-window.js): fields on screen
+ // that stand together with the same crop, ready within a minute, show one label with how many ("16 × 7h 33m") over the group's middle
+ // field; the others step aside (a tap on the field still works it, and the keyboard still reaches them). A field that asks for a tap
+ // (ready, extra care) keeps its own label. Nothing is measured here.
+ const t=farmNow(),groups=smallWindow.matches?timerGroups(plots.map((v,i)=>v.label.hidden?null:timerKey(state.plots[i],t)),state.plots.map(p=>p.readyAt)):null;
+ for(let i=0;i<plots.length;i++){
+  const v=plots[i],n=groups?.lead[i]===i?groups.count[i]:1;if(!groups&&!v.grouped&&!v.counted)continue;
+  v.grouped=Boolean(groups)&&groups.lead[i]!==i;v.label.classList.toggle('is-grouped',v.grouped);v.counted=n>1;
+  let count=v.label.querySelector('.plot-timer-count');
+  if(n>1){const text=`${n} ×`;if(!count){count=document.createElement('i');count.className='plot-timer-count';v.label.querySelector('.plot-timer-time')?.before(count);}if(count.textContent!==text)count.textContent=text;}else count?.remove();
+ }
  if(mobileLayout.matches){
   // Keep each label attached to its own plot and never hide a timer: one that would cover another shrinks to just its ring (the
   // crop and how far it has grown; a tap still works its field). Harvest markers come first. All sizes are read before any label
@@ -1101,7 +1113,7 @@ function positionLabels(){
 }
 function pointerTarget(event){
  for(const [id,v] of farmLife?.views??[]){if(v.label.hidden)continue;const b=v.label.getBoundingClientRect(),pad=6;if(event.clientX>=b.left-pad&&event.clientX<=b.right+pad&&event.clientY>=b.top-pad&&event.clientY<=b.bottom+pad)return {type:'activity',id};}
- for(let i=0;i<plots.length;i++){const v=plots[i];if(!state.plots[i].crop||v.label.hidden)continue;const box=v.label.getBoundingClientRect();if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type:'plot',id:i};}
+ for(let i=0;i<plots.length;i++){const v=plots[i];if(!state.plots[i].crop||v.label.hidden||v.grouped)continue;const box=v.label.getBoundingClientRect();if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type:'plot',id:i};}
  for(const [type,views] of [['building',buildingViews],['utility',utilityViews],['landmark',landmarkViews],['activity',farmLife?.views??new Map()]])for(const [id,v] of views){
   if(v.label.hidden)continue;const box=v.label.getBoundingClientRect();
   if(event.clientX>=box.left&&event.clientX<=box.right&&event.clientY>=box.top&&event.clientY<=box.bottom)return {type,id,label:true};
@@ -1359,6 +1371,8 @@ function positionBuildingLabels(){
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.pin.innerHTML=art(locked?'lock':v.pinArt);v.label.setAttribute('aria-label',locked?`${BUILDINGS[key].name} (locked)`:`Open ${BUILDINGS[key].name}`);}
   const hint=locked?`${BUILDINGS[key].name} · ${status.text}`:'';if(v.hint!==hint){v.hint=hint;v.label.title=hint;}
   const p=new THREE.Vector3(v.x,v.height+.45,v.z).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;if(v.slid){v.slid=false;v.label.style.removeProperty('--tail');}v.label.hidden=Math.abs(p.x)>.92||Math.abs(p.y)>.82||behindTools(x,y,80)&&(!villageWorld||nameBehindTools(v,x,y));v.label.classList.toggle('ready',status.kind==='ready');
+  // A small window shows only the picture (16 Oct 2026, desktop-hud.css): batches ready to collect keep their number on it.
+  const ready=!locked&&status.kind==='ready'&&status.ready>0?String(status.ready):'';if((v.label.dataset.ready??'')!==ready)v.label.dataset.ready=ready;
   // The Pier has no batches to collect (Oct 2026): its name opens the town boat.
   if(!locked){const aria=`${status.kind==='ready'&&BUILDINGS[key].type!=='pier'?'Collect from':'Open'} ${BUILDINGS[key].name}`;if(v.label.getAttribute('aria-label')!==aria)v.label.setAttribute('aria-label',aria);}
  }
@@ -1639,6 +1653,9 @@ async function init(){
    }
   });
   ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();if(villageWorld)void addVillageExtras();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
+  // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
+  createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()});
   // The Fishing pond (11 Oct 2026): farm only (never in the village), never on the admin's showcase farm.
   if(POND_OPEN&&!villageWorld&&!adminView)void import('./pond-ui.js').then(({createPond})=>{pond=createPond({state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:focusFields});positionBuildingLabels();}).catch(error=>console.error('Fishing pond failed',error?.message));
   // The village lake (12 Oct 2026, plan D): the pond's screen for the lake, at the rowboat (village-scene.js VILLAGE_FISHING_SPOT; that
