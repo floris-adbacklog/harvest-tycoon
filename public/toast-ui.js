@@ -8,8 +8,10 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 // "first" only as in "Do this first.": "Your first basket" or "a golden first harvest" is good news.
 const WARN=/\b(need|needs|cannot|can't|not enough|failed|no longer|already|limit|locked|first(?=[.!])|unavailable|try again|reach level|returns in|is still)\b/i;
 // A crop medal (Oct 2026: a new one, or one collected) shows its own tier's picture, as Medals does; several medals the gold one.
+// 16 Oct 2026: choosing a crop in the seed shop shows the seeds, a long crop's word too, and the note about when the fields are ready the
+// harvest, also when it names a helping hand (wait-tip.js).
 const ICONS=[
- [/\bbronze medal\b/i,'medal-bronze'],[/\bsilver medal\b/i,'medal-silver'],[/\bgold medal\b/i,'medal-gold'],[/\bplatinum medal\b/i,'medal-platinum'],[/\bmedals?\b/i,'medal-gold'],[/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
+ [/\bbronze medal\b/i,'medal-bronze'],[/\bsilver medal\b/i,'medal-silver'],[/\bgold medal\b/i,'medal-gold'],[/\bplatinum medal\b/i,'medal-platinum'],[/\bmedals?\b/i,'medal-gold'],[/ selected[.:]/,'seeds'],[/fields are ready/i,'harvest'],[/job complete|helping hand|farm round/i,'helping-hand'],[/diamond/i,'diamonds'],[/\bXP\b|level/i,'xp'],[/\bcare\b|\btend/i,'care'],[/\bwater/i,'water'],[/\bplant|\bseed/i,'seeds'],[/harvest|crop|field/i,'harvest'],[/batch|collected|production/i,'buildings'],
  [/upgrade/i,'hammer'],[/event/i,'live-events'],[/family|gift|help/i,'gift'],[/sold|sale|market/i,'market'],[/coin/i,'coins']
 ];
 const REWARD=/\+([\d,]+)\s(coins?|XP|diamonds?)/g;
@@ -47,15 +49,16 @@ export function toastParts(message,translate=translateText){
  return {tone,icon,html,local:false};
 }
 // The element keeps its own classes (the medal toast at the bottom is "toast medal-toast", Oct 2026), and a toast can say its tone
-// itself: a new medal is good news without a "+40 coins" in it.
+// itself: a new medal is good news without a "+40 coins" in it. 16 Oct 2026: and its time, for a long note that shows once a day (the
+// note about when the fields are ready, wait-tip.js).
 export function createToast(el,{duration=3200}={}){
  const base=String(el.className??'').split(/\s+/).filter(c=>c&&c!=='visible'&&!c.startsWith('is-')).join(' ')||'toast';
  let timer=0;
  return function show(message,options){
-  const {tone:found,icon,html,local}=toastParts(message),tone=options?.tone??found;
-  el.className=base;el.classList.add('is-'+tone);el.style.setProperty('--toast-duration',`${duration}ms`);
+  const {tone:found,icon,html,local}=toastParts(message),tone=options?.tone??found,ms=options?.duration??duration;
+  el.className=base;el.classList.add('is-'+tone);el.style.setProperty('--toast-duration',`${ms}ms`);
   el.innerHTML=`<span class="toast-icon">${art(icon)}</span><span class="toast-text"${local?' translate="no"':''}>${html}</span><i class="toast-timer" aria-hidden="true"></i>`;
   void el.offsetWidth;el.classList.add('visible');
-  clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('visible'),duration);
+  clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('visible'),ms);
  };
 }

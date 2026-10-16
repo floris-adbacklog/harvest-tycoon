@@ -8,12 +8,16 @@ import {boatStatus} from './boat-ui.js';
 import {fieldPicker,bindFieldPicker} from './field-picker.js';
 import {confirmAction} from './confirm-dialog.js';
 import {flyHarvest,bump} from './harvest-fly.js';
+import {QUICK_CROP_MS,cropChoiceText} from './wait-tip.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 // What one market tab's stock is worth at today's prices, as Sell all would pay (11 Oct 2026, Part A A11: the Market button's badge from
 // the first harvest to the first sale says the same number as the Crops tab's "This basket is worth").
 export function marketWorth(state,tab,now=Date.now()){return marketSaleValue(state,marketItems(state,tab).reduce((v,k)=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
 const seconds=formatDuration;
+// The seed shop's tabs by a crop's own growing time (16 Oct 2026, the owner: Quick is 5 minutes or less, wheat and lettuce; it was 15, which
+// put corn there too). Hours: above that and under 8 hours; Overnight: 8 hours or more.
+export const seedTab=duration=>duration<=QUICK_CROP_MS?'quick':duration<28800000?'later':'overnight';
 // 8 Oct 2026: a built building in the Buildings list says what it is doing in separate chips under its name, which wrap instead of
 // being cut off with … (French, Russian and Czech on a phone, English on a computer): green "4 ready", amber "1 working", plain
 // "2 free" (slots; always with its number, a bare "free" is translated as "gratis") and, while nothing is ready yet, a quiet
@@ -65,7 +69,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  function chooseCrop(key){if(!cropUnlocked(state,key)){notify(cropUnlockHint(state,key));return;}selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').textContent=`${seedCost(state,key)} · ${seconds(cropDuration(state,key,false,farmNow()))}`;onCrop(key);}
  function renderSeeds(){
   document.querySelectorAll('[data-seed-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.seedFilter===seedFilter);b.setAttribute('aria-pressed',String(b.dataset.seedFilter===seedFilter));});
-  $('crop-catalog').innerHTML=Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||(seedFilter==='quick'?c.duration<=900000:seedFilter==='later'?c.duration>900000&&c.duration<28800000:c.duration>=28800000)).map(([key,c])=>{
+  $('crop-catalog').innerHTML=Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||seedTab(c.duration)===seedFilter).map(([key,c])=>{
    const paceTitle=c.perennial?`Plant once · First harvest ${seconds(cropDuration(state,key,false,farmNow()))}\nThen ${seconds(cropDuration(state,key,true))} after each collection.\nOne harvest waits; no offline stockpiling.`:'';
    // One compact row per crop, like the market: picture, name (plus "Regrows" for orchard crops), time and today's price,
    // the seed price on the right. The filter tabs already say how quick a crop is.
@@ -74,7 +78,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   }).join('');
   // What is still locked goes to the bottom, folded, on every farm (older farms too), so what you can use comes first.
   foldLocked($('crop-catalog'),'[data-choose-crop]',b=>!cropUnlocked(state,b.dataset.chooseCrop),'Seeds to unlock');
-  $('crop-catalog').querySelectorAll('[data-choose-crop]').forEach(b=>b.addEventListener('click',()=>{chooseCrop(b.dataset.chooseCrop);$('seed-dialog').close();notify(`${CROPS[b.dataset.chooseCrop].name} selected. Choose an empty field to plant.`);}));icons();
+  // Up to level 8 a crop that is not quick says how long it takes and names the quick one for playing on (16 Oct 2026, wait-tip.js).
+  $('crop-catalog').querySelectorAll('[data-choose-crop]').forEach(b=>b.addEventListener('click',()=>{chooseCrop(b.dataset.chooseCrop);$('seed-dialog').close();notify(cropChoiceText(state,b.dataset.chooseCrop,farmNow()));}));icons();
  }
  function openSeeds(){renderSeeds();show('seed-dialog');}
  // The places in the valley that stand on the farm like buildings but work differently (the Valley Market, the Ranch and the

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {toastParts} from '../public/toast-ui.js';
+import {toastParts,createToast} from '../public/toast-ui.js';
 
 test('a toast picks a tone and a matching picture from its message',()=>{
  assert.deepEqual([toastParts('Job well done! +5 coins and +1 XP.').tone,toastParts('Job well done! +5 coins and +1 XP.').icon],['reward','xp']);
@@ -21,7 +21,7 @@ test('text from other players is escaped before any chip is added',()=>{
 });
 test('every game toast goes through the toast module',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
- assert.match(game,/function toast\(message\)\{showToast\?\?=createToast\(\$\('toast'\)\);showToast\(message\);\}/);
+ assert.match(game,/function toast\(message,options\)\{showToast\?\?=createToast\(\$\('toast'\)\);showToast\(message,options\);\}/);
 });
 import {readFileSync} from 'node:fs';
 test('goods and crops become chips too, with no dot between neighbouring chips, and helping-hand jobs get their own picture',()=>{
@@ -58,4 +58,15 @@ test('a toast in another language is translated whole, its rewards chips again, 
  assert.match(toastParts('<b>x</b> +5 coins',()=>'<b>x</b> +5 munten').html,/&lt;b&gt;x&lt;\/b&gt;/,'escaped');
  const src=readFileSync(new URL('../public/toast-ui.js',import.meta.url),'utf8'),center=readFileSync(new URL('../public/center-notice.js',import.meta.url),'utf8');
  assert.match(src,/<span class="toast-text"\$\{local\?' translate="no"':''\}>/);assert.match(center,/<p class="toast-text"\$\{local\?' translate="no"':''\}>/);
+});
+// 16 Oct 2026: a long note can ask for more time (the note about when the fields are ready, wait-tip.js); the timer bar runs as long.
+test('a toast can ask for more time: the timer bar and the hiding follow it, every other toast keeps 3.2 seconds',t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const classes=new Set(),props={},el={className:'toast',classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)},style:{setProperty:(k,v)=>{props[k]=v;}},innerHTML:'',offsetWidth:0};
+ const show=createToast(el);
+ show('Wheat selected. Choose an empty field to plant.');assert.equal(props['--toast-duration'],'3200ms');
+ t.mock.timers.tick(3199);assert.ok(classes.has('visible'));t.mock.timers.tick(1);assert.ok(!classes.has('visible'));
+ show('Your fields are ready at 14:35.',{duration:6000});assert.equal(props['--toast-duration'],'6000ms');
+ t.mock.timers.tick(5999);assert.ok(classes.has('visible'),'still there after 3.2 seconds');t.mock.timers.tick(1);assert.ok(!classes.has('visible'));
+ show('Sold 12 Wheat for 84 coins.',{tone:'reward'});assert.equal(props['--toast-duration'],'3200ms','a tone alone keeps the time');
 });
