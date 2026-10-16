@@ -38,7 +38,7 @@ test('the places in the valley are listed with the buildings, each with what is 
 test('on every farm, older (legacy) farms too, what is still locked goes to the bottom, folded: seeds, buildings, places and recipes',()=>{
  const ui=read('public/economy-ui.js');
  for(const [target,title] of [["\\$\\('crop-catalog'\\),'\\[data-choose-crop\\]'",'Seeds to unlock'],["\\$\\('building-catalog'\\),'\\[data-open-building\\]'",'Buildings to unlock'],["\\$\\('building-catalog'\\),'\\[data-open-place\\]'",'Places to unlock'],["recipeList,'\\[data-recipe-card\\]'",'Coming later']]){
-  assert.match(ui,new RegExp(`foldLocked\\(${target},[^\\n]*'${title}'\\)`),title);
+  assert.match(ui,new RegExp(`foldLocked\\(${target},[^\\n]*'${title}'(,'[a-z-]+')?\\)`),title);   // and its key for public/keep-folds.js (16 Oct 2026)
   assert.doesNotMatch(ui,new RegExp(`guidedFarm\\(state\\)\\)foldLocked\\(${target}`),`${title}: not only on guided farms`);
  }
  assert.doesNotMatch(ui,/openPlaces\.length\|\|!guidedFarm/,'the places heading only shows above places that are open');

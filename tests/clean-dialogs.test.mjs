@@ -78,7 +78,7 @@ test('Farm Family is cleaner: the week is the chest and the order, the tournamen
  const ui=read('public/family-ui.js'),tour=read('public/family-tournament.js'),social=read('public/social-ui.js'),css=read('public/family.css');
  assert.doesNotMatch(ui,/tournamentLink|Grow something together|family-settings-header|A green dot means/);
  assert.match(ui,/renderFamilyTournament\(\{view,now:farmNow\(\),emblem,rewards:rewardCards\(\),preview:prizePreview\(\),extra:extraGoods\(\)\}\)/,'Tournament goods live on the Tournament tab');
- assert.match(ui,/aria-label="Family Order delivered"><\/progress>[^\n]*<details class="family-rewards-fold">/,'your rewards fold inside the order card');
+ assert.match(ui,/aria-label="Family Order delivered"><\/progress>[^\n]*<details class="family-rewards-fold" data-fold="order-rewards">/,'your rewards fold inside the order card');
  assert.match(ui,/<p class="family-chest-how">Everything your family does on the farm fills it\. A new chest every Monday\.<\/p><ul class="family-chest-tiers">/,'how the chest fills sits in its fold');
  assert.match(ui,/document\.querySelector\('#family-heading-emblem \.family-emblem'\)\?\.replaceWith\(/,'a new emblem shows in the window header as you pick it');
  assert.doesNotMatch(tour,/family-prize-ladder|family-podium-stats|family-podium-empty/);

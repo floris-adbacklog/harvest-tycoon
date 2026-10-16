@@ -5,6 +5,7 @@ import {farmNow} from './farm-client.js';
 import {placeLabel} from './place-label.js';
 import {skeleton} from './skeleton.js';
 import {formatDuration,levelOf,FAMILY_EVENT_BONUS,EVENT_LEAGUES,eventLeague} from './farm-state.js';
+import {keepFolds} from './keep-folds.js';
 // Farm events: a short shared goal (usually 5 hours, then a 1-hour break before the next one). The Events button
 // sits next to Quests on desktop and in the More menu on phones; the screen shows the running event, or the next
 // one during the break, plus any reward still waiting to be collected.
@@ -131,10 +132,11 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const result=e=>!e.settled_at?'Results coming up':e.player?.claimed_at?`Collected · ${num(e.player.coins)} coins${e.player.paid_diamonds?` + ${num(e.player.paid_diamonds)} diamond${e.player.paid_diamonds===1?'':'s'}`:''}`:e.player?'Not finished':'You did not take part';
   return `<h3 class="event-section-title">Recent events</h3><div class="family-member-list event-history">${past.map(e=>`<article class="family-list-row"><div><strong>${esc(e.title)}</strong><span>${result(e)}${e.settled_at?` · ${num(e.qualified)} of ${num(e.participants)} finished`:''}</span></div></article>`).join('')}</div>`;
  }
- const rules=`<details class="family-extra event-rules"><summary>How events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and you have finished.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.<span class="event-league-list">${EVENT_LEAGUES.map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li><li>Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
+ const rules=`<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and you have finished.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.<span class="event-league-list">${EVENT_LEAGUES.map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li><li>Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  function render(){
   const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
-  dialog.innerHTML=heading+(data?collect()+hero()+history()+rules:error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening events…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>';
+  // Drawn anew every 30 seconds and when a countdown ends: How events work stays as the player left it (16 Oct 2026, public/keep-folds.js).
+  keepFolds(dialog,heading+(data?collect()+hero()+history()+rules:error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening events…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>');
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
   // A farmer in the standings opens their profile on top of the event; its back button returns here (26 Sep 2026).
