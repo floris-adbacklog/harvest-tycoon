@@ -41,6 +41,7 @@ import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
 import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
+import { createSweepTip } from './sweep-tip.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
 import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
@@ -182,6 +183,9 @@ const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.
 
 let showToast;
 function toast(message){showToast??=createToast($('toast'));showToast(message);}
+// The sweep tip (16 Oct 2026, the owner; public/sweep-tip.js): the third field in a row done by a tap says a sweep does them all at once.
+// Quiet while the Beginner guide still has steps (it says itself what to tap), in the admin view and in the village.
+const sweepTip=createSweepTip({storage:(()=>{try{return localStorage;}catch{return null;}})(),show:text=>toast(text),quiet:()=>villageWorld||adminView||!beginnerProgress(state).every(q=>q.done)});
 // Why Water did nothing during the guide, and what to do (7 Oct 2026): the toast after such a tap, and Show me when nothing can be watered.
 const WATER_FIRST_MINUTE="Water works in a crop's first minute: plant wheat, then water it.";
 // The one short toast at the bottom for new crop medals (farm.html #medal-toast): the toast at the top stays free for the action's own.
@@ -777,6 +781,7 @@ async function interact(id,forcedAction){
   // The tool that matches what the tap just did lights up, with a short pop, so it is clear it watered or gave care. With Water chosen,
   // planting keeps it in the hand, so the next tap waters the new crop (7 Oct 2026, "plant wheat, then water it").
   if(!forcedAction&&!(action==='plant'&&selectedTool==='water'&&toolPicked))showTool(action);
+  if(!forcedAction)sweepTip.tapped(action,{touch:lastPointer?.type!=='mouse'});
   drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
 }
@@ -821,6 +826,7 @@ function endSweep(){
  if(!run)return;
  const result=run.handle.end(),action=run.action;
  if(!result){if(run.handle.reason)toast(run.handle.reason);return;}
+ sweepTip.swept(action,run.count);
  // As after a tap (runAction): the guide, the reminder, a level-up.
  beginner?.afterAction(result);if(action==='harvest')nudge?.harvested();
  const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});
