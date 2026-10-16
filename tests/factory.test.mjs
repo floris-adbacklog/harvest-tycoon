@@ -236,7 +236,7 @@ test('a building that is not built yet shows one status line, what it makes, and
  const ui=read('public/economy-ui.js');
  assert.match(ui,/\$\{key==='farmhouse'\|\|buildingUnlocked\(state,key\)\?`LEVEL \$\{bs\.level\}`:'NOT BUILT YET'\}/,'no "Level 1" for a building that is not there');
  assert.match(ui,/<strong>\$\{level<openLevel\?`Opens at level \$\{openLevel\}`:buildingUnlockHint\(state,key\)\}<\/strong>/);
- assert.match(ui,/<details class="build-recipes"><summary>\$\{seeRecipes\}<\/summary>/,'the full recipes are folded away');assert.match(ui,/const seeRecipes=previewEntries\.length===1\?'See the recipe':later\.length\?`See the \$\{previewEntries\.length\} recipes you can make now`:`See all \$\{previewEntries\.length\} recipes`;/);
+ assert.match(ui,/<details class="build-recipes" data-fold="recipes"><summary>\$\{seeRecipes\}<\/summary>/,'the full recipes are folded away');assert.match(ui,/const seeRecipes=previewEntries\.length===1\?'See the recipe':later\.length\?`See the \$\{previewEntries\.length\} recipes you can make now`:`See all \$\{previewEntries\.length\} recipes`;/);
  // A village place has no Build button of its own (Oct 2026): the golden brief builds it, and only the next one shows it.
  assert.match(ui,/\$\{villagePlace\?\(next&&!after\?briefCard\(state,itemList,\{showMe:false\}\):''\):eligible\?`<button type="button" id="construct-building" class="primary-button"/,'no greyed-out button while it is still locked');
  assert.match(ui,/<p class="build-price">\$\{art\('coins'\)\}<span>\$\{number\(buildCost\)\} coins to build<\/span><\/p>/);

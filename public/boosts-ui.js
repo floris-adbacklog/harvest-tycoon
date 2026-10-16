@@ -6,6 +6,7 @@ import {art,refreshArt} from './visual-icons.js';
 import {prettifySelects} from './pretty-select.js';
 import {portalOff} from './portal.js';
 import {fieldPicker,batchPicker,bindFieldPicker} from './field-picker.js';
+import {keepFolds} from './keep-folds.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const LENGTH_LABELS={'30m':'30 min','1h':'1 hour','1d':'1 day'};
@@ -105,7 +106,8 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    button:`<button id="finish-one-batch" class="boost-buy">${finishLabel('batch')}</button>`,
    extra:batches.length?`<span class="field-picker-label">Choose batches</span>${batchPicker({id:'finish-batch-picker',batches,selectedKeys:selectedBatches,multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),now:farmNow(),disabled:finishing,perItem:`${SINGLE_BATCH_COST} diamonds per batch`})}`:''});
   const finishNow=['crops','production'],entries=Object.entries(BOOSTS);
-  $('boost-catalog').innerHTML=`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Boosts</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`;
+  // An open field or batch picker stays open when a crop ripens or the farm updates (16 Oct 2026, public/keep-folds.js).
+  keepFolds($('boost-catalog'),`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Boosts</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`);
   if($('finish-batch-picker'))bindFieldPicker($('finish-batch-picker'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),noun:['batch','batches'],onChange:ids=>{selectedBatches=ids.map(i=>batches[i]?.key).filter(Boolean);updateFinish('batch');}});
   if($('finish-crop-field'))bindFieldPicker($('finish-crop-field'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),onChange:ids=>{selectedFields=ids.map(String);updateFinish('crop');}});
   updateFinish('crop');updateFinish('batch');

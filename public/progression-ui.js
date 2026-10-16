@@ -42,9 +42,10 @@ export function entryLine(e,{phone=false}={}){
 // The first thing a coming level opens (the level card and the level-up screen show it, so there is always a next goal).
 export const nextUnlock=state=>upcoming(state)[0]??null;
 export function roadmapMarkup(state){const next=upcoming(state).slice(0,3);return next.length?`<section class="unlock-roadmap"><h3>Coming up</h3>${next.map(e=>`<div class="roadmap-entry">${art(e.art)}<div><strong>${e.name}</strong><span>${ROADMAP_KIND[e.kind]??e.kind}</span></div><b class="roadmap-level">Level ${e.level}</b></div>`).join('')}</section>`:'';}
-export function foldLocked(container,selector,isLocked,title){
+// fold: its key for public/keep-folds.js (16 Oct 2026), so it stays open when its window draws its list anew.
+export function foldLocked(container,selector,isLocked,title,fold=''){
  const locked=[...container.querySelectorAll(selector)].filter(isLocked);if(!locked.length)return;
- const details=document.createElement('details');details.className='future-unlocks';
+ const details=document.createElement('details');details.className='future-unlocks';if(fold)details.dataset.fold=fold;
  const summary=document.createElement('summary');summary.innerHTML=art('lock','unlock-lock');const label=document.createElement('span');label.textContent=`${title} · ${locked.length}`;summary.append(label);
  const grid=document.createElement('div');grid.className='future-unlocks-grid';grid.append(...locked);details.append(summary,grid);container.append(details);
 }

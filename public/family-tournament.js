@@ -42,11 +42,11 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''
   <p class="family-standings-note">${num(t.activePlayers)} ${t.activePlayers===1?'contributor':'contributors'} · ${num(t.activeFamilies)} ${t.activeFamilies===1?'family':'families'} · ${num(t.pool)} diamonds in prizes</p>
  </section>
  ${extra}
- <details class="family-rules"><summary>How rewards work</summary>${growth}
+ <details class="family-rules" data-fold="how-rewards"><summary>How rewards work</summary>${growth}
   <p>Deliver goods to earn points. The prize pool grows with every family that takes part: ${num(p[0])} diamonds for one family, ${num(p[1])} for two, ${num(p[2])} for three and ${num(t.poolPerFamily)} more for every family after that, up to ${num(t.poolMax)}. The top ten families share it: first place gets ${s[0]}%, second ${s[1]}%, third ${s[2]}%, and so on down to ${s[9]}% for tenth. With fewer than ten families, they share the whole pool in the same proportions. How many members a family has does not change the prize.</p>
   <p>Family prizes are shared by contribution. Make a delivery and stay in your family until Monday, 00:00 UTC. Only members who contributed this week count. Your personal prize is on your family's place above the standings; order rewards are extra. Prizes may change before the week ends.</p>
  </details>
- <details class="family-rules"><summary>Previous weeks</summary>
+ <details class="family-rules" data-fold="past-weeks"><summary>Previous weeks</summary>
   ${weeks.length?weeks.map(([week,rows])=>`<div class="family-past-week"><h4>Week of ${weekOf(week)}</h4>${rows.map(f=>`<div class="family-list-row${f.familyId&&f.familyId===own?' is-yours':''}"><b class="family-rank">${rankArt(f.rank)}</b>${openable(f,`<div><strong translate="no">${esc(f.name)}</strong><span>${f.familyId&&f.familyId===own?`Your family · ${num(f.points)} points`:`${num(f.points)} points`}</span></div>`)}<span class="family-past-prize">${art('diamonds')}${num(f.diamonds)}<span class="family-sr-only"> diamonds</span></span></div>`).join('')}</div>`).join(''):'<p>Results appear after the first week ends.</p>'}
  </details>`;
 }
