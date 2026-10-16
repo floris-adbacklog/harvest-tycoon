@@ -69,25 +69,35 @@ async function appleForm(path,fields,fetchImpl){
   return {ok:response.ok,status:response.status,data};
  }catch{return {ok:false,status:0,data:null};}
 }
+// One line in farm-api's logs for every outcome (16 Oct 2026, the first live Apple sign-in kept nothing and nothing said why): the step,
+// the client, the outcome and Apple's own status and error word. Never a token, a code, an Apple ID or a player id.
+const appleError=data=>typeof data?.error==='string'&&/^[a-z_]{1,40}$/.test(data.error)?data.error:undefined;
+export const logApple=entry=>{try{console.log(`apple-sign-in ${JSON.stringify(entry)}`);}catch{}};
 
 // Operation 'apple_token': {code} (the iPhone app's Apple sheet) or {refreshToken} (the website, from Supabase). Answers {kept:true}
 // when a token was kept, else {kept:false}; only a missing sign-in is an error.
-export async function handleAppleToken({admin,body,user,keyId='',privateKey='',fetchImpl=globalThis.fetch,now=Date.now()}){
+export async function handleAppleToken({admin,body,user,keyId='',privateKey='',fetchImpl=globalThis.fetch,now=Date.now(),log=logApple}){
  if(!user?.id)return {status:401,data:{error:'Please sign in.'}};
  const code=typeof body?.code==='string'&&APPLE_VALUE.test(body.code)?body.code:'';
  const refreshToken=!code&&typeof body?.refreshToken==='string'&&APPLE_VALUE.test(body.refreshToken)?body.refreshToken:'';
- const subs=appleSubs(user);
- if(!(code||refreshToken)||!subs.size||!keyId||!privateKey||!fetchImpl)return {status:200,data:{kept:false}};
- const clientId=code?APPLE_CLIENTS.app:APPLE_CLIENTS.web;
- let secret;try{secret=await appleClientSecret({clientId,keyId,privateKey,now});}catch{return {status:200,data:{kept:false}};}
+ const clientId=code?APPLE_CLIENTS.app:APPLE_CLIENTS.web,subs=appleSubs(user);
+ const skip=outcome=>{log({step:'keep',client:clientId,outcome});return {status:200,data:{kept:false}};};
+ if(!(code||refreshToken))return skip(typeof body?.code==='string'||typeof body?.refreshToken==='string'?'not_apple_value':'nothing_sent');
+ if(!subs.size)return skip('no_apple_identity');
+ if(!keyId||!privateKey||!fetchImpl)return skip('no_key');
+ let secret;try{secret=await appleClientSecret({clientId,keyId,privateKey,now});}catch{return skip('bad_key');}
  const answer=await appleForm('/auth/token',code?{client_id:clientId,client_secret:secret,code,grant_type:'authorization_code'}:{client_id:clientId,client_secret:secret,refresh_token:refreshToken,grant_type:'refresh_token'},fetchImpl);
+ if(!answer.ok){log({step:'keep',client:clientId,outcome:'apple_refused',status:answer.status,error:appleError(answer.data)});return {status:200,data:{kept:false}};}
  const token=code?answer.data?.refresh_token:refreshToken;
- if(!answer.ok||typeof token!=='string'||!APPLE_VALUE.test(token))return {status:200,data:{kept:false}};
+ if(typeof token!=='string'||!APPLE_VALUE.test(token))return skip('no_refresh_token');
  // The code's answer always has an id_token; a refresh's answer may not, and Apple accepting the token for our client is then enough.
  const claims=answer.data?.id_token?appleIdClaims(answer.data.id_token):null;
- if((code||answer.data?.id_token)&&!(claims?.iss===APPLE_ISSUER&&claims?.aud===clientId&&subs.has(claims?.sub)))return {status:200,data:{kept:false}};
+ if((code||answer.data?.id_token)&&!(claims?.iss===APPLE_ISSUER&&claims?.aud===clientId&&subs.has(claims?.sub))){
+  log({step:'keep',client:clientId,outcome:'other_apple_id',iss:claims?.iss===APPLE_ISSUER,aud:claims?.aud===clientId,sub:subs.has(claims?.sub)});return {status:200,data:{kept:false}};
+ }
  const saved=await admin.from('apple_sign_in_tokens').upsert({player_id:user.id,client_id:clientId,refresh_token:token,updated_at:new Date(now).toISOString()},{onConflict:'player_id,client_id'});
- if(saved.error)throw saved.error;
+ if(saved.error){log({step:'keep',client:clientId,outcome:'not_saved'});throw saved.error;}
+ log({step:'keep',client:clientId,outcome:'kept',idToken:Boolean(answer.data?.id_token)});
  return {status:200,data:{kept:true}};
 }
 
@@ -103,12 +113,14 @@ export async function appleTokensOf(admin,user){
 }
 // After: each token revoked at Apple. 'revoked' when every one was (and there was one), 'manual' for an Apple account where that
 // failed or nothing was kept, null for an account without Apple.
-export async function revokeAppleTokens(user,tokens,{keyId='',privateKey='',fetchImpl=globalThis.fetch,now=Date.now()}={}){
+export async function revokeAppleTokens(user,tokens,{keyId='',privateKey='',fetchImpl=globalThis.fetch,now=Date.now(),log=logApple}={}){
  if(!hasAppleSignIn(user))return null;
- if(!tokens.length||!keyId||!privateKey||!fetchImpl)return 'manual';
+ if(!tokens.length||!keyId||!privateKey||!fetchImpl){log({step:'revoke',outcome:tokens.length?'no_key':'nothing_kept'});return 'manual';}
  const results=await Promise.all(tokens.map(async({client_id:clientId,refresh_token:token})=>{
-  try{const secret=await appleClientSecret({clientId,keyId,privateKey,now});return (await appleForm('/auth/revoke',{client_id:clientId,client_secret:secret,token,token_type_hint:'refresh_token'},fetchImpl)).ok;}
-  catch{return false;}
+  let secret;try{secret=await appleClientSecret({clientId,keyId,privateKey,now});}catch{log({step:'revoke',client:clientId,outcome:'bad_key'});return false;}
+  const answer=await appleForm('/auth/revoke',{client_id:clientId,client_secret:secret,token,token_type_hint:'refresh_token'},fetchImpl);
+  log({step:'revoke',client:clientId,outcome:answer.ok?'revoked':'apple_refused',...(answer.ok?{}:{status:answer.status,error:appleError(answer.data)})});
+  return answer.ok;
  }));
  return results.every(Boolean)?'revoked':'manual';
 }

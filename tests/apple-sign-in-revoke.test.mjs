@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {APPLE_TEAM_ID,APPLE_CLIENTS,APPLE_ISSUER,appleKeyBytes,appleClientSecret,appleIdClaims,appleSubs,hasAppleSignIn,handleAppleToken,appleTokensOf,revokeAppleTokens} from '../supabase/functions/farm-api/apple-sign-in-service.js';
+import {APPLE_TEAM_ID,APPLE_CLIENTS,APPLE_ISSUER,appleKeyBytes,appleClientSecret,appleIdClaims,appleSubs,hasAppleSignIn,handleAppleToken,appleTokensOf,revokeAppleTokens,logApple} from '../supabase/functions/farm-api/apple-sign-in-service.js';
 import {handleDeleteAccount,DELETE_WRONG_NAME} from '../supabase/functions/farm-api/account-delete-service.js';
 import {readAppSignIn} from '../src/app-sign-in.js';
 import {READY} from '../scripts/build-languages.mjs';
@@ -250,4 +250,47 @@ test('the texts: the privacy policy and the deletion page say what is kept and w
  assert.ok(JSON.parse(read('i18n/catalog.json'))[text]);
  for(const code of READY)if(code!=='en'){const t=JSON.parse(read(`public/i18n/${code}.json`));assert.ok(t[text]?.includes('Harvest Tycoon'),`${code}: ${text}`);assert.ok(t[text].includes('Apple'),code);}
  assert.ok(JSON.parse(read('i18n/ignore.json')).includes('APPLE_PRIVATE_KEY is not a .p8 key.'),'only in the function\'s own logs');
+});
+
+test('farm-api\'s logs say every outcome (16 Oct 2026, the first live Apple sign-in kept nothing), never a token, code, Apple ID or player id',async()=>{
+ const lines=[],log=entry=>lines.push(entry);
+ const tokenAnswer=(body,status=200)=>fakeApple({'/auth/token':{status,body}}).fetchImpl;
+ await handleAppleToken({admin:fakeAdmin(),body:{},user:appleFarmer,...apple,log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:'x y'},user:appleFarmer,...apple,log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:REFRESH},user:googleFarmer,...apple,log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:REFRESH},user:appleFarmer,log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:REFRESH},user:appleFarmer,keyId:'K',privateKey:'not a key',log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:REFRESH},user:appleFarmer,...apple,fetchImpl:tokenAnswer({error:'invalid_client'},400),log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:REFRESH},user:appleFarmer,...apple,fetchImpl:tokenAnswer({error:'<b>bad</b>'},400),log});
+ await handleAppleToken({admin:fakeAdmin(),body:{code:CODE},user:appleFarmer,...apple,fetchImpl:tokenAnswer({id_token:idToken(appleClaims(APPLE_CLIENTS.app))}),log});
+ await handleAppleToken({admin:fakeAdmin(),body:{code:CODE},user:appleFarmer,...apple,fetchImpl:tokenAnswer({refresh_token:'rNEW.0.rrsy.abc',id_token:idToken(appleClaims(APPLE_CLIENTS.app,'999999.other.0000'))}),log});
+ await handleAppleToken({admin:fakeAdmin(),body:{refreshToken:REFRESH},user:appleFarmer,...apple,fetchImpl:tokenAnswer({id_token:idToken(appleClaims(APPLE_CLIENTS.web))}),log});
+ await assert.rejects(handleAppleToken({admin:fakeAdmin({upsertError:new Error('db down')}),body:{refreshToken:REFRESH},user:appleFarmer,...apple,fetchImpl:tokenAnswer({}),log}));
+ assert.deepEqual(lines,[
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'nothing_sent'},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'not_apple_value'},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'no_apple_identity'},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'no_key'},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'bad_key'},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'apple_refused',status:400,error:'invalid_client'},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'apple_refused',status:400,error:undefined},
+  {step:'keep',client:'com.harvesttycoon.app',outcome:'no_refresh_token'},
+  {step:'keep',client:'com.harvesttycoon.app',outcome:'other_apple_id',iss:true,aud:true,sub:false},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'kept',idToken:true},
+  {step:'keep',client:'com.harvesttycoon.web',outcome:'not_saved'}
+ ]);
+ // The deletion's half.
+ lines.length=0;
+ await revokeAppleTokens(appleFarmer,[],{...apple,log});
+ await revokeAppleTokens(appleFarmer,[{client_id:APPLE_CLIENTS.web,refresh_token:REFRESH}],{log});
+ await revokeAppleTokens(appleFarmer,[{client_id:APPLE_CLIENTS.web,refresh_token:REFRESH}],{keyId:'K',privateKey:'not a key',log});
+ await revokeAppleTokens(appleFarmer,[{client_id:APPLE_CLIENTS.web,refresh_token:REFRESH},{client_id:APPLE_CLIENTS.app,refresh_token:'rAPP.0.rrsy.abc'}],{...apple,log,fetchImpl:fakeApple({'/auth/revoke':form=>({status:form.client_id===APPLE_CLIENTS.app?400:200,body:form.client_id===APPLE_CLIENTS.app?{error:'invalid_client'}:{}})}).fetchImpl});
+ assert.deepEqual(lines.slice(0,3),[{step:'revoke',outcome:'nothing_kept'},{step:'revoke',outcome:'no_key'},{step:'revoke',client:'com.harvesttycoon.web',outcome:'bad_key'}]);
+ assert.deepEqual(lines.slice(3).sort((a,b)=>a.client.localeCompare(b.client)),[{step:'revoke',client:'com.harvesttycoon.app',outcome:'apple_refused',status:400,error:'invalid_client'},{step:'revoke',client:'com.harvesttycoon.web',outcome:'revoked'}]);
+ // The real logger: one line, the entry as JSON after "apple-sign-in ".
+ const printed=[],original=console.log;console.log=(...args)=>printed.push(args.join(' '));
+ try{logApple({step:'keep',client:APPLE_CLIENTS.web,outcome:'kept'});}finally{console.log=original;}
+ assert.deepEqual(printed,['apple-sign-in {"step":"keep","client":"com.harvesttycoon.web","outcome":"kept"}']);
+ const source=read('supabase/functions/farm-api/apple-sign-in-service.js');
+ for(const call of source.match(/log\(\{[^}]*\}/g))assert.doesNotMatch(call,/token:|refresh_token|code:|:claims\?\.sub\b|user\.id|player/,call);
 });
