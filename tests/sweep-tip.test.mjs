@@ -152,9 +152,10 @@ test('the game counts every field tap and every finished sweep, and keeps the ti
  assert.match(game,/\nimport \{ createSweepTip \} from '\.\/sweep-tip\.js';\n/);
  assert.match(game,/const sweepTip=createSweepTip\(\{storage:\(\(\)=>\{try\{return localStorage;\}catch\{return null;\}\}\)\(\),show:text=>toast\(text\),quiet:\(\)=>villageWorld\|\|adminView\|\|!beginnerProgress\(state\)\.every\(q=>q\.done\)\}\);/);
  const interact=game.slice(game.indexOf('async function interact('),game.indexOf('\n}\n',game.indexOf('async function interact(')));
- assert.match(interact,/const result=await runAction\(\{type:'field',id,action,crop:selectedCrop\}\);[^]*\n  if\(!forcedAction\)sweepTip\.tapped\(action,\{touch:lastPointer\?\.type!=='mouse'\}\);\n  drawCrop\(id\);/,'after the action succeeded, a tap only');
+ assert.match(interact,/const result=await runAction\(\{type:'field',id,action,crop:selectedCrop\}\);[^]*\n  if\(!forcedAction&&!waited\)sweepTip\.tapped\(action,\{touch:lastPointer\?\.type!=='mouse'\}\);\n  drawCrop\(id\);/,'after the action succeeded, a tap only');
  assert.ok(interact.indexOf('sweepTip.tapped')<interact.indexOf('}catch(e){'),'never on an error');
  const end=game.slice(game.indexOf('function endSweep('),game.indexOf('\n}\n',game.indexOf('function endSweep(')));
  assert.match(end,/ if\(!result\)\{if\(run\.handle\.reason\)toast\(run\.handle\.reason\);return;\}\n sweepTip\.swept\(action,run\.count\);/,'a sweep the server took, with its fields');
  assert.match(read('public/farm.html'),/<link rel="modulepreload" href="\/sweep-tip\.js[^"]*">/,'preloaded with the rest of the game');
+ assert.ok(read('public/privacy.html').includes(`<code>${SWEEP_TIP_KEY}</code>`),'the device key is in the privacy policy\'s storage table');
 });

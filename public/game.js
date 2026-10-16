@@ -57,6 +57,7 @@ import { createCoach } from './coach.js';
 import { guideSteps } from './guide-steps.js';
 import { guardWheel } from './wheel-guard.js';
 import { nextGoal, readyAllAt } from './next-goal.js';
+import { createWaitTip } from './wait-tip.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -182,12 +183,15 @@ modelNames.push('house_005','hangar_008','trailer_003','truck_005','prop_020','p
 const beanPodGeometry=new THREE.SphereGeometry(1,5,5),beanPodMaterial=new THREE.MeshStandardMaterial({color:0x70a936,roughness:1});
 
 let showToast;
-function toast(message){showToast??=createToast($('toast'));showToast(message);}
+function toast(message,options){showToast??=createToast($('toast'));showToast(message,options);}
 // The sweep tip (16 Oct 2026, the owner; public/sweep-tip.js): the third field in a row done by a tap says a sweep does them all at once.
 // Quiet while the Beginner guide still has steps (it says itself what to tap), in the admin view and in the village.
 const sweepTip=createSweepTip({storage:(()=>{try{return localStorage;}catch{return null;}})(),show:text=>toast(text),quiet:()=>villageWorld||adminView||!beginnerProgress(state).every(q=>q.done)});
 // Why Water did nothing during the guide, and what to do (7 Oct 2026): the toast after such a tap, and Show me when nothing can be watered.
 const WATER_FIRST_MINUTE="Water works in a crop's first minute: plant wheat, then water it.";
+// After planting long crops up to level 8 (16 Oct 2026, the owner): when the fields are ready and what is open meanwhile, once a day
+// (public/wait-tip.js).
+const waitTip=createWaitTip({state,now:farmNow,show:toast,quiet:()=>adminView||villageWorld});
 // The one short toast at the bottom for new crop medals (farm.html #medal-toast): the toast at the top stays free for the action's own.
 let medalNotice;
 // The guide's step now (11 Oct 2026, Part A A11): from the first harvest to the first sale only one line speaks, so a medal earned while
@@ -778,10 +782,12 @@ async function interact(id,forcedAction){
   if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
   if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
+  // One tip at a time (16 Oct 2026): the wait note, once a day, goes before the sweep tip, which skips that tap.
+  const waited=action==='plant'&&waitTip.planted(state.plots[id].crop);
   // The tool that matches what the tap just did lights up, with a short pop, so it is clear it watered or gave care. With Water chosen,
   // planting keeps it in the hand, so the next tap waters the new crop (7 Oct 2026, "plant wheat, then water it").
   if(!forcedAction&&!(action==='plant'&&selectedTool==='water'&&toolPicked))showTool(action);
-  if(!forcedAction)sweepTip.tapped(action,{touch:lastPointer?.type!=='mouse'});
+  if(!forcedAction&&!waited)sweepTip.tapped(action,{touch:lastPointer?.type!=='mouse'});
   drawCrop(id);renderer.shadowMap.needsUpdate=true;updateUI();icons();return result;
  }catch(e){toast(e.message);return {error:e.message};}
 }
@@ -840,6 +846,7 @@ function endSweep(){
  if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
  if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
  if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
+ if(action==='plant'&&!result.short)waitTip.planted(result.crop);
  renderer.shadowMap.needsUpdate=true;icons();
 }
 // Before a new farm's first harvest (11 Oct 2026, Part A A15) a harvest sweep may start anywhere, and the fields never stay out of sight:
