@@ -14,10 +14,15 @@
 create table if not exists public.apple_sign_in_tokens (
  player_id uuid not null references auth.users(id) on delete cascade,
  client_id text not null check (client_id in ('com.harvesttycoon.web','com.harvesttycoon.app')),
- refresh_token text not null check (refresh_token ~ '^[A-Za-z0-9_.-]{8,1024}$'),
+ refresh_token text not null,
  updated_at timestamptz not null default now(),
  primary key (player_id, client_id)
 );
+-- What Apple's refresh tokens look like: letters, digits, dot, dash and underscore, 8 to 1024 characters. The length is its own check:
+-- Postgres refuses a repetition count above 255 in a pattern ({8,1024} failed every insert, 16 Oct 2026, "invalid repetition
+-- count(s)"). Replaced on every run, so a table made with the first version of this file gets the working check.
+alter table public.apple_sign_in_tokens drop constraint if exists apple_sign_in_tokens_refresh_token_check;
+alter table public.apple_sign_in_tokens add constraint apple_sign_in_tokens_refresh_token_check check (refresh_token ~ '^[A-Za-z0-9_.-]+$' and char_length(refresh_token) between 8 and 1024);
 alter table public.apple_sign_in_tokens enable row level security;
 revoke all on table public.apple_sign_in_tokens from public, anon, authenticated;
 grant select, insert, update, delete on table public.apple_sign_in_tokens to service_role;

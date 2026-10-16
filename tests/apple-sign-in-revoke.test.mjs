@@ -230,7 +230,11 @@ test('the wiring: farm-api knows apple_token, before the farm is read, with the 
 
 test('supabase/apple-sign-in-tokens.sql: one row per farmer and Apple client, the service role only, gone with the account',()=>{
  const sql=read('supabase/apple-sign-in-tokens.sql');
- assert.match(sql,/create table if not exists public\.apple_sign_in_tokens \(\n player_id uuid not null references auth\.users\(id\) on delete cascade,\n client_id text not null check \(client_id in \('com\.harvesttycoon\.web','com\.harvesttycoon\.app'\)\),\n refresh_token text not null check \(refresh_token ~ '\^\[A-Za-z0-9_\.-\]\{8,1024\}\$'\),\n updated_at timestamptz not null default now\(\),\n primary key \(player_id, client_id\)\n\);/);
+ assert.match(sql,/create table if not exists public\.apple_sign_in_tokens \(\n player_id uuid not null references auth\.users\(id\) on delete cascade,\n client_id text not null check \(client_id in \('com\.harvesttycoon\.web','com\.harvesttycoon\.app'\)\),\n refresh_token text not null,\n updated_at timestamptz not null default now\(\),\n primary key \(player_id, client_id\)\n\);/);
+ // The token's own check: the length apart, as Postgres refuses a repetition count above 255 ({8,1024} failed every insert live,
+ // 16 Oct 2026); replaced on every run, so the live table made with the first version gets it too.
+ assert.match(sql,/alter table public\.apple_sign_in_tokens drop constraint if exists apple_sign_in_tokens_refresh_token_check;\nalter table public\.apple_sign_in_tokens add constraint apple_sign_in_tokens_refresh_token_check check \(refresh_token ~ '\^\[A-Za-z0-9_\.-\]\+\$' and char_length\(refresh_token\) between 8 and 1024\);/);
+ for(const [,count] of sql.replace(/^--.*$/gm,'').matchAll(/\{(?:\d+,)?(\d+)\}/g))assert.ok(Number(count)<=255,`no repetition count above 255 in a Postgres pattern: ${count}`);
  assert.match(sql,/alter table public\.apple_sign_in_tokens enable row level security;\nrevoke all on table public\.apple_sign_in_tokens from public, anon, authenticated;\ngrant select, insert, update, delete on table public\.apple_sign_in_tokens to service_role;/);
  const statements=sql.replace(/^--.*$/gm,'');
  assert.doesNotMatch(statements,/create policy/,'no policy: never readable from a browser');
