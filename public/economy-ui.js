@@ -80,7 +80,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   // What is still locked goes to the bottom, folded, on every farm (older farms too), so what you can use comes first.
   foldLocked($('crop-catalog'),'[data-choose-crop]',b=>!cropUnlocked(state,b.dataset.chooseCrop),'Seeds to unlock','seeds-locked');});
   // Up to level 8 a crop that is not quick says how long it takes and names the quick one for playing on (16 Oct 2026, wait-tip.js).
-  $('crop-catalog').querySelectorAll('[data-choose-crop]').forEach(b=>b.addEventListener('click',()=>{chooseCrop(b.dataset.chooseCrop);$('seed-dialog').close();notify(cropChoiceText(state,b.dataset.chooseCrop,farmNow()));}));icons();
+  // Opened from the tractor (17 Oct 2026, data-from): nothing, as the tractor opens again and shows the crop on its Plant tile.
+  $('crop-catalog').querySelectorAll('[data-choose-crop]').forEach(b=>b.addEventListener('click',()=>{chooseCrop(b.dataset.chooseCrop);const fromTractor=$('seed-dialog').dataset.from==='tractor';$('seed-dialog').close();if(!fromTractor)notify(cropChoiceText(state,b.dataset.chooseCrop,farmNow()));}));icons();
  }
  function openSeeds(){renderSeeds();show('seed-dialog');}
  // The places in the valley that stand on the farm like buildings but work differently (the Valley Market, the Ranch and the
