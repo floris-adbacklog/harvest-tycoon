@@ -1,5 +1,6 @@
 import {art,refreshArt} from './visual-icons.js';
-import {WATERS,POND_MAX_CASTS,POND_REFILL_MS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,waterCasts,waterFish,waterBookDone,waterBook2Done,waterPageTwoOpen,worldTwoBuilding,productionJobs,formatDuration} from './farm-state.js';
+import {WATERS,POND_MAX_CASTS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,waterCasts,waterFish,waterBookDone,waterBook2Done,waterPageTwoOpen,waterRefill,worldTwoBuilding,productionJobs,formatDuration} from './farm-state.js';
+import {showCollectionCheer} from './collection-cheer.js';
 import {createReel} from './pond-reel.js';
 import {createPondScene} from './pond-scene.js';
 import {fitText} from './fit-text.js';
@@ -15,7 +16,7 @@ import {modalOpen} from './windows.js';
 // water is written out in full for each, so the translations find both.
 const say={cast:'Tap to cast.',wait:'Wait for the float to dip…',soon:'Too soon! Wait for the big dip.',now:'Now! Tap!',reel:'Hold to reel in. Let go to give it line. Keep the fish in the green.',
  missed:'Missed it. The fish is still there: cast again.',slipped:'The fish slipped off. It’s still in the pond: cast again.',tired:'It’s getting tired.',paused:'Paused. Tap to go on.',
- letGo:'You let the fish go.',empty:'No casts left. A new cast comes every 20 minutes.'};
+ letGo:'You let the fish go.'};
 const pageDone=page=>`Page ${page} complete!`;
 const kg=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const number=n=>n.toLocaleString('en-US');
@@ -37,6 +38,8 @@ export const LAKE_VIEW=2.2;
 export function createPond({water:which='pond',place=null,state,scene,game,labels,runAction,now,play=()=>{},haptic=()=>{},toast=()=>{},resize=()=>{},reducedMotion=false,focusFarm=()=>{}}){
  const W=WATERS[which],lake=which==='lake',FISH=W.fish,NAME=lake?'Village lake':'Fishing pond',ART=lake?'villagelake':'fishingpond';
  const slipText=lake?'The fish slipped off. It’s still in the lake: cast again.':say.slipped;
+ // The minutes to a new cast: 20, and 15 at the pond once its whole book is caught (17 Oct 2026, farm-state.js waterRefill).
+ const minutes=()=>waterRefill(W,state)/60000,emptyLine=()=>`No casts left. A new cast comes every ${minutes()} minutes.`;
  // What became ready meanwhile, for the way back (the chip) and the jumping fish: a ripe field on the farm; in the village a finished
  // batch at a village place (its good's picture, and the place, which "Show me" turns the camera to).
  const waiting=()=>{
@@ -91,7 +94,7 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   if(fishN!==current()){fishN=current();tries=0;escapes=0;}
   reel=null;holding=false;bar.hidden=true;setPhase('idle');pond3d.ready();
   const c=casts().casts;act.disabled=c<1;word('Cast');ringFill.style.strokeDashoffset='100';
-  letGo.hidden=!(escapes>=2&&c>0);tell(text??(c<1?say.empty:say.cast));top();
+  letGo.hidden=!(escapes>=2&&c>0);tell(text??(c<1?emptyLine():say.cast));top();
  }
  // The wait for a bite: the first fish bites without fake nibbles, the second after one; then 1.5 to 4.5 seconds with up to two.
  function planWait(){
@@ -137,11 +140,15 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   card.innerHTML=`<div class="pond-card-fish">${art(`fish-${r.species}`,'pond-card-art')}<div><span class="eyebrow">YOU CAUGHT</span><h3>${f.name}</h3><p class="pond-kg">${kg(r.kg)} kg</p></div></div>
    ${tags.length?`<div class="pond-tags">${tags.map(([cls,text])=>`<b class="pond-tag ${cls}">${text}</b>`).join('')}</div>`:''}
    <div class="pond-rewards"><strong class="reward-coins">${art('coins')}+${number(r.coins)} coins</strong><strong class="reward-xp">${art('xp')}+${number(r.xp)} XP</strong>${r.diamonds?`<strong class="reward-diamonds">${art('diamonds')}+${r.diamonds} diamonds</strong>`:''}</div>
-   ${left<1?`<p class="pond-card-note">That was your last cast. A new one comes every ${POND_REFILL_MS/60000} minutes (up to ${POND_MAX_CASTS}).</p>`:''}
+   ${left<1?`<p class="pond-card-note">That was your last cast. A new one comes every ${minutes()} minutes (up to ${POND_MAX_CASTS}).</p>`:''}
    <div class="pond-card-actions">${left>0?`<button type="button" class="primary-button" data-card-again>Cast again (${left} left)</button><button type="button" class="secondary-button" data-card-farm>${lake?'Back to the village':'Back to my farm'}</button>`:`<button type="button" class="primary-button" data-card-farm>${lake?'Back to the village':'Back to my farm'}</button>`}</div>`;
   card.querySelector('[data-card-again]')?.addEventListener('click',()=>{card.hidden=true;fishN=current();tries=0;escapes=0;cast();});
   card.querySelector('[data-card-farm]').addEventListener('click',()=>close());
   shown=r.n;paid=state.stats[W.stats.coins]??0;setPhase('result');card.hidden=false;tell('');refreshArt();top();
+  // The whole book (17 Oct 2026, the owner's pick 4a): its card in the middle, over the catch, with what the pond gives from now on.
+  if(r.book2)showCollectionCheer({title:'Fish book complete!',pictures:Object.keys(FISH).map(key=>`fish-${key}`),
+   line:lake?`You caught all ${Object.keys(FISH).length} kinds of fish in the village lake.`:`You caught all ${Object.keys(FISH).length} kinds of fish in your pond.`,rewards:{diamonds:r.diamonds},
+   perk:W.fullRefill?`From now on a new cast comes every ${W.fullRefill/60000} minutes at your pond.`:'',perkArt:ART});
   (card.querySelector('[data-card-again]')??card.querySelector('[data-card-farm]')).focus({preventScroll:true});
  }
  // The Fish book: the eight kinds with their best weight (a shadow until caught), the reward for all eight and how fishing works.
@@ -159,14 +166,16 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   if(!turned)page=bookPage>=0?bookPage:waterBookDone(W,state)?1:0;
   page=two?Math.min(1,Math.max(0,page)):0;if(two)bookPage=page;
   const kinds=W.pages[page],caught=kinds.filter(k=>best[k]>0).length;
-  const reward=page===1?(waterBook2Done(W,state)?`Book complete: ${W.book2} diamonds earned.`:`Catch all ${Object.keys(FISH).length} kinds on both pages: ${W.book2} diamonds, once.`)
+  // The pond's whole book also gives a cast every 15 minutes (17 Oct 2026); the lake's pays its diamonds only.
+  const reward=page===1?(waterBook2Done(W,state)?(W.fullRefill?`Book complete: ${W.book2} diamonds earned, and a new cast every ${W.fullRefill/60000} minutes.`:`Book complete: ${W.book2} diamonds earned.`)
+   :W.fullRefill?`Catch all ${Object.keys(FISH).length} kinds on both pages: ${W.book2} diamonds and a new cast every ${W.fullRefill/60000} minutes.`:`Catch all ${Object.keys(FISH).length} kinds on both pages: ${W.book2} diamonds, once.`)
    :waterBookDone(W,state)?(two?`Page ${page+1} complete: ${W.book} diamonds earned.`:`Book complete: ${W.book} diamonds earned.`):`Catch all ${kinds.length} kinds: ${W.book} diamonds, once.`;
   book.innerHTML=`<div class="pond-book-head"><div><h3 id="pond-book-title">Fish book</h3><p>${caught} of ${kinds.length} caught</p></div><button type="button" class="icon-button" data-book-close aria-label="Close">×</button></div>
    ${two?`<div class="market-tabs pond-book-pages" role="tablist" aria-label="Fish book">${[0,1].map(i=>`<button type="button" role="tab" aria-selected="${i===page}" data-book-page="${i}">Page ${i+1}</button>`).join('')}</div>`:''}
    <ul class="pond-book-list">${kinds.map(key=>{const f=FISH[key],have=best[key]>0,secret=!have&&(secrets[key]??lakeSecrets[key]);
     return `<li class="${have?'is-caught':'is-missing'}">${art(`fish-${key}`,'pond-book-art')}<div><strong>${secret?'?':f.name}</strong><small>${have?`Best: ${kg(best[key])} kg`:secret||'Not caught yet'}</small></div></li>`;}).join('')}</ul>
    <p class="pond-book-reward">${art('diamonds')}<span>${reward}</span></p>
-   <h4>How fishing works</h4><ul class="pond-rules">${rules}<li>Every fish pays coins (more for a heavier fish and at a higher level) and XP. The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.</li><li>A new cast every ${POND_REFILL_MS/60000} minutes, up to ${POND_MAX_CASTS}. Today’s fish pays double coins.</li></ul>`;
+   <h4>How fishing works</h4><ul class="pond-rules">${rules}<li>Every fish pays coins (more for a heavier fish and at a higher level) and XP. The first of each kind pays ${POND_NEW_FISH_COINS+1} times its coins and ${POND_NEW_FISH_XP} XP more.</li><li>A new cast every ${minutes()} minutes, up to ${POND_MAX_CASTS}. Today’s fish pays double coins.</li></ul>`;
   book.querySelector('[data-book-close]').onclick=closeBook;
   for(const tab of book.querySelectorAll('[data-book-page]'))tab.onclick=()=>openBook(Number(tab.dataset.bookPage));
   book.hidden=false;refreshArt();(turned&&book.querySelector(`[data-book-page="${page}"]`)||book.querySelector('[data-book-close]')).focus({preventScroll:true});
@@ -181,7 +190,7 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   const today=$('today');if(today.dataset.fish!==t){today.dataset.fish=t;today.innerHTML=`${art(`fish-${t}`)}<span>Today’s fish: ${FISH[t].name}. Pays double.</span>`;refreshArt();}
   const ready=waiting(),seen=ready?`${ready.art}:${ready.place??''}`:'';chip.hidden=!ready;
   if(ready&&chip.dataset.seen!==seen){chip.dataset.seen=seen;chip.dataset.place=ready.place??'';chip.innerHTML=`${art(ready.art)}<span>${lake?'Ready to collect!':'Ready to harvest!'}</span><span aria-hidden="true">›</span>`;refreshArt();}
-  if(phase==='idle'){const can=c.casts>0;act.disabled=!can;if(!can&&sayLine.textContent===say.cast)tell(say.empty);if(can&&sayLine.textContent===say.empty)tell(say.cast);}
+  if(phase==='idle'){const can=c.casts>0;act.disabled=!can;if(!can&&sayLine.textContent===say.cast)tell(emptyLine());if(can&&sayLine.textContent===emptyLine())tell(say.cast);}
  }
  function draw(){
   if(!reel)return;

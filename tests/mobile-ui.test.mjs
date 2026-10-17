@@ -108,7 +108,7 @@ test('one quest list: rewards to claim first, then quests in progress, completed
  const claim=new Element();claim.dataset.claim='0';elements['task-list'].clickTarget(claim);for(let i=0;i<20&&!state.claimed.includes(0);i++)await new Promise(r=>setImmediate(r));await new Promise(r=>setImmediate(r));assert(state.claimed.includes(0));
  assert.match(elements['task-list'].innerHTML,/data-quest-done aria-expanded="false">Show completed \(1\)/);assert.doesNotMatch(elements['task-list'].innerHTML,/Completed ✓/);
  const toggle=new Element();toggle.dataset.questDone='';elements['task-list'].clickTarget(toggle);assert.match(elements['task-list'].innerHTML,/Completed ✓/);assert.match(elements['task-list'].innerHTML,/Hide completed/);
- const groups=questGroups(state);assert.equal(groups.ready.length+groups.active.length+groups.done.length,QUESTS.length);
+ const groups=questGroups(state);assert.equal(groups.ready.length+groups.active.length+groups.done.length,QUESTS.filter(q=>(q.minLevel??1)<90).length,'every quest but the endgame\'s, below level 90');
 });
 test('pressed floating buttons retain their position instead of jumping away from the pointer',()=>{
  const css=readFileSync(new URL('../public/styles.css',import.meta.url),'utf8');

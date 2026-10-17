@@ -224,7 +224,8 @@ test('stats: the lake counts on its own (lake_fish, its coins, perfect catches, 
  let coins=0;for(let k=0;k<90;k++){const r=lake(s,now+k*LATER,k%7!==3,k%3===0);coins+=r.coins??0;}
  const ks=Array.from({length:90},(_,k)=>k),landed=ks.filter(k=>k%7!==3);
  assert.equal(s.stats.lake_fish,landed.length);assert.equal(s.stats.lake_fish_released,90-landed.length);assert.equal(s.stats.lake_fish_perfect,landed.filter(k=>k%3===0).length,'a perfect catch counts only when landed');assert.equal(s.stats.lake_fish_coins,coins);
- for(const k of ['fish','fish_coins','fish_perfect','fish_released'])assert.equal(k in s.stats,false,`${k}: the pond's counter is untouched`);
+ // The pond's quests (17 Oct 2026) keep a 0 for fish and fish_perfect on every farm; the lake moves none of the pond's counters.
+ for(const k of ['fish','fish_coins','fish_perfect','fish_released','fish_kinds','caught_whiskers'])assert.equal(s.stats[k]??0,0,`${k}: the pond's counter is untouched`);
  assert.equal('pond' in s,false);assert.deepEqual(s.inventory,inv,'no items, no Market goods');
  assert.equal(s.stats.earned,earned,'lake coins are not "coins earned"');assert.equal(s.stats.coins_spent??0,spent);
  assert.ok(s.diamonds-d<=G.LAKE_BOOK_DIAMONDS+G.LAKE_BOOK2_DIAMONDS,'diamonds only for the book');
@@ -301,9 +302,15 @@ test('the farm pond is unchanged: every pond fish, its coins, Today\'s fish and 
  for(const level of [4,19,20,45,110]){
   const s=at(level,O);s.rookieUntil=level*31+7;if(level===110)s.pond=water(115,{minnow:.1,perch:.3},{page2At:60});O.normalizeFarm(s,now);const o=structuredClone(s);
   for(let k=0;k<160;k++){const tt=now+k*LATER+(k%3)*GAP,action={type:'fish',n:s.pond?.n??0,landed:k%7!==3,perfect:k%3===0};
-   const a=G.applyFarmAction(s,action,tt),b=O.applyFarmAction(o,action,tt);assert.deepEqual(a,b,`level ${level}, fish ${k}`);}
-  assert.deepEqual(s.pond,o.pond);assert.deepEqual([s.coins,s.xp,s.diamonds,s.stats],[o.coins,o.xp,o.diamonds,o.stats],`level ${level}`);
-  for(const tt of [now,now+LATER*200])assert.deepEqual(G.pondCasts(s,tt),O.pondCasts(o,tt));
+   // Once the whole book is caught (17 Oct 2026) a new cast comes every 15 minutes instead of 20: only when the next one comes moves.
+   const full=G.pondBook2Done(s),a=G.applyFarmAction(s,action,tt),b=O.applyFarmAction(o,action,tt);
+   if(!G.pondBook2Done(s))assert.deepEqual(a,b,`level ${level}, fish ${k}`);
+   else{assert.deepEqual({...a,casts:null},{...b,casts:null},`level ${level}, fish ${k}`);if(full)assert.equal(G.waterRefill(G.POND_WATER,s),G.POND_BOOK_REFILL_MS);}}
+  // The quests' collection counts (17 Oct 2026) are the only stats more: they follow the book.
+  const counts=['fish_kinds','caught_whiskers','lake_fish_kinds','caught_oldgranite','heirlooms_found','lab_crosses'],rest=x=>Object.fromEntries(Object.entries(x).filter(([k])=>!counts.includes(k)));
+  assert.deepEqual(s.pond,o.pond);assert.deepEqual([s.coins,s.xp,s.diamonds,rest(s.stats)],[o.coins,o.xp,o.diamonds,rest(o.stats)],`level ${level}`);
+  assert.equal(s.stats.fish_kinds,Object.keys(s.pond?.best??{}).length);assert.equal(s.stats.caught_whiskers,s.pond?.best?.whiskers>0?1:0);
+  if(!G.pondBook2Done(s))for(const tt of [now,now+LATER*200])assert.deepEqual(G.pondCasts(s,tt),O.pondCasts(o,tt));
  }
  // Refusals word for word, and a garbled pond cleaned the same way.
  const r=at(10),q=structuredClone(r);for(const action of [{type:'fish',n:3,landed:true,perfect:false},{type:'fish',n:0,landed:1,perfect:false}]){

@@ -1,11 +1,14 @@
-import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,worldTwoOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS} from './farm-state.js';
+import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,worldTwoOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS,villageQuestOpen} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 
 export function questGroups(state){
  const groups={ready:[],active:[],done:[]};
+ // An older (legacy) farm sees every quest, but a quest of the endgame (level 90 and up) only from its own level (17 Oct 2026, with the
+ // Seed Lab's quests): nothing of the endgame shows below 90, as its places and pins, and nothing of level 100 at 99.
  QUESTS.forEach((quest,id)=>{
   if(guidedFarm(state)&&!state.claimed.includes(id)&&!availableDaily(state,quest))return;
+  if(!guidedFarm(state)&&!state.claimed.includes(id)&&(quest.minLevel??1)>=90&&levelOf(state)<quest.minLevel)return;
   const value=Math.min(quest.target,Number(state.stats[quest.stat])||0);
   const group=state.claimed.includes(id)?'done':value>=quest.target?'ready':'active';
   groups[group].push({id,quest,value});
@@ -17,9 +20,9 @@ export function questGroups(state){
 
 // World II's quests (30 Sep 2026): those open at the farmer's level, and every one already claimed.
 export function villageQuestGroups(state){
- const groups={ready:[],active:[],done:[]},claimed=state.villageQuests??[],level=levelOf(state);
+ const groups={ready:[],active:[],done:[]},claimed=state.villageQuests??[];
  VILLAGE_QUESTS.forEach((quest,id)=>{
-  if(!claimed.includes(id)&&level<quest.minLevel)return;
+  if(!claimed.includes(id)&&!villageQuestOpen(state,quest))return;
   const value=Math.min(quest.target,Number(state.stats[quest.stat])||0);
   groups[claimed.includes(id)?'done':value>=quest.target?'ready':'active'].push({id,quest,value});
  });
@@ -45,7 +48,7 @@ export function dailyWait(state,task,now=farmNow()){
 
 // One picture per quest, from what it counts: the crop or good itself, the building, or the farm job. The village's later quests (Oct 2026):
 // the market crate, builder's crates, the town boat and the landmarks.
-const QUEST_ART={village_batches:'mine',village_sold:'villagemarket',village_requests:'villagemarket',village_earned:'coins',beyond_upgrades:'mastertools',market_crates:'villagemarket',builder_crates_used:'builderscrate',boat_trips:'pier',village_landmarks:'landmark-greathall',coins_spent:'coins',diamonds_spent:'diamonds',harvested:'harvest',planted:'seeds',varieties:'seeds',watered:'water',tended:'care',fertilized:'fertilizer',earned:'coins',passive_earned:'stall',sold:'market',produced:'buildings',parallel_batches:'buildings',bread:'bread',upgrades:'hammer',windmill_upgrades:'windmill',windmill_batches:'windmill',silo_upgrades:'silo',expansions:'estate',projects:'estate',deliveries:'cart',crafted_deliveries:'cart',honey_deliveries:'honey',tractor:'tractor',dailies:'gift',glasshouse_batches:'glasshouse',valley_baskets:'valley-market',ranch_focus:'ranch',improvements:'estate-workshop',depot_shipments:'trade-depot',depot_loaded:'trade-depot',depot_coins:'trade-depot',valley_coins:'valley-market',fair_entries:'grand-fair',fair_stars:'grand-fair',fair_champion:'grand-fair',chores:'chores',mastery_medals:'trophy',diamonds_earned:'diamonds',boosts_used:'boost',activities:'helping-hand',activity_rounds:'helping-hand'};
+const QUEST_ART={fish:'fishingpond',fish_kinds:'fish-carp',fish_perfect:'fish-pike',caught_whiskers:'fish-whiskers',lake_fish:'villagelake',lake_fish_kinds:'fish-browntrout',caught_oldgranite:'fish-oldgranite',heirlooms_found:'seedlab',lab_crosses:'goldenwheat',village_batches:'mine',village_sold:'villagemarket',village_requests:'villagemarket',village_earned:'coins',beyond_upgrades:'mastertools',market_crates:'villagemarket',builder_crates_used:'builderscrate',boat_trips:'pier',village_landmarks:'landmark-greathall',coins_spent:'coins',diamonds_spent:'diamonds',harvested:'harvest',planted:'seeds',varieties:'seeds',watered:'water',tended:'care',fertilized:'fertilizer',earned:'coins',passive_earned:'stall',sold:'market',produced:'buildings',parallel_batches:'buildings',bread:'bread',upgrades:'hammer',windmill_upgrades:'windmill',windmill_batches:'windmill',silo_upgrades:'silo',expansions:'estate',projects:'estate',deliveries:'cart',crafted_deliveries:'cart',honey_deliveries:'honey',tractor:'tractor',dailies:'gift',glasshouse_batches:'glasshouse',valley_baskets:'valley-market',ranch_focus:'ranch',improvements:'estate-workshop',depot_shipments:'trade-depot',depot_loaded:'trade-depot',depot_coins:'trade-depot',valley_coins:'valley-market',fair_entries:'grand-fair',fair_stars:'grand-fair',fair_champion:'grand-fair',chores:'chores',mastery_medals:'trophy',diamonds_earned:'diamonds',boosts_used:'boost',activities:'helping-hand',activity_rounds:'helping-hand'};
 export function questArt(stat){
  const [, kind, key]=stat.match(/^(made|harvest|built|activity|chore|sold)_(.+)$/)??[];
  const pick=QUEST_ART[stat]??(kind==='activity'?`activity-${key}`:kind==='chore'?`chore-${key}`:key);

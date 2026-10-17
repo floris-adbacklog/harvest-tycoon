@@ -179,11 +179,11 @@ test('old farms load unchanged; junk landmarks are cleaned up; normalizing twice
 });
 
 test('landmark quests: 1, 3 and 5 landmarks at levels 165, 185 and 200, claimed one by one',()=>{
- assert.deepEqual(VILLAGE_QUESTS.slice(55).map(q=>[q.title,q.description,q.stat,q.target,q.reward,q.minLevel]),[
+ assert.deepEqual(VILLAGE_QUESTS.slice(55,58).map(q=>[q.title,q.description,q.stat,q.target,q.reward,q.minLevel]),[
   ['A landmark for the village','Finish a landmark in the village.','village_landmarks',1,300000,165],
   ['Three landmarks','Finish 3 landmarks in the village.','village_landmarks',3,400000,185],
   ['The Great Hall','Finish the Great Hall.','village_landmarks',5,500000,200]]);
- assert.deepEqual(VILLAGE_QUESTS.slice(55).map(questXp),[250,250,250]);
+ assert.deepEqual(VILLAGE_QUESTS.slice(55,58).map(questXp),[250,250,250]);
  const s=quiet(fixture(170,ALL,{rooftile:600,plank:300,ironbar:60}));
  assert.throws(()=>act(s,{type:'village_quest',id:55}),/Finish this quest/);
  act(s,{type:'landmark_give',landmark:'windpump'});act(s,{type:'landmark_finish',landmark:'windpump'});

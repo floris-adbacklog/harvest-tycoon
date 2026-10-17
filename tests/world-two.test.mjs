@@ -155,7 +155,7 @@ test('the village keeps its own count and its own quests: batches, sales and que
  for(const q of VILLAGE_QUESTS){
   assert.ok(q.minLevel>=WORLD_TWO_LEVEL,q.title);
   const [,kind,key]=q.stat.match(/^(made|built)_(.+)$/)??[];
-  assert.ok(kind==='made'?w2(key):kind==='built'?worldTwoBuilding(key):['village_batches','village_sold','village_earned','village_requests','beyond_upgrades','market_crates','builder_crates_used','boat_trips','village_landmarks'].includes(q.stat),q.stat);
+  assert.ok(kind==='made'?w2(key):kind==='built'?worldTwoBuilding(key):['village_batches','village_sold','village_earned','village_requests','beyond_upgrades','market_crates','builder_crates_used','boat_trips','village_landmarks','lake_fish','lake_fish_kinds','caught_oldgranite'].includes(q.stat),q.stat);
   if(kind==='made'){const opens=Math.min(...Object.values(RECIPES).filter(r=>r.output[key]&&r.building!=='factory').map(r=>r.minLevel??0));assert.ok(q.minLevel>=opens,`${q.title} opens with its recipe`);}
  }
  assert.ok(!QUESTS.some(q=>/^village_|beyond_upgrades/.test(q.stat)),'the farm\'s quests stay the farm\'s');
@@ -184,7 +184,7 @@ function legacyFarm(level){
  return normalizeFarm(s,now);
 }
 // What every farm's market square starts with (Oct 2026): no boards, an empty market week, no boat and no landmark.
-const VILLAGE_DEFAULT={serial:0,boards:[],week:{week:null,helped:0,paid:false},boat:{serial:0,cargo:null,readyAt:0,trips:0,week:null,paid:0},landmarks:{done:[],given:{}}};
+const VILLAGE_DEFAULT={serial:0,boards:[],week:{week:null,helped:0,paid:false},boat:{serial:0,cargo:null,readyAt:0,trips:0,week:null,paid:0},landmarks:{done:[],given:{}},miller:{week:null}};   // the miller's order: 17 Oct 2026
 test('level 99 sees nothing new, guided and legacy: no recipe, Market good, highlight, quest, board or village action of World II',()=>{
  const stats=new Set(['village_requests','village_sold','village_earned','market_crates','builder_crates_used','boat_loaded','boat_trips','boat_coins','village_landmarks']);
  const production=Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].type==='production'&&!worldTwoBuilding(k));
@@ -396,7 +396,7 @@ test('old farms load unchanged: an empty market square, nothing else moves; norm
   landmarks:{done:['longhouse','windpump'],given:{rooftile:9999,plank:5,linen:3}}});
  const low=farm(99);low.village=junk();normalizeFarm(low,now);
  assert.deepEqual(low.village,{serial:0,boards:[{request:null,readyAt:0},{request:null,readyAt:0}],week:{week:2961,helped:0,paid:false},
-  boat:{serial:0,cargo:null,readyAt:5,trips:0,week:null,paid:0},landmarks:{done:['windpump','longhouse'],given:{plank:5}}},'below 100 nothing fills; junk is cleaned up');
+  boat:{serial:0,cargo:null,readyAt:5,trips:0,week:null,paid:0},landmarks:{done:['windpump','longhouse'],given:{plank:5}},miller:{week:null}},'below 100 nothing fills; junk is cleaned up');
  for(const bad of ['x',[1,2],null,{boards:'x'},{serial:1.5,boards:[{request:{id:1,villager:99,input:{stone:1},value:45,coins:68,xp:1}}]}]){
   const s=farm(99);s.village=bad;normalizeFarm(s,now);assert.ok(s.village.boards.every(b=>b.request===null),JSON.stringify(bad));
  }
@@ -608,8 +608,8 @@ test('the Market week is announced from level 100 and opens at 116',()=>{
 });
 
 test('the village quests of levels 110-200 come after the market square\'s, open with their goods and pay as listed',()=>{
- const added=VILLAGE_QUESTS.slice(31);
- assert.equal(VILLAGE_QUESTS.length,58);
+ const added=VILLAGE_QUESTS.slice(31,58);
+ assert.equal(VILLAGE_QUESTS.length,70);
  assert.deepEqual(added.map(q=>[q.stat,q.target,q.reward,q.minLevel]),[
   ['built_villagefields',1,60000,110],['made_potatoes',200,40000,110],['built_canteen',1,80000,113],['market_crates',1,50000,116],
   ['built_kiln',1,100000,118],['made_rooftile',300,80000,118],['made_flax',200,60000,123],['built_linenloft',1,120000,125],['made_linen',100,100000,125],['made_builderscrate',10,120000,128],['builder_crates_used',25,150000,128],

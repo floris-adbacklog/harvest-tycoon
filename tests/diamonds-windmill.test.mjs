@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction,levelOf,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS,marketQuote} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction,levelOf,DAILY_DIAMONDS,DAY_MS,BOOSTS,upgradeCost,RECIPES,BUILDINGS,MAX_BUILDING_LEVEL,utcDay,dailyOrders,QUESTS,ITEMS,marketQuote,FISH,HEIRLOOMS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now)=>applyFarmAction(state,action.type==='buy_boost'?{expectedCost:BOOSTS[action.boost]?.cost,...action}:action,time);
 
@@ -77,11 +77,19 @@ test('the full Windmill-to-Bakery chain produces fresh goods with a higher margi
  assert.equal(act(state,{type:'sell',item:'bread'},time).coins,marketQuote('bread',time).price*2);assert.equal(act(state,{type:'sell',item:'pie'},time).coins,marketQuote('pie',time).price);
  for(const id of ['bread','pie']){const r=RECIPES[id];assert(Object.entries(r.output).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0)>Object.entries(r.input).reduce((n,[k,v])=>n+ITEMS[k].sell*v,0));}
 });
+// A quest's goal reached: its counter, or for the collections (17 Oct 2026) what they are counted from (the fish book, the Seed Lab).
+function fill(state,q){
+ const book=()=>state.pond??={n:0,casts:5,castsAt:0,firstAt:0,lastAt:0,prevAt:0,best:{}};
+ if(q.stat==='fish_kinds')for(const key of Object.keys(FISH).slice(0,q.target))book().best[key]=1;
+ else if(q.stat==='caught_whiskers')book().best.whiskers=10;
+ else if(q.stat==='heirlooms_found')state.lab={beds:[null,null],found:Object.keys(HEIRLOOMS).slice(0,q.target)};
+ else state.stats[q.stat]=q.target;
+}
 test('new beta quests retain old IDs and each reward can be collected only once',()=>{
  const state=createFarm(now);state.claimed=[0,1,31];const old=state.claimed.slice();
- assert.equal(QUESTS.length,300);assert.equal(QUESTS[31].title,'A lifelong grower');
+ assert.equal(QUESTS.length,320);assert.equal(QUESTS[31].title,'A lifelong grower');
  for(let id=32;id<QUESTS.length;id++){
-  const q=QUESTS[id];state.stats[q.stat]=q.target;const coins=state.coins;
+  const q=QUESTS[id];fill(state,q);const coins=state.coins;
   const result=act(state,{type:'quest',id});assert.equal(state.coins,coins+q.reward+(result.levelReward?.coins??0));assert.throws(()=>act(state,{type:'quest',id}),/already been claimed/);
  }
  assert(old.every(id=>state.claimed.includes(id)));assert.equal(state.claimed.length,old.length+QUESTS.length-32);

@@ -51,6 +51,8 @@ const FARM_ACTIONS={
  // The Help that opens the market crate (from level 116) says so; the changes show its diamonds.
  village_deliver:['market',(a,s,r)=>r?.crate?'Helped a villager at the market square and opened the market crate':'Helped a villager at the market square'],
  village_skip:['market',()=>'Said “Not now” to a villager'],
+ // The miller's order (17 Oct 2026): the week's heirloom bakes delivered (the changes show its coins and diamonds).
+ miller_deliver:['market',()=>'Delivered the miller’s order at the market square'],
  village_build:['farm',a=>`Built the ${building(a.place)} from a golden brief`],
  // The town boat at the Pier (Oct 2026): a part load, a full boat sailing off, a cargo turned down.
  boat_load:['market',(a,s,r)=>r?.sailed?'Sent the town boat off':'Loaded the town boat'],

@@ -52,7 +52,8 @@ Object.assign(pictures,{master:'endgame-master-star',seedlab:'endgame-seed-lab',
 // (512 px, scripts/render-village-pictures.py), all WebP.
 const VILLAGE_ART=['mine','lumbercamp','smithy','villagemill','villagemarket','farmroad','packedlunch','stone','ironore','timber','plank','ironbar','pickaxe',
  'silverore','silverbar','mastertools','heirloomflour','gemstone','goldenloaf','heirloompie','village-badge','village-bridge',
- 'potatoes','clay','rooftile','flax','linen','builderscrate','lavender','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffron','saffronbun','villagefields','canteen','kiln','linenloft','soapmaker','pier','jeweller','landmark-windpump','landmark-longhouse','landmark-stonequay','landmark-lookout','landmark-greathall'];
+ 'potatoes','clay','rooftile','flax','linen','builderscrate','lavender','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffron','saffronbun','villagefields','canteen','kiln','linenloft','soapmaker','pier','jeweller','landmark-windpump','landmark-longhouse','landmark-stonequay','landmark-lookout','landmark-greathall',
+ 'villager-miller'];   // the miller of the market square's weekly order (17 Oct 2026, painted by the owner, 256 px)
 for(const key of VILLAGE_ART)pictures[key]=key;
 // The hand tools of a sweep (Oct 2026, painted by the owner, WebP): the sickle, the watering can, the seed bag and the gardening gloves
 // for care, as the cursor over a field and in the hand during a sweep (public/sweep-tools.js).

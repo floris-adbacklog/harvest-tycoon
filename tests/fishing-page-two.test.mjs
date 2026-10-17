@@ -227,8 +227,9 @@ test('level 20\'s card names it; below 20 nothing of page two is listed, a farm 
  const change=progressionChange(snap,s,null),entry=change.entries.find(e=>e.id==='pond:page2');
  assert.ok(change.leveled&&entry,'on the level-up card');assert.deepEqual([entry.name,entry.art,entry.kind,entry.level,entry.unlocked],['8 new fish in the Fishing pond','fish-koi','Activity',TWO,true]);
  const later=at(35);assert.ok(G.unlockEntries(later).find(e=>e.id==='pond:page2').unlocked);
- // The same words as the book (the review: "all 16 kinds pay 50 diamonds" read as 50 for each kind).
- assert.match(read('public/progression-ui.js'),/if\(e\.id==='pond:page2'\)return `Catch all \$\{Object\.keys\(FISH\)\.length\} kinds: \$\{POND_BOOK2_DIAMONDS\} diamonds, once\.`;/);
+ // The same words as the book (the review: "all 16 kinds pay 50 diamonds" read as 50 for each kind); since 17 Oct 2026 the whole book also
+ // gives a cast every 15 minutes, and the card says so.
+ assert.match(read('public/progression-ui.js'),/if\(e\.id==='pond:page2'\)return `Catch all \$\{Object\.keys\(FISH\)\.length\} kinds: \$\{POND_BOOK2_DIAMONDS\} diamonds and a new cast every \$\{POND_BOOK_REFILL_MS\/60000\} minutes\.`;/);
  // Closed (POND_OPEN false): nothing of it.
  const C=await import(asModule(SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=false,')));
  const c=C.createFarm(now);c.xp=C.xpForLevel(40);C.normalizeFarm(c,now);assert.ok(!C.unlockEntries(c).some(e=>e.id==='pond:page2'));assert.equal(C.pondPageTwoOpen(c),false);
@@ -292,7 +293,9 @@ test('the wiki below level 20 is the pond section of 01ff2cd, word for word; pag
  const old=show('01ff2cd','public/wiki-content.js');if(!old||!OLD_URL){t.skip('no git history here');return;}
  const here=file=>new URL(`../public/${file}`,import.meta.url).href;
  const O=await import(asModule(old.replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`)));
- for(const level of [1,4,10,19])assert.equal(pond(wikiArticle('helpers',{level}).html),pond(O.wikiArticle('helpers',{level}).html),`level ${level}`);
+ // One sentence more since 17 Oct 2026: the pond has its own quests.
+ const quests=html=>html.replace('<li>Fishing counts for no events, challenges or Family Chest.</li>','<li>The pond has its own quests, from your first fish to a thousand. Fishing counts for no events, challenges or Family Chest.</li>');
+ for(const level of [1,4,10,19])assert.equal(pond(wikiArticle('helpers',{level}).html),quests(pond(O.wikiArticle('helpers',{level}).html)),`level ${level}`);
  assert.notEqual(pond(wikiArticle('helpers',{level:30}).html),pond(O.wikiArticle('helpers',{level:30}).html),'from 20 the section is page two\'s');
 });
 

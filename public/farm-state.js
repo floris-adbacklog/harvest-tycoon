@@ -763,7 +763,31 @@ export const QUESTS = Object.freeze([
  {title:'Decorated farmer',description:'Earn 27 crop medals.',stat:'mastery_medals',target:27,reward:12000,minLevel:7},
  {title:'Every seed in the shop',description:'Harvest every one of the 16 crops at least once.',stat:'varieties',target:16,reward:40000,minLevel:66},
  {title:'Boost lover',description:'Use 25 boosts.',stat:'boosts_used',target:25,reward:5200,minLevel:14},
- {title:'Stall keeper',description:'Earn 100,000 coins at your farm stall.',stat:'passive_earned',target:100000,reward:15000,minLevel:19}
+ {title:'Stall keeper',description:'Earn 100,000 coins at your farm stall.',stat:'passive_earned',target:100000,reward:15000,minLevel:19},
+ // 17 Oct 2026 (the owner's picks 1a and the round 320): the fishing pond and the Seed Lab count for quests at last. A farmer baked heirloom
+ // bread that no quest asked for. The pond's from level 4 (its kinds and its legend: stats.fish_kinds and caught_whiskers, from the fish
+ // book itself), the Seed Lab's from level 92 (heirlooms_found from lab.found, lab_crosses as counted since 27 Sep), so a farm that has
+ // them already can claim them at once. The Seed Lab's stay hidden below level 90 on every farm (questGroups), as the endgame does.
+ {title:'A first bite',description:'Catch a fish at your fishing pond.',stat:'fish',target:1,reward:100,minLevel:4},
+ {title:'A few kinds',description:'Catch 4 kinds of fish for your fish book.',stat:'fish_kinds',target:4,reward:250,minLevel:4},
+ {title:'A bucket of fish',description:'Catch 25 fish at your fishing pond.',stat:'fish',target:25,reward:500,minLevel:5},
+ {title:'Steady hands',description:'Land 10 perfect catches.',stat:'fish_perfect',target:10,reward:800,minLevel:6},
+ {title:'Eight in the book',description:'Catch 8 kinds of fish for your fish book.',stat:'fish_kinds',target:8,reward:1500,minLevel:8},
+ {title:'The pond’s legend',description:'Land Old Whiskers, the legend of your pond.',stat:'caught_whiskers',target:1,reward:2000,minLevel:10},
+ {title:'A hundred fish',description:'Catch 100 fish at your fishing pond.',stat:'fish',target:100,reward:3000,minLevel:12},
+ {title:'Into page two',description:'Catch 12 kinds of fish for your fish book.',stat:'fish_kinds',target:12,reward:5000,minLevel:20},
+ {title:'An angler’s summer',description:'Catch 250 fish at your fishing pond.',stat:'fish',target:250,reward:8000,minLevel:25},
+ {title:'The whole fish book',description:'Catch all 16 kinds of fish for your fish book.',stat:'fish_kinds',target:16,reward:15000,minLevel:25},
+ {title:'Perfect angler',description:'Land 100 perfect catches.',stat:'fish_perfect',target:100,reward:12000,minLevel:30},
+ {title:'A thousand fish',description:'Catch 1,000 fish at your fishing pond.',stat:'fish',target:1000,reward:40000,minLevel:50},
+ {title:'A new variety',description:'Discover an heirloom in the Seed Lab.',stat:'heirlooms_found',target:1,reward:30000,minLevel:92},
+ {title:'Five new varieties',description:'Discover 5 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:5,reward:60000,minLevel:92},
+ {title:'Busy test beds',description:'Collect 10 crosses from the Seed Lab.',stat:'lab_crosses',target:10,reward:50000,minLevel:92},
+ {title:'Ten varieties',description:'Discover 10 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:10,reward:100000,minLevel:94},
+ {title:'Fifteen varieties',description:'Discover 15 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:15,reward:150000,minLevel:96},
+ {title:'Every heirloom',description:'Discover all 20 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:20,reward:250000,minLevel:98},
+ {title:'A lab regular',description:'Collect 50 crosses from the Seed Lab.',stat:'lab_crosses',target:50,reward:150000,minLevel:95},
+ {title:'Master breeder',description:'Collect 150 crosses from the Seed Lab.',stat:'lab_crosses',target:150,reward:300000,minLevel:100}
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
@@ -973,6 +997,8 @@ export function unlockEntries(state){return [
  ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall'&&worldTwoEntry(state,guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)).map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:worldTwoBuilding(key)?'Village place':buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
  // The market week (Oct 2026): an activity of the village's market square, so only from level 100, like every World II entry.
  ...(worldTwoOpen(state)?[{id:'village:week',name:'Market week',art:'villagemarket',kind:'Activity',level:VILLAGE_WEEK_LEVEL,unlocked:levelOf(state)>=VILLAGE_WEEK_LEVEL,hint:`Reach level ${VILLAGE_WEEK_LEVEL}.`}]:[]),
+ // The miller's order (17 Oct 2026): from level 100 like every World II entry, so level 115's card names it and Coming up shows it before.
+ ...(worldTwoOpen(state)?[{id:'village:miller',name:'The miller’s order',art:'villager-miller',kind:'Activity',level:MILLER_LEVEL,unlocked:levelOf(state)>=MILLER_LEVEL,hint:`Reach level ${MILLER_LEVEL}.`}]:[]),
  // The village's landmarks (Oct 2026), from level 100 like every World II unlock: built from the golden brief after the last place.
  ...Object.entries(VILLAGE_LANDMARKS).filter(([,l])=>worldTwoEntry(state,l.level)).map(([key,l])=>({id:'landmark:'+key,name:l.name,art:l.art,kind:'Landmark',level:l.level,unlocked:levelOf(state)>=l.level,hint:`Reach level ${l.level}.`})),
  ...Object.entries(FEATURE_NAMES).map(([key,name])=>({id:'feature:'+key,name,art:FEATURE_ART[key]??key,kind:'Activity',level:FEATURE_LEVELS[key],unlocked:featureUnlocked(state,key),hint:featureUnlockHint(key)})),
@@ -1561,12 +1587,30 @@ export const VILLAGE_QUESTS=Object.freeze([
  // Levels 165-200: the village's landmarks, counted (they are finished in their order, so 5 is the Great Hall).
  {title:'A landmark for the village',description:'Finish a landmark in the village.',stat:'village_landmarks',target:1,reward:300000,minLevel:165},
  {title:'Three landmarks',description:'Finish 3 landmarks in the village.',stat:'village_landmarks',target:3,reward:400000,minLevel:185},
- {title:'The Great Hall',description:'Finish the Great Hall.',stat:'village_landmarks',target:5,reward:500000,minLevel:200}
+ {title:'The Great Hall',description:'Finish the Great Hall.',stat:'village_landmarks',target:5,reward:500000,minLevel:200},
+ // 17 Oct 2026 (the owner's picks 2a and the round 70): first steps for the heirloom bakes (the three above ask 60, 20 and 15, about ten
+ // Seed Lab crosses away) and bigger ones after, and the village lake (its kinds and its legend from the lake's fish book, as the pond's).
+ {title:'The first heirloom flour',description:'Grind 3 heirloom flour at the Village Windmill.',stat:'made_heirloomflour',target:3,reward:20000,minLevel:112},
+ {title:'A golden loaf',description:'Bake a golden loaf at the Bakery.',stat:'made_goldenloaf',target:1,reward:20000,minLevel:112},
+ {title:'An heirloom pie',description:'Bake an heirloom pie in the Farm Kitchen.',stat:'made_heirloompie',target:1,reward:30000,minLevel:115},
+ {title:'Flour by the sack',description:'Grind 200 heirloom flour.',stat:'made_heirloomflour',target:200,reward:200000,minLevel:125},
+ {title:'A basket of golden loaves',description:'Bake 60 golden loaves.',stat:'made_goldenloaf',target:60,reward:200000,minLevel:130},
+ {title:'Pies for the whole village',description:'Bake 50 heirloom pies.',stat:'made_heirloompie',target:50,reward:300000,minLevel:140},
+ {title:'Out on the lake',description:'Catch a fish at the village lake.',stat:'lake_fish',target:1,reward:10000,minLevel:100},
+ {title:'Fifty from the boat',description:'Catch 50 fish at the village lake.',stat:'lake_fish',target:50,reward:30000,minLevel:100},
+ {title:'The lake’s first page',description:'Catch 10 kinds of fish for the lake’s fish book.',stat:'lake_fish_kinds',target:10,reward:60000,minLevel:102},
+ {title:'The lake’s legend',description:'Land Old Granite, the legend of the village lake.',stat:'caught_oldgranite',target:1,reward:100000,minLevel:105},
+ {title:'The whole lake book',description:'Catch all 20 kinds of fish for the lake’s fish book.',stat:'lake_fish_kinds',target:20,reward:200000,minLevel:120},
+ {title:'Five hundred lake fish',description:'Catch 500 fish at the village lake.',stat:'lake_fish',target:500,reward:250000,minLevel:130}
 ].map(q=>Object.freeze(q)));
+// A village quest is open from its level; the lake's quests also wait for the lake (LAKE_OPEN).
+const LAKE_QUEST_STATS=Object.freeze(['lake_fish','lake_fish_kinds','caught_oldgranite']);
+export const villageQuestOpen=(state,q)=>levelOf(state)>=q.minLevel&&(!LAKE_QUEST_STATS.includes(q.stat)||lakeOpen(state));
 export function claimVillageQuest(state,id){
  if(!Number.isInteger(id)||!VILLAGE_QUESTS[id])throw new Error('Choose a valid quest.');
  const q=VILLAGE_QUESTS[id];
  if(levelOf(state)<q.minLevel)throw new Error(`Reach level ${q.minLevel} for this quest.`);
+ if(!villageQuestOpen(state,q))throw new Error('The village lake is not open yet.');
  state.villageQuests??=[];
  if(state.villageQuests.includes(id))throw new Error('This reward has already been claimed.');
  if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
@@ -1756,7 +1800,7 @@ export function availableDaily(state,q){
   if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
   if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
   if(stat==='varieties'&&q.target>Object.keys(CROPS).filter(k=>cropUnlocked(state,k)).length)return false;
-  const gate=stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
+  const gate=stat==='fish'||stat.startsWith('fish_')||stat==='caught_whiskers'?'fishing':stat==='heirlooms_found'||stat==='lab_crosses'?'seedlab':stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
   if(gate&&!featureUnlocked(state,gate))return false;
   // Fertilizer is used from the Windmill's window only: from level 3 the paddock's helping hand gives some (11 Oct 2026), and "use
   // fertilizer" quests and challenges wait for the Windmill (level 6), as they did when the hand opened at 8.
@@ -2105,14 +2149,19 @@ export function masterSpend(state,branch){
 // The Seed Lab (in the Glasshouse): two test beds. Choose an heirloom that is open at your level and give the parent crops; the
 // first cross of a variety takes a day and discovers it (+8 diamonds, +100 more when all 20 are found; 15 and 200 until 7 Oct 2026), every cross after that
 // 8 hours. A bed gives 4 heirlooms.
-export const LAB_BEDS=2,LAB_DISCOVER_MS=24*3600000,LAB_GROW_MS=8*3600000,LAB_DISCOVER_DIAMONDS=8,LAB_COMPLETE_DIAMONDS=100;
+// The whole collection (17 Oct 2026, the owner's pick 3a): all 20 found adds a third test bed for good (LAB_FULL_BEDS), so the collection
+// leads somewhere: more heirlooms for the heirloom bakes. The bed comes with the last discovery, and normalizeFarm gives it to a farm that
+// found all 20 before.
+export const LAB_BEDS=2,LAB_FULL_BEDS=3,LAB_DISCOVER_MS=24*3600000,LAB_GROW_MS=8*3600000,LAB_DISCOVER_DIAMONDS=8,LAB_COMPLETE_DIAMONDS=100;
 export const heirloomFound=(state,key)=>Array.isArray(state.lab?.found)&&state.lab.found.includes(key);
+export const labComplete=state=>Array.isArray(state.lab?.found)&&state.lab.found.length>=Object.keys(HEIRLOOMS).length;
+export const labBeds=state=>labComplete(state)?LAB_FULL_BEDS:LAB_BEDS;
 export const heirloomOpen=(state,key)=>featureUnlocked(state,'seedlab')&&levelOf(state)>=HEIRLOOMS[key].level;
 // Whether a free test bed can be used now: some heirloom open at your level whose parent crops you have (1 Oct 2026: a free bed
 // alone lit the Seed Lab up as ready, even with nothing to cross).
 export const labCanCross=state=>Object.entries(HEIRLOOMS).some(([key,h])=>heirloomOpen(state,key)&&Object.entries(h.input).every(([k,n])=>(state.inventory[k]??0)>=n));
 export function labCross(state,bed,heirloom,now=Date.now()){
- if(!Number.isInteger(bed)||bed<0||bed>=LAB_BEDS)throw new Error('Choose a test bed.');
+ if(!Number.isInteger(bed)||bed<0||bed>=labBeds(state))throw new Error('Choose a test bed.');
  if(typeof heirloom!=='string'||!Object.hasOwn(HEIRLOOMS,heirloom))throw new Error('Choose an heirloom variety.');
  const h=HEIRLOOMS[heirloom];
  if(!heirloomOpen(state,heirloom))throw new Error(`Reach level ${h.level} to cross ${h.name.toLowerCase()}.`);
@@ -2134,7 +2183,9 @@ export function labCollect(state,bed,now=Date.now()){
  let diamonds=0,complete=false;
  if(discovered){state.lab.found.push(b.heirloom);diamonds+=LAB_DISCOVER_DIAMONDS;complete=state.lab.found.length===Object.keys(HEIRLOOMS).length;if(complete)diamonds+=LAB_COMPLETE_DIAMONDS;}
  if(diamonds){state.diamonds+=diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;}
- return {heirloom:b.heirloom,name:h.name,count:LAB_YIELD,xp,discovered,diamonds,complete,found:state.lab.found.length};
+ while(state.lab.beds.length<labBeds(state))state.lab.beds.push(null);   // the whole collection's third bed
+ countCollections(state);
+ return {heirloom:b.heirloom,name:h.name,count:LAB_YIELD,xp,discovered,diamonds,complete,found:state.lab.found.length,...(complete?{beds:state.lab.beds.length}:{})};
 }
 
 // Visitors: someone comes up the road with a rush order: two kinds of goods and, once you have found any, an heirloom. Deliver
@@ -2392,7 +2443,9 @@ function normalizeVillage(state){
  // never more than it asks.
  const lm=obj(v.landmarks),saved=Array.isArray(lm.done)?lm.done:[],ids=Object.keys(VILLAGE_LANDMARKS);let n=0;while(n<ids.length&&saved.includes(ids[n]))n++;
  const next=ids[n],g=obj(lm.given),given=next?Object.fromEntries(Object.entries(VILLAGE_LANDMARKS[next].materials).map(([k,need])=>[k,Math.min(need,count(g[k]))]).filter(([,x])=>x>0)):{};
- state.village={serial:Math.max(count(v.serial),...boards.map(b=>b.request?.id??0)),boards:[],week,boat:normalizeBoat(v.boat),landmarks:{done:ids.slice(0,n),given}};   // a new request never repeats an id
+ // The miller's order (17 Oct 2026): the week it was last delivered.
+ const miller={week:Number.isSafeInteger(obj(v.miller).week)?v.miller.week:null};
+ state.village={serial:Math.max(count(v.serial),...boards.map(b=>b.request?.id??0)),boards:[],week,boat:normalizeBoat(v.boat),landmarks:{done:ids.slice(0,n),given},miller};   // a new request never repeats an id
  state.village.boards=boards.slice(0,villageBoards(state));
 }
 // A request's goods in a fixed order (village goods first, then the farm's), whatever order a save keeps the keys in, so the market
@@ -2437,6 +2490,29 @@ export function villageSkip(state,board,request,input,now=Date.now()){
  const b=villageBoard(state,board,request);if(input!==undefined&&!sameGoods(input,b.request.input))throw new Error(VILLAGER_GONE);
  b.request=null;b.readyAt=now+VILLAGE_REQUEST_WAIT;
  return {readyAt:b.readyAt};
+}
+// The miller's order (17 Oct 2026, the owner's pick 5b): a farmer baked heirloom bread, and nothing asked for it. From level 115, once a
+// week (Monday to Sunday, UTC, as the market week), the miller at the market square asks for 6 golden loaves and 2 heirloom pies and pays
+// twice what they are worth (80,000 coins), 10 diamonds and a 50th of their worth in XP, as a villager does. That is about 4 Seed Lab
+// crosses a week (3 of golden wheat, 1 of golden apples) of the about 40 two beds can grow. One order a week: nothing to claim, nothing
+// lost when a week is missed, no coin bonus (a villager's rule). village.miller.week is the week it was last delivered.
+export const MILLER_LEVEL=115,MILLER_ORDER=Object.freeze({goldenloaf:6,heirloompie:2}),MILLER_PREMIUM=2,MILLER_DIAMONDS=10;
+export const millerValue=()=>Object.entries(MILLER_ORDER).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
+export const millerOpen=state=>worldTwoOpen(state)&&levelOf(state)>=MILLER_LEVEL;
+export const millerDelivered=(state,now=Date.now())=>state.village?.miller?.week===familyWeek(now);
+export function millerDeliver(state,week,now=Date.now()){
+ villageOpen(state);
+ if(levelOf(state)<MILLER_LEVEL)throw new Error(`Reach level ${MILLER_LEVEL} for the miller’s order.`);
+ if(week!==familyWeek(now))throw new Error('A new week has begun. Look at the miller’s order again.');
+ if(millerDelivered(state,now))throw new Error('The miller has his bakes for this week. He comes back on Monday.');
+ const missing=Object.entries(MILLER_ORDER).filter(([k,n])=>(state.inventory[k]??0)<n);
+ if(missing.length)throw new Error('Missing: '+missing.map(([k,n])=>`${ITEMS[k].name} (${state.inventory[k]??0}/${n})`).join(', ')+'.');
+ for(const [k,n] of Object.entries(MILLER_ORDER))state.inventory[k]-=n;
+ const value=millerValue(),coins=value*MILLER_PREMIUM,xp=Math.round(value/VILLAGE_XP_SHARE);
+ state.coins+=coins;state.xp+=xp;state.diamonds+=MILLER_DIAMONDS;state.village.miller={week};
+ state.stats.earned+=coins;state.stats.village_earned=(state.stats.village_earned??0)+coins;
+ state.stats.miller_orders=(state.stats.miller_orders??0)+1;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+MILLER_DIAMONDS;
+ return {coins,xp,diamonds:MILLER_DIAMONDS};
 }
 // The golden brief that is open now: the first village place not built yet, in VILLAGE_BRIEFS' order, or null when all are. There is no
 // brief state: it follows from what is built, so a farm that built a place before the briefs keeps it and gets the next one.
@@ -2621,7 +2697,9 @@ export function landmarkFinish(state,id){
 function normalizeEndgame(state){
  const master=state.master&&typeof state.master==='object'?state.master:{};state.master={};
  for(const [b,x] of Object.entries(MASTER_BRANCHES)){const n=master[b];if(Number.isInteger(n)&&n>0)state.master[b]=Math.min(n,x.max);}
- const lab=state.lab??{};state.lab={beds:Array.from({length:LAB_BEDS},(_,i)=>{const b=lab.beds?.[i];return b&&Object.hasOwn(HEIRLOOMS,b.heirloom)&&Number.isSafeInteger(b.readyAt)?b:null;}),found:[...new Set((lab.found??[]).filter(k=>Object.hasOwn(HEIRLOOMS,k)))]};
+ // The beds the farm has (labBeds: three with the whole collection), read from what it found.
+ const lab=state.lab??{},found=[...new Set((Array.isArray(lab.found)?lab.found:[]).filter(k=>Object.hasOwn(HEIRLOOMS,k)))];
+ state.lab={beds:Array.from({length:labBeds({lab:{found}})},(_,i)=>{const b=lab.beds?.[i];return b&&Object.hasOwn(HEIRLOOMS,b.heirloom)&&Number.isSafeInteger(b.readyAt)?b:null;}),found};
  state.visitors??={serial:0,streak:0,best:0,served:0,missed:0,current:null,nextAt:0};
  state.giant??={week:null,kg:0,tends:0,lastTendAt:0,weighed:false,record:0,last:null};
  const projects=state.valleyProjects&&typeof state.valleyProjects==='object'?state.valleyProjects:{};state.valleyProjects={};
@@ -2695,7 +2773,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);
+ normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3156,6 +3234,8 @@ export function upgradeSilo(state){
 //   20 could not be understood, and a rare kind never pays double).
 export const POND_START_CASTS=5,POND_MAX_CASTS=5,POND_REFILL_MS=20*60000,POND_MIN_GAP_MS=3500,POND_PERFECT=.2,POND_DAY_FACTOR=2,POND_NEW_FISH_COINS=2,POND_NEW_FISH_XP=10,POND_LEGEND_BY=120,POND_BOOK_DIAMONDS=25;
 export const POND_PAGE_TWO_LEVEL=20,POND_BOOK2_DIAMONDS=50,POND_STURGEON_BY=60;
+// A full fish book at the pond: a new cast every 15 minutes there (waterRefill, 17 Oct 2026).
+export const POND_BOOK_REFILL_MS=15*60000;
 // chance (%) below level 20, chance20 (%) from level 20, weight (kg, from-to), coins and XP, and the reel (pond-reel.js): the strike
 // window (s), the green zone (% of the bar), how fast the fish moves (bar/s), how fast the catch fills in the green and drains outside
 // it (%/s), and how it fights. page: the page of the fish book. The reel's values were tuned on 11 Oct 2026 with simulated players (a
@@ -3239,7 +3319,7 @@ export const ALL_FISH=Object.freeze({...FISH,...LAKE_FISH});
 // legend, legendBy, giant, giantBy: the legends' rules; page2Level, book, book2: page two and the book's diamonds; open, closed: its gate
 // and the refusal; changed: another tab's refusal; stats: its counters. The pond's names (pondFish, landFish, ...) stay as wrappers with
 // exactly the results they had (tests/lake.test.mjs compares every pond fish with fe636fc).
-export const POND_WATER=Object.freeze({key:'pond',action:'fish',fish:FISH,pages:FISH_PAGES,first:POND_FIRST_FISH,common:POND_COMMON,today:todaysFish,salt:'pond',late:'chance20',
+export const POND_WATER=Object.freeze({key:'pond',action:'fish',fullRefill:POND_BOOK_REFILL_MS,fish:FISH,pages:FISH_PAGES,first:POND_FIRST_FISH,common:POND_COMMON,today:todaysFish,salt:'pond',late:'chance20',
  legend:'whiskers',legendBy:POND_LEGEND_BY,giant:'sturgeon',giantBy:POND_STURGEON_BY,page2Level:POND_PAGE_TWO_LEVEL,book:POND_BOOK_DIAMONDS,book2:POND_BOOK2_DIAMONDS,
  open:state=>featureUnlocked(state,'fishing'),closed:()=>POND_OPEN?featureUnlockHint('fishing'):'The fishing pond is not open yet.',changed:'Your pond changed in another tab.',
  stats:Object.freeze({fish:'fish',coins:'fish_coins',perfect:'fish_perfect',released:'fish_released'})});
@@ -3283,13 +3363,17 @@ export function waterFish(water,state,n){
 // How many casts wait at a water, and when the next one comes (0 when it is full). A farm that never fished there has it full.
 export function waterCasts(water,state,now=Date.now()){
  const p=state[water.key];if(!p)return {casts:POND_START_CASTS,nextAt:0};
- const gained=Math.max(0,Math.floor((now-p.castsAt)/POND_REFILL_MS)),casts=Math.min(POND_MAX_CASTS,p.casts+gained);
- return {casts,nextAt:casts>=POND_MAX_CASTS?0:p.castsAt+(gained+1)*POND_REFILL_MS};
+ const ms=waterRefill(water,state),gained=Math.max(0,Math.floor((now-p.castsAt)/ms)),casts=Math.min(POND_MAX_CASTS,p.casts+gained);
+ return {casts,nextAt:casts>=POND_MAX_CASTS?0:p.castsAt+(gained+1)*ms};
 }
+// The minutes to a new cast: 20, and 15 at the farm's pond once its whole fish book is caught (17 Oct 2026, the owner's pick 4a: the full
+// book gives something that lasts). The lake keeps 20 (fullRefill only on the pond: a lake cast is worth about 4 minutes of income, and
+// 96 a day would be more than a quarter of a day's coins). The time already counted towards the next cast stays counted.
+export const waterRefill=(water,state)=>water.fullRefill&&waterBook2Done(water,state)?water.fullRefill:POND_REFILL_MS;
 // Spending from a full water starts the 20 minutes from now; otherwise the time already counted towards the next cast is kept.
-function spendCast(p,now){
- const gained=Math.max(0,Math.floor((now-p.castsAt)/POND_REFILL_MS)),had=Math.min(POND_MAX_CASTS,p.casts+gained);
- p.castsAt=had>=POND_MAX_CASTS?now:p.castsAt+gained*POND_REFILL_MS;p.casts=had-1;
+function spendCast(p,now,ms){
+ const gained=Math.max(0,Math.floor((now-p.castsAt)/ms)),had=Math.min(POND_MAX_CASTS,p.casts+gained);
+ p.castsAt=had>=POND_MAX_CASTS?now:p.castsAt+gained*ms;p.casts=had-1;
 }
 export function waterCoins(water,state,fish,perfect,now=Date.now()){
  const f=water.fish[fish.species];
@@ -3306,18 +3390,19 @@ export const waterPageTwoOpen=(water,state)=>water.open(state)&&levelOf(state)>=
 export function castWater(water,state,n,landed,perfect,now=Date.now()){
  if(!water.open(state))throw new Error(water.closed());
  if(typeof landed!=='boolean'||typeof perfect!=='boolean')throw new Error('Choose whether you landed the fish.');
- if(waterCasts(water,state,now).casts<1)throw new Error('No casts left. A new cast comes every 20 minutes.');
+ if(waterCasts(water,state,now).casts<1)throw new Error(`No casts left. A new cast comes every ${waterRefill(water,state)/60000} minutes.`);
  if(!Number.isInteger(n)||n!==(state[water.key]?.n??0))throw new Error(water.changed);
  // Two fish may come close together (a slow connection can deliver them so); a third within POND_MIN_GAP_MS of the first cannot.
  if(state[water.key]&&now-state[water.key].prevAt<POND_MIN_GAP_MS)throw new Error('Give the line a moment.');
  const fish=waterFish(water,state,n),p=state[water.key]??={firstAt:now,n:0,casts:POND_START_CASTS,castsAt:now,lastAt:0,prevAt:0,best:{}},stat=water.stats;
  // The farm's first fish there at page two's level or later (this one, still of page one) marks where page two starts (waterPageTwo).
  if(p.page2At===undefined&&levelOf(state)>=water.page2Level)p.page2At=n;
- spendCast(p,now);p.n=n+1;p.prevAt=p.lastAt;p.lastAt=now;
+ spendCast(p,now,waterRefill(water,state));p.n=n+1;p.prevAt=p.lastAt;p.lastAt=now;
  if(!landed){state.stats[stat.released]=(state.stats[stat.released]??0)+1;return {released:true,n,casts:waterCasts(water,state,now)};}
  const first=!(p.best[fish.species]>0),record=!first&&fish.kg>p.best[fish.species],today=water.today(now)===fish.species;
  const base=waterCoins(water,state,fish,perfect,now),coins=base+(first?POND_NEW_FISH_COINS*base:0),xp=water.fish[fish.species].xp+(first?POND_NEW_FISH_XP:0);
  if(first||record)p.best[fish.species]=fish.kg;
+ if(first)countCollections(state);
  state.coins+=coins;state.xp+=xp;
  state.stats[stat.fish]=(state.stats[stat.fish]??0)+1;state.stats[stat.coins]=(state.stats[stat.coins]??0)+coins;if(perfect)state.stats[stat.perfect]=(state.stats[stat.perfect]??0)+1;
  // The book's diamonds count as diamonds earned, like every other diamond from play (11 Oct 2026, the review). Page one's for its kinds,
@@ -3361,6 +3446,15 @@ export const lakeBook2Done=state=>waterBook2Done(LAKE_WATER,state);
 export const lakePageTwoOpen=state=>waterPageTwoOpen(LAKE_WATER,state);
 export const landLakeFish=(state,n,landed,perfect,now=Date.now())=>castWater(LAKE_WATER,state,n,landed,perfect,now);
 const normalizeLake=state=>normalizeWater(LAKE_WATER,state);
+// The collections as counts, for the quests (17 Oct 2026): the kinds in each fish book and its legend, and the heirlooms found. They follow
+// from the farm itself (pond.best, lake.best, lab.found), so a farm that had them before the quests came can claim them at once, and they
+// never go down (a book and the Seed Lab never lose a kind).
+function countCollections(state){
+ const kinds=water=>Object.keys(state[water.key]?.best??{}).filter(key=>Object.hasOwn(water.fish,key)).length;
+ state.stats.fish_kinds=kinds(POND_WATER);state.stats.caught_whiskers=state.pond?.best?.whiskers>0?1:0;
+ state.stats.lake_fish_kinds=kinds(LAKE_WATER);state.stats.caught_oldgranite=state.lake?.best?.oldgranite>0?1:0;
+ state.stats.heirlooms_found=Array.isArray(state.lab?.found)?state.lab.found.length:0;
+}
 // The Starter Pack (a welcome offer, see game/payments.js) opens at level 14 (until 5 Oct 2026 also where diamond boosts unlocked): a pack of diamonds is only a shop in the
 // way until there is something to spend them on. Then it is there for 7 days. Only the server writes the moment. A farm that is already past
 // that level when this is first seen had its moment long ago (unlockedAt 0: never offered again); a farm below it gets its moment on the way up.
@@ -3448,6 +3542,7 @@ function dispatchFarmAction(state,action,now,random){
   // World II's market square (Oct 2026): no feature gate, the level check is their own (nothing of it may show below level 100).
   case 'village_deliver':return villageDeliver(state,action.board,action.request,action.input,now);
   case 'village_skip':return villageSkip(state,action.board,action.request,action.input,now);
+  case 'miller_deliver':return millerDeliver(state,action.week,now);
   case 'village_build':return villageBuild(state,action.place);
   // The town boat at the Pier (from level 144) carries the cargo the screen showed; the landmarks (165-200) come from the golden brief.
   case 'boat_load':return boatLoad(state,action.cargo,action.input,action.item,now);

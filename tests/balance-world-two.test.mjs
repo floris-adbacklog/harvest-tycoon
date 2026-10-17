@@ -200,7 +200,7 @@ test('at most 24 villagers a day: three boards, one every 3 hours each, however 
 test('no Kitchen, no villager: the board waits and the running number stays',()=>{
  for(const mode of ['guided','legacy']){
   const s=fixture(100,[],{},mode);s.buildings.kitchen.built=false;s.village={serial:0,boards:[]};normalizeFarm(s,now);
-  assert.deepEqual(s.village,{serial:0,boards:[{request:null,readyAt:0},{request:null,readyAt:0}],week:{week:null,helped:0,paid:false},boat:{serial:0,cargo:null,readyAt:0,trips:0,week:null,paid:0},landmarks:{done:[],given:{}}},mode);
+  assert.deepEqual(s.village,{serial:0,boards:[{request:null,readyAt:0},{request:null,readyAt:0}],week:{week:null,helped:0,paid:false},boat:{serial:0,cargo:null,readyAt:0,trips:0,week:null,paid:0},landmarks:{done:[],given:{}},miller:{week:null}},mode);
   assert.equal(villageSquareReady(s),false);
   s.buildings.kitchen.built=true;normalizeFarm(s,now);
   assert.ok(s.village.boards.every(b=>Object.keys(b.request.input).includes('packedlunch')),'lunches and a farm good: money on the first trip');

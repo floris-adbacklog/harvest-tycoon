@@ -163,7 +163,7 @@ test('fields 29-40 open during the expansion, each asking only for goods the far
 });
 
 test('250 quests: the last 46 carry the expansion ladders to the end of the game, each climbing and shown only when it can be done',()=>{
- assert.equal(QUESTS.length,300);assert.equal(QUESTS[204].title,'A cellar full of squash','appended after “Legend of the fair”');
+ assert.equal(QUESTS.length,320);assert.equal(QUESTS[204].title,'A cellar full of squash','appended after “Legend of the fair”');
  const added=QUESTS.slice(204,250);assert.equal(added.length,46);
  for(const stat of new Set(added.map(q=>q.stat))){
   // In order of the goal: the 50 quests of 26 Sep 2026 (250-299) also fill gaps between existing goals, at the end of the list.

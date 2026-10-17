@@ -1,4 +1,4 @@
-import {VILLAGERS,VILLAGER_GONE,VILLAGE_REQUEST_WAIT,VILLAGE_THIRD_BOARD,VILLAGE_THREE_KINDS,VILLAGE_BUILD_XP,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,VILLAGE_ALL_BUILT,WORLD_TWO_LEVEL,BUILDINGS,ITEMS,villageBrief,villageLandmark,villagePremium,villageWeek,villageRequestGoods,villagerLine,villageRequestExtra,worldTwoOpen,levelOf,familyWeek,familyWeekStart,normalizeFarm,formatDuration} from './farm-state.js';
+import {VILLAGERS,VILLAGER_GONE,VILLAGE_REQUEST_WAIT,VILLAGE_THIRD_BOARD,VILLAGE_THREE_KINDS,VILLAGE_BUILD_XP,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,VILLAGE_ALL_BUILT,WORLD_TWO_LEVEL,BUILDINGS,ITEMS,villageBrief,villageLandmark,villagePremium,villageWeek,MILLER_ORDER,MILLER_PREMIUM,MILLER_DIAMONDS,VILLAGE_XP_SHARE,millerValue,millerOpen,millerDelivered,villageRequestGoods,villagerLine,villageRequestExtra,worldTwoOpen,levelOf,familyWeek,familyWeekStart,normalizeFarm,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -73,6 +73,20 @@ function marketWeek(state,now){
   +`<span class="market-week-bar" role="progressbar" aria-label="Villagers helped this week" aria-valuemin="0" aria-valuemax="${VILLAGE_WEEK_TARGET}" aria-valuenow="${n}"><i style="width:${Math.round(n/VILLAGE_WEEK_TARGET*100)}%"></i></span>`
   +`<small>New week in ${formatDuration(next)}.</small></div></div>`;
 }
+// The miller's order (17 Oct 2026, the owner's pick 5b): once a week, from level 115, 6 golden loaves and 2 heirloom pies for twice their
+// worth and 10 diamonds (farm-state.js millerDeliver). Below 115 nothing shows (level 115's card and Coming up announce it). Delivered,
+// the card says when the next order comes; short of the bakes, where they are made.
+const MILLER_LINES=['Golden flour makes the finest bread in the valley.','The village feast needs something special.','Bake with my golden flour, and I pay you well.','Nothing smells better than a golden loaf.'];
+function millerCard(state,itemList,now){
+ if(!millerOpen(state))return '';
+ const week=familyWeek(now),done=millerDelivered(state,now),can=!done&&inStock(state,MILLER_ORDER),next=familyWeekStart(week+1)-now,value=millerValue();
+ const head=`<div class="order-head"><span class="order-icon miller-portrait">${art('villager-miller')}</span><div><small>ONCE A WEEK</small><h3>The miller</h3><p class="valley-line">${MILLER_LINES[week%MILLER_LINES.length]}</p></div></div>`;
+ const body=done?`<p class="valley-next">Thank you! His next order comes in <b>${formatDuration(next)}</b>.</p>`
+  :`<div class="ingredients">${itemList(MILLER_ORDER,true)}</div>${can?'':'<small class="square-note">Golden loaves bake at the Bakery and heirloom pies in the Farm Kitchen, both with heirloom flour from the Village Windmill.</small>'}`
+   +`<div class="task-bottom">${rewardChips({coins:value*MILLER_PREMIUM,diamonds:MILLER_DIAMONDS,xp:Math.round(value/VILLAGE_XP_SHARE)})}<button type="button" class="primary-button" data-miller-deliver data-week="${week}" ${can?'':'disabled'}>Deliver</button></div>`;
+ return `<h3 class="square-heading">The miller’s order</h3><p class="square-rule">Once a week the miller asks for heirloom bakes. He pays twice what they are worth, and ${MILLER_DIAMONDS} diamonds.</p>`
+  +`<article class="order-card valley-stall miller-order ${can?'is-ready':''}">${head}${body}</article>`;
+}
 // The whole screen, top to bottom as on a phone: the golden brief (a place, then a landmark) with its rule, the villagers with theirs,
 // what is coming at the next levels and the count helped, the market week, and the way to sell. "Half again" is VILLAGE_PREMIUM (1.5),
 // 1.6 times once the Great Hall stands (villagePremium).
@@ -86,6 +100,7 @@ export function squareMarkup(state,itemList,now=farmNow()){
   +`<h3 class="square-heading">Villagers’ requests</h3><p class="square-rule">${villagePremium(state)===VILLAGE_PREMIUM?'Villagers pay half again what their goods are worth.':`Villagers pay ${VILLAGE_HALL_PREMIUM} times what their goods are worth.`} A new villager comes ${VILLAGE_REQUEST_WAIT/3600000} hours after you help or say no.</p>`
   +`<div class="daily-list valley-stalls">${boards.map((b,i)=>{const line=b.request&&villagerLine(b.request,said);if(line)said.push(line);return requestCard(state,itemList,b,i,now,line);}).join('')}</div>`
   +(footer.length?`<p class="valley-footer">${footer.join(' ')}</p>`:'')
+  +millerCard(state,itemList,now)
   +marketWeek(state,now)
   +'<div class="market-board-link"><span>Sell village goods at today’s prices.</span><button type="button" id="square-sell">Sell goods →</button></div>';
 }
@@ -94,6 +109,7 @@ export function squareStatus(state,now=farmNow()){
  if(!worldTwoOpen(state))return {text:`Locked · Reach level ${WORLD_TWO_LEVEL}.`,kind:'locked'};
  if(villageBrief(state)?.ready)return {text:'Golden brief ready to build',kind:'ready'};
  if(villageLandmark(state)?.ready)return {text:'Landmark ready to finish',kind:'ready'};
+ if(millerOpen(state)&&!millerDelivered(state,now)&&inStock(state,MILLER_ORDER))return {text:'The miller’s order is ready to deliver',kind:'ready'};
  const boards=state.village?.boards??[],asking=boards.filter(b=>b.request),can=asking.filter(b=>inStock(state,b.request.input)).length;
  if(can)return {text:`${can} ${can===1?'villager':'villagers'} can be helped`,kind:'ready'};
  if(asking.length)return {text:`${asking.length} ${asking.length===1?'villager':'villagers'} waiting`,kind:'idle'};
@@ -106,7 +122,7 @@ export function createVillageSquareUI({state,runAction,onChange,notify,itemList,
  // What the open screen shows: each board's villager with its goods and their stock (or the minutes to the next one), the brief and the
  // count of villagers helped, the market week (a crate, a new week, reaching 116) and the landmark with what is handed in. Only a change
  // draws it again.
- const signature=()=>{const b=villageBrief(state),l=!b&&villageLandmark(state);return JSON.stringify([(state.village?.boards??[]).map(x=>x.request?[x.request.id,Object.entries(villageRequestGoods(x.request)).map(([k,n])=>[k,n,state.inventory[k]])]:Math.ceil(Math.max(0,x.readyAt-farmNow())/60000)),b&&[b.place,b.ready,b.open,Object.values(b.missing),b.short],state.stats.village_requests,levelOf(state)>=VILLAGE_WEEK_LEVEL&&villageWeek(state,farmNow()),l&&[l.id,l.ready,l.open,l.short,Object.keys(l.materials).map(k=>[l.given[k]??0,state.inventory[k]??0])],state.village?.landmarks?.done?.length]);};
+ const signature=()=>{const b=villageBrief(state),l=!b&&villageLandmark(state);return JSON.stringify([(state.village?.boards??[]).map(x=>x.request?[x.request.id,Object.entries(villageRequestGoods(x.request)).map(([k,n])=>[k,n,state.inventory[k]])]:Math.ceil(Math.max(0,x.readyAt-farmNow())/60000)),b&&[b.place,b.ready,b.open,Object.values(b.missing),b.short],state.stats.village_requests,levelOf(state)>=VILLAGE_WEEK_LEVEL&&villageWeek(state,farmNow()),millerOpen(state)&&[millerDelivered(state,farmNow()),familyWeek(farmNow()),Object.keys(MILLER_ORDER).map(k=>state.inventory[k]??0)],l&&[l.id,l.ready,l.open,l.short,Object.keys(l.materials).map(k=>[l.given[k]??0,state.inventory[k]??0])],state.village?.landmarks?.done?.length]);};
  // A tap waits for the server: its button stays off until the answer, a refusal is told as it comes, and the screen is drawn again.
  async function act(button,action,message){
   if(busy)return;busy=true;button.disabled=true;
@@ -132,6 +148,7 @@ export function createVillageSquareUI({state,runAction,onChange,notify,itemList,
  function bind(){
   const root=$('village-square-content'),board=i=>{const r=seen[i];return r?{board:i,request:r.id,input:r.input}:null;};
   root.querySelectorAll('[data-village-deliver]').forEach(b=>b.onclick=()=>{const r=board(Number(b.dataset.villageDeliver));if(r)act(b,{type:'village_deliver',...r},x=>`${x.villager} thanks you! +${number(x.coins)} coins and +${number(x.xp)} XP.`+(x.crate?` The market crate is open: +${number(x.crate)} diamonds!`:''));});
+  root.querySelectorAll('[data-miller-deliver]').forEach(b=>b.onclick=()=>act(b,{type:'miller_deliver',week:Number(b.dataset.week)},x=>`The miller thanks you! +${number(x.coins)} coins, +${x.diamonds} diamonds and +${number(x.xp)} XP.`));
   root.querySelectorAll('[data-village-skip]').forEach(b=>b.onclick=()=>{const r=board(Number(b.dataset.villageSkip));if(r)act(b,{type:'village_skip',...r},()=>`The next villager comes in ${formatDuration(VILLAGE_REQUEST_WAIT)}.`);});
   // After a build the screen stays open on the next brief. The Village Fields are one name in the plural; the Pier says where the boat is.
   root.querySelectorAll('[data-village-build]').forEach(b=>b.onclick=()=>act(b,{type:'village_build',place:b.dataset.villageBuild},x=>x.place==='villagefields'?`The ${x.name} are built! +${number(x.xp)} XP.`:`The ${x.name} is built! +${number(x.xp)} XP.${x.place==='pier'?' The town boat waits at the pier.':''}`));

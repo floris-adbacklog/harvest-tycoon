@@ -117,6 +117,8 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
   construct:'construct',finish_crop:'finish',finish_batch:'finish',valley_sell:'valley',fair_enter:'fair',improve:'improve',
   // The market square (Oct 2026): helping a villager sounds like a sold basket, a golden brief like a new building; "Not now" is quiet.
   village_deliver:'valley',village_build:'construct',
+  // The miller's order (17 Oct 2026): it pays diamonds every time.
+  miller_deliver:'diamond',
   // A landmark (Oct 2026): goods handed in are crates going on, finishing it is a lasting improvement; turning a boat cargo down is quiet.
   landmark_give:'produce',landmark_finish:'improve'}[action.type]??null;
 }

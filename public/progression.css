@@ -109,3 +109,23 @@
  #level-up-dialog>.level-up-done,#gift-dialog>.gift-done{position:sticky;bottom:-12px;z-index:2;box-shadow:0 3px 0 var(--btn-main-edge),0 0 0 12px #fffdf4}
  #level-up-dialog>.level-up-actions,#gift-dialog>.gift-actions{position:sticky;bottom:-24px;z-index:2;margin-bottom:-24px;padding:12px 0 24px;background:#fffdf4}
 }
+
+/* A whole collection, done (17 Oct 2026, public/collection-cheer.js): the Seed Lab's 20 heirlooms, the pond's and the lake's fish book. The
+   level-up card's look; flex, never grid, for the dialog itself (a grid dialog grew to its max-height in Safari, 29 Sep 2026). */
+#collection-cheer{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
+#collection-cheer[open]{display:flex;flex-direction:column;align-items:stretch}
+#collection-cheer::backdrop{background:#25332370;backdrop-filter:blur(3px)}
+#collection-cheer .eyebrow{margin:0}
+#collection-cheer h2{font:700 30px 'Outfit',sans-serif;margin:4px 0 12px}
+#collection-cheer>p{margin:12px 0 0;font-size:14px;line-height:1.55}
+.collection-cheer-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:4px auto 0;max-width:calc(var(--cheer-columns,5)*58px)}
+.collection-cheer-grid>span{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:#fff8e2;box-shadow:0 1px 0 #00000010;animation:cheer-pop .45s cubic-bezier(.3,1.5,.6,1) both}
+.collection-cheer-grid>span:nth-child(4n+2){animation-delay:.05s}.collection-cheer-grid>span:nth-child(4n+3){animation-delay:.1s}.collection-cheer-grid>span:nth-child(4n){animation-delay:.15s}
+.collection-cheer-grid .game-art{width:42px;height:42px;object-fit:contain}
+@keyframes cheer-pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+#collection-cheer .gift-rewards{margin:16px 0 0}
+#collection-cheer .collection-cheer-perk{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:12px 14px;border-radius:14px;background:#e9f1de;color:#42632e;font-weight:600;text-align:start}
+.collection-cheer-perk>.game-art{width:36px;height:36px;flex:none;object-fit:contain}
+#collection-cheer .gift-done{margin-top:20px}
+@media(max-width:360px){#collection-cheer{padding:24px 14px 18px}.collection-cheer-grid{max-width:calc(var(--cheer-columns,5)*50px)}.collection-cheer-grid>span{width:44px;height:44px}.collection-cheer-grid .game-art{width:36px;height:36px}}
+@media(prefers-reduced-motion:reduce){.collection-cheer-grid>span{animation:none}}

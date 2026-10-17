@@ -1,6 +1,7 @@
-import {VISITOR_DIAMONDS,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,HEIRLOOMS,LAB_BEDS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,heirloomFound,heirloomOpen,VISITORS,VISITOR_WAIT,VISITOR_STREAK_MAX,visitorStreakBonus,GIANT_TEND_MS,GIANT_TEND_KG,GIANT_FEED,GIANT_FEED_KG,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,giantDiamonds,VALLEY_PROJECTS,valleyProjectLevel,valleyProjectBonus,IMPROVEMENTS,FAIR_CHAMPION_DIAMONDS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
+import {VISITOR_DIAMONDS,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,HEIRLOOMS,LAB_FULL_BEDS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,heirloomFound,heirloomOpen,VISITORS,VISITOR_WAIT,VISITOR_STREAK_MAX,visitorStreakBonus,GIANT_TEND_MS,GIANT_TEND_KG,GIANT_FEED,GIANT_FEED_KG,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,giantDiamonds,VALLEY_PROJECTS,valleyProjectLevel,valleyProjectBonus,IMPROVEMENTS,FAIR_CHAMPION_DIAMONDS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {showCollectionCheer} from './collection-cheer.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const CHIPS={coins:n=>`<b>${art('coins')}${number(n)}</b>`,diamonds:n=>`<b class="is-diamonds">${art('diamonds')}${number(n)}</b>`,xp:n=>`<b class="is-xp">${art('xp')}${number(n)} XP</b>`};
@@ -112,7 +113,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
    return `<article class="order-card heirloom ${known?'is-found':'is-unknown'}"><div class="order-head"><span class="order-icon">${art(k)}</span><div><small>${known?`Found · ${number(state.inventory[k])} in your barn`:`New · +${LAB_DISCOVER_DIAMONDS} diamonds`}</small><h3>${h.name}</h3></div></div><div class="ingredients">${itemList(h.input,open)}</div><div class="task-bottom">${action}</div></article>`;
   }).join('');
   return lead('seedlab',`Cross two crops in a test bed. The first cross of a variety takes a day and discovers it; after that it takes 8 hours. Each bed gives <b>${LAB_YIELD} heirlooms</b>, worth far more than their parents at the Market.`)
-   +`<div class="daily-list lab-beds">${beds}</div><p class="fair-tally"><b>${found} of ${total}</b> discovered${found<total?` · all ${total}: +${LAB_COMPLETE_DIAMONDS} diamonds`:' · the whole collection ✓'}</p><div class="daily-list heirloom-list">${cards}</div>`;
+   +`<div class="daily-list lab-beds">${beds}</div><p class="fair-tally"><b>${found} of ${total}</b> ${found<total?`discovered. Find all ${total} for +${LAB_COMPLETE_DIAMONDS} diamonds and a third test bed.`:'discovered. The whole collection is yours, with a third test bed.'}</p><div class="daily-list heirloom-list">${cards}</div>`;
  }
  // Visitors (level 93): one rush order at a time; the run of visitors served in a row makes the next one bigger and better paid in
  // coins. Each pays VISITOR_DIAMONDS (3 since 7 Oct 2026; the run raised the diamonds too, 5 up to 15).
@@ -154,7 +155,11 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
   document.querySelectorAll('[data-giant-tend],[data-giant-feed]').forEach(b=>b.onclick=()=>act({type:'giant_tend',feed:b.hasAttribute('data-giant-feed')},r=>`Your pumpkin gained ${r.added} kg${r.fed?' (fed)':''}: ${number(r.kg)} kg now.`));
   document.querySelectorAll('[data-giant-weigh]').forEach(b=>b.onclick=()=>act({type:'giant_weigh'},r=>`${number(r.kg)} kg on the scale! +${number(r.coins)} coins and +${r.diamonds} diamonds${r.record?', a new record':''}.`));
   document.querySelectorAll('[data-lab-cross]').forEach(b=>b.onclick=()=>act({type:'lab_cross',bed:state.lab.beds.findIndex(x=>!x),heirloom:b.dataset.labCross},r=>r.discover?`${r.name} is crossing. Come back in a day to see what grows.`:`${r.name} is growing again.`));
-  document.querySelectorAll('[data-lab-collect]').forEach(b=>b.onclick=()=>act({type:'lab_collect',bed:Number(b.dataset.labCollect)},r=>`${r.discovered?`You discovered ${r.name}! `:''}+${r.count} ${r.name.toLowerCase()}${r.diamonds?`, +${r.diamonds} diamonds`:''}.${r.complete?' The whole heirloom collection is yours!':''}`));
+  // The 20th variety (17 Oct 2026, the owner's pick 3a): the whole collection gets its card in the middle, with the third test bed.
+  document.querySelectorAll('[data-lab-collect]').forEach(b=>b.onclick=()=>act({type:'lab_collect',bed:Number(b.dataset.labCollect)},r=>{
+   if(r.complete)showCollectionCheer({title:'Heirloom collection complete!',pictures:Object.keys(HEIRLOOMS),line:`You discovered all ${Object.keys(HEIRLOOMS).length} heirlooms in the Seed Lab.`,rewards:{diamonds:r.diamonds},perk:`A third test bed is yours, for good: grow ${LAB_FULL_BEDS} crosses at once.`,perkArt:'seedlab'});
+   return `${r.discovered?`You discovered ${r.name}! `:''}+${r.count} ${r.name.toLowerCase()}${r.diamonds?`, +${r.diamonds} diamonds`:''}.${r.complete?' The whole heirloom collection is yours!':''}`;
+  }));
   const visitor=state.visitors?.current;
   document.querySelectorAll('[data-visitor-serve]').forEach(b=>b.onclick=()=>act({type:'visitor_serve',visitor:visitor.id},r=>`${r.name} is delighted! +${number(r.coins)} coins, +${r.diamonds} diamonds. ${r.streak} in a row.`));
   document.querySelectorAll('[data-visitor-decline]').forEach(b=>b.onclick=()=>act({type:'visitor_decline',visitor:visitor.id},()=>`The visitor went on their way. The next one comes in ${formatDuration(VISITOR_WAIT)}.`));

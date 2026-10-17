@@ -153,7 +153,8 @@ test('what the screen shows at once is what the server pays (farm-client.js inst
 
 test('a saved pond: never made by loading, cleaned when garbled without losing its count or book',()=>{
  const s=at(10);G.normalizeFarm(s,now);assert.equal('pond' in s,false,'a farm that never fished keeps its shape');
- for(const k of ['fish','fish_perfect','fish_released','fish_coins'])assert.equal(k in s.stats,false);
+ for(const k of ['fish_released','fish_coins'])assert.equal(k in s.stats,false);
+ for(const k of ['fish','fish_perfect','fish_kinds','caught_whiskers'])assert.equal(s.stats[k],0,`${k}: a quest's counter, 0 (17 Oct 2026)`);
  const g=at(10);g.pond={n:7.5,casts:9,castsAt:'x',firstAt:-5,lastAt:null,best:{minnow:.123,shark:4,perch:-1,carp:'2',tench:Infinity,pike:2.5},bookPaid:'yes'};G.normalizeFarm(g,now);
  assert.deepEqual(g.pond,{n:0,casts:5,castsAt:0,firstAt:0,lastAt:0,prevAt:0,best:{minnow:.12,pike:2.5}});
  const kept=at(10);kept.pond={n:12,casts:9,best:{carp:3.1}};G.normalizeFarm(kept,now);assert.equal(kept.pond.n,12);assert.deepEqual(kept.pond.best,{carp:3.1});assert.equal(kept.pond.casts,5);

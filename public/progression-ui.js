@@ -1,5 +1,5 @@
 import {art} from './visual-icons.js';
-import {unlockEntries,featureUnlocked,featureUnlockHint,FEATURE_LEVELS,levelOf,levelReward,beginnerProgress,FISH,POND_BOOK2_DIAMONDS,LAKE_FISH,LAKE_BOOK2_DIAMONDS,RECIPES,BUILDINGS,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS} from './farm-state.js';
+import {unlockEntries,featureUnlocked,featureUnlockHint,FEATURE_LEVELS,levelOf,levelReward,beginnerProgress,FISH,POND_BOOK2_DIAMONDS,LAKE_FISH,LAKE_BOOK2_DIAMONDS,RECIPES,BUILDINGS,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,POND_BOOK_REFILL_MS,MILLER_DIAMONDS} from './farm-state.js';
 import {PLAYER_AVATARS,avatarGoal,avatarOpen} from './player-avatars.js';
 export function progressionSnapshot(state){return {level:levelOf(state),ids:new Set(unlockEntries(state).filter(e=>e.unlocked).map(e=>e.id))};}
 export function progressionChange(before,state,reward){return {reward,from:before.level,level:levelOf(state),leveled:levelOf(state)>before.level,entries:unlockEntries(state).filter(e=>e.unlocked&&!before.ids.has(e.id))};}
@@ -27,10 +27,11 @@ export function entryLine(e,{phone=false}={}){
  if(e.kind==='Village place')return 'Village place · built from a golden brief at the market square';
  if(e.kind==='Ready to expand')return 'New field · buy it at the Farmhouse';
  if(e.id==='feature:fishing')return 'Activity · tap its pin over the pier';
- if(e.id==='pond:page2')return `Catch all ${Object.keys(FISH).length} kinds: ${POND_BOOK2_DIAMONDS} diamonds, once.`;
+ if(e.id==='pond:page2')return `Catch all ${Object.keys(FISH).length} kinds: ${POND_BOOK2_DIAMONDS} diamonds and a new cast every ${POND_BOOK_REFILL_MS/60000} minutes.`;
  if(e.id==='lake:open')return 'Fish from the rowboat in the village: its own casts and fish.';
  if(e.id==='lake:page2')return `Catch all ${Object.keys(LAKE_FISH).length} kinds: ${LAKE_BOOK2_DIAMONDS} diamonds, once.`;
  if(e.id==='village:week')return `Help ${VILLAGE_WEEK_TARGET} villagers in a week for ${VILLAGE_CRATE_DIAMONDS} diamonds, at the market square.`;
+ if(e.id==='village:miller')return `Heirloom bakes for the miller each week: coins and ${MILLER_DIAMONDS} diamonds, at the market square.`;
  if(e.id==='feature:mastery')return phone?'Rewards for every crop you grow, in More.':'Rewards for every crop you grow, in Estate.';
  if(kind==='feature'&&FEATURE_LINES[key])return FEATURE_LINES[key];
  if(FEATURE_LINES[e.id])return FEATURE_LINES[e.id];

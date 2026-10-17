@@ -77,3 +77,6 @@ html[data-world="village"] :is(.building-label,.utility-label).is-pointed{z-inde
 #building-content .village-fertilizer .game-art{width:22px;height:22px;vertical-align:-6px;margin-right:6px}
 /* The town boat (Oct 2026, public/boat-ui.js): the skipper's line in italics, as a villager's on a golden brief. */
 #boat-content .boat-cargo q{font-style:italic}
+/* The miller's order (17 Oct 2026): his painted portrait, round, a little larger than a place's picture. */
+#village-square-content .miller-order .order-icon.miller-portrait{flex:none;display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:50%;background:#f6ecd0;overflow:hidden}
+#village-square-content .miller-order .order-icon.miller-portrait>.game-art{width:56px;height:56px;object-fit:contain}
