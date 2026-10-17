@@ -97,8 +97,8 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   adminGrant.innerHTML=`<strong class="admin-grant-title">${art('gift')}Admin gift</strong><div class="admin-grant-row">
    <label class="admin-grant-field"><span class="admin-grant-field-label">${art('coins')}Coins</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-coins"></label>
    <label class="admin-grant-field"><span class="admin-grant-field-label">${art('xp')}XP</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-xp"></label>
-   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('diamonds')}Diamonds</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-diamonds"></label>
-  </div><div class="admin-grant-item-row">
+   <label class="admin-grant-field"><span class="admin-grant-field-label">${art('diamonds')}Diamonds</span><input type="number" min="-20000" step="1" placeholder="0" id="admin-grant-diamonds"></label>
+  </div><p class="admin-grant-hint">A minus in Diamonds takes them back (−50): never below 0, and without a notification.</p><div class="admin-grant-item-row">
    <label class="admin-grant-field admin-grant-item-select"><span class="admin-grant-field-label">${art('seeds')}Crop or good</span><select id="admin-grant-item">${adminGrantItemOptions}</select></label>
    <label class="admin-grant-field admin-grant-item-count"><span class="admin-grant-field-label">Quantity</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-item-count"></label>
   </div><label class="admin-grant-notify"><input type="checkbox" id="admin-grant-notify"><span>Notify the player — they see a "Donation!" popup with these amounts</span></label><textarea id="admin-grant-message" maxlength="200" rows="2" placeholder="Optional message, shown with the notification" hidden></textarea><button type="button" class="primary-button admin-grant-give" id="admin-grant-give">${art('gift')}Give</button><p id="admin-grant-status" role="status"></p>`;
@@ -109,10 +109,12 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   // The message field only makes sense once notify is on; it stays out of the way otherwise.
   notifyInput.onchange=()=>{messageInput.hidden=!notifyInput.checked;};
   give.onclick=async()=>{
-   const coins=Math.max(0,Math.floor(Number(coinsInput.value)||0)),xp=Math.max(0,Math.floor(Number(xpInput.value)||0)),diamonds=Math.max(0,Math.floor(Number(diamondsInput.value)||0));
+   // Diamonds may have a minus (17 Oct 2026, the owner: farmers cheat with Invite a friend): that takes them back, on its own and unnotified.
+   const coins=Math.max(0,Math.floor(Number(coinsInput.value)||0)),xp=Math.max(0,Math.floor(Number(xpInput.value)||0)),diamonds=Math.trunc(Number(diamondsInput.value)||0);
    const item=itemSelect.value||null,itemCount=item?Math.max(0,Math.floor(Number(itemCountInput.value)||0)):0;
    if(!coins&&!xp&&!diamonds&&!(item&&itemCount)){grantStatus.textContent='Enter at least one amount.';return;}
    const notify=notifyInput.checked,message=notify?messageInput.value.trim():'';
+   if(diamonds<0)return takeBack({diamonds,other:coins||xp||(item&&itemCount)||notify});
    const parts=[coins&&`${coins} coins`,xp&&`${xp} XP`,diamonds&&`${diamonds} diamonds`,item&&itemCount&&`${itemCount} ${ITEMS[item].name}`].filter(Boolean).join(', ');
    const sure=await confirmAction({names:[profileUsername],title:`Give ${profileUsername??'this farmer'}?`,description:`${parts}.${notify?' They will be notified.':''}`,confirmLabel:'Give',cancelLabel:'Cancel',picture:'gift'});
    if(!sure)return;
@@ -130,6 +132,21 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
    }catch(error){grantStatus.textContent=error.message;}
    finally{give.disabled=false;}
   };
+  // Taking diamonds back: asked first in red, as everything hard to undo; what was taken comes back from the server (never more than
+  // the farmer had).
+  async function takeBack({diamonds,other}){
+   if(other){grantStatus.textContent='Take diamonds back on their own: leave the other amounts empty and notify off.';return;}
+   const sure=await confirmAction({names:[profileUsername],title:`Take back from ${profileUsername??'this farmer'}?`,description:`${-diamonds} diamonds. Never below 0, and they are not notified.`,confirmLabel:'Take back',cancelLabel:'Cancel',picture:'diamonds',tone:'danger'});
+   if(!sure)return;
+   give.disabled=true;grantStatus.textContent='Taking back…';
+   try{
+    const data=await bridge.request({operation:'admin_grant',playerId,coins:0,xp:0,diamonds,item:null,itemCount:0,notify:false,message:''});
+    grantStatus.textContent=`Taken back: ${-data.granted.diamonds} diamonds. They now have ${data.totals.diamonds}.`;
+    diamondsInput.value='';
+    if(playerId===bridge.playerId)window.harvestRefresh?.().catch(()=>{});
+   }catch(error){grantStatus.textContent=error.message;}
+   finally{give.disabled=false;}
+  }
  }
  const logBox=dialog.querySelector('#farmer-log'),logEntries=logBox.querySelector('.farmer-log-entries'),logMore=logBox.querySelector('.farmer-log-more'),logFilters=logBox.querySelector('.farmer-log-filters');
  logBox.querySelector('.farmer-log-icon').innerHTML=art('log');

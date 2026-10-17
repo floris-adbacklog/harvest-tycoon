@@ -160,7 +160,9 @@ export function noteLog(notes){
 export function eventRewardLog(title,reward){
  return [line('rewards','event_reward',`Collected the reward of the event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];
 }
+// A removal (a minus in diamonds, 17 Oct 2026) says so: "The admin took back diamonds · −50 diamonds".
 export function adminGrantLog(granted){
+ if(granted.diamonds<0)return [line('staff','admin_take','The admin took back diamonds',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:0,diamonds:granted.diamonds,xp:0,inventory:{}}))];
  return [line('staff','admin_grant','Received a gift from the admin',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:granted.coins??0,diamonds:granted.diamonds??0,xp:granted.xp??0,inventory:granted.item?{[granted.item]:granted.itemCount}:{}}))];
 }
 

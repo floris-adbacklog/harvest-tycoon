@@ -38,8 +38,13 @@ const MAX_GRANT=1000000,MAX_DIAMONDS=20000,MAX_ITEM=10000,MAX_MESSAGE=200;
 export const validGrantAmount=(value,max)=>Number.isInteger(value)&&value>=0&&value<=max;
 export const validItem=(item,itemCount)=>item==null?!itemCount:Object.hasOwn(ITEMS,item)&&validGrantAmount(itemCount,MAX_ITEM)&&itemCount>0;
 export function validGrant({coins,xp,diamonds,item,itemCount}){
- return validGrantAmount(coins,MAX_GRANT)&&validGrantAmount(xp,MAX_GRANT)&&validGrantAmount(diamonds,MAX_DIAMONDS)&&validItem(item,itemCount)&&Boolean(coins||xp||diamonds||(item&&itemCount));
+ return validGrantAmount(coins,MAX_GRANT)&&validGrantAmount(xp,MAX_GRANT)&&validGrantAmount(Math.abs(diamonds),MAX_DIAMONDS)&&validItem(item,itemCount)&&Boolean(coins||xp||diamonds||(item&&itemCount));
 }
+// Taking diamonds back (17 Oct 2026, the owner: farmers cheat with Invite a friend): a minus in the admin gift's Diamonds. It stands on
+// its own (no coins, XP or goods with it, and never notified: no "Donation!" for a removal), never takes a farm below 0 diamonds (what
+// it takes is what they had, at most), and is logged in admin_grants with the minus (supabase/admin-grants-take-back.sql).
+export const TAKE_ALONE='Take diamonds back on their own: leave the other amounts empty and notify off.';
+export const takeBackAlone=({coins,xp,diamonds,item,itemCount,notify})=>!(diamonds<0)||(!coins&&!xp&&!(item&&itemCount)&&!notify);
 // A short, optional note; the player always sees the amounts once notify is on, the note is extra. Rendered as
 // plain text on the client (never HTML), so nothing here needs escaping — trimming and a length cap are enough.
 // "Donation: you received 50 diamonds + 1,000 coins + 3 Corn." and the admin's note, for the Notifications tab.
@@ -65,6 +70,7 @@ export async function handleAdminGrant({admin,body,user}){
  const item=typeof body.item==='string'&&body.item?body.item:null,itemCount=item?Math.max(0,Math.floor(Number(body.itemCount)||0)):0;
  if(!validGrant({coins,xp,diamonds,item,itemCount}))return respond({error:`Enter whole, non-negative amounts (at least one): per gift at most ${amount(MAX_DIAMONDS)} diamonds, ${amount(MAX_GRANT)} coins or XP and ${amount(MAX_ITEM)} of a crop or good.`},400);
  const notify=body.notify===true,message=notify?sanitizeGiftMessage(body.message):null;
+ if(!takeBackAlone({coins,xp,diamonds,item,itemCount,notify}))return respond({error:TAKE_ALONE},400);
  // Never to an admin account (3 Oct 2026): it plays nothing and opens a showcase farm, so a gift would never be seen, and saving its real
  // farm would set its level 999 back (supabase/admin-level.sql). A lookup that fails does not stop a gift to a farmer.
  const target=await Promise.resolve().then(()=>admin.auth.admin.getUserById(playerId)).catch(()=>null);
@@ -78,7 +84,10 @@ export async function handleAdminGrant({admin,body,user}){
   if(foundFarm.error)throw foundFarm.error;if(foundProfile.error)throw foundProfile.error;
   const row=foundFarm.data;if(!row||!foundProfile.data)return respond({error:'This farmer could not be found.'},404);
   const now=Date.now(),state=normalizeFarm(row.state,now);
-  state.coins+=coins;state.xp+=xp;state.diamonds+=diamonds;
+  // A removal takes what is there, at most: never below 0.
+  const given=diamonds<0?-Math.min(-diamonds,Math.max(0,state.diamonds)):diamonds;
+  if(diamonds<0&&!given)return respond({error:'This farmer has no diamonds to take back.'},400);
+  state.coins+=coins;state.xp+=xp;state.diamonds+=given;
   if(item&&itemCount){
    state.inventory[item]=(state.inventory[item]??0)+itemCount;
    // A gift counts the same way actually getting it would: a crop as a harvest (also raising its mastery
@@ -107,11 +116,11 @@ export async function handleAdminGrant({admin,body,user}){
    // back's time away) still moves with the gift, as before.
    const savedAt=new Date(Date.now()+5000).toISOString();
    try{await admin.from('player_stats').update({last_active_at:foundProfile.data.last_active_at??null}).eq('player_id',playerId).lte('last_active_at',savedAt);}catch{}
-   const logged=await admin.from('admin_grants').insert({player_id:playerId,granted_by:user.id,coins,xp,diamonds,item,item_count:itemCount,notified:notify,message});
+   const logged=await admin.from('admin_grants').insert({player_id:playerId,granted_by:user.id,coins,xp,diamonds:given,item,item_count:itemCount,notified:notify,message});
    if(logged.error)throw logged.error;
    // With notify on, the gift also stays under Notifications in the chat (supabase/chat.sql). Best effort: the gift itself is saved.
    if(notify)try{await admin.from('player_notices').insert({player_id:playerId,kind:'gift',body:giftNotice({coins,xp,diamonds,item,itemCount,message})});}catch{}
-   return respond({granted:{coins,xp,diamonds,item,itemCount},totals:{coins:state.coins,xp:state.xp,diamonds:state.diamonds,level}});
+   return respond({granted:{coins,xp,diamonds:given,item,itemCount},totals:{coins:state.coins,xp:state.xp,diamonds:state.diamonds,level}});
   }
  }
  return respond({error:'This farmer changed at the same moment. Please try again.'},409);
