@@ -8,11 +8,12 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
 import {farmNow} from './farm-client.js';
+import {t} from './i18n.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
 // The family emblems' names. 7 Oct 2026: the 33 new ones (farm-state.js). A game icon is called after its item; the five that are
@@ -60,11 +61,18 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   return `<div class="family-gives">${cards.map(([pic,title,text])=>`<div>${art(pic)}<strong>${title}</strong><span>${text}</span></div>`).join('')}</div><button type="button" class="family-gives-wiki" data-family-wiki>How families work</button>`;
  }
  const givesFold=()=>`<details class="family-gives-fold" data-fold="gives"><summary><strong>What your family gives you</strong><span>The chest, the order, events and the tournament</span></summary>${gives()}</details>`;
+ // Join again (17 Oct 2026, the owner): the family this farmer left for being away too long, while it has room and is still there
+ // (farm-state.js familyRejoinOffer), whatever its join mode or minimum level. The same offer as in Welcome back.
+ function rejoinCard(){
+  const r=view.rejoin;if(!r)return '';
+  // In the farmer's language here and kept from the page's translation, as Welcome back does (welcome-ui.js): the family's name stays.
+  return `<section class="family-alone family-rejoin">${emblem(r.emblem)}<div><strong translate="no">${esc(t('You left {0} after {1} days away.',r.name,Number(r.days)))}</strong><span>You can join it again straight away.</span></div>${actionButton('family_rejoin','Join again',`data-family-id="${esc(r.familyId)}"`)}</section>`;
+ }
  function landing(){
   // Only the family that removed this farmer waits a while (2 Oct 2026); every other family can be joined at once.
   // Starting a family of your own comes first, above the families to join (5 Oct 2026, the owner's wish).
   const blocked=view.blocked&&view.blocked.until>farmNow()?view.blocked:null;
-  return `${renderFamilyInvitation(view,farmNow(),emblem,actionButton)}${rewardCards()}<div class="family-welcome is-compact">${art('family-members')}<div><h3>A little farm. A bigger family.</h3><p>Fill a Family Chest together every week, share a weekly order and help each other grow. Up to ${view.config.maxMembers} farmers.</p></div></div>${gives()}<details class="family-create-fold" data-fold="create"${(view.families??[]).some(f=>!f.full&&(f.mode==='open'||f.mode==='request'))?'':' open'}><summary><strong>Start your own family</strong><span>Anyone can join it; you can change that later</span></summary><div class="family-join-grid family-create-grid"><form data-family-form="create"><label for="family-name">Family name</label><input id="family-name" name="name" required minlength="3" maxlength="20" placeholder="Meadow friends" autocomplete="off">${emblemPickerMarkup({emblems:familyEmblemChoices(),checkedId:FAMILY_EMBLEM_DEFAULT,legend:'Choose your emblem',nameOf:emblemName,tile:emblem,esc})}<button class="primary-button" ${disabled(false)}>Create family</button></form></div></details>${browse(blocked)}`;
+  return `${rejoinCard()}${renderFamilyInvitation(view,farmNow(),emblem,actionButton)}${rewardCards()}<div class="family-welcome is-compact">${art('family-members')}<div><h3>A little farm. A bigger family.</h3><p>Fill a Family Chest together every week, share a weekly order and help each other grow. Up to ${view.config.maxMembers} farmers.</p></div></div>${gives()}<details class="family-create-fold" data-fold="create"${(view.families??[]).some(f=>!f.full&&(f.mode==='open'||f.mode==='request'))?'':' open'}><summary><strong>Start your own family</strong><span>Anyone can join it; you can change that later</span></summary><div class="family-join-grid family-create-grid"><form data-family-form="create"><label for="family-name">Family name</label><input id="family-name" name="name" required minlength="3" maxlength="20" placeholder="Meadow friends" autocomplete="off">${emblemPickerMarkup({emblems:familyEmblemChoices(),checkedId:FAMILY_EMBLEM_DEFAULT,legend:'Choose your emblem',nameOf:emblemName,tile:emblem,esc})}<button class="primary-button" ${disabled(false)}>Create family</button></form></div></details>${browse(blocked)}`;
  }
  // Every family, with who can join and how: Join, Ask to join (or cancel your request), or why not. Open ones come first.
  function browse(blocked){
@@ -138,6 +146,9 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   if(!view.alone)return '';
   return `<section class="family-alone">${art('family-members')}<div><strong>Your family is just you</strong><span>A busier family fills the Family Chest much faster. You can leave and join another family straight away.</span></div>${actionButton('family_leave','Find a family')}</section>`;
  }
+ // Away too long (17 Oct 2026, the owner): the rule in one sentence, on Members and beside the choice in Family settings. Nothing while
+ // the family has no such choice yet (idleDays null: supabase/family-idle-leave.sql has not run).
+ const idleRule=days=>`Members who don't play for ${days} days leave the family automatically. The leader stays.`;
  // Members by points this week; tap a farmer for their profile. A leader's actions sit behind a small menu on each row.
  function members(){
   const best=Math.max(1,...view.members.map(m=>m.points)),profiles=!!window.harvestProfiles;
@@ -146,13 +157,13 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const rankButtons=m=>f.leader?[['coleader','Make co-leader',coleaders>=FAMILY_MAX_COLEADERS&&m.role!=='coleader'],['honorary','Make honorary'],['member','Make member']].filter(([rank])=>rank!==m.role).map(([rank,label,full])=>actionButton('family_rank',`${art(`family-rank-${rank}`)}${full?`${label} (${FAMILY_MAX_COLEADERS} already)`:label}`,`data-member-id="${m.id}" data-rank="${rank}"`,full)).join('')+actionButton('family_promote','Make leader',`data-member-id="${m.id}"`):'';
   const canRemove=m=>f.leader||f.manager&&!['leader','coleader'].includes(m.role);
   const menu=m=>!m.isSelf&&(f.leader||canRemove(m))?`<details class="family-member-menu" data-fold="member-${m.id}"><summary aria-label="Options for ${esc(m.username)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary><div class="family-member-menu-list">${rankButtons(m)}${canRemove(m)?actionButton('family_kick','Remove from family',`data-member-id="${m.id}" data-danger`):''}</div></details>`:'';
-  const row=m=>`<article class="family-member${m.isSelf?' is-self':''}"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId??'')}" ${profiles&&m.playerId?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online: a farm action in the last 30 minutes':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,farmNow())}${m.isSelf?' <em>(you)</em>':''}${rankChip(m)}</strong><small>Level ${m.level} · ${num(m.points)} points this week</small><span class="family-member-bar" aria-hidden="true"><span style="width:${Math.round(m.points/best*100)}%"></span></span></span>${profiles&&m.playerId?'<span class="family-sr-only">Open profile</span>':''}</button>${menu(m)}</article>`;
+  const row=m=>`<article class="family-member${m.isSelf?' is-self':''}"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId??'')}" ${profiles&&m.playerId?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online: a farm action in the last 30 minutes':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,farmNow())}${m.isSelf?' <em>(you)</em>':''}${rankChip(m)}${m.daysAway>0?`<span class="family-away">${m.daysAway===1?'1 day away':`${m.daysAway} days away`}</span>`:''}</strong><small>Level ${m.level} · ${num(m.points)} points this week</small><span class="family-member-bar" aria-hidden="true"><span style="width:${Math.round(m.points/best*100)}%"></span></span></span>${profiles&&m.playerId?'<span class="family-sr-only">Open profile</span>':''}</button>${menu(m)}</article>`;
   // 30 Sep 2026: farmers asking to join first (they wait for an answer), then the family itself, then inviting: the leader's search
   // with the invitations still open, and a friend who is new to the game. The header already counts the farmers and who is online,
   // and the dot and the crown say what they mean when you point at them, so there is no heading or footnote to repeat it.
   const manager=view.family.manager,closed=view.family.mode==='closed';
   const invite=manager?(closed?`<p class="family-notice">Your family is closed to new farmers. To invite someone, change who can join in Family settings.</p>`:`${inviteSearch.html()}${renderSentInvitations(view,farmNow(),actionButton)}`):'';
-  return `${manager&&!closed?joinRequests():''}<div class="family-member-list">${[...view.members].sort((a,b)=>Number(b.online)-Number(a.online)||b.points-a.points||a.username.localeCompare(b.username)).map(row).join('')}</div>${invite}${friendEntry}`;
+  return `${manager&&!closed?joinRequests():''}<div class="family-member-list">${[...view.members].sort((a,b)=>Number(b.online)-Number(a.online)||b.points-a.points||a.username.localeCompare(b.username)).map(row).join('')}</div>${view.family.idleDays?`<p class="family-footnote family-idle-rule">${idleRule(view.family.idleDays)}</p>`:''}${invite}${friendEntry}`;
  }
  // Farmers asking to join (a leader of a family that takes requests): accept or decline each; oldest first.
  function joinRequests(){
@@ -181,6 +192,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>
   ${f.mode==='open'||f.mode==='request'?`<section class="family-card family-open-row"><div><strong>Minimum level</strong><p>${f.mode==='open'?'Farmers below this level cannot join.':'Farmers below this level cannot ask to join.'} You can still invite anyone.</p></div><select data-family-min-level aria-label="Minimum level" ${disabled(false)}>${FAMILY_MIN_LEVELS.map(n=>`<option value="${n}" ${(f.minLevel??FAMILY_MIN_LEVEL)===n?'selected':''}>${n===FAMILY_MIN_LEVEL?`Any level (${n}+)`:`Level ${n}+`}</option>`).join('')}</select></section>`:''}
+  ${f.idleDays?`<section class="family-card family-open-row"><div><strong>Away too long</strong><p>${idleRule(f.idleDays)}</p></div><select data-family-idle-days aria-label="Away too long" ${disabled(false)}>${FAMILY_IDLE_DAYS.map(n=>`<option value="${n}" ${f.idleDays===n?'selected':''}>${n} days</option>`).join('')}</select></section>`:''}
   ${leave}`;
  }
  function render(){
@@ -244,13 +256,15 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   }
   content.querySelector('[data-family-mode]')?.addEventListener('change',event=>act({type:'family_join_mode',mode:event.currentTarget.value}));
   content.querySelector('[data-family-min-level]')?.addEventListener('change',event=>act({type:'family_min_level',level:Number(event.currentTarget.value)}));
+  content.querySelector('[data-family-idle-days]')?.addEventListener('change',event=>act({type:'family_idle_days',days:Number(event.currentTarget.value)}));
   inviteSearch.mount(content);bindEmblemPickers(content);
   refreshArt();if(focusId){const next=document.getElementById(focusId);next?.focus({preventScroll:true});if(next&&typeof selection==='number')try{next.setSelectionRange(selection,selection);}catch{}}
  }
  async function act(action){
   if(busy)return;busy=true;generation++;error='';content.querySelectorAll('button').forEach(b=>b.disabled=true);
   let done=false;
-  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(result.message);if(result.completed)dialog.classList.add('family-celebrate');done=true;}
+  // Join again's answer names the family: put in the farmer's language here, so the toast never translates the name (welcome-ui.js).
+  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message);if(result.completed)dialog.classList.add('family-celebrate');done=true;}
   catch(e){error=e.message;notify(error);}
   finally{busy=false;render();refresh();}
   return done;

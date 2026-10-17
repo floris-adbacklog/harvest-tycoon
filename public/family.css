@@ -505,3 +505,13 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 .family-past-week .family-list-row.is-yours .family-list-open span{color:#56794c;font-weight:700}
 .family-past-prize{display:inline-flex;align-items:center;gap:4px;font-weight:700;color:#426b7b;white-space:nowrap}
 .family-past-prize .game-art{width:18px;height:18px}
+/* Away too long (17 Oct 2026, the owner): "5 days away" beside a member who has not played for a day or more, a quiet cream chip like
+   the ranks; the rule's own line under the list; Join again for a farmer who left that way, in the quiet card of the landing. */
+.family-away{display:inline-block;padding:1px 8px;border-radius:99px;background:#f1eadf;color:#7a6b4b;font-size:12px;font-weight:700;white-space:nowrap}
+#family-dialog .family-idle-rule{margin:12px 0 4px}
+.family-rejoin>.family-emblem{width:44px;height:44px}
+.family-rejoin .family-emblem .game-art{width:32px;height:32px}
+.family-rejoin{flex-wrap:wrap}
+.family-rejoin>div{flex:1 1 160px}
+.family-rejoin>.small-button{margin-inline-start:auto}
+.family-rejoin strong{-webkit-hyphens:manual;hyphens:manual}

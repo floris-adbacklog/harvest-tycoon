@@ -1,4 +1,4 @@
-import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf} from './farm-state.js';
+import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
 const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
@@ -46,6 +46,16 @@ export async function handleFamilyProfile({admin,body,state,player}){
  context.players=context.players.map(p=>({...p,online:isRecentlyActive(p.last_active_at,now)}));
  const profile=familyProfile(context,body.familyId,player,state,now);
  return profile?{status:200,data:{familyProfile:profile,profile:{player_id:player},serverNow:now}}:gone;
+}
+// Join again in Welcome back (17 Oct 2026, the owner): on a return (farm-api's load, only when Welcome back shows) one small read of the
+// farmer's own member row, the family they left for being away too long with the farmers in it now, and the family they are in
+// (supabase/family-idle-leave.sql, harvest_family_rejoin). The rule is the Family window's (familyRejoinOffer). inFamily: whether they
+// are in a family now, for the flag by their Family Hall. Before that SQL has run, or on any problem: null, and the load goes on.
+export async function familyRejoinRead(admin,player){
+ const read=await admin.rpc('harvest_family_rejoin',{p_player:player});
+ if(read.error||!read.data||typeof read.data!=='object')return null;
+ const c={families:read.data.families??[],members:read.data.members??[]},me=c.members.find(m=>m.player_id===player);
+ return {offer:familyRejoinOffer(c,player,Number(read.data.now)||Date.now()),inFamily:!!me&&!me.left_at&&!!me.family_id&&c.families.some(f=>f.id===me.family_id&&!f.deleted_at)};
 }
 // null tells the existing farm-api revision loop to reload and retry.
 export async function handleFamily({admin,body,row,state,player,username}){

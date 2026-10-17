@@ -3,7 +3,7 @@ import {handleSocial} from './social-service.js';
 import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
-import {handleFamily,handleFamilyProfile} from './family-service.js';
+import {handleFamily,handleFamilyProfile,familyRejoinRead} from './family-service.js';
 import {handleAdminGrant,handleAdminEmail,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
@@ -15,7 +15,7 @@ import {recordLoadStall} from './load-stall-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,noteLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
-import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
+import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
 // 11 Oct 2026: a browser keeps the answer to its preflight (OPTIONS) for up to 2 hours (Max-Age; Chrome's own cap, Safari keeps it
 // shorter), instead of Chrome's 5 seconds: about 50,800 OPTIONS calls a day were over a third of all the calls, and every tap after a pause paid
 // two round trips. Allow-Headers must name every header the browser sends (supabase-js: authorization, apikey, content-type,
@@ -226,6 +226,9 @@ Deno.serve(async(req)=>{
    }
    if(body.operation==='load'){
     const welcome=welcomeSummary(state,row.updated_at,now);
+    // Join again (17 Oct 2026, the owner): a farmer who left their family for being away too long sees it in Welcome back. Read beside
+    // the rest of the load, only when Welcome back shows and Farm Families are open to this farm; never in the load's way.
+    const rejoining=welcome&&familyUnlocked(state)?familyRejoinRead(admin,user.id).catch(()=>null):null;
     // The comeback chest (Oct 2026), from the days since the last save (updated_at, set by the database); none on the admin account.
     const comeback=isAdminAccount(user)?null:offerComeback(state,now-(Date.parse(row.updated_at)||now),now);
     const levelReward=grantLevelRewards(state),chapterReward=grantChapterRewards(state);
@@ -258,6 +261,10 @@ Deno.serve(async(req)=>{
       if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
+    const back=await rejoining;
+    if(back?.offer&&welcome)Object.assign(welcome,{family:back.offer});
+    // The family flag by the Family Hall goes when the farmer is in no family any more (left for being away, or removed meanwhile).
+    if(back&&!back.inFamily&&state.family?.familyId)state.family={familyId:null,unclaimedCount:state.family.unclaimedCount??0};
     const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback,from:body.opened});
     if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length||emailBonusPaid){
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});

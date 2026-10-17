@@ -39,7 +39,7 @@ test('a gift message is trimmed, capped at 200 characters, and blank becomes no 
  assert.equal(sanitizeGiftMessage(42),'42','never throws on a non-string');
 });
 
-function database({state=createFarm(now),revision=7,receipts=[{id:'r1',result:{}}],username='Tony',rpcResults=[true]}={}){
+function database({state=createFarm(now),revision=7,receipts=[{id:'r1',result:{}}],username='Tony',lastActiveAt='2026-09-01T08:00:00.000Z',rpcResults=[true]}={}){
  const calls=[];let rpcCall=0;
  const row={player_id:id,state,revision,receipts};
  return {calls,row,
@@ -48,7 +48,7 @@ function database({state=createFarm(now),revision=7,receipts=[{id:'r1',result:{}
    // A fresh, independent copy every fetch, like a real row read back from the database — normalizeFarm mutates
    // in place, so reusing one shared object across a retry would silently double up whatever it changes.
    if(table==='player_farms')return {select(v){call.select=v;return this;},eq(k,v){call.eq=[k,v];return this;},async maybeSingle(){return {data:{...row,state:structuredClone(row.state)}};}};
-   if(table==='player_stats')return {select(v){call.select=v;return this;},eq(k,v){call.eq=[k,v];return this;},async maybeSingle(){return {data:{username}};}};
+   if(table==='player_stats')return {select(v){call.select=v;return this;},eq(k,v){call.eq=[k,v];return this;},lte(k,v){call.lte=[k,v];return Promise.resolve({error:null});},update(v){call.update=v;return this;},async maybeSingle(){return {data:{username,last_active_at:lastActiveAt}};}};
    if(table==='admin_grants')return {async insert(values){call.insert=values;return {error:null};}};
    throw new Error(`unexpected table ${table}`);
   },
@@ -75,6 +75,29 @@ test('a valid grant adds to the existing balance, recomputes the real level, and
  assert.deepEqual(rpc.p_receipts,[{id:'r1',result:{}}],'the receipt log is carried through untouched, not rewritten');
  const logged=db.calls.find(c=>c.insert)?.insert;
  assert.deepEqual(logged,{player_id:id,granted_by:adminId,coins:50000,xp:1000,diamonds:10,item:null,item_count:0,notified:false,message:null},'the audit row records who gave it, separate from the farm state itself');
+});
+test('a gift is not playing: the farmer\'s own last played is put back after the save, never over a later one (17 Oct 2026)',async()=>{
+ // harvest_commit_farm stamps last_active_at on every save; the family rule for members who don't play and "N days away" read it.
+ const db=database({lastActiveAt:'2026-09-01T08:00:00.000Z'});
+ const before=Date.now(),result=await handleAdminGrant({admin:db,body:{playerId:id,coins:100,xp:0,diamonds:0},user:admin});
+ assert.equal(result.status,200);
+ const read=db.calls.find(c=>c.table==='player_stats'&&c.select);assert.equal(read.select,'username,last_active_at','read with the username, before the save');
+ const commit=db.calls.findIndex(c=>c.rpc==='harvest_commit_farm'),restore=db.calls.findIndex(c=>c.table==='player_stats'&&c.update);
+ assert.ok(commit>=0&&restore>commit,'after the save');assert.ok(restore<db.calls.findIndex(c=>c.insert),'and before the gift is logged');
+ const back=db.calls[restore];
+ assert.deepEqual(back.update,{last_active_at:'2026-09-01T08:00:00.000Z'});assert.deepEqual(back.eq,['player_id',id]);
+ assert.equal(back.lte[0],'last_active_at','only while the stamp is the gift\'s own');
+ const until=Date.parse(back.lte[1]);assert.ok(until>=before+5000&&until<=Date.now()+5000,'5 seconds\' room for the clocks');
+ // Never played (no last played): back to none. A failing write never fails the gift.
+ const none=database({lastActiveAt:null});await handleAdminGrant({admin:none,body:{playerId:id,coins:1,xp:0,diamonds:0},user:admin});
+ assert.deepEqual(none.calls.find(c=>c.update).update,{last_active_at:null});
+ const failing=database(),from=failing.from.bind(failing);let reads=0;
+ failing.from=table=>{const q=from(table);if(table==='player_stats'&&reads++>0)q.update=()=>{throw new Error('down');};return q;};
+ assert.equal((await handleAdminGrant({admin:failing,body:{playerId:id,coins:1,xp:0,diamonds:0},user:admin})).status,200);
+ assert.ok(failing.calls.some(c=>c.insert),'still logged');
+ // No save, nothing put back.
+ const busy=database({rpcResults:[false,false,false,false,false]});await handleAdminGrant({admin:busy,body:{playerId:id,coins:1,xp:0,diamonds:0},user:admin});
+ assert.equal(busy.calls.filter(c=>c.update).length,0);
 });
 test('a crop gift adds to inventory and counts exactly as a harvest would: the stat, the total, and mastery progress',async()=>{
  const state=createFarm(now);const before=state.inventory.wheat,beforeHarvest=state.stats.harvest_wheat??0,beforeTotal=state.stats.harvested,beforeMastery=state.mastery.harvests.wheat;
@@ -178,7 +201,7 @@ test('the admin_grant operation is wired in, gated on the caller, and reachable 
 });
 test('a waiting gift is picked up and cleared on the farmer\'s own next load, alongside level/chapter rewards',()=>{
  const code=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');
- const start=code.indexOf("body.operation==='load'){\n"),load=code.slice(start,start+5200);
+ const start=code.indexOf("body.operation==='load'){\n"),load=code.slice(start,start+6400);   // 17 Oct 2026: Join again in Welcome back made the load longer
  assert.match(load,/let gift=state\.pendingGift\?\?null;if\(gift\)delete state\.pendingGift;/,'read once, then removed from the state that gets committed');
  assert.match(load,/if\(welcome\|\|levelReward\.levels\.length\|\|chapterReward\.chapters\.length\|\|gift\|\|inviteReward\|\|friends\.length\|\|emailBonusPaid\)\{/,'a waiting gift alone is enough to trigger the commit, like a level or chapter reward (or an invite reward)');
  assert.match(load,/return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins\},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck\(state\),revision:row\.revision\+1,serverNow:now\}\);/);

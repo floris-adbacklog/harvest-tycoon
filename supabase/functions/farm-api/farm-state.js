@@ -4047,6 +4047,34 @@ export const familyJoinMode=f=>Object.hasOwn(FAMILY_JOIN_MODES,f?.join_mode??'')
 // still works for anyone from level 10. No minimum (null) is the level Farm Families open at.
 export const FAMILY_MIN_LEVELS=Object.freeze([FAMILY_MIN_LEVEL,15,20,25,30,40,50,60,75,100]);
 export const familyMinLevel=f=>Math.max(FAMILY_MIN_LEVEL,Number(f?.min_level)||0);
+// Away too long (17 Oct 2026, the owner; the family stays at most 10): a member who has not played for the family's number of days
+// leaves the family automatically, 7, 14, 30, 60 or 90 days, 30 for every family until its leader or a co-leader picks another in
+// Family settings. Never the leader (no automatic handover, the owner); co-leaders and honorary members leave like members (a
+// co-leader only has rights, an honorary member only a title). "Played" is the game's own last played, player_stats.last_active_at:
+// every saved farm action and every return after 30 minutes or more stamps it (an admin gift does not: admin-service.js puts it
+// back), the member list's online dot and the list of families' "active" read it, and so does the admin. Counted from when they
+// joined if that is later (a request accepted while they were away). The database does it every hour (supabase/family-idle-leave.sql, harvest_family_idle_leave, the same rule as
+// familyIdleLeaves): like a normal leave for the family (the seat frees, this week's points stay), without a wait, no chat card and
+// no push, written down on their member row (left_reason 'idle', left_family, left_days) so Welcome back offers "Join again".
+export const FAMILY_IDLE_DAYS=Object.freeze([7,14,30,60,90]);
+export const FAMILY_IDLE_DEFAULT=30;
+export const familyIdleDays=f=>FAMILY_IDLE_DAYS.includes(Number(f?.idle_days))?Number(f.idle_days):FAMILY_IDLE_DEFAULT;
+// Whole days since a member last played (or joined, if later): 0 on the day itself. The member list says "5 days away" from 1.
+export function familyDaysAway(lastActiveAt,joinedAt,now){
+ const seen=Math.max(Date.parse(lastActiveAt??'')||0,Number(joinedAt)||0);
+ return seen?Math.max(0,Math.floor((now-seen)/DAY_MS)):0;
+}
+export const familyIdleLeaves=(member,family,lastActiveAt,now)=>!!member&&!member.left_at&&!!member.family_id&&member.role!=='leader'&&familyDaysAway(lastActiveAt,member.joined_at,now)>=familyIdleDays(family);
+// Join again (17 Oct 2026, the owner): a farmer who left a family that way can go back into it as a member, whatever its join mode or
+// minimum level (they were a member) and without a wait, while it is still there, has room and has not removed them; until they join
+// any family. Welcome back (farm-api's load) and the Family window offer it; family_rejoin checks the same.
+const LEFT_NONE=Object.freeze({left_reason:null,left_family:null,left_days:null});
+export function familyRejoinOffer(c,player,now,config=FAMILY_CONFIG){
+ const me=familyMember(c,player);if(me?.left_reason!=='idle'||!me.left_family||familyCurrent(c,player))return null;
+ const f=c.families.find(x=>x.id===me.left_family&&!x.deleted_at);
+ if(!f||familyMembers(c,f.id).length>=config.MAX_MEMBERS||me.blocked_family===f.id&&(me.cooldown_until??0)>now)return null;
+ return {familyId:f.id,name:f.name,emblem:f.emblem,days:Number(me.left_days)||0};
+}
 // A request ends when it runs out, when the family goes or stops taking requests, or when the farmer has found a family.
 function refreshFamilyRequests(c,now){
  c.requests??=[];
@@ -4084,7 +4112,7 @@ export function familyMutate(original,state,player,action,now,options={}){
  // Joining elsewhere keeps the block on the family that removed them, until it runs out.
  const keepBlock=m=>m?.blocked_family&&(m.cooldown_until??0)>now?{cooldown_until:m.cooldown_until,blocked_family:m.blocked_family}:{cooldown_until:null,blocked_family:null};
  const joinable=(familyId=null)=>{if(family)throw new Error('Leave your current family first.');if(blockedFrom(member,familyId))throw new Error(`This family removed you. You can join it again in ${blockedFor(member)}.`);};
- if(['family_create','family_join','family_invite','family_accept_invite','family_request'].includes(type)){
+ if(['family_create','family_join','family_invite','family_accept_invite','family_request','family_rejoin'].includes(type)){
   let rate=c.attempts.find(a=>a.player_id===player);if(!rate){rate={player_id:player,window_at:now,count:0};c.attempts.push(rate);}
   if(now-rate.window_at>=3600000){rate.window_at=now;rate.count=0;}
   if(rate.count>=config.ATTEMPTS_PER_HOUR)return {context:c,result:{error:'Too many attempts. Try again later.'},settled,failed:true};
@@ -4095,8 +4123,11 @@ export function familyMutate(original,state,player,action,now,options={}){
    joinable();if(!validName(action.name))throw new Error('Use 3–20 letters, numbers, spaces, apostrophes, underscores or hyphens.');
    const name=action.name.trim();if(c.families.some(f=>!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');
    if(!familyEmblemValid(action.emblem))throw new Error('Choose a family emblem.');
-   family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:true,join_mode:'open',min_level:null,created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);   // open from the start (27 Sep 2026; was invite only, and most families stayed a family of one)
-   const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;
+   // idle_days only once the database has it (17 Oct 2026): harvest_family_context returns every family as a whole row, so with none
+   // of them carrying it supabase/family-idle-leave.sql has not run, and the new family would show a choice that is never saved.
+   const idleKnown=!c.families.length||c.families.some(f=>Object.hasOwn(f,'idle_days'));
+   family={id:uuid(),name,emblem:action.emblem,invite_code:familyCode(c,random),is_open:true,join_mode:'open',min_level:null,...(idleKnown?{idle_days:FAMILY_IDLE_DEFAULT}:{}),created_at:now,renamed_at:null,deleted_at:null};c.families.push(family);   // open from the start (27 Sep 2026; was invite only, and most families stayed a family of one)
+   const next={id:member?.id??uuid(),player_id:player,family_id:family.id,role:'leader',joined_at:now,left_at:null,...keepBlock(member),...LEFT_NONE};if(member)Object.assign(member,next);else c.members.push(next);member=next;
    result={message:'Your Farm Family is ready. Anyone can join it; you can change that in Family settings.'};
   }else if(type==='family_join'){
    joinable(action.familyId);
@@ -4104,7 +4135,14 @@ export function familyMutate(original,state,player,action,now,options={}){
    const found=c.families.find(f=>f.id===action.familyId&&familyJoinMode(f)==='open'&&!f.deleted_at);
    if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is unavailable or full.');
    if(levelOf(state)<familyMinLevel(found))throw new Error(`This family is for farmers from level ${familyMinLevel(found)}.`);
-   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;result={message:'Welcome to your Farm Family.'};
+   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member),...LEFT_NONE};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;result={message:'Welcome to your Farm Family.'};
+  }else if(type==='family_rejoin'){
+   // Join again (17 Oct 2026, the owner): back into the family they left by being away too long, as a member, whatever its join mode
+   // or minimum level, without a wait (familyRejoinOffer: it is still there, has room and has not removed them).
+   joinable(action.familyId);const offer=familyRejoinOffer(c,player,now,config);
+   if(!offer||offer.familyId!==action.familyId)throw new Error('This family is unavailable or full.');
+   const found=c.families.find(f=>f.id===offer.familyId);
+   Object.assign(member,{family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member),...LEFT_NONE});family=found;result={message:`Welcome back to ${found.name}!`};
   }else if(type==='family_invite'){
    manager();
    if(familyJoinMode(family)==='closed')throw new Error('Your family is closed to new farmers. Change who can join in Family settings first.');
@@ -4125,7 +4163,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    if(!found||familyMembers(c,found.id).length>=config.MAX_MEMBERS)throw new Error('This family is unavailable or full.');
    if(familyJoinMode(found)==='closed')throw new Error('This family is closed to new farmers.');
    joinable(found.id);
-   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member)};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;
+   const next={id:member?.id??uuid(),player_id:player,family_id:found.id,role:'member',joined_at:now,left_at:null,...keepBlock(member),...LEFT_NONE};if(member)Object.assign(member,next);else c.members.push(next);member=next;family=found;
    invite.status='accepted';invite.resolved_at=now;result={message:`Welcome to ${found.name}!`};
   }else if(type==='family_decline_invite'){
    const invite=c.invitations.find(i=>i.id===action.invitationId&&i.recipient_id===player&&i.status==='pending');
@@ -4166,6 +4204,12 @@ export function familyMutate(original,state,player,action,now,options={}){
    manager();const level=Number(action.level);if(!FAMILY_MIN_LEVELS.includes(level))throw new Error('Choose a minimum level.');
    family.min_level=level>FAMILY_MIN_LEVEL?level:null;
    result={message:`Farmers from level ${level} can now join.`};
+  }else if(type==='family_idle_days'){
+   // Away too long (17 Oct 2026, the owner): after how many days without playing a member leaves; the leader or a co-leader picks.
+   // Not before supabase/family-idle-leave.sql has run (no idle_days on the family): the database would drop it without a word.
+   manager();if(!Object.hasOwn(family,'idle_days'))throw new Error('Choose after how many days.');
+   const days=Number(action.days);if(!FAMILY_IDLE_DAYS.includes(days))throw new Error('Choose after how many days.');
+   family.idle_days=days;result={message:`Members who don't play for ${days} days now leave the family automatically.`};
   }else if(type==='family_request'){
    joinable(action.familyId);
    const found=c.families.find(f=>f.id===action.familyId&&!f.deleted_at);
@@ -4188,7 +4232,7 @@ export function familyMutate(original,state,player,action,now,options={}){
     if(familyMembers(c,family.id).length>=config.MAX_MEMBERS)throw new Error('Your family is full.');
     if(familyCurrent(c,request.player_id))throw new Error(`${name} already belongs to a family.`);
     const joiner=familyMember(c,request.player_id);if(blockedFrom(joiner,family.id))throw new Error(`Your family removed ${name}. You can let them in again in ${blockedFor(joiner)}.`);
-    const next={id:joiner?.id??uuid(),player_id:request.player_id,family_id:family.id,role:'member',joined_at:now,left_at:null,...keepBlock(joiner)};if(joiner)Object.assign(joiner,next);else c.members.push(next);
+    const next={id:joiner?.id??uuid(),player_id:request.player_id,family_id:family.id,role:'member',joined_at:now,left_at:null,...keepBlock(joiner),...LEFT_NONE};if(joiner)Object.assign(joiner,next);else c.members.push(next);
     request.status='accepted';result={message:`${name} joined your family.`,accepted:request.player_id};
    }else{request.status='declined';result={message:'Request declined.',declined:request.player_id};}
    request.resolved_at=now;request.resolved_by=player;
@@ -4216,7 +4260,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    reward.claimed_at=now;state.coins+=reward.coins;state.xp+=reward.xp;state.diamonds+=reward.diamonds;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+reward.diamonds;
    const levelReward=grantLevelRewards(state);refreshProgressionDaily(state,now);result={coins:reward.coins,xp:reward.xp,diamonds:reward.diamonds,levelReward,message:`Family rewards: +${reward.coins} coins · +${reward.xp} XP · +${reward.diamonds} diamonds.`};
   }else if(type!=='family_read')throw new Error('Choose a valid family action.');
- }catch(error){if(['family_create','family_join','family_invite','family_accept_invite','family_request'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
+ }catch(error){if(['family_create','family_join','family_invite','family_accept_invite','family_request','family_rejoin'].includes(type))return {context:c,result:{error:error.message},settled,failed:true};throw error;}
  refreshFamilyInvitations(c,now);
  family=familyCurrent(c,player);if(family){ensureFamilyOrder(c,family,week,now,config);grantFamilyChest(c,family.id,week,now,config);}
  // The farm shows a family flag by the Family Hall (game.js): the name, emblem and level travel with the farm.
@@ -4246,7 +4290,9 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  // looked up once, not searched per member: contributions are kept for every week.
  const weekRows=new Map(family?c.contributions.filter(r=>r.family_id===family.id&&r.week===week).map(r=>[r.player_id,r]):[]);
  const chestRows=new Map(family?(c.chestPlayers??[]).filter(r=>r.family_id===family.id&&r.week===week).map(r=>[r.player_id,Number(r.points)||0]):[]);
- const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),row=weekRows.get(m.player_id);return {id:m.id,playerId:m.player_id,username:p?.username??'Farmer',avatarId:p?.avatar_id??'default',level:p?.level??1,vipExpiresAt:Date.parse(p?.vip_expires_at)||0,online:p?.online===true,points:row?.points??0,orderPoints:row?.order_points??0,extraPoints:row?.extra_points??0,chestPoints:chestRows.get(m.player_id)??0,role:m.role,top:m.player_id===topFarmer,isSelf:m.player_id===player};}):[];
+ // daysAway (17 Oct 2026, the owner): whole days since a member last played, "5 days away" in the list from 1; only the days, never
+ // the time itself (as online is only a yes or no).
+ const members=family?familyMembers(c,family.id).map(m=>{const p=c.players.find(p=>p.player_id===m.player_id),row=weekRows.get(m.player_id);return {id:m.id,playerId:m.player_id,username:p?.username??'Farmer',avatarId:p?.avatar_id??'default',level:p?.level??1,vipExpiresAt:Date.parse(p?.vip_expires_at)||0,online:p?.online===true,points:row?.points??0,orderPoints:row?.order_points??0,extraPoints:row?.extra_points??0,chestPoints:chestRows.get(m.player_id)??0,role:m.role,top:m.player_id===topFarmer,isSelf:m.player_id===player,daysAway:familyDaysAway(p?.last_active_at,m.joined_at,now)};}):[];
  // Your family's own last weeks (Oct 2026, the Stats tab): its settled results, newest first, at most eight, each with how many
  // families were ranked that week ("#4 of 14"). Ranks in a week run 1, 2, 3 … without gaps (unique per week), so fewer rows than
  // the lowest place means a row is missing: then the number is unknown (null) rather than wrong.
@@ -4290,7 +4336,9 @@ export function familyPublicView(c,player,state,now,config=FAMILY_CONFIG){
  const payOrder=current?c.orders.find(o=>o.family_id===current.family_id&&o.week===week):order,orderLines=Object.keys(payOrder?.lines??{}).length,fullLines=familyOrderFullLines(payOrder);
  const rewardPreview={...familyOrderPay(orderPoints,orderExtra,1,1,config),completionBonus:Math.floor(config.ORDER_COMPLETION_DIAMONDS*orderExtra),fullLines,lines:orderLines,
   now:familyOrderPay(orderPoints,orderExtra,orderPoints>=config.MIN_CONTRIB_POINTS?fullLines:0,orderLines,config)};
- return {chest,standing,alone,invitation,sentInvitations,families,myRequest,joinRequests,week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',manager:familyManager(me.role),role:me.role,renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS}:null,// The one family that removed this farmer, while it is closed to them (2 Oct 2026; there was one wait for every family).
+ // idleDays is null until supabase/family-idle-leave.sql has run (no idle_days on the family yet): the window then says nothing of the
+ // rule, which nothing carries out yet. rejoin: Join again, for a farmer without a family (familyRejoinOffer).
+ return {chest,standing,alone,invitation,sentInvitations,families,myRequest,joinRequests,rejoin:family?null:familyRejoinOffer(c,player,now,config),week,endsAt:familyWeekStart(week+1),serverNow:now,config:{minLevel:FAMILY_MIN_LEVEL,maxMembers:config.MAX_MEMBERS,minPoints:config.MIN_CONTRIB_POINTS,diamondCap:config.TOURNAMENT_FIRST_MAX+config.ORDER_PLAYER_WEEK_DIAMOND_CAP,orderDiamondCap:config.ORDER_PLAYER_WEEK_DIAMOND_CAP},family:family?{...card(family),open:familyJoinMode(family)==='open',leader:me.role==='leader',manager:familyManager(me.role),role:me.role,renameAt:(family.renamed_at??0)+config.RENAME_COOLDOWN_MS,idleDays:Object.hasOwn(family,'idle_days')?familyIdleDays(family):null}:null,// The one family that removed this farmer, while it is closed to them (2 Oct 2026; there was one wait for every family).
   blocked:me?.blocked_family&&(me.cooldown_until??0)>now?{family:me.blocked_family,until:me.cooldown_until}:null,openFamilies:c.families.filter(f=>!f.deleted_at&&familyJoinMode(f)==='open'&&familyMembers(c,f.id).length<config.MAX_MEMBERS).slice(0,30).map(card),members,order:order?{lines:order.lines,filled:order.filled,completed:!!order.completed_at,value:order.value,memberCount:order.member_count}:null,yourPoints:current?.points??0,yourOrderPoints:current?.order_points??0,extraUsed:current?.extra_points??0,contributionLocked,rewards,rewardPreview,lastWeek,tournament:{pool:board.pool,minimumPool:config.TOURNAMENT_FIRST_MIN,firstPrize:board.firstPrize,firstPrizeMin:config.TOURNAMENT_FIRST_MIN,firstPrizeMax:config.TOURNAMENT_FIRST_MAX,perExtraFamily:config.TOURNAMENT_PER_EXTRA_FAMILY,activePlayers:board.activePlayers,activeFamilies:board.qualifying.length,yourRank:yourPrize?.rank??null,yourDiamonds:yourPrize?.shares[player]??0,familyDiamonds:yourPrize?.diamonds??0,entered:!!yourPrize&&Object.hasOwn(yourPrize.shares,player),placePrizes:config.TOURNAMENT_SHARES.map(share=>Math.floor(Math.max(board.total,board.firstPrize*2)*share/100)),placeShares:config.TOURNAMENT_SHARES,poolSteps:[1,2,3].map(n=>Math.round((config.TOURNAMENT_FIRST_MIN+(n-1)*config.TOURNAMENT_PER_EXTRA_FAMILY)*config.RANK_WEIGHTS.slice(0,n).reduce((a,w)=>a+w,0))),poolPerFamily:config.TOURNAMENT_PER_EXTRA_FAMILY*2,poolMax:config.TOURNAMENT_FIRST_MAX*2,familiesForMax:Math.ceil((config.TOURNAMENT_FIRST_MAX-config.TOURNAMENT_FIRST_MIN)/config.TOURNAMENT_PER_EXTRA_FAMILY)+1,familyPoints:place>=0?board.qualifying[place].points:0,pointsBehind:above?above.points-board.qualifying[place].points:0,pointsAhead:place>=0&&place+1<board.qualifying.length?board.qualifying[place].points-board.qualifying[place+1].points:null,rankOf:board.qualifying.length,history,top:board.qualifying.slice(0,10).map((f,i)=>({familyId:f.family_id,name:f.name,emblem:f.emblem,points:f.points,activeMembers:f.active_members,qualified:true,diamonds:board.prizes[i].diamonds})),past:c.results.filter(r=>r.week>=week-4&&r.week<week).sort((a,b)=>b.week-a.week||a.rank-b.rank).map(r=>({week:r.week,familyId:r.family_id,name:r.name,rank:r.rank,points:r.points,activeMembers:r.active_members,diamonds:r.diamonds_pool}))}};
 }
 // A family's profile (27 Sep 2026): opened from a farmer's profile, the list of families, your own family and the tournament. Its

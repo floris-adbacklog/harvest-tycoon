@@ -1485,3 +1485,12 @@ html[data-portal] .feedback-copy{display:none!important}
 .event-league-list small{font-size:12px;color:#8a7d66;white-space:nowrap}
 /* What a harvest is worth at today's prices (11 Oct 2026, Part A A11): a gold coin chip beside the crops, the coins come when it is sold. */
 .float-chip.is-worth{background:#fff1c4f2;color:#7a5512;font-weight:700}
+/* Join again in Welcome back (17 Oct 2026, the owner): the family's own emblem in the gift row's place. */
+#welcome-back-dialog .welcome-family .family-emblem{width:38px;height:38px;border-radius:12px}
+#welcome-back-dialog .welcome-family .family-emblem .game-art{width:28px;height:28px}
+/* A sentence, not a title: a little smaller, and the family's own name is never split by hyphenation (Dutch: "Mea-dow"). */
+#welcome-back-dialog .welcome-family .welcome-gift-copy strong{font-size:14px;line-height:1.35;-webkit-hyphens:manual;hyphens:manual}
+/* A long button (Dutch "Weer lid worden") goes to its own line, on the right, instead of squeezing the sentence into five lines. */
+#welcome-back-dialog .welcome-family{flex-wrap:wrap}
+#welcome-back-dialog .welcome-family .welcome-gift-copy{flex:1 1 150px}
+#welcome-back-dialog .welcome-family .small-button{margin-inline-start:auto}

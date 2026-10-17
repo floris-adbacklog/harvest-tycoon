@@ -237,7 +237,9 @@ function collectPage(file,catalog,htmlNames,scripts){
 
 // Texts a database function hands back as its message (not an error), which the scan for "raise exception" does not see: what a
 // Help, gift or event claim did (29 Sep 2026). Keep in step with the live functions (harvest_social, harvest_event_claim).
-const SERVER_MESSAGES=['You helped with {0} coins. Thank you!','Your gift has arrived!','Request fulfilled. Your family thanks you!','Already completed.','Your family request is ready.','This reward was already collected.','Event rewards collected!'];
+// 17 Oct 2026: and the line the database writes in a farmer's own log when they leave a family for being away too long
+// (supabase/family-idle-leave.sql, harvest_family_idle_leave: format('Left the family after %s days away',...)).
+const SERVER_MESSAGES=['You helped with {0} coins. Thank you!','Your gift has arrived!','Request fulfilled. Your family thanks you!','Already completed.','Your family request is ready.','This reward was already collected.','Event rewards collected!','Left the family after {0} days away'];
 // One word in lower case the code shows on its own, which the scan takes for a name in the code: the reward cell under "1" in a
 // family order (public/family-order-rewards.js, 1 Oct 2026).
 const WORDS=['diamond'];

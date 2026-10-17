@@ -72,7 +72,8 @@ export async function handleAdminGrant({admin,body,user}){
  for(let attempt=0;attempt<5;attempt++){
   const [foundFarm,foundProfile]=await Promise.all([
    admin.from('player_farms').select('*').eq('player_id',playerId).maybeSingle(),
-   admin.from('player_stats').select('username').eq('player_id',playerId).maybeSingle()
+   // last_active_at too (17 Oct 2026): put back after the save, below.
+   admin.from('player_stats').select('username,last_active_at').eq('player_id',playerId).maybeSingle()
   ]);
   if(foundFarm.error)throw foundFarm.error;if(foundProfile.error)throw foundProfile.error;
   const row=foundFarm.data;if(!row||!foundProfile.data)return respond({error:'This farmer could not be found.'},404);
@@ -99,6 +100,13 @@ export async function handleAdminGrant({admin,body,user}){
   const saved=await admin.rpc('harvest_commit_farm',{p_player:playerId,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:foundProfile.data.username,p_currency:state.coins,p_level:level});
   if(saved.error)throw saved.error;
   if(saved.data){
+   // A gift is not playing (17 Oct 2026, the owner): harvest_commit_farm stamps last_active_at on every save, and the family rule for
+   // members who don't play (supabase/family-idle-leave.sql) and "N days away" in the member list read it, so the farmer's own last
+   // played is put back. Never over a later stamp (5 seconds' room for the clocks of farm-api and the database); a play in the moment
+   // between the two writes is stamped again by its next action. Best effort: the gift is saved. player_farms.updated_at (Welcome
+   // back's time away) still moves with the gift, as before.
+   const savedAt=new Date(Date.now()+5000).toISOString();
+   try{await admin.from('player_stats').update({last_active_at:foundProfile.data.last_active_at??null}).eq('player_id',playerId).lte('last_active_at',savedAt);}catch{}
    const logged=await admin.from('admin_grants').insert({player_id:playerId,granted_by:user.id,coins,xp,diamonds,item,item_count:itemCount,notified:notify,message});
    if(logged.error)throw logged.error;
    // With notify on, the gift also stays under Notifications in the chat (supabase/chat.sql). Best effort: the gift itself is saved.
