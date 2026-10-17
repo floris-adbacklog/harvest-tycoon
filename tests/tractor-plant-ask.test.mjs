@@ -37,7 +37,8 @@ test('the tractor window: Plant shows its crop and asks; Water, Extra care and H
  assert.match(ui,/const asking=ask\.open\(Date\.now\(\)\)&&quotes\.plant\.count>0&&state\.coins>=quotes\.plant\.total;if\(!asking\)ask\.stop\(\);/,'a question with nothing to plant goes');
  assert.match(ui,/b\.onclick=\(\)=>b\.dataset\.tractor==='plant'\?askPlant\(\):work\(b\.dataset\.tractor\)/);
  assert.match(ui,/if\(go\)go\.onclick=\(\)=>\{if\(!ask\.answers\(Date\.now\(\)\)\)return;ask\.stop\(\);work\('plant'\);\};/);
- assert.match(ui,/const work=mode=>act\(\{type:'tractor',mode,crop:getCrop\(\)\}/,'farm-api gets the same action: nothing to deploy there');
+ // Since 17 Oct 2026 (fuel follows the crop, tractor-fuel.test.mjs) the price on the tile goes along: never more is charged.
+ assert.match(ui,/const work=mode=>act\(\{type:'tractor',mode,crop:getCrop\(\),expectedCost:quotes\[mode\]\.total\}/);
  assert.match(ui,/ask\.start\(Date\.now\(\)\);renderUtility\(\);document\.querySelector\('\[data-tractor-go\]'\)\?\.focus\(\{preventScroll:true\}\);/,'Enter answers on a keyboard');
  assert.match(ui,/askTimer=setTimeout\(\(\)=>\{if\(\$\('utility-dialog'\)\.open&&utility==='tractor'\)renderUtility\(\);\},ASK_MS\+50\);/);
  // A tap anywhere else, or closing the window, puts the tile back; the tile's own tap (the event bubbles on) does not.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {applyFarmAction,normalizeFarm,CROPS,xpForLevel,utcDay,FULL_CARE_COST,SHIFT_MS,SHIFT_ROUND_MS,SHIFT_ROUNDS,SHIFT_COINS_PER_DIAMOND,SHIFT_MIN_PER_FIELD,NO_EVENT_ACTIONS,
- fullCareQuote,nightShiftQuote,shiftForecast,shiftFieldsTaken,cropUnlocked,marketQuote,seedCost,cropDuration} from '../game/farm-state.js';
+ fullCareQuote,nightShiftQuote,shiftForecast,shiftFieldsTaken,cropUnlocked,marketQuote,seedCost,cropDuration,fieldFuel} from '../game/farm-state.js';
 import {welcomeSummary} from '../supabase/functions/farm-api/welcome-service.js';
 import {readyCrops} from '../supabase/functions/notify-hourly/rules.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -130,7 +130,7 @@ test('Extra care for coins: the tractor gives care to every crop whose care mome
  assert.throws(()=>apply(s,{type:'tractor',mode:'tend'}),/No crops are ready for extra care yet/,'not before the care moment');
  const t=now+40*60000,tended=s.stats.tended,tractor=s.stats.tractor,coins=s.coins;
  const r=apply(s,{type:'tractor',mode:'tend'},t);
- assert.equal(r.count,3,'the three cabbages; the corn is ripe by then and waits for its harvest');assert.equal(coins-s.coins,12+2*3);
+ assert.equal(r.count,3,'the three cabbages; the corn is ripe by then and waits for its harvest');assert.equal(coins-s.coins,12+fieldFuel('cabbage')*3,'fuel by the crop on each field (17 Oct 2026): 4 a cabbage');assert.equal(fieldFuel('cabbage'),4);
  assert.equal(s.stats.tended,tended+3);assert.equal(s.stats.tractor,tractor+1,'a coin job, so it counts like the others');
  assert.ok([0,1,2].every(id=>s.plots[id].tended));
  assert.match(read('public/retention-ui.js'),/\['tend','care','Extra care'\]/);

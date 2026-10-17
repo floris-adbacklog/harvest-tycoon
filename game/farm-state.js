@@ -3070,20 +3070,29 @@ export function grantLevelRewards(state,firstLevel=2){
 // Compatibility for an already-open older client. The same ledger prevents
 // repeat claims after automatic payment; the new UI has no claim button.
 export function claimLevelRewards(state){const reward=grantLevelRewards(state);if(!reward.levels.length)throw new Error('Level rewards are already added automatically.');return reward;}
-// The tractor's fuel: a fixed start plus a little per field (planting pays the seeds on top) (the wiki reads these). No rest since
+// The tractor's fuel: a fixed start per job plus a little per field (planting pays the seeds on top) (the wiki reads these). No rest since
 // 4 Oct 2026 (it rested 15 seconds after each job): swiping over the fields is free and has no wait either.
-export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2;
+// Per field (17 Oct 2026, the owner: "duurder naarmate je langere 'duurdere' crop selecteert"; it was 2 for every crop): 5% of what the
+// field's crop usually sells for (its normal market price, not today's), at least 2, in whole coins. Plant pays for the crop it plants,
+// Water, Extra care and Harvest for the crop on each field. Wheat, lettuce and corn stay at 2; the tractor's four jobs take about 6-9%
+// of a long crop's profit (sunflower 19 a field). The night shift and Full care are paid in diamonds and burn no fuel.
+export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2,TRACTOR_FUEL_SHARE=.05;
+export const fieldFuel=crop=>Object.hasOwn(CROPS,crop??'')?Math.max(TRACTOR_FUEL_PER_FIELD,Math.round(reducedMarketPrice(CROPS[crop].sell)*TRACTOR_FUEL_SHARE)):TRACTOR_FUEL_PER_FIELD;
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
  // tend (4 Oct 2026): extra care for every crop whose care moment has come, as by hand.
  const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):mode==='tend'?fieldTapAction(p,now,'tend')==='tend':p.crop&&p.readyAt<=now);
- const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+TRACTOR_FUEL_PER_FIELD)))):eligible.length;
- const fuel=count?TRACTOR_FUEL_BASE+count*TRACTOR_FUEL_PER_FIELD:0,seeds=mode==='plant'?count*seedCost(state,crop):0;
- return {count,fuel,seeds,total:fuel+seeds,ids:eligible.slice(0,count).map(p=>p.id)};
+ const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+fieldFuel(crop))))):eligible.length;
+ const worked=eligible.slice(0,count);
+ const fuel=count?TRACTOR_FUEL_BASE+worked.reduce((sum,p)=>sum+fieldFuel(mode==='plant'?crop:p.crop),0):0,seeds=mode==='plant'?count*seedCost(state,crop):0;
+ return {count,fuel,seeds,total:fuel+seeds,ids:worked.map(p=>p.id)};
 }
-export function useTractor(state,mode,crop='corn',now=Date.now()){
+// expectedCost (17 Oct 2026): the price the tile showed. Never more is charged; a farm that changed in between asks to look again. An
+// older page sends none and pays the rules' price.
+export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
  if(!['plant','water','harvest','tend'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
  if(mode==='plant'&&!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
  const quote=tractorQuote(state,mode,crop,now);
+ if(expectedCost!==undefined&&(!Number.isSafeInteger(expectedCost)||quote.total>expectedCost))throw new Error('The price has changed. Review the current price.');
  if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':'No crops are ready to harvest.');
  if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
  state.coins-=quote.fuel;
@@ -3533,7 +3542,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'pass_claim':return claimPassTier(state,action.track,action.tier,now);
   case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
-  case 'tractor':return useTractor(state,action.mode,action.crop,now);
+  case 'tractor':return useTractor(state,action.mode,action.crop,now,action.expectedCost);
   case 'tractor_care':return fullCare(state,action.expectedCost,now);
   case 'tractor_shift':return startNightShift(state,action.crop,action.expectedCost,now);
   case 'silo_upgrade':return upgradeSilo(state);
