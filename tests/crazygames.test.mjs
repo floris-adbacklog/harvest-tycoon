@@ -266,8 +266,9 @@ test('the farm session builds the same bridge as the website\'s (src/main.js), s
  const assigned=src=>[...new Set([...src.matchAll(/\bbridge\.(\w+)=/g)].map(m=>m[1]))].sort();
  // Only the website's: Delete account (3 Oct 2026), which CrazyGames never offers and farm-api refuses for its accounts, Google
  // Play's purchases (Oct 2026), only in our Android app, and Play this farm on Discord? (Oct 2026, with Link's trip to Discord and
- // Sign out for another account than the one that tapped Link), never on a portal.
- assert.deepEqual(assigned(session),assigned(main).filter(name=>!['deleteAccount','playSettle','playRecover','discordLink','discordVerify','discordSignOut'].includes(name)));
+ // Sign out for another account than the one that tapped Link), never on a portal. How you sign in and Set a password (17 Oct 2026,
+ // src/account-sign-in.js): a portal made its accounts, so its bridge has neither and Settings shows no line there.
+ assert.deepEqual(assigned(session),assigned(main).filter(name=>!['deleteAccount','playSettle','playRecover','discordLink','discordVerify','discordSignOut','signIn','setPassword'].includes(name)));
  for(const line of ["const bridge={playerId,presence,serverNow:initial.serverNow,serverAt:Date.now(),takeInitial(){const data=initial;initial=null;return data;},","async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');","watchConnection(watch){watchers.add(watch);return()=>watchers.delete(watch);}}",
   "if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}","data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}","else if(error.status===409)unavailable(error.message);",
   "else if(!refused(error.status)&&!['player_search','player_profile','avatar'].includes(body.operation))connection.problem(reasonOf(error,","presence.setClock?.(initial.serverNow);",

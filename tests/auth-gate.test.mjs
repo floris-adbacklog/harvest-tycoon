@@ -13,6 +13,9 @@ const partnerModule=readFileSync(new URL('../src/partner-link.js',import.meta.ur
 const sourceModule=readFileSync(new URL('../src/source-link.js',import.meta.url),'utf8').replace(/^export /gm,'');
 const browserTipModule=readFileSync(new URL('../src/browser-tip.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
 const appSignInModule=readFileSync(new URL('../src/app-sign-in.js',import.meta.url),'utf8').replace(/^export /gm,'');
+// How you sign in (17 Oct 2026): main.js gives the farm bridge.signIn and bridge.setPassword from it; its letter picture (visual-icons.js) is
+// only drawn in the farm's Settings, never here.
+const signInModule=readFileSync(new URL('../src/account-sign-in.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
 const settle=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 let uuid=0;
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
@@ -39,7 +42,7 @@ function fixture({navigation=null,discarded=false,ua='',user=null,load,online=tr
   setTimeout:(fn,ms)=>{if(!ms){queueMicrotask(fn);return 0;}const id=nextTimer++;timers.push({id,at:clock+ms,fn});return id;},clearTimeout:id=>{const i=timers.findIndex(t=>t.id===id);if(i>=0)timers.splice(i,1);},setInterval(){},supabase,isConfigured:true,verifiedUser:async()=>{lookups.push(1);return currentUser;},validUsername:()=>true,chosenLanguage:()=>'en',playBadge:code=>`/assets/badges/google-play-${code}.webp`,appStoreBadge:code=>`/assets/badges/app-store-${code}.webp`,socialProviders:async()=>providers,androidApp:()=>app,listenAppPush:()=>null,playBilling:()=>play,createPlayStore:()=>playStore,PLAY_ERRORS:{unavailable:'Google Play is not available right now.',error:'Google Play could not start the purchase.',owned:'Unfinished purchase.'},PLAY_PRODUCTS:playProducts,
   appStoreBilling:()=>apple,webBilling:()=>web,createAppStore:()=>appStore,APP_STORE_ERRORS:{unavailable:'The App Store is not available right now.',not_found:'Not in the App Store yet.',error:'The App Store could not start the purchase.'},APPLE_PRODUCTS:appleProducts,APPLE_SELLS_OFFER:appleSellsOffer,crypto:{randomUUID:()=>'00000000-0000-4000-8000-00000000000'+(++uuid),getRandomValues:bytes=>webcrypto.getRandomValues(bytes),subtle:webcrypto.subtle},forgetAppPushLink(){},...(paymentRequest?{paymentRequest}:{}),cloudError:e=>e.message,fetchLeaderboard:async()=>({rows:[]}),trackSignUp(){},trackCommerce(){},trackAuth:(step,params)=>analytics.push({step,...params}),startPwa(){},startUpdateCheck(){},stopPageZoom(){},gameViewport(){},startTranslation(){},renderLanguageSwitch(){},openIntent:()=>null,withoutOpen:href=>href,reminderSource,openedBy:source=>{if(source)opened.push(source);},performance:navigation?{getEntriesByType:kind=>kind==='navigation'?[{type:navigation}]:[]}:undefined,startPlayerCounts(){},trackGame:(event,params)=>game.push({event,...params}),createNotifications:()=>({}),createChatClient:()=>({dispose(){}}),startLoadingTips:()=>()=>{},ACCOUNT_STEPS:{},farmHandOver:(win,screen)=>({wait(){screen.hidden=true;},stop(){}}),functionsUrl:null,isNewRegistration:()=>true,farmRequest:async body=>{calls.push(body);return load?load(body):{profile:{player_id:currentUser.id},state:{coins:180},serverNow:Date.now()};}});
 
- vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(appSignInModule,context);vm.runInContext(source,context);
+ vm.runInContext(accountForm,context);vm.runInContext(connectionModule,context);vm.runInContext(socialModule,context);vm.runInContext(inviteModule,context);vm.runInContext(partnerModule,context);vm.runInContext(sourceModule,context);vm.runInContext(browserTipModule,context);vm.runInContext(appSignInModule,context);vm.runInContext(signInModule,context);vm.runInContext(source,context);
  // Moves the clock forward, running every timer that falls due on the way (and the ones they start).
  const advance=async ms=>{const end=clock+ms;for(;;){timers.sort((a,b)=>a.at-b.at);const next=timers[0];if(!next||next.at>end)break;timers.shift();clock=Math.max(clock,next.at);next.fn();await settle();}clock=end;await settle();};
  return {analytics,game,lookups,opened,context,document,window,frames,calls,nodes,events,timers,advance,buttons:providerButtons,goOffline(){context.navigator.onLine=false;},goOnline(){context.navigator.onLine=true;},async auth(event,next){currentUser=next;authCallback(event,next?{user:next}:null);await settle();}};
@@ -167,6 +170,71 @@ test('forgot password sends a reset link to the play page',async()=>{
  await submit(f,{email:'x@y.nl'});assert.equal(JSON.stringify(sent),JSON.stringify([{email:'x@y.nl',redirectTo:'https://farm.example/play.html'}]));
  assert.match(f.nodes.get('confirm-copy').textContent,/link to choose a new password/);
  f.nodes.get('confirm-back').onclick();assert.equal(f.nodes.get('account-title').textContent,'Forgot your password?');
+});
+// How you sign in (17 Oct 2026, src/account-sign-in.js): the farm's bridge says how the signed-in user signs in, from the user the farm
+// opened with, and Set a password is the "Forgot your password?" mail to that account's own address, with the same return address.
+test('the bridge says how this account signs in; Set a password sends the reset mail to its own address, back to the play page',async()=>{
+ const sent=[];const google={id:'A',email:'floris.example@gmail.com',identities:[{provider:'google'}],app_metadata:{provider:'google',providers:['google']}};
+ const f=fixture({user:google,load:async()=>({profile:{player_id:'A'},state:{coins:1},serverNow:Date.now()}),authApi:{async resetPasswordForEmail(email,options){sent.push({email,redirectTo:options.redirectTo});return {error:null};}}});await settle();
+ const bridge=f.window.harvestBridge;assert.equal(f.document.body.dataset.phase,'authenticated');
+ assert.equal(JSON.stringify(bridge.signIn),JSON.stringify({email:'floris.example@gmail.com',methods:['google']}));
+ await bridge.setPassword();
+ assert.equal(JSON.stringify(sent),JSON.stringify([{email:'floris.example@gmail.com',redirectTo:'https://farm.example/play.html'}]),'the same return address as Forgot your password?');
+ assert.ok(f.analytics.some(e=>e.step==='set_password_sent'));assert.ok(!JSON.stringify(f.analytics).includes('gmail'),'no address in analytics');
+ // A refusal in the farmer's words; offline nothing is asked.
+ const busy=fixture({user:google,load:async()=>({profile:{player_id:'A'},state:{coins:1},serverNow:Date.now()}),authApi:{async resetPasswordForEmail(){return {error:{code:'over_email_send_rate_limit',status:429,message:'For security purposes, you can only request this after 40 seconds.'}};}}});await settle();
+ await assert.rejects(busy.window.harvestBridge.setPassword(),/^Error: Too many attempts\. Please wait a few minutes and try again\.$/);
+ busy.goOffline();await assert.rejects(busy.window.harvestBridge.setPassword(),/We could not reach the server/);
+ // An email farmer: the bridge says so (Settings shows no button there).
+ const own=fixture({user:{id:'B',email:'sunny@example.com',identities:[{provider:'email'}],app_metadata:{provider:'email',providers:['email']}},load:async()=>({profile:{player_id:'B'},state:{coins:1},serverNow:Date.now()})});await settle();
+ assert.equal(JSON.stringify(own.window.harvestBridge.signIn.methods),JSON.stringify(['email']));
+ // After Sign out the old bridge sends nothing more.
+ const out=fixture({user:google,load:async()=>({profile:{player_id:'A'},state:{coins:1},serverNow:Date.now()}),authApi:{async resetPasswordForEmail(){sent.push('late');return {error:null};}}});await settle();
+ const old=out.window.harvestBridge;await out.auth('SIGNED_OUT',null);await assert.rejects(old.setPassword(),/Your session has ended/);assert.ok(!sent.includes('late'));
+});
+// 17 Oct 2026 (the review): Supabase adds no email identity when a Google account sets a password, so the session says it. Its amr
+// (supabase-js getAuthenticatorAssuranceLevel, from the stored session) names 'password' after a password sign-in (every Google farmer
+// in the Android app); the farm right after "Choose a new password." (amr 'otp') knows it set one. Anything unreadable: the identities.
+test('a password session or a password just set counts as email and password; an unreadable session falls back to the identities',async()=>{
+ const google={id:'A',email:'floris.example@gmail.com',identities:[{provider:'google'}],app_metadata:{provider:'google',providers:['google']}};
+ const load=async()=>({profile:{player_id:'A'},state:{coins:1},serverNow:Date.now()});
+ const amr=methods=>({mfa:{async getAuthenticatorAssuranceLevel(){return {data:{currentLevel:'aal1',nextLevel:'aal1',currentAuthenticationMethods:methods},error:null};}}});
+ let f=fixture({user:google,load,authApi:amr([{method:'password',timestamp:1}])});await settle();
+ assert.equal(f.document.body.dataset.phase,'authenticated');assert.equal(JSON.stringify(f.window.harvestBridge.signIn.methods),JSON.stringify(['google','email']));
+ f=fixture({user:google,load,authApi:amr([{method:'oauth',timestamp:1}])});await settle();assert.equal(JSON.stringify(f.window.harvestBridge.signIn.methods),JSON.stringify(['google']));
+ f=fixture({user:google,load,authApi:{mfa:{async getAuthenticatorAssuranceLevel(){throw new SyntaxError('Invalid JWT structure');}}}});await settle();
+ assert.equal(f.document.body.dataset.phase,'authenticated','a token it cannot read never stops the farm');assert.equal(JSON.stringify(f.window.harvestBridge.signIn.methods),JSON.stringify(['google']));
+ f=fixture({user:google,load,authApi:{mfa:{async getAuthenticatorAssuranceLevel(){return {data:null,error:{message:'Auth session missing!'}};}}}});await settle();assert.equal(JSON.stringify(f.window.harvestBridge.signIn.methods),JSON.stringify(['google']));
+ // After the reset link: the password form, then the farm, which knows a password was just set (no Set a password again).
+ const updates=[];
+ // (the fixture's own farm load: it answers for whoever is signed in)
+ f=fixture({user:google,location:{origin:'https://farm.example',hash:'#access_token=t&type=recovery',search:''},authApi:{...amr([{method:'otp',timestamp:1}]),async updateUser(body){updates.push(body);return {data:{user:google},error:null};}}});await settle();
+ assert.equal(f.nodes.get('account-title').textContent,'Choose a new password.');
+ f.nodes.get('password').value='harvest-moon-42';await f.nodes.get('account-form').onsubmit({preventDefault(){}});await settle();
+ assert.equal(updates.length,1);assert.equal(f.document.body.dataset.phase,'authenticated');assert.equal(JSON.stringify(f.window.harvestBridge.signIn.methods),JSON.stringify(['google','email']));
+ // Another account signing in on that page later is not taken for the one that set the password.
+ const other={id:'B',email:'other@gmail.com',identities:[{provider:'google'}],app_metadata:{provider:'google',providers:['google']}};
+ await f.auth('SIGNED_OUT',null);await f.auth('SIGNED_IN',other);await f.advance(10);
+ assert.equal(f.document.body.dataset.phase,'authenticated');assert.equal(f.window.harvestBridge.playerId,'B');
+ assert.equal(JSON.stringify(f.window.harvestBridge.signIn.methods),JSON.stringify(['google']));
+});
+// 17 Oct 2026 (the review): supabase-js sends PASSWORD_RECOVERY to every tab of the site. Set a password starts from an open farm, so the
+// mail's link opened in the same browser must not close that farm and leave a second password form: only the link's own tab changes.
+test('a reset link opened in another tab leaves this tab\'s farm open; the link\'s own tab shows the password form',async()=>{
+ const google={id:'A',email:'floris.example@gmail.com',identities:[{provider:'google'}],app_metadata:{provider:'google',providers:['google']}};
+ const f=fixture({user:google,load:async()=>({profile:{player_id:'A'},state:{coins:1},serverNow:Date.now()})});await settle();
+ assert.equal(f.document.body.dataset.phase,'authenticated');const bridge=f.window.harvestBridge;const opened=f.frames.length;
+ await f.auth('PASSWORD_RECOVERY',google);await settle();
+ assert.equal(f.document.body.dataset.phase,'authenticated');assert.equal(f.window.harvestBridge,bridge,'the same farm, not disposed');
+ assert.notEqual(f.nodes.get('account-title')?.textContent,'Choose a new password.');assert.equal(f.frames.length,opened);
+ assert.ok(!f.analytics.some(e=>e.step==='recovery_open'));
+ // The password set in the other tab (USER_UPDATED there, shared here): the farm stays.
+ await f.auth('USER_UPDATED',google);await settle();assert.equal(f.window.harvestBridge,bridge);
+ // The link's own tab: the form, once (the event after boot does not open it again).
+ const link=fixture({user:google,location:{origin:'https://farm.example',hash:'#access_token=t&type=recovery',search:''}});await settle();
+ assert.equal(link.nodes.get('account-title').textContent,'Choose a new password.');
+ await link.auth('PASSWORD_RECOVERY',google);await settle();
+ assert.equal(link.nodes.get('account-title').textContent,'Choose a new password.');assert.equal(link.analytics.filter(e=>e.step==='recovery_open').length,1);assert.equal(link.frames.length,0);
 });
 test('the first sign-in after registering is tagged so the funnel can be closed',async()=>{
  const storage={'harvest-tycoon:returning':'1','harvest-tycoon:confirm-pending':'1'};

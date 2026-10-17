@@ -25,6 +25,7 @@ import {APP_SIGN_IN_ORIGIN,APP_SIGN_IN_REFUSED_MS,appOAuthLink,appAppleLink,appA
 import {forgetAppPushLink} from './app-push.js';
 import {createPlayStore,PLAY_ERRORS} from './play-store.js';
 import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
+import {signInOf,passwordMail,passwordSession} from './account-sign-in.js';
 import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER} from '../game/payments.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
@@ -125,6 +126,11 @@ async function showInviter(){
 void showInviter();
 const linkText=()=>`${globalThis.location?.hash??''}&${globalThis.location?.search??''}`;
 const linkKind=()=>/type=(recovery|signup|magiclink|invite|email_change)/.exec(linkText())?.[1]??'';
+// This tab opened a reset link (17 Oct 2026, the review of Set a password): read now, before supabase-js clears the address. Only such a
+// tab turns into "Choose a new password." on PASSWORD_RECOVERY: supabase-js sends that event to every tab of this site, and Set a
+// password starts from an open farm, so a mail link opened in the same browser would otherwise close the farm in the first tab and
+// leave a second password form there. passwordSet: the account this page just set a password for (the farm that opens next says so).
+let recoveryLink=linkKind()==='recovery',passwordSet='';
 // A sign-in that came back with an error: Google, Facebook and Discord say error=access_denied (with error_code), a cancel on Apple's
 // page error=user_cancelled_authorize alone (10 Oct 2026), so any error parameter counts.
 const linkError=()=>/error_code=|(?:^|[?#&])error=/.test(linkText());
@@ -219,6 +225,8 @@ function startResendCooldown(seconds){
  tick();resendTimer=setInterval(tick,1000);
 }
 function startRecovery(){recovering=true;connection.stop();dispose();phase('unauthenticated');setMode('recovery');trackAuth('recovery_open');}
+// The ways this session signed in (its amr): supabase-js decodes the stored access token, no call. [] when it cannot say.
+async function sessionMethods(){try{const {data}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();return data?.currentAuthenticationMethods??[];}catch{return [];}}
 async function openFarm(){
  if(checking){reopen=true;return;}checking=true;connection.stop();dispose();const ticket=generation;phase('checking','Checking your account…');
  try{
@@ -226,6 +234,8 @@ async function openFarm(){
   if(!navigator.onLine)throw new Error('Connect to the internet to open your farm.');
   const user=await verifiedUser();if(ticket!==generation)return;
   if(!user){landing();return;}playerId=user.id;phase('checking','Opening your farm…');
+  // How this session signed in (17 Oct 2026, How you sign in): its amr, read from the stored session (no call), while the farm is on its way.
+  const signedWith=sessionMethods();
   // The game page starts loading now, while the farm is on its way from the server (1 Oct 2026): its page, styles and scripts
   // arrive in the meantime and it picks the farm up the moment it is here (src/game-cloud.js waits for this bridge). One wait at
   // the start instead of the server and then the page. It only counts as the open farm (frame) once the farm is here; a farm that
@@ -235,6 +245,7 @@ async function openFarm(){
   const giveUp=error=>{cancel(error);page.remove();if(window.harvestBridge?.ready===ready)delete window.harvestBridge;};
   let initial;try{const inviteCode=pendingInvite(localStore),partnerCode=pendingRef(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{}),...(partnerCode?{partnerCode}:{}),...(pendingSource?{source:pendingSource}:{})});clearInvite(localStore);clearRef(localStore);pendingSource=null;}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
   if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
+  const hasPassword=(Boolean(passwordSet)&&passwordSet===user.id)||passwordSession(await signedWith);if(ticket!==generation)return;
   presence=createFarmPresence(supabase,user.id);
   presence.setClock?.(initial.serverNow);const clock=Number.isFinite(initial.serverNow)?initial.serverNow-Date.now():0;   // the server's clock, for the board's online count
   const bridge={playerId,presence,serverNow:initial.serverNow,serverAt:Date.now(),takeInitial(){const data=initial;initial=null;return data;},signOut,async leaderboard(category='level'){if(ticket!==generation)throw new Error('Your session has ended.');const result=await fetchLeaderboard(supabase,user.id,category,{counts:true,now:Date.now()+clock});if(ticket!==generation)throw new Error('Your session has ended.');presence?.setRows?.(result.rows);return {...result,...presence?.snapshot()};},async request(body){
@@ -354,6 +365,14 @@ async function openFarm(){
   // after trips does what it did before them; frame.src added a step for each trip, and Back then loaded the whole game again.
   // dataset.address says where the frame was sent (public/loading-screen.js farmHandOver watches a trip's page by it).
   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'?'/farm.html?world=village':'/farm.html';try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
+  // How you sign in (17 Oct 2026, the owner; src/account-sign-in.js): Settings, Your account says it from the user above (verifiedUser:
+  // getUser, so its identities are the server's; no extra call). Set a password sends this account's own address the mail of the sign-in
+  // card's "Forgot your password?", with the same return address (redirectUrl()): its link opens this page in recovery mode, "Choose a new
+  // password.", and the farm. Supabase finds the account by its address whatever it signed in with, and a password set there works
+  // with signInWithPassword (supabase/auth: recover, verify, user update, the password grant). A session opened with a password, or the
+  // farm right after "Choose a new password.", also says email and password and offers no button (src/account-sign-in.js signInOf).
+  bridge.signIn=signInOf(user,{password:hasPassword});
+  bridge.setPassword=async()=>{if(ticket!==generation)throw new Error('Your session has ended.');await passwordMail({auth:supabase.auth,email:user.email,redirectTo:redirectUrl(),online:()=>navigator.onLine,track:(step,params)=>trackAuth(step,params)})();};
   // Delete account (3 Oct 2026, Settings › Privacy, src/account-delete.js): farm-api deletes the farm, everything personal and the account
   // itself, for this signed-in farmer only and only with their farmer name typed exactly (account-delete-service.js). Never repeated by
   // itself. Then this device lets go (the app's notifications, the session, which the server no longer knows) and the home page says so;
@@ -512,8 +531,8 @@ $('account-form').onsubmit=async event=>{
    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:redirectUrl()});if(error)throw error;
    showConfirmation(email,{kind:'reset'});return;
   }else if(mode==='recovery'){
-   const {error}=await supabase.auth.updateUser({password});if(error)throw error;
-   recovering=false;trackAuth('password_changed');store.set(RETURNING_KEY,'1');try{history.replaceState(null,'',location.pathname);}catch{}
+   const {data,error}=await supabase.auth.updateUser({password});if(error)throw error;
+   recovering=false;recoveryLink=false;passwordSet=data?.user?.id??'';trackAuth('password_changed');store.set(RETURNING_KEY,'1');try{history.replaceState(null,'',location.pathname);}catch{}
   }else{
    const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;
    const afterSignup=store.get(CONFIRM_KEY)==='1';store.remove(CONFIRM_KEY);trackAuth('login',{method:'password',after_signup:afterSignup});
@@ -541,7 +560,7 @@ $('retry-connection').onclick=openFarm;$('leave-account').onclick=signOut;
 window.addEventListener('offline',()=>{if(frame)connection.offline();});
 window.addEventListener('online',()=>{connection.online();if(document.body.dataset.phase==='error'&&connection.status==='ok')setTimeout(openFarm,WAKE_GRACE);});
 if(supabase)supabase.auth.onAuthStateChange((event,session)=>{
- if(event==='PASSWORD_RECOVERY'){startRecovery();return;}
+ if(event==='PASSWORD_RECOVERY'){if(recoveryLink&&!recovering)startRecovery();return;}
  if(event==='SIGNED_OUT'){landing();return;}
  if(recovering)return;
  if(event==='SIGNED_IN'&&!submitting&&checking&&(!playerId||playerId!==session?.user.id)){dispose();phase('checking','Checking your account…');reopen=true;return;}

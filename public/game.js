@@ -1415,7 +1415,8 @@ function bindUI(){
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
  // that has not been paid yet. After the code, a farm reload pays the diamonds (the gift pop-up) and both disappear.
  emailCheckUI=createEmailCheck({bridge:window.parent.harvestBridge,email:()=>emailAccount.email,canChange:()=>emailAccount.canChange===true,onDone:()=>client.refresh(),
-  onChanged:async next=>{setEmailCheck({...emailAccount,email:next});toast(`Your email address is now ${next}.`);await client.refresh();}});
+  // The new address also goes to Settings, Your account's "You sign in with…" line (17 Oct 2026, src/account-sign-in-ui.js), masked again.
+  onChanged:async next=>{setEmailCheck({...emailAccount,email:next});document.dispatchEvent(new CustomEvent('harvest-email-changed',{detail:next}));toast(`Your email address is now ${next}.`);await client.refresh();}});
  $('email-button').onclick=()=>emailCheckUI.open();
  $('email-settings-change').onclick=()=>emailCheckUI.open({change:true});$('email-settings-confirm').onclick=()=>emailCheckUI.open();
  setEmailCheck(initialEmailCheck);

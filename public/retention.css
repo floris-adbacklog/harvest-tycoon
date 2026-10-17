@@ -1058,6 +1058,29 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #sound-dialog .name-nudge p{margin:4px 0 12px;font-size:13px;line-height:1.45;color:#806c45}
 #sound-dialog .name-nudge b{color:#5d4a22;white-space:nowrap}
 #sound-dialog .name-nudge button{width:100%;min-height:44px;justify-content:center}
+/* How you sign in (17 Oct 2026, src/account-sign-in.js): one calm row under the name card, in the look of the Settings rows (the Discord
+   switch): the way's mark, "You sign in with Google." and the masked address with Show; Set a password beside them, under them on a
+   phone (under the words). Show is a text link with a finger-sized tap area that takes no room; the address keeps its own direction
+   in Arabic (unicode-bidi:plaintext), Apple's relay words theirs. */
+#sound-dialog .account-sign-in{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px 12px;margin:0 0 12px;padding:10px 12px;border:1px solid #e2d7cb;border-radius:14px;background:#f3ede7}
+#sound-dialog .sign-in-marks{display:flex;gap:4px}
+#sound-dialog .sign-in-mark{display:grid;place-items:center;width:30px;height:30px;border:1px solid #e6dccb;border-radius:9px;background:#fffdf7}
+#sound-dialog .sign-in-mark svg{width:17px;height:17px}
+#sound-dialog .sign-in-mark .game-art{width:22px;height:22px}
+#sound-dialog .sign-in-copy{display:grid;gap:2px;min-width:0}
+#sound-dialog .sign-in-how{margin:0;font-size:14px;font-weight:700;line-height:1.35;color:#3d392b}
+#sound-dialog .sign-in-address{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px;margin:0;font-size:13px;line-height:1.45;color:#827a6f}
+#sound-dialog .sign-in-address[hidden]{display:none}
+#sound-dialog .sign-in-email{min-width:0;overflow-wrap:anywhere;unicode-bidi:plaintext}
+#sound-dialog .sign-in-show{flex:none;margin:-8px -6px;padding:8px 6px;border:0;background:none;box-shadow:none;font:700 13px 'DM Sans',sans-serif;color:#6b5d44;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#sound-dialog .sign-in-show:focus-visible{outline:3px solid #c2912d;outline-offset:-2px;border-radius:8px}
+#sound-dialog .sign-in-password{min-height:40px;padding:6px 14px;font-size:13px;white-space:nowrap}
+#sound-dialog .sign-in-password[hidden]{display:none}
+#sound-dialog .sign-in-message{grid-column:2/-1;margin:0;font-size:13px;line-height:1.45;color:#827a6f}
+#sound-dialog .sign-in-message[hidden]{display:none}
+#sound-dialog .sign-in-message.is-done{color:#3f6b4a}
+#sound-dialog .sign-in-message.is-error{color:#b4513f}
+@media(max-width:560px){#sound-dialog .account-sign-in{grid-template-columns:auto minmax(0,1fr)}#sound-dialog .sign-in-password{grid-column:2;justify-self:start;min-height:44px}}
 #sound-dialog .avatar-settings-header{gap:10px;margin:0 0 8px}
 #sound-dialog .avatar-settings-header>img{width:64px;height:64px;border-radius:16px}
 #sound-dialog .avatar-settings-header h3{margin:0;font-size:17px}

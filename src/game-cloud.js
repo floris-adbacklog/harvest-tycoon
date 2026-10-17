@@ -19,6 +19,7 @@ import {createPortalUI} from './portal-ui.js';
 import {portalSells} from '../public/portal.js';
 import {markAdminView,startAdminView} from './admin-view.js';
 import {createAccountDelete} from './account-delete.js';
+import {createSignInLine} from './account-sign-in-ui.js';
 import {createDiscordLinkDialog,createDiscordSwitch,createDiscordUnlink} from '../public/discord-link-ui.js';
 // 15 Oct 2026 (the 12% report, option 5): room for every file's resource timing. The farm page asks for ~200 files before game.js runs,
 // and Chrome keeps only 250 entries by default, so the watch's count of arrived files (public/loading-screen.js filesIn) and its list of
@@ -76,6 +77,10 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // harvesttycoon.com farm (Settings, Your account). Nowhere else: the portal says whether this is one (discordOnly).
   const farmerName=()=>document.getElementById('player-name')?.dataset.username??'',firstLevel=window.harvestInitialFarm.profile?.level;
   if(portal)createDiscordSwitch({portal,farmer:farmerName,level:()=>firstLevel});
+  // Settings, Your account: "You sign in with Google." and the masked address, with Set a password for an account without one (17 Oct
+  // 2026, src/account-sign-in-ui.js). On the website and in both apps; never on a portal (the portal made the account; its bridge has no
+  // signIn) or in the admin view.
+  if(!portal&&!adminView&&bridge.signIn)createSignInLine({info:bridge.signIn,setPassword:bridge.setPassword});
   // Settings › Privacy › Delete account (3 Oct 2026, src/account-delete.js): on the website and in both apps, never on CrazyGames.
   if(!portal)createAccountDelete({bridge,name:()=>document.getElementById('player-name')?.dataset.username??''});
   // Settings › Privacy › Played on Discord (Oct 2026, public/discord-link-ui.js): a farm a Discord account plays, and Unlink Discord.
