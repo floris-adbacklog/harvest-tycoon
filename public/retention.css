@@ -427,6 +427,11 @@
 .tractor-tile:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc;box-shadow:none}
 .tractor-tile:disabled .tractor-tile-art{filter:grayscale(1);opacity:.45}
 .tractor-tile:disabled strong{color:#a49c8c}
+/* Plant asks first (17 Oct 2026, tractor-ask.js): the tile itself holds the question, edged in gold like an open choice, with Plant and
+   Other crop under it (side by side when they fit). The other tiles stay where they are. */
+.tractor-tile.is-asking{cursor:default;border-color:#c9a45a;background:#fff8e1;box-shadow:0 2px 0 #ecdcae}
+.tractor-ask-buttons{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-top:6px}
+.tractor-ask-buttons>button{flex:1 1 auto;min-height:38px;padding:6px 10px;font-size:14px;line-height:1.2}
 .tractor-job-cost{display:inline-flex;align-items:center;gap:3px;padding-block:4px;padding-inline:5px 9px;border-radius:999px;background:#f7e9b8;color:#6b4f0f;font-weight:700;font-size:13.5px;white-space:nowrap}
 .tractor-job-cost .game-art{width:17px;height:17px}
 .tractor-foot{margin:8px 2px 0;font-size:12px;line-height:1.5;color:#8a7d68}

@@ -30,7 +30,9 @@ test('an empty market offers the way forward',()=>{
 test('the tractor shows the crop as a chip that opens the crop picker, and one tile per job (5 Oct 2026); no rest pill since it never rests (4 Oct 2026)',()=>{
  const ui=read('public/retention-ui.js'),css=read('public/retention.css');
  assert.doesNotMatch(ui,/tractor-timer|Resting ·|\bcooldown\b|tractor rests/,'nothing of the old rest is left (a leftover cooldown broke the card on 4 Oct 2026)');
- assert.match(ui,/document\.querySelector\('\[data-tractor-crop\]'\)\.onclick=\(\)=>\{\$\('utility-dialog'\)\.close\(\);\$\('selected-crop-button'\)\?\.click\(\);\};/);
+ // Since 17 Oct 2026 the seed shop returns to the tractor once a crop is picked (tractor-plant-ask.test.mjs).
+ assert.match(ui,/document\.querySelector\('\[data-tractor-crop\]'\)\.onclick=\(\)=>toSeeds\(false\);/);
+ assert.match(ui,/\$\('utility-dialog'\)\.close\(\);const seeds=\$\('seed-dialog'\);seeds\.dataset\.from='tractor';\$\('selected-crop-button'\)\?\.click\(\);/);
  assert.match(ui,/<button class="tractor-tile" data-tractor="\$\{mode\}"/);
  assert.match(css,/\.tractor-seed>span:not\(\.game-art\)\{flex:1;min-width:0\}/,'a crop picture (a span) is never stretched like the text');
 });

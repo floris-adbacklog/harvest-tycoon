@@ -46,7 +46,8 @@ test('1. the seed shop: a crop that is not quick says how long it takes and name
  // The seed shop's row says it when a crop is chosen.
  const ui=read('public/economy-ui.js');
  assert.match(ui,/import \{QUICK_CROP_MS,cropChoiceText\} from '\.\/wait-tip\.js';/);
- assert.match(ui,/b\.addEventListener\('click',\(\)=>\{chooseCrop\(b\.dataset\.chooseCrop\);\$\('seed-dialog'\)\.close\(\);notify\(cropChoiceText\(state,b\.dataset\.chooseCrop,farmNow\(\)\)\);\}\)/);
+ // Not when the shop was opened from the tractor (17 Oct 2026): the tractor opens again and shows the crop (tractor-plant-ask.test.mjs).
+ assert.match(ui,/b\.addEventListener\('click',\(\)=>\{chooseCrop\(b\.dataset\.chooseCrop\);const fromTractor=\$\('seed-dialog'\)\.dataset\.from==='tractor';\$\('seed-dialog'\)\.close\(\);if\(!fromTractor\)notify\(cropChoiceText\(state,b\.dataset\.chooseCrop,farmNow\(\)\)\);\}\)/);
  assert.doesNotMatch(ui,/notify\(`\$\{CROPS\[b\.dataset\.chooseCrop\]\.name\} selected/,'one place says it');
 });
 

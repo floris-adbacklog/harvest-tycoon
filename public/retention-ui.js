@@ -7,10 +7,12 @@ import {confirmDiamondSpend} from './diamond-confirm.js';
 import {lanternChip} from './pass-ui.js';
 import {APP_PUSH_BLOCKED} from './android.js';
 import {keepFolds} from './keep-folds.js';
+import {plantAsk,askTile,ASK_MS} from './tractor-ask.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList,celebrate=()=>{}}){
- let tab='challenges',lastWaits='',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false;
+ let tab='challenges',lastWaits='',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false,askTimer=0;
+ const ask=plantAsk();
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  // Rewards as the same little chips everywhere: coins, diamonds, XP.
  // In the order given, so a screen can lead with what matters most there (the streak leads with diamonds).
@@ -112,12 +114,18 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    lastFieldStatus=fieldStatus();
    const crop=getCrop();
    const quotes=Object.fromEntries(['plant','water','tend','harvest'].map(mode=>[mode,tractorQuote(state,mode,crop,farmNow())]));
+   // Plant asks first, in its own tile (tractor-ask.js); a question nothing can answer any more (no empty field, too few coins) goes.
+   const asking=ask.open(Date.now())&&quotes.plant.count>0&&state.coins>=quotes.plant.total;if(!asking)ask.stop();
    // The crop you plant as a tappable chip, the four coin jobs as tiles (picture, price, fields), the fuel rule in one
    // small line, then the diamond work (5 Oct 2026: everything on one phone screen, in the game's own colours).
    const empty={plant:state.plots.some(p=>!p.crop)?'Not enough coins':'No empty fields',water:'Nothing to water · water right after planting',tend:'Nothing ready for care yet · it opens after 30% of the growing time',harvest:'Nothing ready yet'};
-   $('utility-content').innerHTML=`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant','seeds','Plant'],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}</div><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${TRACTOR_FUEL_PER_FIELD} per field. <span>By hand is always free.</span></p>${diamondWork(crop)}`;
-   document.querySelector('[data-tractor-crop]').onclick=()=>{$('utility-dialog').close();$('selected-crop-button')?.click();};
-   document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>act({type:'tractor',mode:b.dataset.tractor,crop:getCrop()},r=>`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`));
+   $('utility-content').innerHTML=`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant',crop,`Plant ${CROPS[crop].name}`],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];if(mode==='plant'&&asking)return askTile(crop,CROPS[crop].name,q);return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}</div><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${TRACTOR_FUEL_PER_FIELD} per field. <span>By hand is always free.</span></p>${diamondWork(crop)}`;
+   document.querySelector('[data-tractor-crop]').onclick=()=>toSeeds(false);
+   const work=mode=>act({type:'tractor',mode,crop:getCrop()},r=>`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`);
+   document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>b.dataset.tractor==='plant'?askPlant():work(b.dataset.tractor));
+   const go=document.querySelector('[data-tractor-go]');
+   if(go)go.onclick=()=>{if(!ask.answers(Date.now()))return;ask.stop();work('plant');};
+   const other=document.querySelector('[data-tractor-other]');if(other)other.onclick=()=>toSeeds(true);
    // The diamond work (4 Oct 2026): short of diamonds goes to the packs; 150 or more asks first, as everywhere in the game,
    // and the night shift always asks (5 Oct 2026: a tap by accident started 8 hours that cannot be stopped).
    // The price sent is the one on the button: the server never charges more (a quote that went up asks to look again).
@@ -140,6 +148,18 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    $('utility-content').innerHTML=`<p class="silo-lead">${art('silo')}<span>Cheaper seeds and quicker crops for everything you plant from now on.</span></p><div class="silo-now"><div>${art('seeds')}<p><strong>${bonus.seeds?'−':''}${pct(bonus.seeds)}</strong><span>seed price</span></p></div><div>${art('hourglass')}<p><strong>${bonus.growth?'−':''}${pct(bonus.growth)}</strong><span>growing time</span></p></div></div><section class="research-next silo-next ${level===5?'is-complete':''}"><div><h3>${level===5?'All research done':`Level ${level+1} <small>of 5</small>`}</h3>${level===5?'<p>Every crop you plant gets the full bonus.</p>':`<span class="reward-chips"><b class="is-gain">−${gain(bonus.seeds,nextBonus.seeds)}% seed price</b><b class="is-gain">−${gain(bonus.growth,nextBonus.growth)}% growing time</b><b class="is-xp">${art('xp')}20 XP</b></span>`}</div><button id="research-silo" class="primary-button" ${level===5||state.coins<cost?'disabled':''}>${level===5?'Research complete<i data-lucide="check"></i>':`<span>Research</span><span class="button-price">${art('coins')}${cost.toLocaleString('en-US')} coins</span>`}</button></section><p class="silo-note">Crops already growing keep their time.</p>`;
    $('research-silo').onclick=()=>act({type:'silo_upgrade'},r=>`Silo research level ${r.level} complete. Your next planting gets the benefit!`);
   }icons();
+ }
+ // The first tap on Plant: the tile asks (its Plant takes the focus, so Enter answers on a keyboard), and after ASK_MS it is a tile again.
+ function askPlant(){
+  ask.start(Date.now());renderUtility();document.querySelector('[data-tractor-go]')?.focus({preventScroll:true});
+  clearTimeout(askTimer);askTimer=setTimeout(()=>{if($('utility-dialog').open&&utility==='tractor')renderUtility();},ASK_MS+50);
+ }
+ // The crop chip and Other crop: the seed shop, and once a crop is picked (or the shop is closed) back to the tractor, still asking when
+ // it asked, now with that crop. Not over a window that opened meanwhile. The shop says nothing of its own then (economy-ui.js): the
+ // tractor shows the crop.
+ function toSeeds(asking){
+  $('utility-dialog').close();const seeds=$('seed-dialog');seeds.dataset.from='tractor';$('selected-crop-button')?.click();
+  seeds.addEventListener('close',()=>{delete seeds.dataset.from;if(document.querySelector('dialog[open]'))return;openUtility('tractor');if(asking)askPlant();},{once:true});
  }
  function openUtility(key){if(!featureUnlocked(state,key)){notify(featureUnlockHint(key));return;}if(key==='cart'){openToday('orders');return;}utility=key;renderUtility();open('utility-dialog');}
  function renderJournal(){
@@ -234,6 +254,9 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   if($('today-dialog').open&&tab==='challenges'&&featureUnlocked(state,'challenges')&&waitKey(dailyTasks(state,farmNow()))!==lastWaits)renderToday();
   if($('utility-dialog').open&&utility==='tractor'&&lastFieldStatus!==fieldStatus())renderUtility();
  }
+ // A tap anywhere else in the tractor's window (Water, the crop chip, an empty spot) or closing it puts the Plant tile back.
+ $('utility-dialog').addEventListener('click',e=>{if(utility==='tractor'&&ask.open(Date.now())&&!e.target.closest?.('[data-tractor-ask],[data-tractor="plant"]')){ask.stop();renderUtility();}});
+ $('utility-dialog').addEventListener('close',()=>ask.stop());
  $('today-button').onclick=()=>openToday();$('journal-button').onclick=()=>{renderJournal();open('journal-dialog');};
  document.querySelectorAll('[data-today-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.todayTab;renderToday();});
  document.querySelectorAll('[data-utility]').forEach(b=>b.onclick=()=>openUtility(b.dataset.utility));
