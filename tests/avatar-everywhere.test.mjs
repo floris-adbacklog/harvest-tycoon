@@ -7,7 +7,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // (chat_messages.sender_avatar). The chat and the staff dashboard show the avatar of now.
 test('the chat shows every sender with the avatar they have now, and yours changes the moment you save it',()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/avatarImage\(faceOf\(m\)\),'chat-avatar'\)/);assert.doesNotMatch(ui,/avatarImage\(m\.sender_avatar\)/);
+ assert.match(ui,/avatarImage\(faceOf\(m\)\),'chat-avatar',m\.sender_name\)/);assert.doesNotMatch(ui,/avatarImage\(m\.sender_avatar\)/);
  assert.match(ui,/const faceOf=m=>faces\.get\(m\.sender\)\?\?m\.sender_avatar;/,'the saved face only until the lookup answers');
  assert.match(ui,/void freshFaces\(messages\.map\(m=>m\.sender\),Date\.now\(\)-facesAt>60000\)/,'every farmer on screen is looked up again, at most once a minute');
  assert.match(ui,/void freshFaces\(\[m\.sender\]\)/,'a new message from someone not seen yet');

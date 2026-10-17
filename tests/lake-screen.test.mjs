@@ -119,7 +119,7 @@ test('the game: the lake loads in the village only, at the rowboat; the village\
  assert.match(game,/tips:villageWorld\?\[\.\.\.\(LAKE_OPEN\?\[LAKE_LOADING_TIP\]:\[\]\),\.\.\.VILLAGE_LOADING_TIPS\]:/,'its tip on the way to the village, once open');
  // One fishing screen in each world (the same hooks): the camera, the pin, its life, a gift held, a level-up waiting for the open window.
  assert.match(game,/if\(pond\?\.viewing\(\)\)focus=pond\.frame\(camera,focus,aspect\);\n camera\.position\.copy\(focus\)/);
- assert.match(game,/if\(pond\?\.hold\(\(\)=>giftPopup\(gift,\{eyebrow,title,icon,text,action\}\)\)\)return;/);assert.match(read('public/pond-ui.js'),/dialog\.show\(\)/);
+ assert.match(game,/if\(pond\?\.hold\(\(\)=>giftPopup\(gift,\{eyebrow,title,icon,text,action,names\}\)\)\)return;/);assert.match(read('public/pond-ui.js'),/dialog\.show\(\)/);
  // The village's own pins (places, the market square, the road, landmarks) are in #building-labels, its count in the side tools:
  // both fold away while fishing, with the topbar, the camera buttons and a phone's bar.
  assert.match(css,/body\.fishing :is\(\.topbar,\.side-tools,\.bottom-hud,\.scene-controls,[^)]*#building-labels[^)]*\)\{opacity:0;visibility:hidden;pointer-events:none\}/);

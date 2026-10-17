@@ -48,7 +48,7 @@ import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { renderLanguageSettings } from './language-settings.js';
-import { startTranslation } from './i18n.js';
+import { startTranslation, setOwnText } from './i18n.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
 import { createFarmShare,photoFrame } from './farm-share.js';
@@ -222,13 +222,14 @@ function comeBackNote(now=farmNow(),{lead=true}={}){
 }
 // action {label,run} (11 Oct 2026, Part A A8): the card leads somewhere, the guide's end to the next goal. Its green button does that and
 // Thank you stands beside it as the quiet choice; still one green button.
-function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text='',action=null}={}){
+// names: farmers' names in the title or the line, shown as typed (public/i18n.js setOwnText); the staff's own words too.
+function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text='',action=null,names=[]}={}){
  if(!gift)return;
  // While fishing the gift waits until the farmer is back on the farm (pond-ui.js).
- if(pond?.hold(()=>giftPopup(gift,{eyebrow,title,icon,text,action})))return;
+ if(pond?.hold(()=>giftPopup(gift,{eyebrow,title,icon,text,action,names})))return;
  const actions=document.querySelector('#gift-dialog .gift-actions'),go=document.querySelector('#gift-dialog .gift-action');
  if(actions&&go){actions.hidden=!action;document.querySelector('#gift-dialog .gift-done').hidden=Boolean(action);go.textContent=action?.label??'';go.onclick=action?()=>{$('gift-dialog').close();action.run();}:null;}
- $('gift-icon').innerHTML=art(icon);document.querySelector('#gift-dialog .eyebrow').textContent=eyebrow;$('gift-title').textContent=title;
+ $('gift-icon').innerHTML=art(icon);document.querySelector('#gift-dialog .eyebrow').textContent=eyebrow;setOwnText($('gift-title'),title,names);
  const rewards=[];
  if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
  if(gift.xp)rewards.push(`<strong class="reward-xp">${art('xp')}+${gift.xp.toLocaleString('en-US')} XP</strong>`);
@@ -236,12 +237,12 @@ function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',
  if(gift.item&&gift.itemCount&&ITEMS[gift.item])rewards.push(`<strong class="reward-item">${art(gift.item)}+${gift.itemCount.toLocaleString('en-US')} ${ITEMS[gift.item].name}</strong>`);
  $('gift-rewards').innerHTML=rewards.join('');
  const note=$('gift-message');
- if(gift.message){note.textContent=`“${gift.message}”`;note.hidden=false;}else{note.textContent=text;note.hidden=!text;}
+ if(gift.message){setOwnText(note,`“${gift.message}”`,[gift.message]);note.hidden=false;}else{setOwnText(note,text,names);note.hidden=!text;}
  refreshArt();$('gift-dialog').showModal();
 }
 // Invite a friend (public/invite-ui.js): the reward popups. A level-up celebration goes first; this one waits for it.
 function afterCelebration(show){setTimeout(()=>{const levelUp=document.getElementById('level-up-dialog');if(levelUp?.open)levelUp.addEventListener('close',()=>setTimeout(show,300),{once:true});else show();},450);}
-function inviteRewardPopup(reward){afterCelebration(()=>giftPopup({diamonds:reward.diamonds,message:''},{eyebrow:'INVITE A FRIEND',title:`Thanks to ${reward.from}!`,icon:'invite-friends'}));}
+function inviteRewardPopup(reward){afterCelebration(()=>giftPopup({diamonds:reward.diamonds,message:''},{eyebrow:'INVITE A FRIEND',title:`Thanks to ${reward.from}!`,icon:'invite-friends',names:[reward.from]}));}
 // On load: your own reward (reached level 10 through a family reward) and friends you invited who reached level 10.
 function inviteLoadPopup(invite){
  if(invite.reward)inviteRewardPopup(invite.reward);
@@ -249,7 +250,8 @@ function inviteLoadPopup(invite){
  const diamonds=friends.reduce((n,f)=>n+f.diamonds,0),family=friends.filter(f=>f.invitedToFamily).map(f=>f.name);
  const title=friends.length===1?`${friends[0].name} reached level 10!`:`${friends.length} friends reached level 10!`;
  const note=family.length?`We sent ${family.join(', ')} an invitation to your family.`:'';
- afterCelebration(()=>{giftPopup({diamonds,message:''},{eyebrow:'INVITE A FRIEND',title,icon:'invite-friends'});const m=$('gift-message');if(note){m.textContent=note;m.hidden=false;}});
+ const names=friends.map(f=>f.name);
+ afterCelebration(()=>{giftPopup({diamonds,message:''},{eyebrow:'INVITE A FRIEND',title,icon:'invite-friends',names});const m=$('gift-message');if(note){setOwnText(m,note,names);m.hidden=false;}});
 }
 function icons(){refreshArt();}
 

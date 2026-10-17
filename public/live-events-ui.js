@@ -6,6 +6,7 @@ import {placeLabel} from './place-label.js';
 import {skeleton} from './skeleton.js';
 import {formatDuration,levelOf,FAMILY_EVENT_BONUS,EVENT_LEAGUES,eventLeague} from './farm-state.js';
 import {keepFolds} from './keep-folds.js';
+import {ownWords,ownText} from './i18n.js';
 // Farm events: a short shared goal (usually 5 hours, then a 1-hour break before the next one). The Events button
 // sits next to Quests on desktop and in the More menu on phones; the screen shows the running event, or the next
 // one during the break, plus any reward still waiting to be collected.
@@ -110,7 +111,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   // Every goal done is finished: the first three get a trophy, everyone else who finished a tick. Each row shows the server's coins
   // and diamonds for that place.
   const label=r=>r.podium?placeLabel(r.rank):r.finished?'✓ Finished':`${r.progress}% done`;
-  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="Open ${esc(r.username)}’s profile"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" aria-label="${esc(r.username)}: ${r.progress}% done"></progress>`}</span></article>`;
+  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="${esc(ownText(`Open ${r.username}’s profile`,[r.username]))}"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`<b>${art('coins')}${num(r.coins)}</b>${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" translate="no" aria-label="${esc(ownText(`${r.username}: ${r.progress}% done`,[r.username]))}"></progress>`}</span></article>`;
   const league=s.league?leagueOf(e).name:'';
   return `<h3 class="event-section-title">${final?`Final standings · ${esc(e.title)}`:'Top farmers'}</h3>${league?`<p class="event-league-name">${league}</p>`:''}<p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Rewards if the event ended now. The first three to finish in your league win extra coins and diamonds.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }

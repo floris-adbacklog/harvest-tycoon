@@ -227,9 +227,9 @@ test('a family name in a sentence stays as written and never picks the plural: t
  assert.equal(createTranslator(lang('ru'),'ru').translate('Left the family after 31 days away'),'Покинул семью после 31 дня отсутствия');
  assert.equal(createTranslator(lang('nl'),'nl').translate('Left the family after 31 days away'),'De familie verlaten na 31 dagen weg');
  const ui=read('public/family-ui.js');
- assert.match(ui,/import \{t\} from '\.\/i18n\.js';/);
+ assert.match(ui,/import \{t,ownWords,ownLine,ownText,setOwnText\} from '\.\/i18n\.js';/);
  assert.match(ui,/<strong translate="no">\$\{esc\(t\('You left \{0\} after \{1\} days away\.',r\.name,Number\(r\.days\)\)\)\}<\/strong><span>You can join it again straight away\.<\/span>/);
- assert.match(ui,/notify\(action\.type==='family_rejoin'&&view\?\.family\?\.name\?t\('Welcome back to \{0\}!',view\.family\.name\):result\.message\)/);
+ assert.match(ui,/notify\(action\.type==='family_rejoin'&&view\?\.family\?\.name\?t\('Welcome back to \{0\}!',view\.family\.name\):result\.message,\{names:\[\.\.\.names,\.\.\.namesIn\(view\)\]\}\)/);
  assert.match(read('public/welcome-ui.js'),/<strong translate="no">\$\{esc\(t\('You left \{0\} after \{1\} days away\.',offer\.name,Number\(offer\.days\)\)\)\}<\/strong>/);
 });
 

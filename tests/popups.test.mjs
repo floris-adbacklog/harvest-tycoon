@@ -9,7 +9,7 @@ test('web addresses in news and pop-ups open in a new tab; only https, and the r
  assert.equal(linkify('More at https://www.harvesttycoon.com/play.html.'),'More at <a href="https://www.harvesttycoon.com/play.html" target="_blank" rel="noopener noreferrer">www.harvesttycoon.com/play.html</a>.');
  assert.equal(linkify('<b>hi</b> http://example.com'),'&lt;b&gt;hi&lt;/b&gt; http://example.com','no http, no html');
  assert.doesNotMatch(linkify('https://x.com/"><script>'),/<script>|"></);
- assert.match(read('src/chat-ui.js'),/n\.kind==='news'\?linkify\(news\.body\):esc\(n\.body\)/,'news in Notifications too');
+ assert.match(read('src/chat-ui.js'),/n\.kind==='news'\?linkify\(news\.body\):ownLine\(n\.body,noticeNames\(n\.body\)\)/,'news in Notifications too');
 });
 test('who sees it: everyone, phones in the browser, anyone in the browser, phones or computers',()=>{
  const app={installed:true,phone:true},browserPhone={installed:false,phone:true},computer={installed:false,phone:false};

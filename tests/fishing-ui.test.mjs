@@ -50,7 +50,7 @@ test('the pond screen: one button (tap, click, Space or Enter; hold to reel), th
  // waits for "Back to my farm"; a gift is held by the pond itself.
  assert.match(ui,/dialog\.show\(\)/);assert.doesNotMatch(ui,/dialog\.showModal\(\)/);
  assert.match(read('public/progression-ui.js'),/document\.querySelector\('dialog\[open\]'\)/,'the level-up card waits for an open window');
- assert.match(game,/if\(pond\?\.hold\(\(\)=>giftPopup\(gift,\{eyebrow,title,icon,text,action\}\)\)\)return;/,'a gift waits while fishing');
+ assert.match(game,/if\(pond\?\.hold\(\(\)=>giftPopup\(gift,\{eyebrow,title,icon,text,action,names\}\)\)\)return;/,'a gift waits while fishing');
  assert.match(ui,/const finish=\(\)=>\{if\(isOpen\)return;resize\(\);if\(dialog\.open\)dialog\.close\(\);const later=held;held=\[\];for\(const show of later\)show\(\);\};/,'and comes once the farm is back');
  // Reduced motion: a cut instead of the glide, no bobbing.
  assert.match(ui,/ms:reducedMotion\?0:600/);assert.match(read('public/pond-scene.js'),/const bob=reducedMotion\?0:/);

@@ -367,7 +367,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const form=event.target.closest('[data-email-form]');if(!form)return;event.preventDefault();
   const id=view.detail,email=form.querySelector('input').value.trim(),status=form.querySelector('[data-email-status]'),name=dialog.querySelector('.admin-detail-head h3')?.textContent?.trim()||'this farmer';
   if(!id||!email)return;
-  if(!await confirmAction({title:'Change the email address?',description:`${name} signs in with ${email} from now on. No email is sent.`,confirmLabel:'Change',cancelLabel:'Cancel',picture:'letter'}))return;
+  if(!await confirmAction({names:[name,email],title:'Change the email address?',description:`${name} signs in with ${email} from now on. No email is sent.`,confirmLabel:'Change',cancelLabel:'Cancel',picture:'letter'}))return;
   form.querySelectorAll('button,input').forEach(el=>el.disabled=true);status.textContent='Saving…';
   try{await bridge.request({operation:'admin_email',playerId:id,email});if(view.detail===id)await openPlayer(id);}
   catch(error){status.textContent=why(error);form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}
@@ -441,7 +441,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const count=view.players?.length?giftCount(view.players,gift.audience):null;
   const to=gift.audience==='player'?gift.player.username:gift.audience==='active'?`the ${count==null?'':`${number(count)} `}farmers active this week`:gift.audience==='online'?`the ${count==null?'':`${number(count)} `}farmers online now`:'everyone';
   const who=gift.audience==='player'?`${gift.player.username} receives`:gift.audience==='all'?'Every farmer receives':'Each of them receives';
-  if(!await confirmAction({title:`Send a gift to ${to}?`,description:`${who} ${parts}.${message?` “${message}”`:''}`,confirmLabel:'Send',picture:'gift'}))return;
+  if(!await confirmAction({names:[gift.player?.username,message],title:`Send a gift to ${to}?`,description:`${who} ${parts}.${message?` “${message}”`:''}`,confirmLabel:'Send',picture:'gift'}))return;
   try{
    const result=await bridge.chat.donate(coins,diamonds,message||null,gift.audience,gift.audience==='player'?gift.player.playerId:null,gift.perLevel);
    showRoom(result,result.farmers==null?'Sent to everyone. ':`Sent to ${number(result.farmers)} farmer${result.farmers===1?'':'s'}. `);

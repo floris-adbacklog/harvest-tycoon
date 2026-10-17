@@ -178,7 +178,7 @@ test('a link the installed app catches in a window that is open (launchQueue, sw
 // The dialog in a page of its own: the parts it fills, its buttons and its listeners.
 function fakePage(){
  const made=[],state={focused:0};
- const part=extra=>({textContent:'',hidden:false,disabled:false,className:'',listeners:{},addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},click(){for(const fn of this.listeners.click??[])fn({target:this});},...extra});
+ const part=extra=>({textContent:'',hidden:false,disabled:false,className:'',attrs:{},listeners:{},setAttribute(key,value){this.attrs[key]=value;},removeAttribute(key){delete this.attrs[key];},addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},click(){for(const fn of this.listeners.click??[])fn({target:this});},...extra});
  const doc={
   body:{append(dialog){dialog.appended=true;}},
   createElement(tag){

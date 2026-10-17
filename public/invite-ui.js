@@ -1,7 +1,7 @@
 // Invite a friend: your personal link, Share and Copy, and the friends who started with it (rules: farm-state.js; data:
 // farm-api invite-service.js). Opened from the side tools on desktop, the More menu on phones and the Family tab.
 import {art,refreshArt} from './visual-icons.js';
-import {t} from './i18n.js';
+import {t,ownWords,ownLine} from './i18n.js';
 import {androidApp,shareInApp} from './android.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STATUS={
@@ -20,12 +20,12 @@ export function createInviteUI({notify}){
  function render(){
   if(!data){content.innerHTML=`<p class="invite-loading">${esc(error||'Finding your invite link…')}</p>${error?'<button type="button" class="small-button" data-invite-retry>Try again</button>':''}`;content.querySelector('[data-invite-retry]')?.addEventListener('click',load);return;}
   const {rules,friends,invitedBy}=data;
-  const you=invitedBy?`<section class="invite-you">${art('diamonds')}<div><strong>${invitedBy.rewarded?`You earned ${rules.reward} diamonds from ${esc(invitedBy.name)}’s invite`:invitedBy.expired?`${esc(invitedBy.name)} invited you`:`${esc(invitedBy.name)} invited you`}</strong><span>${invitedBy.rewarded?'Thanks for playing together!':invitedBy.expired?`The ${rules.days} days to reach level ${rules.level} have passed.`:`Reach level ${rules.level} within ${rules.days} days and you both get ${rules.reward} diamonds. You are level ${invitedBy.level}.`}</span></div></section>`:'';
+  const you=invitedBy?`<section class="invite-you">${art('diamonds')}<div><strong>${ownLine(invitedBy.rewarded?`You earned ${rules.reward} diamonds from ${invitedBy.name}’s invite`:`${invitedBy.name} invited you`,[invitedBy.name])}</strong><span>${invitedBy.rewarded?'Thanks for playing together!':invitedBy.expired?`The ${rules.days} days to reach level ${rules.level} have passed.`:`Reach level ${rules.level} within ${rules.days} days and you both get ${rules.reward} diamonds. You are level ${invitedBy.level}.`}</span></div></section>`:'';
   content.innerHTML=`<section class="invite-hero">${art('invite-friends')}<div><strong>Farm together, earn together</strong><span>When a friend you invite reaches level ${rules.level}, you both get <b>${art('diamonds')}${rules.reward} diamonds.</b></span></div></section>
   <section class="invite-link" aria-label="Your invite link"><input type="text" readonly value="${esc(data.link)}" aria-label="Your invite link" data-invite-link><div class="invite-actions"><button type="button" class="primary-button" data-invite-share>${art('invite-friends')}Share</button><button type="button" class="small-button" data-invite-copy>Copy link</button></div></section>
   <div class="invite-count"><span>Friends rewarded</span><strong>${data.earned} of ${rules.limit}</strong><progress max="${rules.limit}" value="${Math.min(rules.limit,data.earned)}" aria-label="Friends rewarded"></progress></div>
   ${you}
-  <section class="invite-friends"><h3>Your friends</h3>${friends.length?friends.map(f=>`<div class="invite-friend is-${f.status}"><div><strong>${esc(f.name)}</strong><small>${STATUS[f.status](f)}</small></div>${f.status==='rewarded'?`<b>${art('diamonds')}+${rules.reward}</b>`:f.status==='playing'?`<span class="invite-level" aria-hidden="true"><span style="width:${Math.min(100,Math.round(f.level/rules.level*100))}%"></span></span>`:''}</div>`).join(''):'<p class="invite-empty">No friends yet. Share your link and farm together.</p>'}</section>
+  <section class="invite-friends"><h3>Your friends</h3>${friends.length?friends.map(f=>`<div class="invite-friend is-${f.status}"><div><strong>${ownWords(f.name)}</strong><small>${STATUS[f.status](f)}</small></div>${f.status==='rewarded'?`<b>${art('diamonds')}+${rules.reward}</b>`:f.status==='playing'?`<span class="invite-level" aria-hidden="true"><span style="width:${Math.min(100,Math.round(f.level/rules.level*100))}%"></span></span>`:''}</div>`).join(''):'<p class="invite-empty">No friends yet. Share your link and farm together.</p>'}</section>
   <p class="invite-rules">Your friend has to be new to Harvest Tycoon and start with your link. Up to ${rules.limit} friends earn you diamonds; they always get theirs.</p>`;
   const input=content.querySelector('[data-invite-link]');
   content.querySelector('[data-invite-copy]').onclick=()=>copy(input);

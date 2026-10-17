@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 function fakeDocument(){
  const made=[],state={focused:0};
- const element=()=>({textContent:'',onclick:null});
+ const element=()=>({textContent:'',onclick:null,attrs:{},setAttribute(key,value){this.attrs[key]=value;},removeAttribute(key){delete this.attrs[key];}});
  const document={
   activeElement:{isConnected:true,focus(){state.focused++;}},
   body:{append(dialog){dialog.appended=true;}},
@@ -39,6 +39,8 @@ test('type to confirm: Confirm stays off until the name is typed exactly; then t
  const d=f.made[0],input=d.parts['[data-type]'],button=d.parts['[data-confirm]'];
  assert.match(d.html,/<input type="text" data-type[^>]*autofocus>/);assert.match(d.html,/data-cancel><\/button>/,'the field takes the focus, not Cancel');
  assert.equal(d.parts['[data-type-label]'].textContent,'Type “Tony” to confirm');assert.equal(button.disabled,true);
+ // 17 Oct 2026: the name to type is the farmer's own, so the label and the question keep it as typed (public/i18n.js setOwnText).
+ assert.equal(d.parts['[data-type-label]'].attrs.translate,'no');assert.equal(d.parts.h2.attrs.translate,'no');assert.equal(d.parts.p.attrs.translate,undefined,'a line without the name is the page\'s to translate');
  button.onclick();assert.equal(d.shown,true,'a click on the switched-off button does nothing');
  input.value='tony';input.oninput();assert.equal(button.disabled,true,'the name exactly, capitals too');
  input.onkeydown({key:'Enter'});assert.equal(d.shown,true,'Enter does nothing before it matches');

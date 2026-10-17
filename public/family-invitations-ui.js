@@ -1,19 +1,20 @@
 import {avatarImage} from './player-avatars.js';
 import {art} from './visual-icons.js';
 import {formatDuration} from './farm-state.js';
+import {ownWords,ownLine} from './i18n.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function renderFamilyInvitation(view,now,emblem,actionButton){
  const i=view.invitation;
  // No invitation: nothing (27 Sep 2026: an empty card above the list of families; the list already says how invitations work).
  if(!i)return '';
  const canAccept=i.canAccept&&i.expiresAt>now;
- return `<section class="family-incoming-invitation" aria-labelledby="family-invitation-heading"><span class="eyebrow">YOU ARE INVITED</span><div class="family-invitation-identity">${emblem(i.family.emblem)}<div><h3 id="family-invitation-heading" translate="no">${esc(i.family.name)}</h3><p>Invited by ${esc(i.invitedBy)} · ${i.family.members} / ${view.config.maxMembers} farmers</p></div></div><p>Join this family to work on weekly orders and earn tournament rewards together.</p><small>Expires in ${formatDuration(Math.max(0,i.expiresAt-now))}</small>${canAccept?'':`<p class="family-notice">${i.family.members>=view.config.maxMembers?'This family is full right now.':view.blocked?.family===i.family.id&&view.blocked.until>now?`This family removed you. You can join it again in ${formatDuration(view.blocked.until-now)}.`:'This invitation is no longer available.'}</p>`}<div class="family-invitation-actions">${actionButton('family_accept_invite','Accept invitation',`data-invitation-id="${esc(i.id)}"`,!canAccept)}${actionButton('family_decline_invite','Decline',`data-invitation-id="${esc(i.id)}"`)}</div></section>`;
+ return `<section class="family-incoming-invitation" aria-labelledby="family-invitation-heading"><span class="eyebrow">YOU ARE INVITED</span><div class="family-invitation-identity">${emblem(i.family.emblem)}<div><h3 id="family-invitation-heading" translate="no">${esc(i.family.name)}</h3><p>${ownLine(`Invited by ${i.invitedBy} · ${i.family.members} / ${view.config.maxMembers} farmers`,[i.invitedBy])}</p></div></div><p>Join this family to work on weekly orders and earn tournament rewards together.</p><small>Expires in ${formatDuration(Math.max(0,i.expiresAt-now))}</small>${canAccept?'':`<p class="family-notice">${i.family.members>=view.config.maxMembers?'This family is full right now.':view.blocked?.family===i.family.id&&view.blocked.until>now?`This family removed you. You can join it again in ${formatDuration(view.blocked.until-now)}.`:'This invitation is no longer available.'}</p>`}<div class="family-invitation-actions">${actionButton('family_accept_invite','Accept invitation',`data-invitation-id="${esc(i.id)}"`,!canAccept)}${actionButton('family_decline_invite','Decline',`data-invitation-id="${esc(i.id)}"`)}</div></section>`;
 }
 export function renderSentInvitations(view,now,actionButton){
  if(!view.family?.manager)return '';
  // Only when some are waiting (30 Sep 2026: an empty "Pending invitations" block said nothing).
  if(!view.sentInvitations?.length)return '';
- return `<section class="family-sent-invitations"><h3>Pending invitations</h3>${view.sentInvitations.map(i=>`<div class="family-sent-invitation"><div><strong>${esc(i.username)}</strong><span>Expires in ${formatDuration(Math.max(0,i.expiresAt-now))}</span></div>${actionButton('family_cancel_invite','Cancel',`data-invitation-id="${esc(i.id)}"`)}</div>`).join('')}</section>`;
+ return `<section class="family-sent-invitations"><h3>Pending invitations</h3>${view.sentInvitations.map(i=>`<div class="family-sent-invitation"><div><strong>${ownWords(i.username)}</strong><span>Expires in ${formatDuration(Math.max(0,i.expiresAt-now))}</span></div>${actionButton('family_cancel_invite','Cancel',`data-invitation-id="${esc(i.id)}"`)}</div>`).join('')}</section>`;
 }
 // Why a farmer cannot be invited right now, or '' when they can: the same answer in the invite search and on a profile.
 export function inviteBlocker(view,p,playerId){
@@ -23,7 +24,7 @@ export function inviteBlocker(view,p,playerId){
 export function createFamilyInviteSearch({request,onInvite,getView,playerId,isBusy}){
  let query='',players=[],status='Enter at least 2 characters to find a farmer.',sequence=0,timer,root=null,familyId=null;
  const candidate=p=>inviteBlocker(getView(),p,playerId);
- function results(){return players.map(p=>{const reason=candidate(p);return `<div class="family-invite-result">${avatarImage(p.avatarId)}<div><strong>${esc(p.username)}</strong><span>Level ${p.level}${p.family?` · ${esc(p.family.name)}`:''}</span></div><button type="button" class="small-button" data-invite-player="${esc(p.playerId)}" ${reason||isBusy()?'disabled':''}>${esc(reason||'Invite')}</button></div>`;}).join('');}
+ function results(){return players.map(p=>{const reason=candidate(p);return `<div class="family-invite-result">${avatarImage(p.avatarId)}<div><strong>${ownWords(p.username)}</strong><span>${ownLine(`Level ${p.level}${p.family?` · ${p.family.name}`:''}`,[p.family?.name])}</span></div><button type="button" class="small-button" data-invite-player="${esc(p.playerId)}" ${reason||isBusy()?'disabled':''}>${esc(reason||'Invite')}</button></div>`;}).join('');}
  function paint(){if(!root)return;root.querySelector('[data-invite-search-status]').textContent=status;root.querySelector('[data-invite-search-results]').innerHTML=results();}
  async function search(ticket,value){
   if(ticket!==sequence||!root)return;status='Looking around the valley…';paint();
@@ -35,6 +36,8 @@ export function createFamilyInviteSearch({request,onInvite,getView,playerId,isBu
  return {
   html(){if(familyId!==getView().family?.id){familyId=getView().family?.id;query='';players=[];status='Enter at least 2 characters to find a farmer.';}return `<section class="family-name-invite"><div class="family-invite-head">${art('family-members')}<div><h3>Invite a farmer</h3></div></div><label for="family-invite-name" class="family-invite-label">Player name</label><input id="family-invite-name" type="search" maxlength="20" autocomplete="off" placeholder="Search player name…" value="${esc(query)}" aria-describedby="family-invite-search-status"><p id="family-invite-search-status" data-invite-search-status role="status">${esc(status)}</p><div data-invite-search-results>${results()}</div><small>From level ${getView().config.minLevel} · one open invitation per farmer · 7 days</small></section>`;},
   mount(container){root=container.querySelector('.family-name-invite');if(!root)return;root.querySelector('input').addEventListener('input',changed);root.querySelector('input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(timer);if(query.trim().length>=2)void search(++sequence,query.trim());}});if(query.trim().length>=2&&!players.length)void search(++sequence,query.trim());root.querySelector('[data-invite-search-results]').onclick=async event=>{const b=event.target.closest('[data-invite-player]');if(!b||b.disabled||isBusy())return;b.disabled=true;await onInvite({type:'family_invite',playerId:b.dataset.invitePlayer});paint();};},
-  unmount(){++sequence;clearTimeout(timer);root=null;}
+  unmount(){++sequence;clearTimeout(timer);root=null;},
+  // The farmers found, whose names an answer may give back ("Invitation sent to …").
+  names:()=>players.map(p=>p.username)
  };
 }

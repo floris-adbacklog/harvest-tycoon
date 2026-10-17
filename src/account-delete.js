@@ -14,7 +14,7 @@ export function createAccountDelete({bridge,name=()=>'',doc=globalThis.document,
   if(message)message.textContent='';
   const farmer=String(name()??'').trim();
   if(!await ask({title:'Delete your account?',description:DELETE_WARNING,confirmLabel:'Continue',cancelLabel:'Keep my account',picture:'farm',tone:'danger'}))return false;
-  if(!await ask({title:'Type your farmer name',description:`Type ${farmer} exactly to delete your account for good.`,confirmLabel:'Delete my account',cancelLabel:'Keep my account',tone:'danger',typeToConfirm:farmer}))return false;
+  if(!await ask({title:'Type your farmer name',description:`Type ${farmer} exactly to delete your account for good.`,confirmLabel:'Delete my account',cancelLabel:'Keep my account',tone:'danger',typeToConfirm:farmer,names:[farmer]}))return false;
   button.disabled=true;
   try{await bridge.deleteAccount(farmer);return true;}
   catch(error){if(message)message.textContent=error?.message||'Your account could not be deleted. Please try again.';return false;}

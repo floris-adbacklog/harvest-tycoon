@@ -3,7 +3,8 @@
 // public/i18n/<code>.json: {"English text": "translation"}. A text with parts that change has {0}, {1}, ... in both
 // ("Harvested {0} {1}"); the parts are kept, and a part that is itself a known text (a crop's name) is translated too.
 // English farmers never load a translation file: for them nothing on the page changes but the middle dots (undot, below).
-// Players' own words (names, chat, family texts) sit in translate="no" and stay as they are.
+// Players' own words (names, chat, family texts) sit in translate="no" and stay as they are; a sentence with a name in it is translated
+// in code with the name held out (ownWords, ownLine, setOwnText, below; 17 Oct 2026).
 import {LANGUAGES,RTL_LANGUAGES} from './languages.js';
 
 export const LANGUAGE_KEY='harvest-tycoon:language';
@@ -41,6 +42,8 @@ export function chosenLanguage(){
 export function chooseLanguage(code){try{localStorage.setItem(LANGUAGE_KEY,code);}catch{}}
 
 const escapeRe=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+// The stand-ins for players' names in a text (translateText): characters from Unicode's private use area, never in a game text.
+const HELD=/^[\uE000-\uF8FF]+$/;
 export const normalize=text=>text.replace(/\s+/g,' ').trim();
 
 // A dictionary: exact texts, and the texts with changing parts as patterns (the most fixed text first).
@@ -108,7 +111,8 @@ export function createTranslator(dict,code='en'){
   }
   for(const glue of [', ',': ']){
    if(result!==undefined||!key.includes(glue))continue;
-   const parts=key.split(glue),done=parts.map(p=>translate(p,true)??known(p));
+   // A player's name held out of the look-up (translateText) is a part as it is: "Sunny Acres: 40% done".
+   const parts=key.split(glue),done=parts.map(p=>HELD.test(p)?p:translate(p,true)??known(p));
    if(done.every(p=>p!=null))result=done.join(glue);
   }
   // Sentences the code put in one text (6 Oct 2026): "No wheat this time. Practice raised your chance to" (a choice right after a
@@ -169,7 +173,38 @@ export const t=(english,...values)=>codeText(english,...values);
 // public/toast-ui.js, 6 Oct 2026): the text in the farmer's language, its numbers written their way, or null (English, or a text
 // the translations do not know).
 let pageText=null;
-export const translateText=text=>pageText?.(String(text??''))??null;
+// names: players' own words in the text (a farmer, a family), held out of the look-up and put back as typed (17 Oct 2026): a stand-in
+// from Unicode's private use area (HELD) is no word and no number, so the changing part it fills is never translated. Only a whole
+// name counts, never one inside a longer word ("Ann" in "Anna"), the longest first.
+export const translateText=(text,names=[])=>{
+ if(!pageText)return null;
+ let key=String(text??'');const held=[];
+ for(const name of [...new Set((names??[]).map(n=>String(n??'')).filter(n=>n.trim()))].sort((a,b)=>b.length-a.length)){
+  const whole=new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(name)}(?![\\p{L}\\p{N}])`,'gu');
+  if(!whole.test(key))continue;
+  const mark=String.fromCharCode(0xE000+held.length);held.push([mark,name]);key=key.replace(whole,mark);
+ }
+ const out=pageText(key);
+ return out==null?null:held.reduce((done,[mark,name])=>done.split(mark).join(name),out);
+};
+// Players' own words on screen (17 Oct 2026: a farmer called "Sunny Acres" showed as "Zonnige Akkers", the name of a music track in
+// the translations). The page translates every text that is also one of the game's, alone or as a changing part of a sentence, so a
+// name never reaches it: on its own a name sits in translate="no" (ownWords); a sentence with names in it is put in the farmer's
+// language here, the names held out and filled in as typed, and kept from the page's translation as a whole (ownLine for markup,
+// setOwnText for an element's text; ownText the text itself, for a label: in the farmer's language already, so the page finds nothing
+// in it to translate). English, or a sentence the translations do not know: the sentence as written. A sentence with none of the
+// names in it is left to the page, as any text.
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const named=(text,names)=>(names??[]).some(name=>name&&String(text??'').includes(String(name)));
+export const ownWords=value=>`<span translate="no">${escapeHtml(value)}</span>`;
+export const ownText=(text,names=[])=>undot(translateText(text,names)??String(text??''));
+export const ownLine=(text,names=[])=>named(text,names)?`<span translate="no">${escapeHtml(ownText(text,names))}</span>`:escapeHtml(text);
+// An element whose whole text is set in code (a note, a dialog's title).
+export function setOwnText(el,text,names=[]){
+ const own=named(text,names);
+ if(own)el.setAttribute('translate','no');else el.removeAttribute('translate');
+ el.textContent=own?ownText(text,names):String(text??'');
+}
 
 // Right to left (Arabic, 1 Oct 2026): a number with a sign, a slash, a percent or a times sign keeps its own order ("0 / 3", "+10",
 // "60%", "×2", a date like 05-07-2026) inside a sentence that runs right to left; Unicode isolates hold it left to right. Taken off first, so a text that

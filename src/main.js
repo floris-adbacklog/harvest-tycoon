@@ -17,7 +17,7 @@ import {takeRefFromUrl,pendingRef,clearRef} from './partner-link.js';
 import {readSource,sourceQuery} from './source-link.js';
 import {createConnection,connectionMessage,describeFailure,reasonOf,refused,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
-import {startTranslation,chosenLanguage} from '../public/i18n.js';
+import {startTranslation,chosenLanguage,setOwnText} from '../public/i18n.js';
 import {renderLanguageSwitch} from './language-switch.js';
 import {playBadge,appStoreBadge} from '../public/languages.js';
 import {androidApp,listenAppPush,playBilling,appStoreBilling,webBilling,appSignIn} from '../public/android.js';
@@ -121,7 +121,8 @@ takeRefFromUrl({location:globalThis.location,history:globalThis.history,storage:
 async function showInviter(){
  const code=pendingInvite(localStore),box=document.getElementById('account-invite');if(!code||!box)return;
  const name=await inviterName(functionsUrl,code);if(!name||pendingInvite(localStore)!==code)return;
- const text=inviteBannerText(name);box.querySelector('strong').textContent=text.title;box.querySelector('span').textContent=text.body;box.hidden=false;
+ // The friend's name as typed (17 Oct 2026).
+ const text=inviteBannerText(name);setOwnText(box.querySelector('strong'),text.title,[name]);setOwnText(box.querySelector('span'),text.body,[name]);box.hidden=false;
 }
 void showInviter();
 const linkText=()=>`${globalThis.location?.hash??''}&${globalThis.location?.search??''}`;

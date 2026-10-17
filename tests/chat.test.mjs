@@ -140,7 +140,7 @@ test('the Admin dashboard opens for moderators too, reading only; giving stays w
 
 test('a gift note shows the diamond and the coin in front of the amounts',()=>{
  const ui=read('src/chat-ui.js');
- assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?giftBody\(n\.body\):n\.kind==='news'\?linkify\(news\.body\):esc\(n\.body\)/);
+ assert.match(ui,/n\.kind==='gift'\|\|n\.kind==='donation'\?giftBody\(n\.body\):n\.kind==='news'\?linkify\(news\.body\):ownLine\(n\.body,noticeNames\(n\.body\)\)/);
  assert.match(ui,/const withAmounts=text=>esc\(text\)\.replace\(/,'escaped first, then only the amounts get a picture');
 });
 
@@ -386,7 +386,7 @@ test('staff actions on a message carry the badge\'s shield and one line "Moderat
  const ui=read('src/chat-ui.js'),css=read('public/chat.css');
  assert.match(ui,/const STAFF_ACTIONS=new Set\(\['edit','delete','mute60','mute1440','ban'\]\);/);
  for(const [key] of [['edit'],['delete'],['mute60'],['mute1440'],['ban']])assert.match(ui,new RegExp(`\\['${key}','`),`${key} is a menu item`);
- assert.match(ui,/\$\{esc\(label\)\}\$\{STAFF_ACTIONS\.has\(key\)\?art\('admin','chat-menu-shield'\):''\}<\/button>/,'the same picture as the Admin and Moderator badge (src/staff-badge.js)');
+ assert.match(ui,/\$\{ownLine\(label,key==='mention'\|\|key==='block'\?\[m\.sender_name\]:\[\]\)\}\$\{STAFF_ACTIONS\.has\(key\)\?art\('admin','chat-menu-shield'\):''\}<\/button>/,'the same picture as the Admin and Moderator badge (src/staff-badge.js)');
  assert.match(read('src/staff-badge.js'),/\$\{art\('admin'\)\}\$\{s\.label\}/);
  assert.match(ui,/const staffOnly=items\.some\(\(\[key\]\)=>STAFF_ACTIONS\.has\(key\)\);/);
  assert.match(ui,/\+\(staffOnly\?`<p class="chat-menu-staff" role="none">\$\{art\('admin'\)\}Moderators and the admin<\/p>`:''\);/,'only when such an action is listed');

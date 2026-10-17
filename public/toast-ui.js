@@ -21,8 +21,10 @@ const ITEM=new RegExp(`\\+?([\\d,]+)\\s(${[...ITEM_KEYS.keys()].sort((a,b)=>b.le
 // A reward's amount in a translated message: a plus and a number written the language's way ("+1.250", "+1 250"), maybe held
 // left to right in Arabic.
 const LOCAL_AMOUNT=/\u2066?\+\d(?:[.,\u00a0\u202f]?\d)*\u2069?/g;
-// translate: the farmer's language (public/i18n.js translateText); null for English.
-export function toastParts(message,translate=translateText){
+// translate: the farmer's language (public/i18n.js translateText); null for English. names: players' own words in the message (a farmer,
+// a family, 17 Oct 2026), held out of the translation and shown as typed; such a message is always kept from the page's translation,
+// which would look a name up again ("Sunny Acres" is also a music track).
+export function toastParts(message,translate=translateText,names=[]){
  const text=String(message??'');
  const tone=WARN.test(text)?'warn':REWARD.test(text)?'reward':'info';REWARD.lastIndex=0;
  // Goods in the message ("Collected 3 Eggs") lead with their own picture; otherwise the first matching theme.
@@ -34,7 +36,7 @@ export function toastParts(message,translate=translateText){
  // done!", "Sold!", "Quest complete!") were pieces no translation knows, and they stayed English. The rewards (+12 coins, +5 XP)
  // become chips again where the translation has their amounts, in the same order; goods and other numbers stay words. local: the
  // text is in the farmer's language already, so the page's own translation leaves it alone (translate="no").
- const local=translate?.(text);
+ const local=translate?.(text,names);
  if(local!=null&&local!==text){
   const kinds=[...text.matchAll(REWARD)].map(m=>kind(m[2]));let html=esc(local),i=0;
   if(kinds.length&&[...html.matchAll(LOCAL_AMOUNT)].length===kinds.length)html=html.replace(LOCAL_AMOUNT,amount=>{const k=kinds[i++];return `<b class="toast-chip is-${k}">${art(k)}${amount}</b>`;});
@@ -46,7 +48,7 @@ export function toastParts(message,translate=translateText){
   .replace(ITEM,(match,n,name)=>`<b class="toast-chip is-item">${art(ITEM_KEYS.get(name.toLowerCase()))}${match.startsWith('+')?'+':''}${n} ${name}</b>`)
   // No dots between the pieces and no stray full stop after a chip: the chips are the separators.
   .replace(/\s·\s/g,' ').replace(/<\/b>[.!](?=\s|$)/g,'</b>');
- return {tone,icon,html,local:false};
+ return {tone,icon,html,local:names.some(name=>name&&text.includes(name))};
 }
 // The element keeps its own classes (the medal toast at the bottom is "toast medal-toast", Oct 2026), and a toast can say its tone
 // itself: a new medal is good news without a "+40 coins" in it. 16 Oct 2026: and its time, for a long note that shows once a day (the
@@ -55,7 +57,7 @@ export function createToast(el,{duration=3200}={}){
  const base=String(el.className??'').split(/\s+/).filter(c=>c&&c!=='visible'&&!c.startsWith('is-')).join(' ')||'toast';
  let timer=0;
  return function show(message,options){
-  const {tone:found,icon,html,local}=toastParts(message),tone=options?.tone??found,ms=options?.duration??duration;
+  const {tone:found,icon,html,local}=toastParts(message,translateText,options?.names),tone=options?.tone??found,ms=options?.duration??duration;
   el.className=base;el.classList.add('is-'+tone);el.style.setProperty('--toast-duration',`${ms}ms`);
   el.innerHTML=`<span class="toast-icon">${art(icon)}</span><span class="toast-text"${local?' translate="no"':''}>${html}</span><i class="toast-timer" aria-hidden="true"></i>`;
   void el.offsetWidth;el.classList.add('visible');

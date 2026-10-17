@@ -11,7 +11,7 @@ import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,familyWeek} from '../public/fa
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
-import {chosenLanguage} from '../public/i18n.js';
+import {chosenLanguage,ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
 import {portalChat,portalOff} from '../public/portal.js';
 import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
 import {wikiSectionTitle} from '../public/wiki-content.js';
@@ -171,7 +171,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const blocked=()=>new Set(overview?.blocked??[]);
  const channelOf=()=>tab==='global'?'global':tab==='family'?overview?.family?.channel??null:tab==='private'?thread?.channel??null:null;
  const showing=channel=>dialog.open&&channelOf()===channel;
- function note(text=''){noteEl.textContent=text;noteEl.hidden=!text;}
+ // names: farmers' own words in the note, shown as typed (public/i18n.js setOwnText).
+ function note(text='',names=[]){setOwnText(noteEl,text,names);noteEl.hidden=!text;}
 
  // The header pill, the numbers on the tabs and the number on the app icon (private and family messages; public/app-badge.js).
  let iconCount=null;
@@ -215,7 +216,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   readTimers.set(name,setTimeout(()=>{readTimers.delete(name);chat.markRead(name).catch(()=>{});},1500));
  }
 
- const profileButton=(id,label,inner,cls)=>`<button type="button" class="${cls}" data-profile="${esc(id)}" aria-label="${esc(label)}">${inner}</button>`;
+ // A farmer's profile button: their name in it and in its label as typed (17 Oct 2026), the label put in the farmer's language here.
+ const profileButton=(id,label,inner,cls,name)=>`<button type="button" class="${cls}" data-profile="${esc(id)}" translate="no" aria-label="${esc(ownText(label,[name]))}">${inner}</button>`;
  // A request for goods (supabase/family-request-chat.sql, 29 Sep 2026): a card of its own between the messages, with the good's
  // picture and, for the others, a button that gives it straight from here. Once given it greys out and says by whom.
  function requestRow(m){
@@ -225,7 +227,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const have=win.harvestStock?.(r.item),known=Number.isFinite(have),give_=known?Math.min(have,left):left;
   const helped=Number(r.helpers)||0,status=given?(r.fulfilled_by===me?'✓ You helped':helped>1?`✓ Filled by ${helped} farmers`:r.fulfilled_name?`✓ Given by ${r.fulfilled_name}`:'✓ Fulfilled'):filled?`${filled} of ${qty} in${mine||!known?'':` · you have ${have}`}`:mine?'Waiting for your family':known?`You have ${have}`:'';
   const give=!given&&!mine&&r.request?`<button type="button" class="primary-button chat-request-give" data-give="${esc(r.request)}"${known&&give_<1?' disabled':''}>${known&&give_<1?'You have none':`Give ${give_} ${esc(name)}`}</button>`:'';
-  return `<li class="chat-request${given?' is-given':''}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family request</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(r.item)}</span><div><p class="chat-text">${esc(given?`${m.sender_name} asked for ${qty} ${name}`:`${m.sender_name} asks for ${qty} ${name}`)}</p>${status?`<small class="chat-request-status">${esc(status)}</small>`:''}</div></div>${give}</li>`;
+  return `<li class="chat-request${given?' is-given':''}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family request</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(r.item)}</span><div><p class="chat-text">${ownLine(given?`${m.sender_name} asked for ${qty} ${name}`:`${m.sender_name} asks for ${qty} ${name}`,[m.sender_name])}</p>${status?`<small class="chat-request-status">${ownLine(status,[r.fulfilled_name])}</small>`:''}</div></div>${give}</li>`;
  }
  // A new rank in the family (supabase/family-rank-chat.sql): a card with the rank's badge, a promotion in the warm colour, a
  // demotion in grey.
@@ -233,21 +235,21 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const RANK_TEXT={leader:'{0} is now the leader.',coleader:'{0} is now a co-leader.',honorary:'{0} is now an honorary member.',member:'{0} is now a member.'};
  function rankRow(m){
   const {from,to}=m.meta??{},up=(RANK_ORDER[to]??0)>=(RANK_ORDER[from]??0),text=(RANK_TEXT[to]??'{0} is now a member.').replace('{0}',m.sender_name);
-  return `<li class="chat-request chat-rank${up?'':' is-given'}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}${up?'Promoted':'Demoted'}</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(`family-rank-${RANK_ORDER[to]?to:'member'}`)}</span><div><p class="chat-text">${esc(text)}</p></div></div></li>`;
+  return `<li class="chat-request chat-rank${up?'':' is-given'}" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}${up?'Promoted':'Demoted'}</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(`family-rank-${RANK_ORDER[to]?to:'member'}`)}</span><div><p class="chat-text">${ownLine(text,[m.sender_name])}</p></div></div></li>`;
  }
  // A new top farmer of the week (supabase/family-top-chat.sql, checked once an hour): the crown and their chest points.
  function topRow(m){
   const points=Number(m.meta?.points)||0;
-  return `<li class="chat-request chat-top-farmer" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Top farmer</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-top')}</span><div><p class="chat-text">${esc(`${m.sender_name} is now the top farmer of the week.`)}</p>${points?`<small class="chat-request-status">${esc(`${points} points`)}</small>`:''}</div></div></li>`;
+  return `<li class="chat-request chat-top-farmer" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Top farmer</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-top')}</span><div><p class="chat-text">${ownLine(`${m.sender_name} is now the top farmer of the week.`,[m.sender_name])}</p>${points?`<small class="chat-request-status">${esc(`${points} points`)}</small>`:''}</div></div></li>`;
  }
  // A farmer removed from the family (farm-api family-service.js): in grey, with the rank they had and who removed them.
  function kickRow(m){
   const {role,by}=m.meta??{},badge=['leader','coleader','honorary'].includes(role)?role:'member';
-  return `<li class="chat-request chat-kick is-given" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Removed</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(`family-rank-${badge}`)}</span><div><p class="chat-text">${esc(`${m.sender_name} was removed from the family.`)}</p>${by?`<small class="chat-request-status">${esc(`Removed by ${by}`)}</small>`:''}</div></div></li>`;
+  return `<li class="chat-request chat-kick is-given" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Removed</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(`family-rank-${badge}`)}</span><div><p class="chat-text">${ownLine(`${m.sender_name} was removed from the family.`,[m.sender_name])}</p>${by?`<small class="chat-request-status">${ownLine(`Removed by ${by}`,[by])}</small>`:''}</div></div></li>`;
  }
  // A new member of the family (supabase/family-join-chat.sql): the member badge and "… is now a member.", in the warm colour.
  function joinRow(m){
-  return `<li class="chat-request chat-join" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}New member</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-member')}</span><div><p class="chat-text">${esc(`${m.sender_name} is now a member.`)}</p></div></div></li>`;
+  return `<li class="chat-request chat-join" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}New member</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art('family-rank-member')}</span><div><p class="chat-text">${ownLine(`${m.sender_name} is now a member.`,[m.sender_name])}</p></div></div></li>`;
  }
  // The words of a message as written (translate="no"), with its wiki links and mentions as chips (3 Oct 2026, src/chat-rich.js). A wiki
  // chip shows the book and the spot's title as How to play heads it (wiki-content.js wikiSectionTitle: a section, a building, a crop or
@@ -277,11 +279,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const translate=!mine&&String(m.body??'').trim()?`<a class="chat-translate" href="${esc(translateLink(m.body,chosenLanguage()))}" target="_blank" rel="noopener noreferrer" aria-label="Translate with Google" title="Translate with Google">${ICON.translate}</a>`:'';
   const text=`${bodyHtml(m)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=`${translate?' has-translate':''}${mentionsMe(m,me)?' is-mention':''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
-  if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${esc(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
-  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar')}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name')}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
+  if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${ownWords(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar',m.sender_name)}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name',m.sender_name)}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
  }
  function threadRow(t){
-  return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${esc(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
+  return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${ownWords(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
  }
  // The Crew (supabase/chat-crew.sql, 1 Oct 2026): the staff's own group chat, the admin and every moderator, pinned on top of their
  // private chats. Nobody else sees it.
@@ -300,16 +302,21 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const parts=m[1].split(' + ').map(part=>/ for every level$/.test(part)?`${withAmounts(part.replace(/ for every level$/,''))} <span>for every level</span>`:withAmounts(part));
   return `<span>You’ve received:</span> ${parts.join(' + ')}${m[2]?` <span translate="no">“${esc(m[2])}”</span>`:''}`;
  }
+ // Notices farm-api writes with a farmer's and a family's name in them (family-service.js requestNotice): each changing part is a name,
+ // shown as typed (17 Oct 2026).
+ const NAMED_NOTICES=['{0} asked to join {1}. Open Farm Family to accept or decline.','Welcome! {0} accepted your request to join.','{0} declined your request to join. You can ask another family.']
+  .map(text=>new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\\\{\d\\\}/g,'(.+?)')}$`));
+ const noticeNames=body=>{for(const re of NAMED_NOTICES){const m=re.exec(String(body??''));if(m)return m.slice(1);}return [];};
  function noticeRow(n,fresh){
   // News in the farmer's own language when the admin wrote it in that language too.
   const news=n.kind==='news'?inLanguage(n):{own:new Set()};
   const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':n.kind==='family'?'family-members':'bell');
-  return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text"${news.own.has('body')?' translate="no"':''}>${n.kind==='gift'||n.kind==='donation'?giftBody(n.body):n.kind==='news'?linkify(news.body):esc(n.body)}</p></div></li>`;
+  return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text"${news.own.has('body')?' translate="no"':''}>${n.kind==='gift'||n.kind==='donation'?giftBody(n.body):n.kind==='news'?linkify(news.body):ownLine(n.body,noticeNames(n.body))}</p></div></li>`;
  }
  function foundRow(p){
-  return `<li><button type="button" class="chat-thread" data-start="${esc(p.playerId)}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong>${esc(p.username)}</strong><small>Level ${esc(p.level)}${p.family?` · ${esc(p.family.name)}`:''}</small></span><span class="chat-thread-side"><small class="chat-write">Write</small></span></button></li>`;
+  return `<li><button type="button" class="chat-thread" data-start="${esc(p.playerId)}"><span class="chat-avatar">${avatarImage(p.avatarId)}</span><span class="chat-thread-copy"><strong>${ownWords(p.username)}</strong><small>Level ${esc(p.level)}${p.family?` · ${ownWords(p.family.name)}`:''}</small></span><span class="chat-thread-side"><small class="chat-write">Write</small></span></button></li>`;
  }
- const empty=(text,extra='')=>`<li class="chat-empty"><p>${esc(text)}</p>${extra}</li>`;
+ const empty=(text,extra='',names=[])=>`<li class="chat-empty"><p>${ownLine(text,names)}</p>${extra}</li>`;
 
  // Who may write here, and if not, why (shown instead of the box).
  function composeState(){
@@ -323,10 +330,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const need=tab==='global'?overview?.levels?.global:tab==='private'?overview?.levels?.dm:1;
   if(need&&(overview?.level??0)<need)return {show:true,blocked:`${tab==='global'?'The global chat':'Private messages'} open at level ${need}.`};
   if(tab==='private'&&overview?.privateOn===false)return {show:true,blocked:'Your private messages are off. Turn them on in Settings.'};
-  if(tab==='private'&&thread&&blocked().has(thread.otherId))return {show:true,blocked:`You blocked ${thread.otherName}. Unblock them to write.`};
+  if(tab==='private'&&thread&&blocked().has(thread.otherId))return {show:true,blocked:`You blocked ${thread.otherName}. Unblock them to write.`,names:[thread.otherName]};
   // Global and Family say how to mention someone, on the box itself (3 Oct 2026; the tab already says where you write, and a longer
   // hint did not fit a phone). A private chat has nobody else to mention.
-  return {show:true,placeholder:tab==='global'||tab==='family'?'Type @ to mention a farmer.':`Message ${thread.otherName}…`};
+  return {show:true,placeholder:tab==='global'||tab==='family'?'Type @ to mention a farmer.':`Message ${thread.otherName}…`,names:[thread?.otherName]};
  }
  // Its own class (6 Oct 2026): it shared .chat-more with each message's ⋯ button, which is invisible until hovered on a computer and
  // clipped away on a phone, so it never showed.
@@ -357,17 +364,20 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   find.hidden=!(tab==='private'&&!thread&&overview?.privateOn!==false);
   // The tab already says where you are: a heading only for a family (its name) and a private chat (who with).
   head.classList.toggle('is-quiet',!((tab==='family'&&overview?.family)||(tab==='private'&&thread)));
-  if(thread){reportButton.setAttribute('aria-label',`Report ${thread.otherName}`);reportButton.title=reportButton.getAttribute('aria-label');}
-  if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('aria-label',off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`);blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
+  if(thread){reportButton.setAttribute('translate','no');reportButton.setAttribute('aria-label',ownText(`Report ${thread.otherName}`,[thread.otherName]));reportButton.title=reportButton.getAttribute('aria-label');}
+  if(thread){const off=blocked().has(thread.otherId);blockButton.setAttribute('translate','no');blockButton.setAttribute('aria-label',ownText(off?`Unblock ${thread.otherName}`:`Block ${thread.otherName}`,[thread.otherName]));blockButton.title=blockButton.getAttribute('aria-label');blockButton.classList.toggle('is-on',off);}
   // A private chat shows just the other farmer's name (27 Sep 2026): "Chat with" and a long automatic name ("Gentle Farm 6170")
   // did not fit on a phone next to Report and Block, and the whole name fell away behind "…". Screen readers still hear "Chat with".
-  title.innerHTML=tab==='family'?esc(overview?.family?.name??'Family chat'):tab==='private'&&thread?.crew?esc('Crew'):tab==='private'&&thread?profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name'):esc(TITLES[tab]);
-  if(tab==='private'&&thread&&!thread.crew)title.setAttribute('aria-label',`Chat with ${thread.otherName}`);else title.removeAttribute('aria-label');
+  // The family's and the farmer's names as typed; the private chat's whole heading is kept, its label put in the farmer's language here.
+  const withName=tab==='private'&&thread&&!thread.crew;
+  if(withName)title.setAttribute('translate','no');else title.removeAttribute('translate');
+  title.innerHTML=tab==='family'?(overview?.family?.name?ownWords(overview.family.name):esc('Family chat')):tab==='private'&&thread?.crew?esc('Crew'):tab==='private'&&thread?profileButton(thread.otherId,`Open ${thread.otherName}’s profile`,esc(thread.otherName),'chat-title-name',thread.otherName):esc(TITLES[tab]);
+  if(withName)title.setAttribute('aria-label',ownText(`Chat with ${thread.otherName}`,[thread.otherName]));else title.removeAttribute('aria-label');
   const compose=composeState();
   // While a message is on its way only the send button waits: the box stays usable, so the cursor (and a phone's keyboard) stays
   // put for the next message.
   form.hidden=!compose.show;input.disabled=Boolean(compose.blocked);sendButton.disabled=Boolean(compose.blocked)||sending;
-  input.placeholder=compose.blocked??compose.placeholder??'';input.maxLength=compose.max??200;hours.hidden=tab!=='notices';form.classList.toggle('is-blocked',Boolean(compose.blocked));
+  {const hint=compose.blocked??compose.placeholder??'';if(compose.names?.some(n=>n&&hint.includes(n))){input.setAttribute('translate','no');input.placeholder=ownText(hint,compose.names);}else{input.removeAttribute('translate');input.placeholder=hint;}}input.maxLength=compose.max??200;hours.hidden=tab!=='notices';form.classList.toggle('is-blocked',Boolean(compose.blocked));
   if(busy){list.innerHTML=`<li class="chat-empty">${skeleton('Opening the chat…',{rows:4})}</li>`;return;}
   if(tab==='notices')list.innerHTML=notices.length?notices.map((n,i)=>noticeRow(n,i<freshNotices)).join(''):empty(EMPTY.notices);
   else if(tab==='family'&&!overview?.family){
@@ -376,7 +386,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }
   else if(tab==='private'&&!thread&&found&&!find.hidden)list.innerHTML=found.loading?'<li class="chat-empty"><p>Looking around the valley…</p></li>':found.players.length?found.players.map(foundRow).join(''):empty('No farmers found. Try another name.');
   else if(tab==='private'&&!thread){const threads=mergeThreads(overview?.threads,olderThreads).filter(t=>!blocked().has(t.otherId)).sort(byLast);list.innerHTML=(overview?.crew?crewRow(overview.crew):'')+(overview?.privateOn===false?'<li class="chat-empty chat-off"><p>Your private messages are off. You can turn them on in Settings, under Chat.</p></li>':'')+(threads.length?threads.map(threadRow).join('')+moreThreadsButton():overview?.privateOn===false?'':empty(EMPTY.private));}
-  else{const shown=messages.filter(m=>!hiddenAsBlocked(m,blocked()));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join('')+moreButton():empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab]);}
+  else{const shown=messages.filter(m=>!hiddenAsBlocked(m,blocked()));list.innerHTML=shown.length?messageLayout(shown).map(({m,day,cont})=>`${day?`<li class="chat-day" role="separator"><span>${esc(dayLabel(m.created_at))}</span></li>`:''}${messageRow(m,{cont})}`).join('')+moreButton():empty(thread?.crew?'Say hello to the crew!':thread?`Say hello to ${thread.otherName}!`:EMPTY[tab],'',[thread?.otherName]);}
   refreshArt();
  }
  async function load(){
@@ -646,7 +656,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // Oct 2026: what only the staff can do carries the shield of their Admin and Moderator badge, and one line at the bottom says who
   // has it (the wiki's own heading), only when such an action is in the menu. Farmers never get these, so their menu is as it was.
   const staffOnly=items.some(([key])=>STAFF_ACTIONS.has(key));
-  menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${esc(label)}${STAFF_ACTIONS.has(key)?art('admin','chat-menu-shield'):''}</button>`).join('')
+  menuEl.innerHTML=items.map(([key,label])=>`<button type="button" role="menuitem" data-menu="${key}"${['block','delete','ban'].includes(key)?' class="is-danger"':''}>${ownLine(label,key==='mention'||key==='block'?[m.sender_name]:[])}${STAFF_ACTIONS.has(key)?art('admin','chat-menu-shield'):''}</button>`).join('')
    +(staffOnly?`<p class="chat-menu-staff" role="none">${art('admin')}Moderators and the admin</p>`:'');
   row.append(menuEl);menuEl.querySelector('button').focus({preventScroll:true});
   menuEl.onclick=event=>{const key=event.target.closest('[data-menu]')?.dataset.menu;if(!key)return;closeMenu();void act(key,m);};
@@ -681,30 +691,30 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
     if(body==null||body.trim()===m.body)return;
     messages=withEdit(messages,await chat.editMessage(m.id,body));paint();
    }else if(key==='delete'){
-    if(!await confirmAction({title:'Delete this message?',description:`“${m.body}” disappears for everyone.`,confirmLabel:'Delete',tone:'danger'}))return;
+    if(!await confirmAction({title:'Delete this message?',description:`“${m.body}” disappears for everyone.`,confirmLabel:'Delete',tone:'danger',names:[m.body]}))return;
     await chat.deleteMessage(m.id);messages=messages.filter(x=>x.id!==m.id);paint();
    }else await sanction(m.sender,m.sender_name,key==='ban'?0:Number(key.slice(4)),key==='ban');
   }catch(error){note(error.message);}
  }
  async function setBlock(id,name,on){
-  if(on&&!await confirmAction({title:`Block ${name}?`,description:'You will no longer see their messages, and they cannot send you private messages. You can unblock them on their profile.',confirmLabel:'Block',tone:'danger'}))return false;
+  if(on&&!await confirmAction({names:[name],title:`Block ${name}?`,description:'You will no longer see their messages, and they cannot send you private messages. You can unblock them on their profile.',confirmLabel:'Block',tone:'danger'}))return false;
   try{
    await chat.block(id,on);statusCache.delete(id);
    const set=blocked();on?set.add(id):set.delete(id);overview.blocked=[...set];
    if(on&&thread?.otherId===id)thread=null;
-   paint();scheduleOverview(200);note(on?`${name} is blocked.`:`${name} is unblocked.`);return true;
+   paint();scheduleOverview(200);note(on?`${name} is blocked.`:`${name} is unblocked.`,[name]);return true;
   }catch(error){note(error.message);return false;}
  }
  // Report a farmer: the moderators get their latest message you can see.
  async function reportPlayer(id,name){
-  if(!await confirmAction({title:`Report ${name}?`,description:'A moderator will read what they wrote to you or in the chat. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return false;
+  if(!await confirmAction({names:[name],title:`Report ${name}?`,description:'A moderator will read what they wrote to you or in the chat. Thank you for keeping the valley friendly.',confirmLabel:'Report',picture:'admin'}))return false;
   try{await chat.reportPlayer(id);note('Thanks, a moderator will take a look.');return true;}catch(error){note(error.message);return false;}
  }
  async function sanction(id,name,minutes,ban,{lift=false}={}){
   const what=lift?`Let ${name} chat again?`:ban?`Ban ${name} from the chat?`:`Mute ${name} for ${minutes>=1440?'1 day':'1 hour'}?`;
-  if(!await confirmAction({title:what,description:lift?'They can send messages again straight away.':'Only the chat: their farm is not affected. They get a note about it.',confirmLabel:lift?'Allow':ban?'Ban':'Mute',tone:lift?'':'danger',picture:'admin'}))return false;
+  if(!await confirmAction({names:[name],title:what,description:lift?'They can send messages again straight away.':'Only the chat: their farm is not affected. They get a note about it.',confirmLabel:lift?'Allow':ban?'Ban':'Mute',tone:lift?'':'danger',picture:'admin'}))return false;
   await chat.sanction(id,lift?0:minutes,lift?false:ban);statusCache.delete(id);
-  note(lift?`${name} can chat again.`:ban?`${name} can no longer chat.`:`${name} is muted.`);return true;
+  note(lift?`${name} can chat again.`:ban?`${name} can no longer chat.`:`${name} is muted.`,[name]);return true;
  }
 
  // The profile: a Moderator badge (the admin wears the same one), Send message and Block, and for the staff the chat-only
@@ -735,7 +745,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
      if(key==='block'||key==='unblock'){if(await setBlock(id,name,key==='block'))redraw();return;}
      if(key==='mod'||key==='unmod'){
       // Making a moderator can never happen by accident: the admin types the farmer's name first.
-      if(!await confirmAction({title:key==='mod'?`Make ${name} a moderator?`:`Remove ${name} as moderator?`,description:key==='mod'?'They can delete messages, mute and ban farmers from the chat, and open the Moderator dashboard with the player list. They cannot give anything or see IP addresses.':'They become a regular farmer again.',confirmLabel:key==='mod'?'Make moderator':'Remove',picture:'admin',...(key==='mod'?{typeToConfirm:name}:{})}))return;
+      if(!await confirmAction({names:[name],title:key==='mod'?`Make ${name} a moderator?`:`Remove ${name} as moderator?`,description:key==='mod'?'They can delete messages, mute and ban farmers from the chat, and open the Moderator dashboard with the player list. They cannot give anything or see IP addresses.':'They become a regular farmer again.',confirmLabel:key==='mod'?'Make moderator':'Remove',picture:'admin',...(key==='mod'?{typeToConfirm:name}:{})}))return;
       await chat.setModerator(id,key==='mod');redraw();return;
      }
      if(await sanction(id,name,key==='ban'?0:Number(key.slice(4)),key==='ban',{lift:key==='lift'}))redraw();

@@ -114,7 +114,7 @@ test('farm-api writes the lines after the reply, for actions, opening the game, 
 test('the profile shows the log for yourself and for the staff, per day, filtered by category',()=>{
  const html=renderLogEntries([{id:3,at:new Date(now-60000).toISOString(),category:'market',text:'Sold <b>Corn</b>',by:null},{id:2,at:new Date(now-2*3600000).toISOString(),category:'staff',text:'Received a gift from the admin',by:'Floris'},{id:1,at:new Date(now-30*3600000).toISOString(),category:'farm',text:'Reached level 3',by:null}],now);
  assert.equal((html.match(/<h4 class="farmer-log-day">/g)??[]).length,2,'today and yesterday');assert.match(html,/>Today</);assert.match(html,/>Yesterday</);
- assert.match(html,/Sold &lt;b&gt;Corn&lt;\/b&gt;/,'the text is escaped');assert.match(html,/ · Staff · by Floris</);assert.match(html,/data-log-category="market"/);
+ assert.match(html,/Sold &lt;b&gt;Corn&lt;\/b&gt;/,'the text is escaped');assert.match(html,/ · Staff <span translate="no">\u2002by Floris<\/span></,'the staff member\'s name as typed (17 Oct 2026), the dot a wide space as the page makes it');assert.match(html,/data-log-category="market"/);
  assert.equal(renderLogEntries([],now),'');assert.equal(LOG_LABELS.purchase,'Purchases');
  const ui=read('src/player-profiles.js');
  assert.match(ui,/const allowed=playerId===bridge\.playerId\|\|Boolean\(window\.harvestStaff\?\.role\?\.\(\)\);/);

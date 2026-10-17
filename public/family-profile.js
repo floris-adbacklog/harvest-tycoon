@@ -10,6 +10,7 @@ import {FAMILY_JOIN_MODES,FAMILY_MIN_LEVEL,FAMILY_RANKS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rankArt} from './rank-art.js';
 import {placeLabel} from './place-label.js';
+import {ownWords} from './i18n.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
@@ -43,7 +44,7 @@ export function familyProfileAction(p){
 export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  const s=p.standing,next=s.next,progress=next?Math.min(100,Math.round(s.tiers/next*100)):100;
  const tile=(picture,value,label)=>`<div class="family-profile-stat">${art(picture)}<strong>${value}</strong><span>${label}</span></div>`;
- const member=m=>`<article class="family-member"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId)}" ${profiles?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,now)}${rankChip(m)}</strong><small>Level ${num(m.level)}</small></span>${profiles?'<span class="family-sr-only">Open profile</span>':''}</button></article>`;
+ const member=m=>`<article class="family-member"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId)}" ${profiles?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online':'Offline'}"></span></span><span class="family-member-copy"><strong>${ownWords(m.username)}${vipBadge(m.vipExpiresAt,now)}${rankChip(m)}</strong><small>Level ${num(m.level)}</small></span>${profiles?'<span class="family-sr-only">Open profile</span>':''}</button></article>`;
  const action=familyProfileAction(p);
  return `<section class="family-profile-hero">
   <span class="family-profile-emblem">${emblem(p.emblem)}<b class="family-level-badge" title="Family level ${s.level}">${s.level}</b></span>

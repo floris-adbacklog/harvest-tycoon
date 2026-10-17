@@ -20,14 +20,15 @@ test('giftPopup fills in only the amounts (and item, if any) that were actually 
  const js=read('public/game.js');
  // The same popup also carries Invite a friend rewards and the end of the Beginner guide, with its own heading, picture and
  // a plain line of text (defaults: a gift, no text).
- assert.match(js,/function giftPopup\(gift,\{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text='',action=null\}=\{\}\)\{/);
- assert.match(js,/else\{note\.textContent=text;note\.hidden=!text;\}/,'that text is set as text too');
+ assert.match(js,/function giftPopup\(gift,\{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',text='',action=null,names=\[\]\}=\{\}\)\{/);
+ assert.match(js,/else\{setOwnText\(note,text,names\);note\.hidden=!text;\}/,'that text is set as text too (a friend\'s name in it as typed, 17 Oct 2026)');
  assert.match(js,/if\(gift\.coins\)rewards\.push\(`<strong class="reward-coins">\$\{art\('coins'\)\}\+\$\{gift\.coins\.toLocaleString\('en-US'\)\} coins<\/strong>`\);/);
  assert.match(js,/if\(gift\.xp\)rewards\.push\(`<strong class="reward-xp">\$\{art\('xp'\)\}\+\$\{gift\.xp\.toLocaleString\('en-US'\)\} XP<\/strong>`\);/);
  assert.match(js,/if\(gift\.diamonds\)rewards\.push\(`<strong class="reward-diamonds">\$\{art\('diamonds'\)\}\+\$\{gift\.diamonds\.toLocaleString\('en-US'\)\} diamonds<\/strong>`\);/);
  assert.match(js,/if\(gift\.item&&gift\.itemCount&&ITEMS\[gift\.item\]\)rewards\.push\(`<strong class="reward-item">\$\{art\(gift\.item\)\}\+\$\{gift\.itemCount\.toLocaleString\('en-US'\)\} \$\{ITEMS\[gift\.item\]\.name\}<\/strong>`\);/,'an unrecognised item key (an old game version, say) is silently skipped rather than rendering "undefined"');
- // The note is set with .textContent, never interpolated into the innerHTML string — nothing here needs escaping.
- assert.match(js,/note\.textContent=`.*gift\.message.*`;note\.hidden=false/);
+ // The note is set as text (public/i18n.js setOwnText sets .textContent), never interpolated into the innerHTML string — nothing here
+ // needs escaping. The staff's own words stay as written.
+ assert.match(js,/setOwnText\(note,`“\$\{gift\.message\}”`,\[gift\.message\]\);note\.hidden=false/);
  assert.doesNotMatch(js,/gift-message'\)\.innerHTML/);
 });
 test('giftPopup is wired to both delivery paths: a fresh page load and a live reconnect refresh',()=>{

@@ -4,6 +4,7 @@ import {ITEMS,CROPS,itemAvailable,levelOf,worldTwoItem,formatDuration} from './f
 import {farmNow} from './farm-client.js';
 import {showCenterNotice} from './center-notice.js';
 import {skeleton} from './skeleton.js';
+import {ownWords,ownLine} from './i18n.js';
 // Daily sharing inside a Farm Family: help a member with coins, send a gift of any crop or good, ask for any crop or good
 // of any crop or good you have unlocked, and fill someone else's request. Everything comes out of your own farm (harvest_social in retention-social.sql moves it),
 // so this screen only has to make the choices clear and say up front what cannot be done today.
@@ -78,7 +79,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    const max=Math.min(maxShare(myLevel()),stock(gift.item));
    return `<div class="sharing-gift">${itemPicker({kind:'gift',keys:giftKeys(),picked:gift.item,quantity:gift.quantity,max,withStock:true})}<div class="sharing-gift-actions"><button type="button" class="link-button" data-gift-cancel>Cancel</button><button type="button" class="primary-button" data-send-gift>Send ${gift.quantity} ${esc(ITEMS[gift.item].name)}</button></div></div>`;
   };
-  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row"><button type="button" class="sharing-person" data-player-profile="${esc(m.id)}" ${profiles()?'':'disabled'}>${portrait(m.id)}<span class="sharing-who"><strong>${esc(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></span></button><div class="sharing-actions">${action('help',m.id,'Help','coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
+  return `<div class="sharing-list">${social.members.map(m=>`<article class="sharing-row"><button type="button" class="sharing-person" data-player-profile="${esc(m.id)}" ${profiles()?'':'disabled'}>${portrait(m.id)}<span class="sharing-who"><strong>${ownWords(m.name)}</strong><span>${member(m.id)?`Level ${member(m.id).level}`:'Family member'}</span></span></button><div class="sharing-actions">${action('help',m.id,'Help','coins',helpBlocked)}${today.done('gift',m.id)?'<button class="sharing-action" disabled>✓ Sent</button>':`<button class="sharing-action ${gift.to===m.id?'is-open':''}" data-gift-open="${esc(m.id)}" ${giftBlocked?'disabled':''} title="${esc(giftBlocked)}" aria-expanded="${gift.to===m.id}">${art('gift')}<span>Gift</span></button>`}</div></article>${composer(m)}`).join('')}</div>`;
  }
  function requests(){
   const open=social.requests;
@@ -97,7 +98,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    const line=r.fulfilled_by?'Filled':given?`${given} of ${r.quantity} in`:mine?'Waiting for your family':`You have ${have}`;
    const bar=given&&!r.fulfilled_by?`<span class="sharing-progress" aria-hidden="true"><i style="width:${Math.round(given/r.quantity*100)}%"></i></span>`:'';
    const ends=r.fulfilled_by?'':`<small class="sharing-ends">Open for ${formatDuration(Math.max(0,requestEnds(r)-farmNow()))}</small>`;
-   return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${mine?'You need':`${esc(r.name)} needs`} ${r.quantity} ${esc(itemName(r.item))}</strong><span>${line}</span>${gave?`<small class="sharing-gave">${gave}</small>`:''}${bar}${ends}</div>${action}</article>`;
+   return `<article class="sharing-row">${art(r.item,'sharing-item')}<div class="sharing-who"><strong>${ownLine(mine?`You need ${r.quantity} ${itemName(r.item)}`:`${r.name} needs ${r.quantity} ${itemName(r.item)}`,mine?[]:[r.name])}</strong><span>${line}</span>${gave?`<small class="sharing-gave">${gave}</small>`:''}${bar}${ends}</div>${action}</article>`;
   }).join('')}</div>`;
  }
  function ask(){
@@ -136,8 +137,9 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   refreshArt();
  }
  async function load(){try{social=(await bridge.request({operation:'social'})).social;error='';}catch(e){error=e.message;}render();}
- // What a Help or gift did, or why it was refused, in the middle of the screen over the window (center-notice.js).
- const say=(message,refused=false)=>{const host=root?.closest('dialog')??root;if(host)showCenterNotice(host,message,{refused});else notify?.(message);};
+ // What a Help or gift did, or why it was refused, in the middle of the screen over the window (center-notice.js). The family's names
+ // in it as typed ("You sent 4 Fresh bread to Sunny Acres.", 17 Oct 2026).
+ const say=(message,refused=false)=>{const host=root?.closest('dialog')??root,names=(social?.members??[]).map(m=>m.name);if(host)showCenterNotice(host,message,{refused,names});else notify?.(message,{names});};
  async function act(action){
   if(busy)return;busy=true;root.querySelectorAll('button:not([data-close]):not([data-back])').forEach(b=>b.disabled=true);
   // Drop the fields a kind does not use, so the server only sees what it expects.

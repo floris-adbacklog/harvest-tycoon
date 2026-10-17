@@ -2,6 +2,7 @@ import {confirmAction} from './confirm-dialog.js';
 import {skeleton} from './skeleton.js';
 import {createSocialUI} from './social-ui.js';
 import {avatarImage} from './player-avatars.js';
+import {t,ownWords,ownLine,ownText,setOwnText} from './i18n.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {renderFamilyInvitation,renderSentInvitations,createFamilyInviteSearch,inviteBlocker} from './family-invitations-ui.js';
 import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order-rewards.js';
@@ -13,7 +14,6 @@ import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
 import {farmNow} from './farm-client.js';
-import {t} from './i18n.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
 // The family emblems' names. 7 Oct 2026: the 33 new ones (farm-state.js). A game icon is called after its item; the five that are
@@ -84,7 +84,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    :f.mode==='open'?actionButton('family_join','Join',`data-family-id="${esc(f.id)}"`)
    :f.mode==='request'?(mine?.family.id===f.id?actionButton('family_request_cancel','Cancel request',`data-request-id="${esc(mine.id)}"`):actionButton('family_request','Ask to join',`data-family-id="${esc(f.id)}"`,!!mine))
    :`<span class="family-mode-chip">${FAMILY_JOIN_MODES[f.mode]}</span>`;
-  const note=mine?`<p class="family-notice">You asked to join ${esc(mine.family.name)}. Their leader or a co-leader can accept it for ${formatDuration(mine.expiresAt-farmNow())}.</p>`:'';
+  const note=mine?`<p class="family-notice">${ownLine(`You asked to join ${mine.family.name}. Their leader or a co-leader can accept it for ${formatDuration(mine.expiresAt-farmNow())}.`,[mine.family.name])}</p>`:'';
   return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong><span translate="no">${esc(f.name)}</span> <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active${(f.minLevel??FAMILY_MIN_LEVEL)>FAMILY_MIN_LEVEL&&(f.mode==='open'||f.mode==='request')&&!low(f)?` · level ${f.minLevel}+`:''}</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${more?'<button type="button" class="small-button family-browse-more" data-family-more>Show more</button>':''}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
  }
  function prizePreview(){
@@ -156,8 +156,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const coleaders=view.members.filter(m=>m.role==='coleader').length,f=view.family;
   const rankButtons=m=>f.leader?[['coleader','Make co-leader',coleaders>=FAMILY_MAX_COLEADERS&&m.role!=='coleader'],['honorary','Make honorary'],['member','Make member']].filter(([rank])=>rank!==m.role).map(([rank,label,full])=>actionButton('family_rank',`${art(`family-rank-${rank}`)}${full?`${label} (${FAMILY_MAX_COLEADERS} already)`:label}`,`data-member-id="${m.id}" data-rank="${rank}"`,full)).join('')+actionButton('family_promote','Make leader',`data-member-id="${m.id}"`):'';
   const canRemove=m=>f.leader||f.manager&&!['leader','coleader'].includes(m.role);
-  const menu=m=>!m.isSelf&&(f.leader||canRemove(m))?`<details class="family-member-menu" data-fold="member-${m.id}"><summary aria-label="Options for ${esc(m.username)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary><div class="family-member-menu-list">${rankButtons(m)}${canRemove(m)?actionButton('family_kick','Remove from family',`data-member-id="${m.id}" data-danger`):''}</div></details>`:'';
-  const row=m=>`<article class="family-member${m.isSelf?' is-self':''}"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId??'')}" ${profiles&&m.playerId?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online: a farm action in the last 30 minutes':'Offline'}"></span></span><span class="family-member-copy"><strong>${esc(m.username)}${vipBadge(m.vipExpiresAt,farmNow())}${m.isSelf?' <em>(you)</em>':''}${rankChip(m)}${m.daysAway>0?`<span class="family-away">${m.daysAway===1?'1 day away':`${m.daysAway} days away`}</span>`:''}</strong><small>Level ${m.level} · ${num(m.points)} points this week</small><span class="family-member-bar" aria-hidden="true"><span style="width:${Math.round(m.points/best*100)}%"></span></span></span>${profiles&&m.playerId?'<span class="family-sr-only">Open profile</span>':''}</button>${menu(m)}</article>`;
+  const menu=m=>!m.isSelf&&(f.leader||canRemove(m))?`<details class="family-member-menu" data-fold="member-${m.id}"><summary translate="no" aria-label="${esc(ownText(`Options for ${m.username}`,[m.username]))}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary><div class="family-member-menu-list">${rankButtons(m)}${canRemove(m)?actionButton('family_kick','Remove from family',`data-member-id="${m.id}" data-danger`):''}</div></details>`:'';
+  const row=m=>`<article class="family-member${m.isSelf?' is-self':''}"><button type="button" class="family-member-open" data-player-profile="${esc(m.playerId??'')}" ${profiles&&m.playerId?'':'disabled'}><span class="family-member-portrait">${avatarImage(m.avatarId)}<span class="online-dot ${m.online?'is-online':''}" role="img" aria-label="${m.online?'Online':'Offline'}" title="${m.online?'Online: a farm action in the last 30 minutes':'Offline'}"></span></span><span class="family-member-copy"><strong>${ownWords(m.username)}${vipBadge(m.vipExpiresAt,farmNow())}${m.isSelf?' <em>(you)</em>':''}${rankChip(m)}${m.daysAway>0?`<span class="family-away">${m.daysAway===1?'1 day away':`${m.daysAway} days away`}</span>`:''}</strong><small>Level ${m.level} · ${num(m.points)} points this week</small><span class="family-member-bar" aria-hidden="true"><span style="width:${Math.round(m.points/best*100)}%"></span></span></span>${profiles&&m.playerId?'<span class="family-sr-only">Open profile</span>':''}</button>${menu(m)}</article>`;
   // 30 Sep 2026: farmers asking to join first (they wait for an answer), then the family itself, then inviting: the leader's search
   // with the invitations still open, and a friend who is new to the game. The header already counts the farmers and who is online,
   // and the dot and the crown say what they mean when you point at them, so there is no heading or footnote to repeat it.
@@ -169,7 +169,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function joinRequests(){
   if(!view.joinRequests?.length)return '';
   const full=view.members.length>=view.config.maxMembers;
-  return `<section class="family-requests"><h3>Asking to join (${view.joinRequests.length})</h3>${full?'<p class="family-notice">Your family is full. Make room before you accept.</p>':''}${view.joinRequests.map(r=>`<div class="family-list-row"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${esc(r.username)}</strong><span>Level ${r.level} · ${formatDuration(r.expiresAt-farmNow())} left to answer</span></div>${actionButton('family_request_decline','Decline',`data-request-id="${esc(r.id)}"`)}${actionButton('family_request_accept','Accept',`data-request-id="${esc(r.id)}"`,full)}</div>`).join('')}</section>`;
+  return `<section class="family-requests"><h3>Asking to join (${view.joinRequests.length})</h3>${full?'<p class="family-notice">Your family is full. Make room before you accept.</p>':''}${view.joinRequests.map(r=>`<div class="family-list-row"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}</strong><span>Level ${r.level} · ${formatDuration(r.expiresAt-farmNow())} left to answer</span></div>${actionButton('family_request_decline','Decline',`data-request-id="${esc(r.id)}"`)}${actionButton('family_request_accept','Accept',`data-request-id="${esc(r.id)}"`,full)}</div>`).join('')}</section>`;
  }
  // Help, gifts and requests (public/social-ui.js draws into this box and keeps it up to date itself).
  function sharing(){return '<div class="family-sharing" data-sharing-root aria-live="polite"></div>';}
@@ -208,7 +208,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const meta=document.getElementById('family-meta');meta.hidden=!f;if(f)meta.textContent=`${view.members.length} / ${view.config.maxMembers} farmers · ${view.members.filter(m=>m.online).length} online`;
   document.getElementById('family-chat').hidden=!f||!window.harvestChat;document.getElementById('family-settings').hidden=!f;
   dialog.querySelector('#family-settings').classList.toggle('active',tab==='settings');
-  document.getElementById('family-feedback').textContent=error;
+  setOwnText(document.getElementById('family-feedback'),error,[...namesIn(view),...inviteSearch.names()]);
   document.getElementById('family-tabs').hidden=!view?.family;
   document.querySelectorAll('[data-family-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.familyTab===tab);b.setAttribute('aria-selected',String(b.dataset.familyTab===tab));});
   // Still on its way: placeholder rows (1 Oct 2026). Usually it is here already: refresh() reads it in the background every 30 s.
@@ -260,12 +260,15 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   inviteSearch.mount(content);bindEmblemPickers(content);
   refreshArt();if(focusId){const next=document.getElementById(focusId);next?.focus({preventScroll:true});if(next&&typeof selection==='number')try{next.setSelectionRange(selection,selection);}catch{}}
  }
+ // Every farmer's and family's name the window knows. farm-api's answers name them ("Sunny Acres joined your family.", "Welcome to
+ // <family>!"), and a name that is also a word of the game's must show as typed (17 Oct 2026): the toast holds them out.
+ const namesIn=v=>v?[v.family?.name,v.myRequest?.family?.name,v.invitation?.family?.name,v.invitation?.invitedBy,...(v.members??[]).map(m=>m.username),...(v.joinRequests??[]).map(r=>r.username),...(v.sentInvitations??[]).map(i=>i.username),...(v.families??v.openFamilies??[]).map(f=>f.name)].filter(Boolean):[];
  async function act(action){
   if(busy)return;busy=true;generation++;error='';content.querySelectorAll('button').forEach(b=>b.disabled=true);
-  let done=false;
+  let done=false;const names=[...namesIn(view),...inviteSearch.names()];
   // Join again's answer names the family: put in the farmer's language here, so the toast never translates the name (welcome-ui.js).
-  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message);if(result.completed)dialog.classList.add('family-celebrate');done=true;}
-  catch(e){error=e.message;notify(error);}
+  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message,{names:[...names,...namesIn(view)]});if(result.completed)dialog.classList.add('family-celebrate');done=true;}
+  catch(e){error=e.message;notify(error,{names});}
   finally{busy=false;render();refresh();}
   return done;
  }

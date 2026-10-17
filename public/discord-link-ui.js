@@ -1,6 +1,7 @@
 import {confirmAction} from './confirm-dialog.js';
 import {art} from './visual-icons.js';
 import {discordTicket} from './app-links.js';
+import {setOwnText} from './i18n.js';
 // A farm from harvesttycoon.com in the Discord Activity (Oct 2026). Discord's rules allow no log-in of ours inside the Activity, so a
 // player who taps "I already have a farm" there logs in on the website instead, through a link with a one-time ticket
 // (www.harvesttycoon.com/discord-link?t=…: vercel.json and public/app-links.js bring it to the farm, src/main.js keeps it through the
@@ -136,7 +137,8 @@ export function createDiscordLinkDialog({request,verify,signOut,farmer=()=>'',do
     if(given)await linkFarm(given);else say(LINK_TEXT.cancelled,'is-error');
    }
    function ask(who,relink){
-    step='confirm';copy.textContent=linkQuestion(who,String(farmer()??'').trim());warning.hidden=!relink;note.hidden=false;
+    // The Discord name and the farm's name as typed (17 Oct 2026).
+    const name=String(farmer()??'').trim();step='confirm';setOwnText(copy,linkQuestion(who,name),[who,name]);warning.hidden=!relink;note.hidden=false;
     link.textContent='Link';link.hidden=false;link.disabled=false;
    }
    // Link: our server gives it a state ({op:'begin'}), then the page leaves for Discord's own page, and Discord comes back with its
@@ -261,7 +263,7 @@ export function createDiscordSwitch({portal,farmer=()=>'',level=()=>null,doc=glo
  async function start(){
   if(button.disabled)return false;message.textContent='';
   const name=String(farmer()??'').trim(),n=shownLevel(doc)??(Number(level())||1);
-  if(!await ask({title:SWITCH_TEXT.ask,description:switchWarning(name,n),confirmLabel:'Continue',cancelLabel:'Keep this farm',picture:'farm',tone:'danger'}))return false;
+  if(!await ask({title:SWITCH_TEXT.ask,description:switchWarning(name,n),confirmLabel:'Continue',cancelLabel:'Keep this farm',picture:'farm',tone:'danger',names:[name]}))return false;
   // Read again at the tap: the page around the game offers it only while this Discord farm is the one open.
   const linkExisting=portal.linkExisting;
   if(typeof linkExisting!=='function'){message.textContent=SWITCH_TEXT.failed;return false;}

@@ -2,6 +2,7 @@ import {playerAvatar,avatarImage} from '../public/player-avatars.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {art,MEDAL_ART} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
+import {ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
 import {skeleton} from '../public/skeleton.js';
 import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS} from '../game/farm-state.js';
@@ -32,15 +33,15 @@ export function masteryByCrop(badges){
 const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}"><span class="farmer-badge-art">${art(crop)}${art(MEDAL_ART[best],'farmer-badge-medal')}</span><strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} medals">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
 // The family card: with a family, a button to its profile (public/family-profile.js, 27 Sep 2026).
 function familyCard(family,emblem){
- const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${esc(family?.name??'No family yet')}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;
- return family?.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(family.name)}: family profile">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:inner;
+ const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><span class="eyebrow">FAMILY</span><h4>${family?.name?ownWords(family.name):'No family yet'}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;
+ return family?.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(ownText(`${family.name}: family profile`,[family.name]))}">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:inner;
 }
 // 30 Sep 2026, cleaner: the name once (the window says Farmer profile), the VIP time left only on your own profile, and what
 // Online means in the dot's own tooltip rather than a line under the profile.
 export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
- return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><h3>${esc(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
+ return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
  ${self?'<div class="farmer-share" data-farmer-share hidden></div>':''}
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
@@ -48,7 +49,7 @@ export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false
  <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Medals</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</section>`;
 }
 export function renderPlayerSearch(players,now=Date.now()){
- return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${esc(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${p.family?esc(p.family.name):'No family yet'} · Level ${fmt(p.level)}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');
+ return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${ownWords(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${ownLine(`${p.family?p.family.name:'No family yet'} · Level ${fmt(p.level)}`,[p.family?.name])}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');
 }
 // Checked once per session and cached: only ever true for the one admin account, and only ever used to decide
 // whether to draw the gift form at all. The real gate is server-side (farm-api rejects anyone else outright), so
@@ -66,7 +67,7 @@ export function renderLogEntries(entries,now=Date.now()){
  for(const e of entries){
   const at=Date.parse(e.at),label=logDay(at,now);
   if(label!==day){if(day!==null)html+='</ol>';html+=`<h4 class="farmer-log-day">${esc(label)}</h4><ol class="farmer-log-list">`;day=label;}
-  html+=`<li class="farmer-log-row" data-log-category="${esc(e.category)}"><span class="farmer-log-dot" aria-hidden="true"></span><div><p>${esc(e.text)}</p><small><time datetime="${esc(e.at)}">${new Date(at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</time> · ${esc(LOG_LABELS[e.category]??e.category)}${e.by?` · by ${esc(e.by)}`:''}</small></div></li>`;
+  html+=`<li class="farmer-log-row" data-log-category="${esc(e.category)}"><span class="farmer-log-dot" aria-hidden="true"></span><div><p>${esc(e.text)}</p><small><time datetime="${esc(e.at)}">${new Date(at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</time> · ${esc(LOG_LABELS[e.category]??e.category)}${e.by?` ${ownLine(`· by ${e.by}`,[e.by])}`:''}</small></div></li>`;
  }
  return day===null?'':html+'</ol>';
 }
@@ -113,7 +114,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
    if(!coins&&!xp&&!diamonds&&!(item&&itemCount)){grantStatus.textContent='Enter at least one amount.';return;}
    const notify=notifyInput.checked,message=notify?messageInput.value.trim():'';
    const parts=[coins&&`${coins} coins`,xp&&`${xp} XP`,diamonds&&`${diamonds} diamonds`,item&&itemCount&&`${itemCount} ${ITEMS[item].name}`].filter(Boolean).join(', ');
-   const sure=await confirmAction({title:`Give ${profileUsername??'this farmer'}?`,description:`${parts}.${notify?' They will be notified.':''}`,confirmLabel:'Give',cancelLabel:'Cancel',picture:'gift'});
+   const sure=await confirmAction({names:[profileUsername],title:`Give ${profileUsername??'this farmer'}?`,description:`${parts}.${notify?' They will be notified.':''}`,confirmLabel:'Give',cancelLabel:'Cancel',picture:'gift'});
    if(!sure)return;
    give.disabled=true;grantStatus.textContent='Giving…';
    try{
@@ -190,10 +191,11 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
   const box=content.querySelector('[data-farmer-invite]'),family=window.harvestFamilyInvite,offer=box&&family?.offer?.(player);
   if(!offer)return;
   const label=`Invite to ${offer.familyName}`;
-  box.hidden=false;box.innerHTML=`<button type="button" class="small-button farmer-invite-button" ${offer.reason?'disabled':''}>${esc(offer.reason||label)}</button>`;
+  // The family's name as typed (17 Oct 2026).
+  box.hidden=false;box.innerHTML=`<button type="button" class="small-button farmer-invite-button" ${offer.reason?'disabled':''}></button>`;setOwnText(box.querySelector('button'),offer.reason||label,[offer.familyName]);
   box.querySelector('button').onclick=async event=>{
-   const button=event.currentTarget;button.disabled=true;button.textContent='Inviting…';
-   const sent=await family.invite(player.playerId);button.textContent=sent?'Invited':label;button.disabled=sent;
+   const button=event.currentTarget;button.disabled=true;setOwnText(button,'Inviting…');
+   const sent=await family.invite(player.playerId);setOwnText(button,sent?'Invited':label,[offer.familyName]);button.disabled=sent;
   };
  }
  // Share my farm (Oct 2026, public/farm-share.js): on your own profile, a picture of your farm with your invite link that opens in place.

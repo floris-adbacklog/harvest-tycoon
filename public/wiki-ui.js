@@ -4,6 +4,7 @@ import {art,refreshArt} from './visual-icons.js';
 import {wikiArticle,wikiNext,wikiSearch,wikiHero,wikiJump,wikiGroups,wikiSearchBox,wikiQuick} from './wiki-content.js';
 import {wikiLink,WIKI_COPY_ICON} from './wiki-link.js';
 import {portal} from './portal.js';
+import {ownLine} from './i18n.js';
 
 // How to play as a wiki: a search box with quick searches and the topics in three groups, then one page per topic with a
 // coloured header, a jump bar that stays in view, and a way back. The same content as the
@@ -36,7 +37,7 @@ function home(){
  input.addEventListener('input',()=>{
   // In the game search finds only what the farmer's level shows (Oct 2026): nothing of the village below level 100.
   const q=input.value.trim(),hits=wikiSearch(q,{level:ctx().level});results.hidden=!q;
-  results.innerHTML=hits.length?`<ul>${hits.map(h=>`<li><a href="#wiki-${h.topic}" data-wiki-topic="${h.topic}"${h.anchor?` data-wiki-anchor="${h.anchor}"`:''}>${art(h.art)}<strong>${esc(h.label)}</strong><span>${esc(h.topicTitle)}</span></a></li>`).join('')}</ul>`:`<p>Nothing found for “${esc(q)}”. Try a crop, a building or a word like “diamonds”.</p>`;
+  results.innerHTML=hits.length?`<ul>${hits.map(h=>`<li><a href="#wiki-${h.topic}" data-wiki-topic="${h.topic}"${h.anchor?` data-wiki-anchor="${h.anchor}"`:''}>${art(h.art)}<strong>${esc(h.label)}</strong><span>${esc(h.topicTitle)}</span></a></li>`).join('')}</ul>`:`<p>${ownLine(`Nothing found for “${q}”. Try a crop, a building or a word like “diamonds”.`,[q])}</p>`;
   refreshArt();
  });
  showBack(el);refreshArt();
