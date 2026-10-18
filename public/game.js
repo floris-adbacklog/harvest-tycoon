@@ -108,6 +108,7 @@ function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
+let viewSpans=null,ladderAt=0;   // the three views' widths at zoom 1 (resize) and the last step between them (zoomFarm)
 const handheld=handheldDevice();   // phones, tablets and the apps: the farm rests under a window (frame, public/windows.js)
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide. On a
@@ -998,6 +999,7 @@ function resize(){
  const fitRoom=height<650&&fieldRoom&&!villageWorld?fieldRoom:null,fieldFit=fitRoom?(6.1+rows*2.06)*height/(fitRoom.bottom-fitRoom.top):0;
  const fieldSpan=fitRoom?Math.max(24/aspect,(10+2.26*rows)/aspect,fieldFit):Math.max(21,24/aspect,(10+2.26*rows)/aspect,10.6+rows*2.06);
  const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
+ viewSpans={fields:fieldSpan,home:homeSpan,overview:overviewSpan};
  const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
  // On a computer the side tools (and an open Beginner guide) cover the edges of the map: the home and fields views centre
  // the farm in the free part between them (the overview already keeps its own margins).
@@ -1051,14 +1053,29 @@ function resize(){
  camera.position.copy(focus).add(new THREE.Vector3(36,40,36));camera.lookAt(focus);camera.updateProjectionMatrix();camera.updateMatrixWorld();
  $('game').classList.toggle('farm-overview',mobile&&viewMode==='overview'&&zoom<1.4);
  $('fields-view').setAttribute('aria-pressed',String(viewMode==='fields'));$('zoom-reset').setAttribute('aria-pressed',String(viewMode==='home'));$('zoom-fit').setAttribute('aria-pressed',String(viewMode==='overview'));
- $('zoom-in').disabled=zoom>=maxZoom();$('zoom-out').disabled=zoom<=minZoom();
+ $('zoom-in').disabled=zoom>=maxZoom()&&!ladderStep(1);$('zoom-out').disabled=zoom<=minZoom()&&!ladderStep(-1);
  positionLabels();positionBuildingLabels();
 }
 // The village is three times as wide as the farm and its houses are smaller on screen: further out to zoom and to move (as far as
 // its mountains allow, resize), and much further in, so a house comes as close as a farm building does.
 const minZoom=()=>villageWorld?villageMinZoom:.75,maxZoom=()=>villageWorld?6:2.2;
 function panFarm(delta,depth=0){const limit=villageWorld?60:Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
-function zoomFarm(value){zoom=Math.max(minZoom(),Math.min(maxZoom(),value));resize();}
+// The farm's three views go from close to far: the fields (Focus on your crop fields), the heart of the farm (Center the farm) and the
+// whole farm (18 Oct 2026, the owner: "als je max uitzoomt dat hij naar de volgende variant gaat"). Zooming out at a view's widest goes on
+// in the next wider view, and zooming in at its closest goes on in the next closer one, at the zoom that keeps the picture as wide as
+// asked (within that view's own limits), so a pinch, the wheel and the + and - buttons simply carry on. The village keeps its one view.
+// A step to another view waits 400 ms after the last one, so one long pinch or wheel spin does not run through all three at once.
+const VIEW_LADDER=['fields','home','overview'];
+function ladderStep(direction){const at=VIEW_LADDER.indexOf(viewMode);if(villageWorld||at<0||!viewSpans)return null;const next=VIEW_LADDER[at-direction];return next??null;}
+function zoomFarm(value){
+ const out=value<zoom,next=ladderStep(out?-1:1),edge=out?zoom<=minZoom()+1e-6&&value<minZoom():zoom>=maxZoom()-1e-6&&value>maxZoom(),now=performance.now();
+ if(next&&edge){
+  if(now-ladderAt<400)return;
+  const asked=viewSpans[viewMode]/value;ladderAt=now;viewMode=next;
+  zoom=Math.max(minZoom(),Math.min(maxZoom(),viewSpans[next]/asked));pan=0;panDepth=0;resize();if(ready)updateUI();return;
+ }
+ zoom=Math.max(minZoom(),Math.min(maxZoom(),value));resize();
+}
 function resetView(){viewMode=startView();zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
 function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
 function focusFields(){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}
