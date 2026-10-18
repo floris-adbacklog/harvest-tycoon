@@ -76,7 +76,7 @@ test('a game from before the CrazyGames group never shows it (left unseen until 
  const before=new Function('audience','{installed,phone,playApp=false,web=false}',"return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);");
  for(const device of [{installed:false,phone:true},{installed:false,phone:false},{installed:true,phone:true,playApp:true}])assert.equal(before('crazygames',device),false);
  const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false,crazygames=false\}\)\{\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1];
- assert.equal(today.replace("||(audience==='crazygames'&&crazygames===true)",''),"return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);",'today\'s rule is the 9 Oct one plus the CrazyGames group');
+ assert.equal(today.replace("||(audience==='crazygames'&&crazygames===true)",'').replace("||(audience==='phone_web'&&phone&&web===true&&!installed)",''),"return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);",'today\'s rule is the 9 Oct one plus the CrazyGames group');
  assert.match(read('src/popup-ui.js'),/crazygames:portal\(win\)\?\.name==='crazygames'\}\);/,'decided by the portal around the farm');
 });
 
@@ -89,6 +89,6 @@ test('the database: the group in the table\'s check and in popup_post, from its 
  assert.match(sql,/if position\('''crazygames''' in d\)>0 then return; end if;/,'re-runnable');
  assert.match(sql,/<>1 then raise exception 'popup_post is not as expected/,'stops when the live text differs');
  assert.doesNotMatch(read('supabase/special-offer.sql'),/'crazygames'/,'no offer for the group');
- assert.match(read('src/admin-dashboard.js'),/<select id="admin-offer-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.filter\(\(\[key\]\)=>key!=='android_app'&&key!=='web'&&key!=='crazygames'\)/,'the offer form leaves it out');
+ assert.match(read('src/admin-dashboard.js'),/<select id="admin-offer-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.filter\(\(\[key\]\)=>key!=='android_app'&&key!=='web'&&key!=='crazygames'(&&key!=='phone_web')?\)/,'the offer form leaves it out');
  for(const text of [sql,read('src/popup-ui.js')])assert.doesNotMatch(text,/ · /,'no middle dots');
 });

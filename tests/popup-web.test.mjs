@@ -101,7 +101,7 @@ test('a game from before the website group (a portal or an app left open) never 
   assert.equal(old('all',{installed:false,phone:false}),true,'the old rule itself, as it was');
  }
  assert.match(read('src/popup-ui.js'),/const popup=\(list\?\?\[\]\)\.find\(p=>fitsDevice\(p\.audience,device\(\)\)\);if\(!popup\)return;/,'skipped, so never marked as seen: the farmer gets it after the update');
- const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false(?:,crazygames=false)?\}\)\{\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1].replace("||(audience==='crazygames'&&crazygames===true)",'');  // 12 Oct 2026: the CrazyGames group follows it
+ const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false(?:,crazygames=false)?\}\)\{\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1].replace("||(audience==='crazygames'&&crazygames===true)",'').replace("||(audience==='phone_web'&&phone&&web===true&&!installed)",'');  // 12 Oct 2026: the CrazyGames group follows it
  assert.equal(today.replace("||(audience==='web'&&web===true)",''),OLD[2][1],'the rule of 9 Oct 2026 is today\'s without the website group');
 });
 
@@ -117,7 +117,7 @@ test('the database: the group in the table\'s check and in popup_post, changed i
  assert.match(sql,/<>1 then raise exception 'popup_post is not as expected/,'stops when the live text differs');
  assert.doesNotMatch(read('supabase/special-offer.sql'),/'web'/,'no offer for the group');
  const admin=read('src/admin-dashboard.js');
- assert.match(admin,/<select id="admin-offer-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.filter\(\(\[key\]\)=>key!=='android_app'&&key!=='web'(&&key!=='crazygames')?\)/,'the offer form leaves it out');
+ assert.match(admin,/<select id="admin-offer-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.filter\(\(\[key\]\)=>key!=='android_app'&&key!=='web'(&&key!=='crazygames')?(&&key!=='phone_web')?\)/,'the offer form leaves it out');
  assert.match(admin,/<select id="admin-popup-audience">'\+Object\.entries\(POPUP_AUDIENCES\)\.map/,'the pop-up form has it');
  for(const text of [sql,read('src/popup-ui.js'),read('src/admin-dashboard.js').split('admin-popup-note">Every farmer')[1].split('</p>')[0]])assert.doesNotMatch(text,/ · /,'no middle dots');
 });

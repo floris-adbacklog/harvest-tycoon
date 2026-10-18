@@ -10,7 +10,7 @@ import {androidApp,googlePlayApp} from '../public/android.js';
 // here, on the device: nothing records who installed the app), and from a farm level (decided by the server). Never in a farmer's first
 // half hour, and never over another window: it waits until nothing else is open.
 export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
-export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)',crazygames:'CrazyGames players'});
+export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)',crazygames:'CrazyGames players',phone_web:'Phones on the website (not the apps or the game portals)'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
 // public/portal.js) no links out are allowed: the address stays plain text there.
@@ -28,8 +28,11 @@ export function inLanguage(item,code=chosenLanguage()){
 // (CrazyGames, Kongregate, Discord: no links out there; 'browser' does include those portals). A game from before it skips it, as above;
 // the offer passes no web. CrazyGames players (12 Oct 2026, crazygames): only the game inside CrazyGames (the portal named crazygames),
 // for the notice that the game leaves CrazyGames; guests there have no chat, so News would not reach them. Never Kongregate or Discord.
+// Phones on the website (18 Oct 2026, the owner, phone_web: the pop-up "we also have a mobile app", "excl. dingen zoals Kong"): a phone
+// on harvesttycoon.com in its browser (web, and not on the home screen), never our apps or a game portal (phone_browser does include
+// Kongregate, CrazyGames and Discord on a phone). A game from before it skips it, as above; the offer passes no web.
 export function fitsDevice(audience,{installed,phone,playApp=false,web=false,crazygames=false}){
- return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true)||(audience==='crazygames'&&crazygames===true);
+ return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true)||(audience==='crazygames'&&crazygames===true)||(audience==='phone_web'&&phone&&web===true&&!installed);
 }
 
 export function createPopupUI({client,chat,state,doc=document,win=window,now=()=>Date.now()}){
