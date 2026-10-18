@@ -10,13 +10,15 @@ test('one button style is loaded after the screens\' own styles, before the menu
  assert.ok(at>sheets.indexOf('/chat.css')&&at<sheets.indexOf('/more-menu.css'),sheets.join(' '));
 });
 
-test('the kinds: main green, second cream, light blue for diamonds, gold for money, red for what is hard to undo, and off',()=>{
+test('the kinds: main green (also for real money), second cream, light blue for diamonds, red for what is hard to undo, and off',()=>{
  assert.match(css,/--btn-main:#3f8a4a;/,'a lighter, cheerful leaf green (7 Oct 2026), still readable with white text');
  assert.match(css,/#boost-dialog \.boost-buy\{\n background:var\(--btn-diamond\)/);
- for(const kind of ['main','second','diamond','gold','red'])assert.match(css,new RegExp(`background:var\\(--btn-${kind}\\)`),kind);
+ for(const kind of ['main','second','diamond','red'])assert.match(css,new RegExp(`background:var\\(--btn-${kind}\\)`),kind);
+ // Real money is green with its price (18 Oct 2026, the owner): no button is gold any more.
+ assert.match(css,/\.is-money\{background:var\(--btn-main\);/);assert.doesNotMatch(css,/background:var\(--btn-gold\)/);
  assert.match(css,/\.primary-button,\n\.collect-all-panel \.primary-button/);
  assert.match(css,/\.small-button,\n\.secondary-button/);
- assert.match(css,/\.primary-button\.starter-buy\{background:var\(--btn-gold\)/);
+ assert.match(css,/\.primary-button\.starter-buy\{background:var\(--btn-main\)/);
  assert.match(css,/\.small-button\.is-danger,/);
  assert.match(css,/#boost-dialog \.boost-buy:disabled\{\n background:var\(--btn-off\)/);
 });
@@ -29,7 +31,7 @@ test('every button sinks onto its edge when pressed, and every close button has 
  assert.match(css,/\.dialog-heading \.icon-button,\.game-dialog \.dialog-heading \.icon-button\{width:44px;height:44px;/);
  for(const close of ['.payment-dialog .payment-dismiss','.starter-close','.rookie-close','.level-up-close','.offer-close','.popup-close','.farmer-profile-close','[data-family-profile-close]','[data-book-close]','.chat-close'])assert.ok(css.includes(close),close);
  assert.match(css,/::before\{rotate:45deg\}/,'the × is drawn, the same in every window');
- for(const kind of ['main','second','diamond','gold','red'])assert.match(css,new RegExp(`box-shadow:var\\(--btn-top\\),0 4px 0 var\\(--btn-${kind}-edge\\)`),kind);
+ for(const kind of ['main','second','diamond','red'])assert.match(css,new RegExp(`box-shadow:var\\(--btn-top\\),0 4px 0 var\\(--btn-${kind}-edge\\)`),kind);
 });
 
 test('tabs share the style: a sunken track and the chosen tab raised like a second button',()=>{

@@ -31,8 +31,19 @@ export async function createStarterPackUI(bridge){
   const pack=catalog?.packs?.find(p=>p.id==='starter'),same=pack&&catalog.packs.find(p=>p.id!=='starter'&&!p.coins&&p.diamonds===pack.diamonds);
   if(pack)dialog.querySelector('[data-starter-diamonds]').textContent=pack.diamonds.toLocaleString('en-US');
   value.hidden=!same;if(same)value.textContent=`The ${pack.diamonds.toLocaleString('en-US')} diamonds alone cost ${shopPrice(catalog,same.id,same.cents)} in the shop.`;
+  banner(eligible?remaining:0,pack?.diamonds??500);
   if(!catalog?.enabled&&!pending){feedback.textContent='Purchases are not available yet. Please check back later.';feedback.dataset.unavailable='1';}
   else if(catalog?.enabled&&feedback.dataset.unavailable){feedback.textContent='';delete feedback.dataset.unavailable;}
+ }
+ // The Diamond shop (farm.html #boost-dialog): a row under the Special offer while the pack can be bought (18 Oct 2026: the second best
+ // seller, which a farmer who opened the shop never saw). What is in it, the real time left and the price; tapped, it opens this window.
+ function banner(remaining,diamonds){
+  let b=document.getElementById('shop-starter');const deals=document.querySelector('#boost-dialog .shop-deals');
+  if(!b&&!deals)return;
+  if(!b){b=document.createElement('button');b.type='button';b.id='shop-starter';b.className='shop-starter';b.onclick=()=>button.onclick();deals.append(b);}
+  b.hidden=!(remaining>0);if(b.hidden)return;
+  const html=`<img src="/assets/icons/starter-pack.webp" alt=""><span class="shop-starter-copy"><b>Starter Pack</b><span class="shop-offer-parts"><span class="is-diamonds">${art('diamonds')}<strong>${diamonds.toLocaleString('en-US')}</strong></span><span class="is-coins">${art('coins')}<strong>10,000</strong></span></span><small>Ends in ${formatDuration(remaining)}</small></span><span class="shop-starter-price"><b>${shopPrice(catalog,'starter',299)}</b></span>`;
+  if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;refreshArt();}
  }
  // The same answer also carries the special offer (src/offer-ui.js reads it from the harvest-catalog event): no second request.
  async function refresh(){if(refreshing||disposed)return;refreshing=true;checkedAt=Date.now();try{const data=await bridge.payments({operation:'catalog'});if(disposed)return;catalog=data;offset=data.serverNow-Date.now();render();window.dispatchEvent(new CustomEvent('harvest-catalog',{detail:data}));}catch{if(!catalog)button.hidden=chip.hidden=true;}finally{refreshing=false;}}

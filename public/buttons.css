@@ -1,6 +1,6 @@
 /* One button style for the whole game, loaded after the screens' own styles:
-   main (green) for the thing to do, second (cream) for the other choices, light blue for spending diamonds, gold for real
-   money, red for what is hard to undo, and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
+   main (green) for the thing to do and for real money (with the price on it), second (cream) for the other choices, light blue for
+   spending diamonds, red for what is hard to undo, and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
    is off looks the same everywhere. Sizes and spacing stay with each screen. The main green is a lighter, cheerful leaf green
    (7 Oct 2026: the game should look fun and cheerful; it was a dark forest green #3f6b4a), still clearly readable with white text.
    18 Oct 2026, the owner ("Maak het iets moderner, minder AI-gegenereerd ogend"): chunkier and more like a game's buttons. A thick
@@ -74,12 +74,13 @@
 .is-danger-quiet,.small-button.is-danger-quiet,.secondary-button.is-danger-quiet{background:var(--btn-second);border:2px solid #d69a8d;color:#a3402f;box-shadow:var(--btn-top),0 4px 0 #ecc9bf;text-shadow:none}
 .is-danger-quiet:hover:not(:disabled){background:#fbeee9}
 
-/* Gold: real money */
+/* Real money: the main green with the price as its label (18 Oct 2026, the owner: "groen voelt beter bij kopen dan goud"; gold on the
+   shop's gold and cream cards read as a price tag, green is the colour farmers tap all game). Gold stays for frames, never a button. */
 .primary-button.starter-buy,
-.primary-button.is-money,.small-button.is-money,.secondary-button.is-money,.is-money{background:var(--btn-gold);border:2px solid var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-gold-edge);text-shadow:none;font-weight:700}
-.primary-button.starter-buy{background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
-.primary-button.starter-buy,.primary-button.is-money{box-shadow:var(--btn-top),0 4px 0 var(--btn-gold-edge)}
-.primary-button.starter-buy:hover:not(:disabled),.is-money:hover:not(:disabled){background:var(--btn-gold-hover);border-color:var(--btn-gold-line)}
+.primary-button.is-money,.small-button.is-money,.secondary-button.is-money,.is-money{background:var(--btn-main);border:2px solid var(--btn-main-line);color:var(--btn-main-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge);text-shadow:0 1px 0 #0000002e;font-weight:700}
+.primary-button.starter-buy{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:0 3px 0 var(--btn-main-edge)}
+.primary-button.starter-buy,.primary-button.is-money{box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge)}
+.primary-button.starter-buy:hover:not(:disabled),.is-money:hover:not(:disabled){background:var(--btn-main-hover);border-color:var(--btn-main-line)}
 
 /* Red: hard to undo */
 .small-button.is-danger,
@@ -109,7 +110,7 @@
 #boost-dialog .boost-buy.is-short:active{box-shadow:0 1px 0 var(--btn-second-edge)}
 .market-sale-buttons [data-sell]:active:not(:disabled){box-shadow:0 1px 0 var(--btn-second-edge)}
 .small-button.is-danger:active:not(:disabled),.diamond-confirm.is-danger .confirm-spend:active:not(:disabled){box-shadow:0 1px 0 var(--btn-red-edge)}
-.primary-button.starter-buy:active:not(:disabled),.is-money:active:not(:disabled){box-shadow:0 1px 0 var(--btn-gold-edge)}
+.primary-button.starter-buy:active:not(:disabled),.is-money:active:not(:disabled){box-shadow:0 1px 0 var(--btn-main-edge)}
 .is-danger-quiet:active:not(:disabled){box-shadow:0 1px 0 #ecc9bf}
 
 /* Off: one look for every button that cannot be pressed now: flat and faded (18 Oct 2026 review: a grey button with a dark word and a

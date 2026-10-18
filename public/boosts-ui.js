@@ -19,13 +19,17 @@ export function diamondPackCards({catalog=null,purchasing='',suggestion=0}={}){
  // Kreds on Kongregate (15 Oct 2026, off until Kongregate says yes): a pack Kongregate gives no price is not for sale there (Unavailable),
  // and with a price for every pack the extra is worked out from Kongregate's own prices, so the tabs stay true whatever the owner sets.
  const kreds=catalog?.store==='kongregate',kredsAll=kreds&&DIAMOND_PACKS.every(p=>catalog.prices?.[p.amount]?.kreds>0);
- const perEuro=pack=>pack.amount/(kredsAll?catalog.prices[pack.amount].kreds:Number(pack.price.replace(/[^0-9.]/g,''))),base=perEuro(DIAMOND_PACKS[0]);
- // In the Android app (Oct 2026) the price is Google Play's, in the farmer's currency (catalog.prices, src/play-store.js); the extra per
- // euro stays the shop's own.
+ // In the apps (Oct 2026) the price is the store's, in the farmer's currency (catalog.prices, src/play-store.js, src/app-store.js). With
+ // the store's own amount for every pack, in one currency, the extra and Best value come from those amounts (18 Oct 2026: they are the
+ // prices the farmer sees); otherwise from the shop's euro prices, as before.
+ const amounts=DIAMOND_PACKS.map(p=>catalog?.prices?.[p.amount]),currency=amounts[0]?.currency;
+ const storeAll=!kreds&&amounts.every(a=>Number.isFinite(a?.micros)&&a.micros>0&&a.currency&&a.currency===currency);
+ const perEuro=pack=>pack.amount/(kredsAll?catalog.prices[pack.amount].kreds:storeAll?catalog.prices[pack.amount].micros:Number(pack.price.replace(/[^0-9.]/g,''))),base=perEuro(DIAMOND_PACKS[0]);
  const packPrice=pack=>catalog?.prices?.[pack.amount]?.price??pack.price,forSale=pack=>Boolean(catalog?.enabled)&&!(kreds&&!catalog.prices?.[pack.amount]);
- const last=DIAMOND_PACKS.length-1,open=Boolean(catalog?.enabled)&&!purchasing;
+ // Best value is the pack with the most diamonds for its price (the biggest today), worked out, not assumed.
+ const bestAt=DIAMOND_PACKS.reduce((at,pack,i)=>perEuro(pack)>perEuro(DIAMOND_PACKS[at])?i:at,0),open=Boolean(catalog?.enabled)&&!purchasing;
  return DIAMOND_PACKS.map((pack,i)=>{
-  const best=i===last,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount),sale=forSale(pack);
+  const best=i===bestAt,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount),sale=forSale(pack);
   const extra=Math.round((perEuro(pack)/base-1)*100);
   const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
   const foot=opening?'Opening…':sale?packPrice(pack):catalog?'Unavailable':packPrice(pack);
@@ -157,13 +161,14 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   });
   lastStatus=signature();refreshArt();
  }
- // "Get diamonds": to the packs, with the smallest that covers what is missing marked for a few seconds.
- let suggestion=0,suggestionTimer=0,packError=null;
+ // "Get diamonds": to the Diamonds tab, with the smallest pack that covers what is missing marked until the shop closes or another tab
+ // is chosen (18 Oct 2026, the review: marked for 6 seconds, it was often gone before a farmer scrolled past the deals to it).
+ let suggestion=0,packError=null;
  // The shop's tabs: the part that shows, the others one tap away (the dialog's data-shop-tab, boosts.css). A part a portal or an app
  // has no shop for (its tab is put aside by portal.css or android.css) is never the one that opens.
  function showShopTab(id){
   const dialog=$('boost-dialog');if(!dialog)return;
-  dialog.dataset.shopTab=id;
+  dialog.dataset.shopTab=id;if(id!=='diamond-store'&&suggestion){suggestion=0;render();}
   dialog.querySelectorAll('[data-shop-jump]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shopJump===id)));
  }
  function firstShopTab(){
@@ -173,10 +178,9 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  function showPacks(short){
   showShopTab('diamond-store');
   suggestion=(DIAMOND_PACKS.find(p=>p.amount>=short)??DIAMOND_PACKS.at(-1)).amount;render();
-  // To the marked pack itself: the Special offer and the pass sit above the packs on the same tab (18 Oct 2026).
-  const pack=$('diamond-packs').querySelector('.is-suggested');
-  (pack??$('diamond-store')).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:pack?'center':'start'});
-  clearTimeout(suggestionTimer);suggestionTimer=setTimeout(()=>{suggestion=0;if($('boost-dialog').open)render();},6000);
+  // The top of the Diamonds tab, the window's own top (nothing under the sticky heading and tabs): the Special offer, the Starter Pack and
+  // the pass first (they are what farmers buy), the pack that covers it marked below them.
+  $('boost-dialog').scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   track('get_diamonds_clicked',{short});
  }
  $('boost-dialog').addEventListener('click',event=>{
@@ -184,6 +188,8 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   const more=event.target.closest('[data-get-diamonds]');if(more){if(portalOff('payments')){const tip='Earn diamonds with the daily gift, daily challenges, quests, level-ups and events.';$('boost-feedback').textContent=tip;notify(tip);return;}showPacks(Number(more.dataset.getDiamonds)||0);return;}
   // The long shop in four parts: tabs under your balance (18 Oct 2026, the window shell; they jumped down the one long list before).
   const jump=event.target.closest('[data-shop-jump]');if(jump)showShopTab(jump.dataset.shopJump);
+  // A tap on a deal in the shop is counted (18 Oct 2026: to see whether the shop's look brings more farmers to a checkout).
+  const deal=event.target.closest('#shop-offer,#shop-starter,#shop-pass');if(deal)track('shop_deal_opened',{pack:deal.id.slice(5)});
  });
  async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();showShopTab(firstShopTab());track('diamond_shop_view');if(portalOff('payments'))return;try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
@@ -214,6 +220,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   if($('boost-dialog').open&&signature()!==lastStatus)render();
  }
  $('diamond-button').onclick=open;
+ $('boost-dialog').addEventListener('close',()=>{suggestion=0;});
  // The pill opens the shop as the diamonds do (its onclick left farm.html in Oct 2026: Discord runs no handler written in the page).
  $('active-boosts').addEventListener('click',()=>$('diamond-button').click());
  $('boosts-button').onclick=open;

@@ -90,7 +90,10 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
   if(!b&&!deals)return;
   if(!b){b=doc.createElement('button');b.type='button';b.id='shop-offer';b.className='shop-offer';b.onclick=open;deals.prepend(b);}
   b.hidden=!show;if(!show)return;
-  const html=`<img src="/assets/icons/offer-hero.webp" alt=""><span class="shop-offer-copy"><b>Special offer</b><small>Ends in ${duration(left())}</small></span><span class="shop-offer-price"><s>${worth()}</s><b>${price()}</b></span><span class="shop-offer-tag">-${offerDiscount(offer)}%</span>`;
+  // What is in it, with its pictures (18 Oct 2026: the offer is what farmers buy, and the version whose contents were the clearest sold
+  // best), the real time left and the price. No struck-through worth here: the offer's own window explains what it is worth.
+  const parts=offerParts(offer).map(p=>`<span class="is-${p.key}"><img src="/assets/icons/${p.art}.webp" alt=""><strong>${p.amount}</strong>${p.key==='vipDays'?`<small>${p.detail}</small>`:''}</span>`).join('');
+  const html=`<img src="/assets/icons/offer-hero.webp" alt=""><span class="shop-offer-copy"><b>Special offer</b><span class="shop-offer-parts">${parts}</span><small>Ends in ${duration(left())}</small></span><span class="shop-offer-price"><b>${price()}</b></span><span class="shop-offer-tag">-${offerDiscount(offer)}%</span>`;
   if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;}
  }
  async function buy(){

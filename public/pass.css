@@ -43,8 +43,8 @@
 .pass-paid-copy small{font-size:13px;line-height:1.45;color:#6f5a35}
 .pass-paid-copy .pass-value{font-weight:700;color:#2f7a34}
 .pass-paid-copy .pass-value:empty{display:none}
-#pass-dialog .primary-button.pass-buy{flex:none;min-width:170px;background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
-#pass-dialog .primary-button.pass-buy:hover:not(:disabled){background:var(--btn-gold-hover)}
+#pass-dialog .primary-button.pass-buy{flex:none;min-width:170px;background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge)}
+#pass-dialog .primary-button.pass-buy:hover:not(:disabled){background:var(--btn-main-hover)}
 #pass-dialog .primary-button.pass-buy:disabled{background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default}
 /* The pre-sale (Oct 2026): before the season, the time until it starts under the copy; a pass bought then, in green, with no button. */
 .pass-paid-copy .pass-starts{font-weight:700;color:#8a4f12}

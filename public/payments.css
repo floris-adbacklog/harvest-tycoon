@@ -53,8 +53,6 @@
 .pack-ribbon.is-extra{background:linear-gradient(#8a6aa8,#6c4f8a);color:#fff;text-transform:none;letter-spacing:.02em;font-size:12px}
 #diamond-packs .diamond-pack.is-best{border-color:#dfa43a;background:linear-gradient(#fff6d8,#f7e0a0);box-shadow:0 3px 0 #d7b15c,0 8px 22px #c9a45a40}
 #diamond-packs .pack-best{margin:-4px 0 8px;font:700 12px/1.2 'DM Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#a0640f}
-#diamond-packs .diamond-pack.is-best .pack-price{border-color:#8d5714;background:#b8741f;box-shadow:0 2px 0 #7d4b10}
-#diamond-packs .diamond-pack.is-best:hover:not(:disabled) .pack-price{background:#a3661a}
 /* "Get more" elsewhere in the shop marks the smallest pack that covers it. */
 #diamond-packs .diamond-pack.is-suggested{border-color:#6fae45;box-shadow:0 0 0 3px #b9dc9a,0 3px 0 #9cc77a}
 .pack-ribbon.is-enough{background:linear-gradient(#8cc36a,#5f9a3f);color:#fff;text-transform:none;letter-spacing:0}

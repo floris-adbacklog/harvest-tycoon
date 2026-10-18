@@ -9,7 +9,7 @@
    hold for an older app. */
 html[data-app=android]:not([data-app-billing]) #diamond-store,html[data-app=android]:not([data-app-billing]) [data-shop-jump="diamond-store"],html[data-app=android]:not([data-app-billing]) .get-diamonds,
 html[data-app=android]:not([data-app-billing]) #starter-pack-button,html[data-app=android]:not([data-app-billing]) #starter-pack-chip,html[data-app=android]:not([data-app-billing]) #offer-button,html[data-app=android]:not([data-app-billing]) #offer-chip,
-html[data-app=android]:not([data-app-billing]) #shop-offer,html[data-app=android]:not([data-app-billing]) #shop-pass,html[data-app=android]:not([data-app-billing]) .pass-paid-box:not(.is-owned),html[data-app=android]:not([data-app-billing]) .wiki-paid{display:none!important}
+html[data-app=android]:not([data-app-billing]) #shop-offer,html[data-app=android]:not([data-app-billing]) #shop-starter,html[data-app=android]:not([data-app-billing]) #shop-pass,html[data-app=android]:not([data-app-billing]) .pass-paid-box:not(.is-owned),html[data-app=android]:not([data-app-billing]) .wiki-paid{display:none!important}
 /* The pass's paid row only while it is locked: bought on the website, it is there to collect as always. The layout follows with :has() in
    rules of their own, so a WebView without :has() only keeps an empty column. */
 html[data-app=android]:not([data-app-billing]) .pass-cell.is-paid.is-locked{display:none!important}
