@@ -34,7 +34,7 @@ test('the support page: a legal-style page with no script but the app mark and t
  const mark=html.indexOf('<script src="/android-app.js"></script>');assert.ok(mark>0&&mark<html.indexOf('rel="stylesheet"'),'the mark before the first stylesheet');
  assert.match(html,/<link rel="stylesheet" href="\/legal\.css"><link rel="stylesheet" href="\/support\.css"><\/head>/);
  assert.match(html,/<link rel="icon" href="\/favicon\.ico" sizes="16x16 32x32 48x48"><link rel="icon" type="image\/png" sizes="96x96" href="\/assets\/favicon-96\.png">/);
- assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp"/);assert.doesNotMatch(html,/<img [^>]*src="[^"]*\.png"/,'pictures as WebP');
+ assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp(\?v=\d+)?"/);assert.doesNotMatch(html,/<img [^>]*src="[^"]*\.png"/,'pictures as WebP');
  // Short help before the form: how to play, a forgotten password, Google/Facebook, deleting the account.
  const form=html.indexOf('<form');
  for(const href of ['/wiki','/delete-account'])assert.ok(html.indexOf(`<a href="${href}">`)<form,href);

@@ -62,7 +62,7 @@ test('the logo is a WebP at the full 1024 px everywhere it is shown; the favicon
  for(const page of ['public/play.html','public/farm.html','public/privacy.html','public/delete-account.html','public/404.html','src/ui.js']){
   const html=read(page);
   assert.doesNotMatch(html,/harvest-tycoon-logo\.png/,page);
-  assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp"/,page);
+  assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp(\?v=\d+)?"/,page);
  }
 });
 

@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 test('on a computer a live farm map takes the logo\'s place; the logo moves small to the bottom-left; phones keep neither',()=>{
  const html=read('public/farm.html'),css=read('public/desktop-hud.css');
  assert.match(html,/<div class="minimap" id="minimap" role="img" aria-label="Farm map\. Click a spot to look there\."><canvas width="420" height="252"><\/canvas><\/div>/);
- assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp"/,'the logo stays in the page');
+ assert.match(html,/src="\/assets\/harvest-tycoon-logo\.webp(\?v=\d+)?"/,'the logo stays in the page');
  assert.match(css,/^\.minimap\{display:none\}/m,'no map on phones');
  assert.match(css,/\.minimap\{display:block;/);
  assert.match(css,/@media\(min-width:901px\) and \(min-height:760px\)\{\s*\.topbar \.brand>img\{display:block;position:fixed;inset-inline-start:22px;top:auto;bottom:14px;width:118px;height:118px/);
