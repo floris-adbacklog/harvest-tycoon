@@ -160,6 +160,8 @@ export function noteLog(notes){
 export function eventRewardLog(title,reward){
  return [line('rewards','event_reward',`Collected the reward of the event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];
 }
+// The admin closed or opened Invite a friend for this farmer (18 Oct 2026, cheating with it).
+export const inviteClosedLog=closed=>[line('staff',closed?'invite_close':'invite_open',closed?'The admin closed Invite a friend':'The admin opened Invite a friend again')];
 // A removal (a minus in diamonds, 17 Oct 2026) says so: "The admin took back diamonds · −50 diamonds".
 export function adminGrantLog(granted){
  if(granted.diamonds<0)return [line('staff','admin_take','The admin took back diamonds',changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:0,diamonds:granted.diamonds,xp:0,inventory:{}}))];

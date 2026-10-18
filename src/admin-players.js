@@ -103,7 +103,8 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
  const social=[
   fact('Events',`${number(p.events.joined)} joined · ${number(p.events.finished)} finished · ${number(p.events.diamonds)} diamonds won`),
   fact('Chat',chat),
-  fact('Invites',`${p.invites.invitedBy?`Invited by ${esc(p.invites.invitedBy)} · `:''}${number(p.invites.friends)} friend${p.invites.friends===1?'':'s'} invited${p.invites.friends?` (${number(p.invites.qualified)} reached level 10)`:''}`),
+  // Closed by the admin (18 Oct 2026, cheating): said here, with Close or Open again for the admin (farm-api handleAdminInvite).
+  fact('Invites',`${p.invites.invitedBy?`Invited by ${esc(p.invites.invitedBy)} · `:''}${number(p.invites.friends)} friend${p.invites.friends===1?'':'s'} invited${p.invites.friends?` (${number(p.invites.qualified)} reached level 10)`:''}${p.invites.closed?' · <b class="admin-log-open">Invite a friend closed</b>':''}${owner?` <button type="button" class="admin-link" data-invite-closed="${p.invites.closed?'open':'close'}">${p.invites.closed?'Open again':'Close'}</button>`:''}`),
   fact('Earned in total',`${number(p.earned.coins)} coins · ${number(p.earned.diamonds)} diamonds`)
  ].join('');
  return `<div class="admin-detail-top"><button type="button" class="small-button" data-player-back>‹ All players</button><button type="button" class="small-button" data-open-profile="${esc(p.playerId)}">Open profile</button>${owner?`<button type="button" class="small-button" data-gift-player="${esc(p.playerId)}">Send a gift</button><button type="button" class="small-button" data-edit-player="${esc(p.playerId)}">Edit</button>`:''}</div>`

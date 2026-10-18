@@ -218,12 +218,16 @@ test('the Invite a friend log: who invited whom, how far the friend is, and whet
   player_stats:[{player_id:A,username:'Tony',level:30},{player_id:B,username:'Bram',level:12},{player_id:C,username:'Chris',level:6},{player_id:D,username:'Dewi',level:4}],
   player_farms:[{player_id:A,invite:null,paid:[B]},{player_id:B,invite:{by:A,at:now-2*day,rewardedAt:now-day},paid:null},{player_id:C,invite:{by:A},paid:null},{player_id:D,invite:{by:A},paid:null}]
  };
- const db={from(table){let rows=tables[table]??[];const q={select(v,opts){if(opts?.head)return Promise.resolve({count:8,data:null,error:null});return this;},order(){return this;},limit(){return this;},in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},then(r){return Promise.resolve({data:rows,error:null}).then(r);}};return q;}};
+ const db={from(table){let rows=tables[table]??[];const q={select(v,opts){if(opts?.head)return Promise.resolve({count:8,data:null,error:null});return this;},order(){return this;},limit(){return this;},in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},not(k,op,v){rows=rows.filter(r=>op==='is'?r[k]!=null:r[k]!==v);return this;},then(r){return Promise.resolve({data:rows,error:null}).then(r);}};return q;}};
  assert.equal((await handleAdminInvites({admin:db,user:notAdmin,now})).status,403);
  const {status,data}=await handleAdminInvites({admin:db,user:admin,now});
  assert.equal(status,200);assert.equal(data.profile.player_id,admin.id);
  assert.deepEqual(data.totals,{links:8,friends:3,qualified:1,diamondsPaid:300});
  assert.deepEqual(data.invites.map(i=>[i.friend,i.inviter,i.status,i.friendPaid,i.inviterPaid]),[['Bram','Tony','qualified',true,true],['Chris','Tony','playing',false,false],['Dewi','Tony','expired',false,false]]);
+ assert.ok(data.invites.every(i=>i.inviterClosed===false));
+ // An inviter the admin closed (18 Oct 2026, tests/invite-close.test.mjs) is marked on each of their friends.
+ tables.player_invite_codes=[{player_id:A,code:'TONYAA',closed_at:now-day},{player_id:B,code:'BRAMAA',closed_at:null}];
+ assert.ok((await handleAdminInvites({admin:db,user:admin,now})).data.invites.every(i=>i.inviterClosed===true));
  const dash=read('src/admin-dashboard.js');
  assert.match(dash,/\['admin_invites','Invites'\]/,'the rest of the dashboard still loads before farm-api knows it');
  assert.match(read('supabase/functions/farm-api/index.ts'),/if\(body\.operation==='admin_invites'\)\{/);

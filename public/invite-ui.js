@@ -19,6 +19,8 @@ export function createInviteUI({notify}){
  let data=null,error='';
  function render(){
   if(!data){content.innerHTML=`<p class="invite-loading">${esc(error||'Finding your invite link…')}</p>${error?'<button type="button" class="small-button" data-invite-retry>Try again</button>':''}`;content.querySelector('[data-invite-retry]')?.addEventListener('click',load);return;}
+  // Closed by the admin for this farmer (18 Oct 2026, cheating; farm-api invite-service.js): only that, no link to share.
+  if(data.closed){content.innerHTML=`<section class="invite-hero">${art('invite-friends')}<div><strong>Invite a friend is closed for your account.</strong><span>You can play on as always. Questions? Email info@harvesttycoon.com.</span></div></section>`;refreshArt();return;}
   const {rules,friends,invitedBy}=data;
   const you=invitedBy?`<section class="invite-you">${art('diamonds')}<div><strong>${ownLine(invitedBy.rewarded?`You earned ${rules.reward} diamonds from ${invitedBy.name}’s invite`:`${invitedBy.name} invited you`,[invitedBy.name])}</strong><span>${invitedBy.rewarded?'Thanks for playing together!':invitedBy.expired?`The ${rules.days} days to reach level ${rules.level} have passed.`:`Reach level ${rules.level} within ${rules.days} days and you both get ${rules.reward} diamonds. You are level ${invitedBy.level}.`}</span></div></section>`:'';
   content.innerHTML=`<section class="invite-hero">${art('invite-friends')}<div><strong>Farm together, earn together</strong><span>When a friend you invite reaches level ${rules.level}, you both get <b>${art('diamonds')}${rules.reward} diamonds.</b></span></div></section>

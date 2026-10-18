@@ -4,7 +4,7 @@ import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile,familyRejoinRead} from './family-service.js';
-import {handleAdminGrant,handleAdminEmail,isSuperadmin,isAdminAccount} from './admin-service.js';
+import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner} from './partner-service.js';
@@ -12,7 +12,7 @@ import {handleDeleteAccount} from './account-delete-service.js';
 import {handleAppleToken} from './apple-sign-in-service.js';
 import {recordSource} from './source-service.js';
 import {recordLoadStall} from './load-stall-service.js';
-import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,noteLog} from './player-log.js';
+import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
 import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
@@ -70,7 +70,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -85,6 +85,12 @@ Deno.serve(async(req)=>{
    const granted=await handleAdminGrant({admin,body,user});
    if(granted.status===200&&granted.data?.granted)later(writeLog(admin,String(body.playerId),adminGrantLog(granted.data.granted),user.id));
    return reply(granted.data,granted.status);
+  }
+  // Invite a friend closed or opened for one farmer by the admin (18 Oct 2026); written in their log only when it changed.
+  if(body.operation==='admin_invite'){
+   const done=await handleAdminInvite({admin,body,user});
+   if(done.status===200&&done.data?.changed)later(writeLog(admin,String(body.playerId),inviteClosedLog(done.data.closed),user.id));
+   return reply(done.data,done.status);
   }
   if(body.operation==='player_log'){
    const log=await handlePlayerLog({admin,user,body});return reply(log.data,log.status);

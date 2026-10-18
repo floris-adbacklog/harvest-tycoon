@@ -209,9 +209,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const paid=(yes,amount)=>amount>0?(yes?`<b class="admin-paid">+${amount} paid</b>`:`<b class="admin-pending-pay">+${amount} pending</b>`):'<b class="admin-none">none</b>';
   // Both names open that farmer's profile, as in the chat log.
   const who=(name,id)=>id?`<button type="button" class="admin-log-name" data-profile="${esc(id)}">${esc(name)}</button>`:esc(name);
-  const state=i=>i.status==='qualified'?`Reached level 10 ${ago(new Date(i.qualifiedAt).toISOString())} · friend ${paid(i.friendPaid,reward)} · inviter ${paid(i.inviterPaid,i.inviterReward)}${i.inviterReward===0?' (inviter used all 10 rewards)':''}`
+  // An inviter the admin closed (18 Oct 2026): their unpaid reward is held, not pending.
+  const inviterPart=i=>i.inviterClosed&&!i.inviterPaid&&i.inviterReward>0?`<b class="admin-pending-pay">+${i.inviterReward} held (invite closed)</b>`:paid(i.inviterPaid,i.inviterReward);
+  const state=i=>i.status==='qualified'?`Reached level 10 ${ago(new Date(i.qualifiedAt).toISOString())} · friend ${paid(i.friendPaid,reward)} · inviter ${inviterPart(i)}${i.inviterReward===0?' (inviter used all 10 rewards)':''}`
    :i.status==='expired'?`Did not reach level 10 within 30 days (level ${number(i.friendLevel)})`:`Playing · level ${number(i.friendLevel)} of 10`;
-  dialog.querySelector('#admin-invite-list').innerHTML=data.invites.length?data.invites.map(i=>`<li>${avatar(i.friend,false,i.friendId)}<span class="admin-recent-copy"><strong>${who(i.friend,i.friendId)} <small>invited by ${who(i.inviter,i.inviterId)}</small></strong><small>${state(i)}</small></span><small class="admin-when" title="${esc(fmtDate(new Date(i.joinedAt).toISOString()))}">${ago(new Date(i.joinedAt).toISOString())}</small></li>`).join(''):'<li class="admin-empty">No friend has joined with an invite link yet.</li>';
+  dialog.querySelector('#admin-invite-list').innerHTML=data.invites.length?data.invites.map(i=>`<li>${avatar(i.friend,false,i.friendId)}<span class="admin-recent-copy"><strong>${who(i.friend,i.friendId)} <small>invited by ${who(i.inviter,i.inviterId)}${i.inviterClosed?' (invite closed)':''}</small></strong><small>${state(i)}</small></span><small class="admin-when" title="${esc(fmtDate(new Date(i.joinedAt).toISOString()))}">${ago(new Date(i.joinedAt).toISOString())}</small></li>`).join(''):'<li class="admin-empty">No friend has joined with an invite link yet.</li>';
  }
  // Purchases: the totals, then one row per checkout with who, what, the price and whether it was paid.
  let purchases=null,purchaseFilter='all';
@@ -362,7 +364,20 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const form=dialog.querySelector('[data-email-form]');
   if(event.target.closest('[data-email-edit]')&&form){form.hidden=false;form.querySelector('input').focus();return;}
   if(event.target.closest('[data-email-cancel]')&&form){form.hidden=true;return;}
+  const invite=event.target.closest('[data-invite-closed]');if(invite)void inviteClosed(invite);
  });
+ // Invite a friend (the admin only, 18 Oct 2026: farmers cheat with it): Close for one farmer, or Open again; asked first, in red to close.
+ async function inviteClosed(button){
+  const id=view.detail,close=button.dataset.inviteClosed==='close',name=dialog.querySelector('.admin-detail-head h3')?.textContent?.trim()||'this farmer';
+  if(!id)return;
+  const sure=await confirmAction({names:[name],title:close?`Close Invite a friend for ${name}?`:`Open Invite a friend again for ${name}?`,
+   description:close?'Their invite link stops working and they earn no more invite diamonds, also not for friends who are still playing. They are not notified. Diamonds they already got: a minus in Edit.':'Their invite link works again, and rewards held back while it was closed reach them on their next visit.',
+   confirmLabel:close?'Close':'Open again',cancelLabel:'Cancel',picture:'invite-friends',tone:close?'danger':''});
+  if(!sure)return;
+  button.disabled=true;button.parentElement.querySelector('.admin-log-error')?.remove();
+  try{await bridge.request({operation:'admin_invite',playerId:id,closed:close});if(view.detail===id)await openPlayer(id);}
+  catch(error){button.disabled=false;button.insertAdjacentHTML('afterend',` <small class="admin-log-error">${esc(why(error))}</small>`);}
+ }
  dialog.querySelector('[data-admin-panel="players"]').addEventListener('submit',async event=>{
   const form=event.target.closest('[data-email-form]');if(!form)return;event.preventDefault();
   const id=view.detail,email=form.querySelector('input').value.trim(),status=form.querySelector('[data-email-status]'),name=dialog.querySelector('.admin-detail-head h3')?.textContent?.trim()||'this farmer';

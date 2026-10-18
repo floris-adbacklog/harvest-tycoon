@@ -17,8 +17,9 @@ Deno.serve(async(request:Request)=>{
   const code=invite.trim().toUpperCase(),answer=(inviter:string|null)=>new Response(JSON.stringify({inviter}),{headers:{...headers,'Cache-Control':'public, max-age=300'}});
   if(!/^[A-Z0-9]{4,12}$/.test(code))return answer(null);
   try{
-   const owner=await admin.from('player_invite_codes').select('player_id').eq('code',code).maybeSingle();
-   if(owner.error||!owner.data)return answer(null);
+   // A code whose Invite a friend the admin closed (18 Oct 2026, supabase/invite-close.sql) names nobody: it starts nothing either.
+   const owner=await admin.from('player_invite_codes').select('player_id,closed_at').eq('code',code).maybeSingle();
+   if(owner.error||!owner.data||owner.data.closed_at!=null)return answer(null);
    const name=await admin.from('player_stats').select('username').eq('player_id',owner.data.player_id).maybeSingle();
    return answer(name.error?null:name.data?.username??null);
   }catch{return answer(null);}

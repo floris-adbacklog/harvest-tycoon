@@ -95,24 +95,27 @@ export async function handleAdminRetention({admin,user,now=Date.now(),days=RETEN
 // Invite a friend, for the admin: every friend who started with someone's link (newest first, at most 200), who invited them,
 // how far they are, and whether each side has received its 150 diamonds. "Paid" is read from the farms themselves: the friend's
 // farm stamps invite.rewardedAt, the inviter's farm lists the friend in inviteRewards (farm-state.js), so this shows what was
-// really credited, not only what was earned. Also the totals and how many personal links exist.
+// really credited, not only what was earned. Also the totals, how many personal links exist and which inviters the admin closed
+// (18 Oct 2026, cheating: their unpaid rewards are held).
 export async function handleAdminInvites({admin,user,now=Date.now(),reward=150,level=10,days=30}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const found=await admin.from('referrals').select('invitee_id,referrer_id,created_at,qualified_at,referrer_diamonds').order('created_at',{ascending:false}).limit(200);
  if(found.error)throw found.error;
  const rows=found.data??[],ids=[...new Set(rows.flatMap(r=>[r.invitee_id,r.referrer_id]))];
  const codes=await admin.from('player_invite_codes').select('player_id',{count:'exact',head:true});
- const [stats,farms]=await Promise.all([
+ const inviters=[...new Set(rows.map(r=>r.referrer_id))];
+ const [stats,farms,closedRows]=await Promise.all([
   rowsFor(()=>admin.from('player_stats').select('player_id,username,level'),ids),
-  rowsFor(()=>admin.from('player_farms').select('player_id,invite:state->invite,paid:state->inviteRewards'),ids)
+  rowsFor(()=>admin.from('player_farms').select('player_id,invite:state->invite,paid:state->inviteRewards'),ids),
+  rowsFor(()=>admin.from('player_invite_codes').select('player_id,closed_at').not('closed_at','is',null),inviters)
  ]);
- const who=new Map(stats.map(s=>[s.player_id,s])),farm=new Map(farms.map(f=>[f.player_id,f]));
+ const who=new Map(stats.map(s=>[s.player_id,s])),farm=new Map(farms.map(f=>[f.player_id,f])),closed=new Set(closedRows.map(c=>c.player_id));
  const invites=rows.map(r=>{
   const friend=who.get(r.invitee_id),inviter=who.get(r.referrer_id);
   const friendPaid=Boolean(farm.get(r.invitee_id)?.invite?.rewardedAt),inviterPaid=(farm.get(r.referrer_id)?.paid??[]).includes(r.invitee_id);
   const status=r.qualified_at?'qualified':now-Number(r.created_at)>days*86400000?'expired':'playing';
   return {inviter:inviter?.username??'Unknown',inviterId:r.referrer_id,friend:friend?.username??'New farmer',friendId:r.invitee_id,friendLevel:friend?.level??1,joinedAt:Number(r.created_at),qualifiedAt:r.qualified_at?Number(r.qualified_at):null,
-   status,friendReward:status==='qualified'?reward:0,inviterReward:r.referrer_diamonds??0,friendPaid,inviterPaid};
+   status,friendReward:status==='qualified'?reward:0,inviterReward:r.referrer_diamonds??0,friendPaid,inviterPaid,inviterClosed:closed.has(r.referrer_id)};
  });
  const totals={links:codes.count??0,friends:invites.length,qualified:invites.filter(i=>i.status==='qualified').length,
   diamondsPaid:invites.reduce((sum,i)=>sum+(i.friendPaid?i.friendReward:0)+(i.inviterPaid?i.inviterReward:0),0)};
@@ -213,7 +216,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  if(!/^[0-9a-f-]{36}$/i.test(String(playerId??'')))return respond(user,{error:'Unknown farmer.'},400);
  const owner=isSuperadmin(user),id=String(playerId);
  const quiet=promise=>Promise.resolve(promise).then(found=>found?.error?null:found).catch(()=>null);
- const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,membership,authUser]=await Promise.all([
+ const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,inviteCode,membership,authUser]=await Promise.all([
   admin.rpc('admin_player_accounts',{p_player:id}),
   admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id,events_finished').eq('player_id',id).maybeSingle(),
   admin.from('player_farms').select('state').eq('player_id',id).maybeSingle(),
@@ -224,6 +227,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   quiet(admin.from('chat_sanctions').select('muted_until,banned').eq('player_id',id).maybeSingle()),
   quiet(admin.from('referrals').select('referrer_id').eq('invitee_id',id).maybeSingle()),
   quiet(admin.from('referrals').select('invitee_id,qualified_at').eq('referrer_id',id).limit(200)),
+  quiet(admin.from('player_invite_codes').select('closed_at').eq('player_id',id).maybeSingle()),
   quiet(admin.from('family_members').select('family_id,role').eq('player_id',id).is('left_at',null).limit(1)),
   // The email address, for the admin only (to change it for a farmer who signed up with a typo, admin-service.js handleAdminEmail).
   owner?quiet(Promise.resolve().then(()=>admin.auth.admin.getUserById(id))):null
@@ -250,7 +254,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   earned:{coins:num(stats.earned),diamonds:num(stats.diamonds_earned)},
   events:{joined:joined.length,finished:joined.filter(e=>e.qualified).length,diamonds:joined.reduce((sum,e)=>sum+num(e.diamonds),0)},
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
-  invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length},
+  invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length,closed:inviteCode?.data?.closed_at!=null},
   language:a.language??null,
   sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),
   ...(owner?{email:authUser?.data?.user?.email??null,country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,

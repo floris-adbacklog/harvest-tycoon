@@ -1,6 +1,7 @@
 import {normalizeFarm,levelOf,ITEMS,CROPS} from './farm-state.js';
 import {validEmail} from './account-form.js';
 import {portalOf} from './portal.js';
+import {setInviteClosed} from './invite-service.js';
 
 // The only account that may ever give coins, XP, diamonds or goods to another farmer. Checked against the
 // authenticated, server-verified user (index.ts already resolved this from a real Supabase JWT) — never against
@@ -153,4 +154,18 @@ export async function handleAdminEmail({admin,body,user,now=Date.now()}){
  const checked=await admin.from('email_checks').upsert({player_id:playerId,email:next,new_email:null,code_hash:null,code_expires_at:null,attempts:0,confirmed_at:new Date(now).toISOString()});
  if(checked.error)throw checked.error;
  return respond({email:next});
+}
+
+// The admin, never a moderator, can close Invite a friend for one farmer who cheats with it (18 Oct 2026, the owner: "gewoon mij de
+// mogelijkheid geven om te closen bij een speler ivm cheating"), and open it again. Closed: their link starts nothing new and no
+// inviter reward reaches them (invite-service.js); diamonds already paid are taken back on their own, with a minus in Edit.
+export async function handleAdminInvite({admin,body,user,now=Date.now()}){
+ const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:user?.id}}});
+ if(!isSuperadmin(user))return respond({error:'Not authorized.'},403);
+ const playerId=body.playerId;
+ if(typeof playerId!=='string'||!UUID.test(playerId))return respond({error:'Choose a valid farmer.'},400);
+ if(typeof body.closed!=='boolean')return respond({error:'Choose close or open.'},400);
+ const found=await admin.from('player_stats').select('username').eq('player_id',playerId).maybeSingle();
+ if(found.error)throw found.error;if(!found.data)return respond({error:'This farmer could not be found.'},404);
+ return respond(await setInviteClosed({admin,player:playerId,username:found.data.username,closed:body.closed,now}));
 }

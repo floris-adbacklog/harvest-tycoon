@@ -59,7 +59,7 @@ test('the public function returns two numbers, from the leaderboard table only, 
  const all=read('supabase/functions/player-counts/index.ts');
  // ?invite=CODE answers only the player name behind a code its owner shared (Invite a friend); the counts part stays as it was.
  const invite=all.slice(all.indexOf("searchParams.get('invite')"),all.indexOf('if(cached&&now-cached.at<CACHE_MS)'));
- assert.match(invite,/JSON\.stringify\(\{inviter\}\)/);assert.match(invite,/select\('player_id'\)\.eq\('code',code\)/);assert.match(invite,/select\('username'\)/);assert(!/email|auth\.admin|level|currency/.test(invite));
+ assert.match(invite,/JSON\.stringify\(\{inviter\}\)/);assert.match(invite,/select\('player_id,closed_at'\)\.eq\('code',code\)/);assert.match(invite,/select\('username'\)/);assert(!/email|auth\.admin|level|currency/.test(invite));
  const code=all.replace(invite,'');
  assert.match(code,/verify_jwt is off/);assert.equal((code.match(/admin\.from\(/g)??[]).length,2);assert.equal((code.match(/admin\.from\('player_stats'\)/g)??[]).length,2);
  assert.match(code,/select\('player_id',\{count:'exact',head:true\}\)/,'counts only, no rows are read');assert.match(code,/\.gte\('last_active_at',onlineSince\(now\)\)/);
