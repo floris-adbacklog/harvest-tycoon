@@ -20,6 +20,12 @@ test('scrolling on a computer zooms the farm (wheel up = closer), without scroll
 
 test('the spot under the mouse stays under the mouse while zooming',()=>{
  const game=read('public/game.js');
- assert.match(game,/const r=zoom\/before;if\(x==null\|\|r===1\)return;/);
+ // 18 Oct 2026 (the farm's one zoom axis): the village keeps its correction for a zoom round the middle (zoomFarm says how much narrower
+ // the picture got); the farm holds the real spot of ground under the pointer (groundUnder, keepSpot), as its picture's middle slides
+ // between two stops, and lets go of it as the whole farm comes (hold), so that ends centred.
+ assert.match(game,/if\(!villageWorld\)\{if\(x==null\)zoomFarm\(ratio\);else wheelFarm\(ratio,x,y\);return;\}/);
+ assert.match(game,/const r=zoomFarm\(ratio\);if\(x==null\|\|r===1\)return;/);
+ assert.match(game,/const hold=out\?Math\.max\(0,Math\.min\(1,2-zoomAt\)\):1;if\(!hold\)return;const s=toScreen\(g\.x,0,g\.z\);/);
+ assert.match(game,/cameraDragDelta\(\(x-s\.x\)\*hold,\(y-s\.y\)\*hold,/);
  assert.match(game,/cameraDragDelta\(dx\*\(1-r\),dy\*\(1-r\),/);
 });
