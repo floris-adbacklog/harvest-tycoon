@@ -20,7 +20,9 @@ export function cameraDragDelta(dx,dy,spanX,spanY,width,height){
 // the grass moves the farm again. A right- or middle-button drag still moves it, and a finger keeps its short hold. settle() runs after
 // every release (game.js brings the fields back into view when they left it, before the first harvest).
 export const SWIPE_HOLD_MS=350;
-export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
+// The farm's pins (a building, the pond, a helping-hand spot, a field's label) sit on top of the canvas (18 Oct 2026).
+export const FARM_PINS='#plot-labels,#building-labels,.plot-label,.building-label,.utility-label,.activity-label,.pond-label';
+export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
  const pointers=new Map();
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
  const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
@@ -38,7 +40,7 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,sett
   if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
   if(!pointers.size)settle();
  }
- canvas.addEventListener('pointerdown',event=>{
+ function down(event){
   const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2);
   if(event.button!==0&&!panOnly||!isReady())return;
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
@@ -53,7 +55,14 @@ export function bindFarmInput({canvas,isReady,pick,open,pan,zoom,sweep=null,sett
    const s=point.sweep;if(pointers.get(event.pointerId)!==point||!s||point.moved||point.multi)return;
    s.armed=true;s.started=true;s.ids.push(target.id);sweep.add(target,s.action);globalThis.navigator?.vibrate?.(12);
   },holdMs);
- });
+ }
+ canvas.addEventListener('pointerdown',down);
+ // Farmers who move the farm with the right mouse button sometimes got the browser's right-click menu (18 Oct 2026, the owner): on a Mac
+ // it opens on the press, so a press on a pin over the farm opened it and the farm did not move; on Windows it opens on the release, so
+ // letting go over the top bar, a side button or a label opened it. Now a right- or middle-button drag that starts on a pin moves the farm
+ // as well, and there is no browser menu anywhere on the farm screen, except in a text box (where copy and paste live).
+ surface?.addEventListener('pointerdown',event=>{if(event.target!==canvas&&event.pointerType==='mouse'&&(event.button===1||event.button===2)&&event.target.closest?.(FARM_PINS)){down(event);event.stopPropagation();}},true);
+ surface?.addEventListener('contextmenu',event=>{if(!event.target.closest?.('input,textarea,select,[contenteditable="true"]'))event.preventDefault();});
  canvas.addEventListener('pointermove',event=>{
   const point=pointers.get(event.pointerId);if(!point)return;
   event.preventDefault();
