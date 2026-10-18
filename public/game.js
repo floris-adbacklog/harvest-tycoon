@@ -108,7 +108,6 @@ function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
-let viewSpans=null,ladderAt=0;   // the three views' widths at zoom 1 (resize) and the last step between them (zoomFarm)
 const handheld=handheldDevice();   // phones, tablets and the apps: the farm rests under a window (frame, public/windows.js)
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide. On a
@@ -116,6 +115,12 @@ const swept=new Set();   // the fields of a swipe in progress keep their ring un
 // computer never touched anything, against none on a phone).
 const startView=()=>villageWorld?'home':mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)||!(state.stats.harvested>0)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
+// The farm's one zoom axis (18 Oct 2026, the owner: "het moet gewoon een stand zijn in de views"): zoomAt is where its camera is on it,
+// 0 the fields (Focus on your crop fields), 1 the heart of the farm (Center the farm) and 2 the whole farm (Show the whole farm), down to
+// -1 for the closest (the fields 2.2 times as close); resize draws every place in between, and viewMode names the stop it is nearest to.
+// farmAxis: its measures at the last resize; glide: a button's glide in progress (glideFarm). The village keeps viewMode and zoom.
+const FARM_STOPS=['fields','home','overview'];
+let zoomAt=FARM_STOPS.indexOf(viewMode),farmAxis=null,glide=null;
 let overviewBounds=null;
 let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
@@ -857,14 +862,12 @@ function endSweep(){
 // after a release that left most of them off the screen, the view eases back to them. Only while a ripe crop waits for it (the starter corn),
 // so the rule and the line at the bottom always go together.
 const firstBasketWaits=()=>!adminView&&!villageWorld&&!(state.stats.harvested>0)&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt);
-let easing=0;
+// It glides along the farm's zoom axis to the fields' stop (glideFarm), in 450 ms as it always did.
 function easeToFields(){
  if(!plots.length||!camera)return;const r=world.getBoundingClientRect();
  const seen=plots.filter(v=>{const p=toScreen(v.x,.5,v.z);return p.x>r.left&&p.x<r.right&&p.y>r.top&&p.y<r.bottom;}).length;
  if(seen*2>=plots.length)return;
- cancelAnimationFrame(easing);const from={pan,panDepth,zoom},start=performance.now();
- const step=now=>{const t=Math.min(1,(now-start)/450),k=1-(1-t)**3;pan=from.pan*(1-k);panDepth=from.panDepth*(1-k);zoom=from.zoom+(1-from.zoom)*k;resize();if(t<1)easing=requestAnimationFrame(step);};
- easing=requestAnimationFrame(step);
+ glideFarm(0,{ms:450,stop:'fields'});
 }
 function showTool(tool){if(tool!==selectedTool)setTool(tool,false);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool,picked=true){selectedTool=tool;toolPicked=picked;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
@@ -999,14 +1002,37 @@ function resize(){
  const fitRoom=height<650&&fieldRoom&&!villageWorld?fieldRoom:null,fieldFit=fitRoom?(6.1+rows*2.06)*height/(fitRoom.bottom-fitRoom.top):0;
  const fieldSpan=fitRoom?Math.max(24/aspect,(10+2.26*rows)/aspect,fieldFit):Math.max(21,24/aspect,(10+2.26*rows)/aspect,10.6+rows*2.06);
  const homeSpan=Math.min(overviewSpan,Math.max(fieldSpan,mobile?32/aspect:38));
- viewSpans={fields:fieldSpan,home:homeSpan,overview:overviewSpan};
- const span=(viewMode==='fields'?fieldSpan:viewMode==='home'?homeSpan:overviewSpan)/zoom;
- // On a computer the side tools (and an open Beginner guide) cover the edges of the map: the home and fields views centre
- // the farm in the free part between them (the overview already keeps its own margins).
- const shift=!mobile&&viewMode!=='overview'?hudShift*span/height:0;
- // The fitted fields sit in the middle of that free height with their markers, which stand 2.5 units over the back row (+1.25: 1000x450).
- const lift=viewMode==='fields'&&fitRoom?((fitRoom.top+fitRoom.bottom)/2-height/2)*span/height+1.25:0;
+ // Each stop's own picture at a width: the spot on the ground in its middle, and how the frame sits round it.
+ const stopView=(mode,span)=>{
+  // On a computer the side tools (and an open Beginner guide) cover the edges of the map: the home and fields views centre
+  // the farm in the free part between them (the overview already keeps its own margins).
+  const shift=!mobile&&mode!=='overview'?hudShift*span/height:0;
+  // The fitted fields sit in the middle of that free height with their markers, which stand 2.5 units over the back row (+1.25: 1000x450).
+  const lift=mode==='fields'&&fitRoom?((fitRoom.top+fitRoom.bottom)/2-height/2)*span/height+1.25:0;
+  if(mode==='fields')return {focus:new THREE.Vector3(2.575,0,.25+(rows-1)*3.2/2),shift,lift};
+  if(mode==='home')return {focus:new THREE.Vector3(1.4,0,1.5),shift,lift};
+  const side=(bounds.minX+bounds.maxX)/2+(padding.right-padding.left)*span/(2*height);
+  const up=(bounds.minY+bounds.maxY)/2+(padding.top-padding.bottom)*span/(2*height);
+  // Looking down (36,40,36), each ground axis projects vertically by -40/sqrt(8384).
+  const depth=-up*Math.sqrt(8384)/80;return {focus:new THREE.Vector3(side/Math.SQRT2+depth,0,-side/Math.SQRT2+depth),shift,lift};
+ };
+ // The farm's zoom axis (18 Oct 2026, the owner: "het moet gewoon een stand zijn in de views", zoomAt): the widths at its marks, -1 the
+ // closest, then the fields, the heart of the farm and the whole farm (never wider: 18 Oct 2026, the owner, further out "biedt weinig
+ // toegevoegde waarde"). Between two marks the width grows by the same factor at every step, and the picture's middle (with the side
+ // tools' shift and the fields' lift) slides from one stop's to the next in step with the width, so the farm grows and shrinks round one
+ // fixed spot and never jumps sideways. Closer than the fields it is the fields' own view, nearer. The player's pan rides on top.
+ const spans=[fieldSpan/2.2,fieldSpan,Math.max(fieldSpan,homeSpan),Math.max(fieldSpan,homeSpan,overviewSpan)];
+ const along=Math.max(-1,Math.min(2,zoomAt)),part=Math.min(2,Math.floor(along+1)),low=spans[part],high=spans[part+1];
+ const span=low*(high/low)**(along+1-part),k=high-low>1e-6?(span-low)/(high-low):along+1-part;
+ const from=part?stopView(FARM_STOPS[part-1],low):stopView('fields',span),to=part?stopView(FARM_STOPS[part],high):from;
+ const shift=from.shift+(to.shift-from.shift)*k,lift=from.lift+(to.lift-from.lift)*k;
  camera.left=-span*aspect/2-shift;camera.right=span*aspect/2-shift;camera.top=span/2+lift;camera.bottom=-span/2+lift;
+ // Each part's length (zoomFarm, glideFarm): one per e-fold of the width, or where two stops are nearly as wide, as long as it takes for
+ // the middle to slide at most half a picture per unit (else a pinch there would swing the farm sideways).
+ const middle=v=>[(v.focus.x-v.focus.z)/Math.SQRT2-v.shift,-(v.focus.x+v.focus.z)*40/Math.sqrt(8384)+v.lift];
+ const length=i=>{if(!i)return Math.log(2.2);const a=middle(stopView(FARM_STOPS[i-1],spans[i])),b=middle(stopView(FARM_STOPS[i],spans[i+1]));
+  return Math.max(Math.log(spans[i+1]/spans[i]),2*Math.hypot((b[0]-a[0])/aspect,b[1]-a[1])/spans[i],.05);};
+ farmAxis={lengths:[0,1,2].map(length),span,base:from.focus.clone().lerp(to.focus,k)};
  let focus;
  if(villageWorld){
   // The village: the lake, the houses and the places, from the farm's angle. A computer sees all the places from the Lumber Camp to
@@ -1036,51 +1062,62 @@ function resize(){
   }
   focus=at.clone().add(new THREE.Vector3(pan+panDepth,0,-pan+panDepth));
   if(scene.fog){scene.fog.near=65+villageSpan*.9;scene.fog.far=65+villageSpan*2.6;}
- }else if(viewMode==='fields'){
-  const fieldCenter=.25+(Math.ceil(state.plots.length/4)-1)*3.2/2;
-  focus=new THREE.Vector3(2.575+pan+panDepth,0,fieldCenter-pan+panDepth);
- }else if(viewMode==='home'){
-  focus=new THREE.Vector3(1.4+pan+panDepth,0,1.5-pan+panDepth);
- }else{
-  const side=(bounds.minX+bounds.maxX)/2+(padding.right-padding.left)*span/(2*height);
-  const up=(bounds.minY+bounds.maxY)/2+(padding.top-padding.bottom)*span/(2*height);
-  focus=new THREE.Vector3(side/Math.SQRT2+pan+panDepth,0,-side/Math.SQRT2-pan+panDepth);
-  // Looking down (36,40,36), each ground axis projects vertically by -40/sqrt(8384).
-  const depth=-up*Math.sqrt(8384)/80;focus.x+=depth;focus.z+=depth;
- }
+ }else focus=farmAxis.base.clone().add(new THREE.Vector3(pan+panDepth,0,-pan+panDepth));
  // The Fishing pond (pond-ui.js): the camera glides to the pier and back; the farm's own view stays as it was.
  if(pond?.viewing())focus=pond.frame(camera,focus,aspect);
  camera.position.copy(focus).add(new THREE.Vector3(36,40,36));camera.lookAt(focus);camera.updateProjectionMatrix();camera.updateMatrixWorld();
- $('game').classList.toggle('farm-overview',mobile&&viewMode==='overview'&&zoom<1.4);
+ // On a phone the names shrink to their pins as the whole farm comes (wider than 1/1.4 of it, as the overview's own zoom 1.4 was).
+ $('game').classList.toggle('farm-overview',mobile&&(villageWorld?viewMode==='overview'&&zoom<1.4:span>spans[3]/1.4));
+ // The farm's buttons: the stop a glide goes to, else the one nearest; - and + grey out only at the axis's two ends.
+ if(!villageWorld)viewMode=glide?.stop??FARM_STOPS[Math.round(Math.max(0,along))];
  $('fields-view').setAttribute('aria-pressed',String(viewMode==='fields'));$('zoom-reset').setAttribute('aria-pressed',String(viewMode==='home'));$('zoom-fit').setAttribute('aria-pressed',String(viewMode==='overview'));
- $('zoom-in').disabled=zoom>=maxZoom()&&!ladderStep(1);$('zoom-out').disabled=zoom<=minZoom()&&!ladderStep(-1);
+ $('zoom-in').disabled=villageWorld?zoom>=maxZoom():along<=-1;$('zoom-out').disabled=villageWorld?zoom<=minZoom():along>=2;
  positionLabels();positionBuildingLabels();
 }
 // The village is three times as wide as the farm and its houses are smaller on screen: further out to zoom and to move (as far as
-// its mountains allow, resize), and much further in, so a house comes as close as a farm building does.
-// The whole farm is as far as the farm goes (18 Oct 2026, the owner: zooming out further "biedt weinig toegevoegde waarde", only empty
-// edges): there it stops at the whole farm in view; the fields and the heart of the farm keep their .75.
-const minZoom=()=>villageWorld?villageMinZoom:viewMode==='overview'?1:.75,maxZoom=()=>villageWorld?6:2.2;
-function panFarm(delta,depth=0){const limit=villageWorld?60:Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
-// The farm's three views go from close to far: the fields (Focus on your crop fields), the heart of the farm (Center the farm) and the
-// whole farm (18 Oct 2026, the owner: "als je max uitzoomt dat hij naar de volgende variant gaat"). Zooming out at a view's widest goes on
-// in the next wider view, and zooming in at its closest goes on in the next closer one, at the zoom that keeps the picture as wide as
-// asked (within that view's own limits), so a pinch, the wheel and the + and - buttons simply carry on. The village keeps its one view.
-// A step to another view waits 400 ms after the last one, so one long pinch or wheel spin does not run through all three at once.
-const VIEW_LADDER=['fields','home','overview'];
-function ladderStep(direction){const at=VIEW_LADDER.indexOf(viewMode);if(villageWorld||at<0||!viewSpans)return null;const next=VIEW_LADDER[at-direction];return next??null;}
-function zoomFarm(value){
- const out=value<zoom,next=ladderStep(out?-1:1),edge=out?zoom<=minZoom()+1e-6&&value<minZoom():zoom>=maxZoom()-1e-6&&value>maxZoom(),now=performance.now();
- if(next&&edge){
-  if(now-ladderAt<400)return;
-  const asked=viewSpans[viewMode]/value;ladderAt=now;viewMode=next;
-  zoom=Math.max(minZoom(),Math.min(maxZoom(),viewSpans[next]/asked));pan=0;panDepth=0;resize();if(ready)updateUI();return;
- }
- zoom=Math.max(minZoom(),Math.min(maxZoom(),value));resize();
+// its mountains allow, resize), and much further in, so a house comes as close as a farm building does. (The farm has its zoom axis.)
+const minZoom=()=>villageMinZoom,maxZoom=()=>6;
+function panFarm(delta,depth=0){stopGlide();const limit=villageWorld?60:Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
+// Zooming by a ratio (over 1 comes closer): the wheel, a pinch, and + and - in the village. It returns how much narrower the picture got,
+// for zooming towards the pointer. The village zooms within its own limits; the farm moves along its one axis (18 Oct 2026, the owner:
+// "soepeler", no more jumping to the next view), by the same share of its width at every step, whichever stops it passes.
+function zoomFarm(ratio){
+ if(villageWorld){const before=zoom;zoom=Math.max(minZoom(),Math.min(maxZoom(),zoom*ratio));resize();return zoom/before;}
+ if(!farmAxis)return 1;stopGlide();const before=farmAxis.span;placeFarm(atAxis(axisOf(zoomAt)-Math.log(ratio)));return before/farmAxis.span;
 }
-function resetView(){viewMode=startView();zoom=1;pan=0;panDepth=0;resize();if(ready)updateUI();}
-function showOverview(){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}
-function focusFields(){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}
+// A place on the axis as its distance from the closest end (farmAxis.lengths), and back.
+function axisOf(at){const [a,b,c]=farmAxis.lengths;at=Math.max(-1,Math.min(2,at));return Math.min(1,at+1)*a+Math.max(0,Math.min(1,at))*b+Math.max(0,at-1)*c;}
+function atAxis(d){let at=-1;for(const l of farmAxis.lengths){at+=Math.max(0,Math.min(l,d))/l;d-=l;}return at;}
+// Moves the farm's camera along its axis. Out past the heart of the farm the player's own pan fades by the share of the way still left,
+// so the whole farm ends centred, as Show the whole farm shows it; coming closer keeps it.
+function placeFarm(at,fade=true){
+ at=Math.max(-1,Math.min(2,at));const a=Math.max(1,zoomAt),b=Math.max(1,at);
+ if(fade&&b>a&&a<2){const keep=(2-b)/(2-a);pan*=keep;panDepth*=keep;}
+ zoomAt=at;resize();
+}
+// The camera buttons glide to their stop in 400 ms and + and - a step in 250 ms, easing out (18 Oct 2026, the owner: "soepeler"); at once
+// with reduced motion. The glide runs along the axis, so it passes the stops at an even pace, and eases out gently (a sine: from the whole
+// farm to the fields a cubic began with a fifth of the width per frame, the sine with about a tenth). stop: the button shown pressed meanwhile;
+// centre: the player's pan glides back to none, as these buttons always did. A drag, the wheel or a pinch takes over at once (stopGlide).
+function glideFarm(to,{ms=reducedMotion?0:400,stop=null,centre=true}={}){
+ stopGlide();
+ if(!farmAxis){zoomAt=to;if(centre){pan=0;panDepth=0;}resize();return;}
+ const from=axisOf(zoomAt),end=axisOf(to),pan0=pan,depth0=panDepth,start=performance.now(),run={stop,end,frame:0};glide=run;
+ const step=now=>{
+  if(glide!==run)return;const t=ms>0?Math.max(0,Math.min(1,(now-start)/ms)):1,e=Math.sin(t*Math.PI/2);
+  if(centre){pan=pan0*(1-e);panDepth=depth0*(1-e);}
+  if(t>=1)glide=null;   // the last frame lands exactly on the place asked
+  placeFarm(t>=1?to:atAxis(from+(end-from)*e),!centre);
+  if(t<1)run.frame=requestAnimationFrame(step);
+ };
+ if(ms>0)run.frame=requestAnimationFrame(step);else step(start);
+}
+function stopGlide(){if(glide){cancelAnimationFrame(glide.frame);glide=null;}}
+// + and - on the farm: a step of 1.25 times (as in the village), on from where a step still gliding goes.
+function stepFarm(direction){if(!farmAxis)return;const from=glide&&!glide.stop?glide.end:axisOf(zoomAt);glideFarm(atAxis(from-direction*Math.log(1.25)),{ms:reducedMotion?0:250,centre:false});}
+function resetView(){viewMode=startView();if(villageWorld){zoom=1;pan=0;panDepth=0;resize();}else glideFarm(FARM_STOPS.indexOf(viewMode),{stop:viewMode});if(ready)updateUI();}
+function showOverview(){if(villageWorld){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(2,{stop:'overview'});}
+function focusFields(){if(villageWorld){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(0,{stop:'fields'});}
 function measureFarm(){
  // Use each actual building and field box, retaining the useful heights.
  const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
@@ -1347,11 +1384,12 @@ function viewCorners(){
  if(!camera)return null;const dir=new THREE.Vector3();camera.getWorldDirection(dir);
  return [[-1,1],[1,1],[1,-1],[-1,-1]].map(([x,y])=>{const p=new THREE.Vector3(x,y,-1).unproject(camera),t=-p.y/dir.y;return [p.x+dir.x*t,p.z+dir.z*t];});
 }
-// Put a spot of the farm in the middle of the view (the overview becomes the normal view), within the usual panning limits.
+// Put a spot of the farm in the middle of the view, within the usual panning limits. Wider than the heart of the farm it comes in to
+// there, as the overview became the normal view (18 Oct 2026: the middle is the axis's own at that place, farmAxis.base).
 function lookAt(x,z){
  if(villageWorld)return;
- if(viewMode==='overview')viewMode='home';
- const [bx,bz]=viewMode==='fields'?[2.575,.25+(Math.ceil(state.plots.length/4)-1)*3.2/2]:[1.4,1.5],limit=Math.round(24*SPREAD),clamp=v=>Math.max(-limit,Math.min(limit,v));
+ stopGlide();if(zoomAt>1){zoomAt=1;resize();}
+ const {x:bx,z:bz}=farmAxis?.base??{x:1.4,z:1.5},limit=Math.round(24*SPREAD),clamp=v=>Math.max(-limit,Math.min(limit,v));
  pan=clamp(((x-bx)-(z-bz))/2);panDepth=clamp(((x-bx)+(z-bz))/2);resize();
 }
 // World II: the signpost to the village on the road out of the valley. Not there below level 90, a closed bridge on its pin until 100,
@@ -1430,7 +1468,7 @@ function bindUI(){
  // Every dropdown in the game gets the game look, also the ones that are drawn later (public/pretty-select.js).
  watchSelects();
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
- $('zoom-in').addEventListener('click',()=>zoomFarm(villageWorld?zoom*1.25:zoom+.15));$('zoom-out').addEventListener('click',()=>zoomFarm(villageWorld?zoom/1.25:zoom-.15));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
+ $('zoom-in').addEventListener('click',()=>villageWorld?zoomFarm(1.25):stepFarm(1));$('zoom-out').addEventListener('click',()=>villageWorld?zoomFarm(1/1.25):stepFarm(-1));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
  liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
@@ -1666,10 +1704,11 @@ async function init(){
    sweep:{action:sweepAction,add:(target,action)=>sweepField(target.id,action??sweepAction(target)),end:()=>endSweep(),early:firstBasketWaits},
    settle:()=>{if(firstBasketWaits()&&viewMode==='fields')easeToFields();},
    zoom:(ratio,x,y)=>{
-    const before=zoom;zoomFarm(zoom*ratio);
-    // Scrolling zooms towards the pointer: the spot under the mouse stays under the mouse.
-    const r=zoom/before;if(x==null||r===1)return;
-    const rect=world.getBoundingClientRect(),dx=x-(rect.left+rect.width/2),dy=y-(rect.top+rect.height/2);
+    const r=zoomFarm(ratio);
+    // Scrolling zooms towards the pointer: the spot under the mouse stays under the mouse. On the farm, zooming out lets go of it as
+    // the whole farm comes, which ends centred (18 Oct 2026, the one zoom axis).
+    if(x==null||r===1)return;
+    const hold=villageWorld||r>1?1:Math.max(0,Math.min(1,2-zoomAt)),rect=world.getBoundingClientRect(),dx=(x-(rect.left+rect.width/2))*hold,dy=(y-(rect.top+rect.height/2))*hold;
     const shift=cameraDragDelta(dx*(1-r),dy*(1-r),camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
    }

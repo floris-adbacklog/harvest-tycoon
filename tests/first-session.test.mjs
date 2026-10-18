@@ -183,7 +183,8 @@ test('short frames: every side tool on screen, the guide as a banner under 500 p
  assert.match(cards,/#level-up-dialog>\.level-up-actions,#gift-dialog>\.gift-actions\{position:sticky;bottom:-24px;/);
  assert.match(game,/const fitRoom=height<650&&fieldRoom&&!villageWorld\?fieldRoom:null,fieldFit=fitRoom\?\(6\.1\+rows\*2\.06\)\*height\/\(fitRoom\.bottom-fitRoom\.top\):0;/);
  assert.match(game,/const fieldSpan=fitRoom\?Math\.max\(24\/aspect,\(10\+2\.26\*rows\)\/aspect,fieldFit\):Math\.max\(21,24\/aspect,\(10\+2\.26\*rows\)\/aspect,10\.6\+rows\*2\.06\);/,'650 px and taller keep their view');
- assert.match(game,/const lift=viewMode==='fields'&&fitRoom\?\(\(fitRoom\.top\+fitRoom\.bottom\)\/2-height\/2\)\*span\/height\+1\.25:0;/,'with room for the markers above the back row');
+ // 18 Oct 2026 (the farm's one zoom axis): the fields' stop keeps its lift (stopView); towards the heart of the farm it fades out.
+ assert.match(game,/const lift=mode==='fields'&&fitRoom\?\(\(fitRoom\.top\+fitRoom\.bottom\)\/2-height\/2\)\*span\/height\+1\.25:0;/,'with room for the markers above the back row');
  // The fitted fields for 2 rows at 840x430 (the farm view 288 px tall, 239 px free): about one and a half times as big as the 21 units.
  const rows=2,fit=(6.1+rows*2.06)*288/239;assert.ok(21/fit>1.45&&21/fit<1.75,String(21/fit));
 });
