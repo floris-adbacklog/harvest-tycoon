@@ -12,7 +12,15 @@ const slice=(from,to)=>{const a=game.indexOf(from),b=game.indexOf(to,a);assert.o
 const stops=slice("const FARM_STOPS=","];");
 const block=slice(' const padding=mobile?','base:from.focus.clone().lerp(to.focus,k)};');
 const run=new Function('THREE','s',`${stops}let {width,height,mobile,hudShift,overviewBounds,state,fieldRoom,zoomAt}=s,farmAxis;const villageWorld=false,aspect=width/height,camera={};${block}return {camera,farmAxis};`);
-const helpers=new Function('farmAxis',`${slice('function axisOf(at){','\n')}${slice('function atAxis(d){','\n')}return {axisOf,atAxis};`);
+const helpers=new Function('farmAxis',`${slice('function axisOf(at){','\n')}${slice('function atAxis(d){','\n')}${slice('function spanOn(at){','\n')}${slice('function atWidth(span,out){','\n}')}return {axisOf,atAxis,spanOn,atWidth};`);
+// game.js's own glides, + and - and the wheel on a farm axis, with the camera's drawing left out (resize, the pointer's spot): frame(now)
+// takes a glide's step as game.js's frame() does.
+const glides=new Function('farmAxis','clock',`let zoomAt=0,pan=0,panDepth=0,glide=null;const ready=true,reducedMotion=false,performance={now:()=>clock.t};
+ const resize=()=>{},groundUnder=()=>({x:0,z:0}),keepSpot=()=>{};
+ ${slice('function axisOf(at){','\n')}${slice('function atAxis(d){','\n')}${slice('function spanOn(at){','\n')}${slice('function atWidth(span,out){','\n}')}
+ ${slice('function placeFarm(at,fade=true){','\n}')}${slice('function wheelFarm(ratio,x,y){','\n}')}${slice('function glideFarm(to,','\n}')}
+ ${slice('function stopGlide(){','\n')}${slice('function stepFarm(direction){','\n')}
+ return {stepFarm,glideFarm,wheel:ratio=>wheelFarm(ratio,0,0),frame:now=>{if(glide)glide.step(now);},get at(){return zoomAt;},set at(v){zoomAt=v;},get gliding(){return Boolean(glide);},pan:(a,b)=>{pan=a;panDepth=b;},get panned(){return [pan,panDepth];}};`);
 // Screen units from the game's angle, as measureFarm counts them: across, and up.
 const screen=({x,z})=>[(x-z)/Math.SQRT2,-40*(x+z)/Math.sqrt(8384)];
 function view(s,zoomAt){
@@ -46,6 +54,7 @@ const BIG={minX:-58,maxX:62,minY:-41,maxY:30};
 const SCREENS=[
  {name:'phone',width:390,height:708,mobile:true,hudShift:0,overviewBounds:BIG,state:plots(24),fieldRoom:null},
  {name:'phone, new farm',width:390,height:708,mobile:true,hudShift:0,overviewBounds:null,state:plots(8),fieldRoom:null},
+ {name:'phone, 40 fields',width:390,height:708,mobile:true,hudShift:0,overviewBounds:BIG,state:plots(40),fieldRoom:null},
  {name:'phone on its side',width:780,height:300,mobile:true,hudShift:0,overviewBounds:BIG,state:plots(24),fieldRoom:{top:40,bottom:250}},
  {name:'computer',width:1440,height:900,mobile:false,hudShift:118,overviewBounds:BIG,state:plots(24),fieldRoom:null},
  {name:'computer, 15 rows',width:1440,height:900,mobile:false,hudShift:118,overviewBounds:BIG,state:plots(60),fieldRoom:null},
@@ -105,3 +114,46 @@ test('the camera buttons glide to their stop, + and - glide a step, and nothing 
  assert.match(game,/if\(fade&&b>a&&a<2\)\{const keep=\(2-b\)\/\(2-a\);pan\*=keep;panDepth\*=keep;\}/);
  assert.match(game,/function panFarm\(delta,depth=0\)\{stopGlide\(\);/);
 });
+
+// 18 Oct 2026 (the review of the one zoom axis): + and - and the wheel aim at a width (atWidth), so they always zoom, also where two stops
+// are as wide (a phone with 40 fields: two presses of - from the fields only slid the farm); the glides take their steps in frame(), where
+// the farm is drawn at every display frame while one runs (the names ran up to 108 px ahead of the drawn farm); the wheel holds the real
+// spot under the pointer and follows its notches smoothly; a camera button at its own stop does no work.
+test('+ and - and the wheel aim at a width, past a part where two stops are as wide',()=>{
+ for(const s of SCREENS){
+  const {farmAxis}=view(s,0),{spanOn,atWidth}=helpers(farmAxis),[s0,,,s3]=farmAxis.spans;
+  for(let at=-1;at<=2;at+=1/16)for(const ratio of [1.25,1/1.25,1.197,1/1.197]){
+   const to=atWidth(spanOn(at)/ratio,ratio<1),want=Math.max(s0,Math.min(s3,spanOn(at)/ratio));
+   near(spanOn(to),want,`${s.name} from ${at} by ${ratio}`);assert.ok(ratio<1?to>=at:to<=at,`${s.name} from ${at}: the right way`);
+  }
+ }
+ const phone=SCREENS.find(s=>s.name==='phone, 40 fields'),{farmAxis}=view(phone,0),{spanOn,atWidth}=helpers(farmAxis);
+ near(farmAxis.spans[1],farmAxis.spans[2],'the fields as wide as the heart of the farm');
+ assert.ok(atWidth(spanOn(0)*1.25,true)>1,'- from the fields passes the heart of the farm');near(spanOn(atWidth(spanOn(0)*1.25,true)),spanOn(0)*1.25,'and is 1.25 times as wide');
+ assert.ok(atWidth(spanOn(1)/1.25,false)<0,'+ from the heart of the farm passes the fields');
+});
+
+test('the glides land exactly, + and - step by 1.25 in 250 ms, and the wheel follows its notches smoothly to where they aim',()=>{
+ for(const s of SCREENS){
+  const {farmAxis}=view(s,0),{spanOn}=helpers(farmAxis),clock={t:1000},g=glides(farmAxis,clock);
+  const run=(limit=2000)=>{const spans=[spanOn(g.at)];let frames=0;while(g.gliding&&frames<limit/16){clock.t+=1000/60;g.frame(clock.t);spans.push(spanOn(g.at));frames++;}
+   assert.ok(!g.gliding,`${s.name}: the glide ends`);let step=0;for(let i=1;i<spans.length;i++)step=Math.max(step,Math.abs(Math.log(spans[i]/spans[i-1])));return {frames,step};};
+  // The camera buttons: 400 ms (25 frames at most) to exactly their stop, and the pan glides back to none.
+  for(const [from,to] of [[0,2],[2,0],[2,1],[-1,2]]){g.at=from;g.pan(3,-2);g.glideFarm(to,{stop:'x'});const {frames}=run();assert.equal(g.at,to);assert.ok(g.panned.every(v=>v===0),`${s.name}: the pan glides back`);assert.ok(frames<=25,`${s.name}: ${frames} frames`);}
+  // A button at its own stop with no pan: nothing to glide.
+  g.at=1;g.pan(0,0);g.glideFarm(1,{stop:'home'});assert.ok(!g.gliding,`${s.name}: no glide at its own stop`);
+  // - from the fields to the widest and + back: every press 1.25 times (the ends excepted), in 250 ms.
+  g.at=0;for(let i=0;i<30&&g.at<2;i++){const before=spanOn(g.at);g.stepFarm(-1);const {frames}=run();assert.ok(frames<=16);const grew=spanOn(g.at)/before;assert.ok(g.at===2||Math.abs(grew-1.25)<1e-9,`${s.name}: - grew ${grew}`);}
+  assert.equal(g.at,2,`${s.name}: - reaches the whole farm`);
+  for(let i=0;i<40&&g.at>-1;i++){const before=spanOn(g.at);g.stepFarm(1);run();const shrank=before/spanOn(g.at);assert.ok(g.at===-1||Math.abs(shrank-1.25)<1e-9,`${s.name}: + shrank ${shrank}`);}
+  assert.equal(g.at,-1,`${s.name}: + reaches the closest`);
+  // Three wheel notches out 30 ms apart from the fields: one smooth movement to 1.197^3 as wide, never more than a notch's share a frame.
+  g.at=0;const start=spanOn(0),notch=Math.exp(.18);g.wheel(1/notch);clock.t+=30;g.frame(clock.t);g.wheel(1/notch);clock.t+=30;g.frame(clock.t);g.wheel(1/notch);
+  const {step}=run();near(spanOn(g.at),Math.min(farmAxis.spans[3],start*notch**3),`${s.name}: three notches out`);assert.ok(step<.18*.5,`${s.name}: a frame's step ${step}`);
+  // And in from the whole farm to the closest end.
+  g.at=2;for(let i=0;i<20;i++){g.wheel(notch);clock.t+=50;g.frame(clock.t);}run();assert.equal(g.at,-1,`${s.name}: in to the closest`);
+ }
+ assert.match(game,/const gliding=Boolean\(glide\);if\(gliding\)glide\.step\(now\);\n if\(!gliding&&now-lastFrame<32\)return;/,'drawn at every display frame while a glide runs');
+ assert.doesNotMatch(game,/requestAnimationFrame\(step\)/,'no glide of its own beside frame()');
+});
+
