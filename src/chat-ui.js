@@ -126,7 +126,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const me=bridge.playerId;
  // Staff marks: the admin shows as Admin (src/staff-badge.js); drawn again once the list is in.
  void loadStaff(chat).then(()=>{if(dialog?.open)paint();});
- const dialog=doc.createElement('dialog');dialog.id='chat-dialog';dialog.className='game-dialog chat-dialog';dialog.setAttribute('aria-labelledby','chat-title');dialog.tabIndex=-1;
+ const dialog=doc.createElement('dialog');dialog.id='chat-dialog';dialog.className='game-dialog chat-dialog is-side';dialog.setAttribute('aria-labelledby','chat-title');dialog.tabIndex=-1;
  dialog.innerHTML=`<div class="chat-top"><div class="chat-tabs" role="tablist" aria-label="Chat">
   <button type="button" role="tab" data-chat-tab="notices" aria-label="Notifications" title="Notifications">${art('bell')}<b class="chat-count" hidden></b></button>
   <button type="button" role="tab" data-chat-tab="global">Global<b class="chat-count" hidden></b></button>
@@ -697,7 +697,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   }catch(error){note(error.message);}
  }
  async function setBlock(id,name,on){
-  if(on&&!await confirmAction({names:[name],title:`Block ${name}?`,description:'You will no longer see their messages, and they cannot send you private messages. You can unblock them on their profile.',confirmLabel:'Block',tone:'danger'}))return false;
+  if(on&&!await confirmAction({names:[name],title:`Block ${name}?`,description:'You will no longer see their messages, and they cannot send you private messages. You can unblock them on their profile.',confirmLabel:'Block',tone:'danger',picture:'block'}))return false;
   try{
    await chat.block(id,on);statusCache.delete(id);
    const set=blocked();on?set.add(id):set.delete(id);overview.blocked=[...set];
@@ -733,7 +733,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    const staffTools=status.staff&&!status.moderator,admin=role()==='admin';
    const chatState=status.banned?'Chat closed (banned)':status.mutedUntil?`Muted until ${new Date(status.mutedUntil).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'Can chat';
    box.hidden=false;
-   box.innerHTML=`<div class="farmer-chat-row">${status.canMessage?`<button type="button" class="primary-button farmer-chat-send" data-chat="message">${art('letter')}Send message</button>`:''}<button type="button" class="small-button farmer-chat-report" data-chat="report">${art('alert')}Report</button><button type="button" class="small-button farmer-chat-report" data-chat="${status.blocked?'unblock':'block'}">${art('block')}${status.blocked?'Unblock':'Block'}</button></div>`
+   box.innerHTML=`<div class="farmer-chat-row">${status.canMessage?`<button type="button" class="primary-button farmer-chat-send" data-chat="message">${art('letter')}Send message</button>`:''}<button type="button" class="small-button is-danger-quiet farmer-chat-report" data-chat="report">${art('alert')}Report</button><button type="button" class="small-button${status.blocked?'':' is-danger-quiet'} farmer-chat-report" data-chat="${status.blocked?'unblock':'block'}">${art('block')}${status.blocked?'Unblock':'Block'}</button></div>`
     +(staffTools||(admin&&status.moderator)?`<div class="farmer-mod-tools"><span class="farmer-mod-title">${art('admin')}Moderation${staffTools?` · <b>${esc(chatState)}</b>`:''}</span><div class="farmer-mod-buttons">${staffTools?`<button type="button" class="small-button" data-chat="mute60">Mute 1 hour</button><button type="button" class="small-button" data-chat="mute1440">Mute 1 day</button>${status.banned||status.mutedUntil?'<button type="button" class="small-button" data-chat="lift">Allow chat</button>':'<button type="button" class="small-button is-danger" data-chat="ban">Ban from chat</button>'}`:''}${admin?`<button type="button" class="small-button" data-chat="${status.moderator?'unmod':'mod'}">${status.moderator?'Remove moderator':'Make moderator'}</button>`:''}</div></div>`:'');
    refreshArt();
    box.onclick=async event=>{
@@ -790,8 +790,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
 // The chat button for a guest on CrazyGames (Oct 2026): one small window that says the chat is for players logged in with CrazyGames,
 // with their log-in (never opened by itself). Logged in, the farm opens again with the chat (src/crazygames.js).
 function chatLogIn({portal,button,doc}){
- const dialog=doc.createElement('dialog');dialog.id='chat-login-dialog';dialog.className='game-dialog portal-chat-gate';dialog.setAttribute('aria-labelledby','chat-login-title');
- dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">CHAT</span><h2 id="chat-login-title">Log in with CrazyGames to chat</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><p>The chat is for farmers who are logged in with CrazyGames. Your farm comes with you.</p><button type="button" class="primary-button" data-portal-login>Log in with CrazyGames</button>';
+ const dialog=doc.createElement('dialog');dialog.id='chat-login-dialog';dialog.className='game-dialog portal-chat-gate is-card is-s';dialog.setAttribute('aria-labelledby','chat-login-title');
+ dialog.innerHTML='<div class="dialog-heading"><i class="dialog-badge" data-game-art="chat" aria-hidden="true"></i><div class="dialog-titles"><h2 id="chat-login-title">Log in with CrazyGames to chat</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"></i></button></div><p>The chat is for farmers who are logged in with CrazyGames. Your farm comes with you.</p><button type="button" class="primary-button" data-portal-login>Log in with CrazyGames</button>';
  doc.body.append(dialog);
  dialog.querySelector('.close-dialog').onclick=()=>dialog.close();
  const login=dialog.querySelector('[data-portal-login]');

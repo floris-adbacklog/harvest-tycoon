@@ -13,7 +13,8 @@ test('the confirmations share one look: a picture, the question, a line, two but
  const generic=read('public/confirm-dialog.js'),diamonds=read('public/diamond-confirm.js'),css=read('public/vip.css');
  assert.match(generic,/picture='',tone=''/);assert.match(generic,/tone==='danger'\?' is-danger':''/);
  assert.match(diamonds,/picture='diamonds',balance/);assert.match(diamonds,/You keep \$\{left\.toLocaleString\('en-US'\)\} diamonds/);assert.match(diamonds,/Spend \$\{amount\}/);
- assert.match(css,/\.diamond-confirm\.is-danger \.confirm-spend\{/);
+ // 18 Oct 2026: the red of a hard-to-undo confirm is the one red button of buttons.css (the window shell), no colour of its own here.
+ assert.match(read('public/buttons.css'),/\.diamond-confirm\.is-danger \.confirm-spend\{background:var\(--btn-red\)/);
  const boosts=read('public/boosts-ui.js');for(const picture of ["picture:kind==='crop'?'harvest':'buildings'","picture:id==='crops'?'instant-harvest':boost.art","picture:'vip'"])assert(boosts.includes(picture),picture);
  assert.equal((boosts.match(/balance:state\.diamonds/g)??[]).length,3,'every diamond confirmation shows what you keep');
  const family=read('public/family-ui.js');assert.match(family,/if\(ask&&!await confirmAction\(\{\.\.\.ask,cancelLabel:'Cancel',picture:'family-members'\}\)\)return;/);

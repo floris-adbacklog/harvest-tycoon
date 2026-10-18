@@ -262,3 +262,6 @@ html[data-app=android] .wiki-page :is([data-wiki-anchor="sec-play-it-as-an-app"]
 html[data-portal] .wiki-copy{display:none!important}
 /* "See X." in a fact card stands on a line of its own: the card's text before it has no full stop of its own. */
 .wiki-facts p>.wiki-see{display:block;margin-top:4px}
+/* The window shell (18 Oct 2026): a topic's title is the window's title, with the round way back to all topics in front of it; the topic's
+   banner keeps its picture and its line. */
+#help-dialog .wiki-hero h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}

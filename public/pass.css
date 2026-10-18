@@ -21,7 +21,7 @@
 @media(min-width:901px) and (max-width:1100px){.topbar .resources:has(>#pass-button:not([hidden]))>#offer-chip{display:none}}
 #pass-menu-entry .game-art{object-fit:contain}
 
-#pass-dialog{width:min(760px,calc(100% - 24px));max-width:calc(100% - 24px);max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow-x:hidden;overscroll-behavior:contain}
+
 #pass-dialog *{box-sizing:border-box;min-width:0}
 .pass-top{display:flex;align-items:center;gap:14px;margin:6px 0 14px}
 .pass-top .pass-hero{width:64px;height:64px;flex:none;object-fit:contain}
@@ -79,7 +79,7 @@
 .pass-lock{flex:none;display:grid;place-items:center}
 .pass-lock .game-art{width:22px;height:22px}
 @media(max-width:600px){
- #pass-dialog{padding:18px 14px;width:calc(100% - 20px);max-width:calc(100% - 20px);max-height:calc(100dvh - 24px)}
+
  .pass-top .pass-hero{width:52px;height:52px}
  .pass-heads,.pass-row{grid-template-columns:26px minmax(0,1fr) minmax(0,1fr);gap:6px}
  .pass-tier{width:24px;height:24px;font-size:11px}

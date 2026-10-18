@@ -8,7 +8,7 @@
    keeps the coins, the diamonds and the beginner boost. The desktop keeps its chat button in the header. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#chat-button{display:none}}
 
-#chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:start;box-shadow:0 25px 80px #302d1938}
+#chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));max-width:none;height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:start;box-shadow:0 25px 80px #302d1938}
 #chat-dialog[open]{display:flex;animation:chat-in .18s ease-out}
 @keyframes chat-in{from{transform:translateX(-28px);opacity:0}}
 @media(prefers-reduced-motion:reduce){#chat-dialog[open]{animation:none}}
@@ -264,7 +264,7 @@ span.chat-avatar{cursor:default}
 .admin-gift-results span{display:grid;min-width:0}.admin-gift-results strong{font-size:14px}.admin-gift-results small{color:#80776b;font-size:12px;font-weight:600}
 .admin-donate .primary-button:disabled{opacity:.55;cursor:default}
 /* A pop-up from the admin (src/popup-ui.js): the news in a window of its own, with an optional button. */
-#popup-dialog{box-sizing:border-box;width:min(420px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:26px 24px 20px;border:1px solid #e0d4c6;border-radius:24px;background:radial-gradient(ellipse at top,#fff4d8,#fffdf5 68%);color:#3d382a;text-align:center;overflow:auto}
+#popup-dialog{text-align:center}
 #popup-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 #popup-dialog .popup-art{display:block;width:88px;height:88px;margin:0 auto 6px;object-fit:contain}
 #popup-dialog h2{margin:4px 0 8px;font:700 24px/1.2 'Outfit',sans-serif}

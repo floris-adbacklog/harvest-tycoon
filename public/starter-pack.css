@@ -22,9 +22,9 @@
 
 /* The offer: picture, name and time left, the diamonds first, the crops as one strip of pictures, one Buy button.
    Compact enough that the button is on screen on a phone without scrolling. */
-#starter-pack-dialog{width:min(460px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);margin-inline:auto;inset-inline-start:0;inset-inline-end:0;padding:22px 20px 18px;box-sizing:border-box;overflow-y:auto;text-align:center;background:radial-gradient(ellipse at top,#f3e3c4,#fffdf4 62%);border-radius:26px;color:#433d2e}
-#starter-pack-dialog::backdrop{background:#2f2c1a80}
-.starter-close{position:absolute;inset-inline-end:12px;top:12px;width:40px;height:40px;border:0;border-radius:13px;background:#efe9e3;font-size:26px;line-height:1}
+#starter-pack-dialog{text-align:center}
+
+
 .starter-hero{display:block;width:84px;height:84px;margin:0 auto 4px;filter:drop-shadow(0 6px 10px #9a7a3a33)}
 #starter-pack-dialog h2{margin:2px 0 6px;font-size:28px}
 .starter-time{display:inline-flex;align-items:center;gap:5px;margin:0 0 14px!important;padding:4px 11px;border-radius:999px;background:#f6e3b4;font-size:12px!important;font-weight:700;color:#8a5a12}
@@ -48,7 +48,7 @@
 .starter-fine{display:block;margin-top:8px;font-size:12px;color:#877c71}
 /* Narrow phones: a smaller picture and number, so 10,000 always fits inside its tile. */
 @media(max-width:400px){.starter-rewards>div{gap:0 7px;padding:10px 9px}.starter-rewards .game-art{width:32px;height:32px;min-width:32px}.starter-rewards strong{font-size:20px}}
-@media(max-width:340px){#starter-pack-dialog{padding:20px 14px 16px}.starter-rewards>div{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.starter-rewards .game-art{grid-row:auto}}
+@media(max-width:340px){.starter-rewards>div{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.starter-rewards .game-art{grid-row:auto}}
 @media(max-height:700px){.starter-hero{width:64px;height:64px}#starter-pack-dialog h2{font-size:25px}}
 /* A low landscape screen has the side tools as a rail on the left: the Starter Pack waits just right of it, above the tools. */
 @media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){#starter-pack-button{inset-inline-start:calc(86px + env(safe-area-inset-left))}}

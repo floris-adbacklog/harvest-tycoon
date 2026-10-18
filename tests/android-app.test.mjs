@@ -110,7 +110,7 @@ test('play.html, the language pages, farm.html and the website\'s wiki load the 
  const play=read('public/play.html'),farm=read('public/farm.html');
  assert.ok(before(play,'play.html')<play.indexOf('/app-mode.js'));assert.ok(before(farm,'farm.html')<farm.indexOf('/app-mode.js'));
  assert.equal(play.match(/android-app\.js/g).length,1);assert.equal(farm.match(/android-app\.js/g).length,1);
- const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);assert.equal(sheets[sheets.indexOf('/portal.css')+1],'/android.css');assert.equal(sheets.at(-1),'/pwa-layout.css');
+ const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);assert.equal(sheets[sheets.indexOf('/portal.css')+1],'/android.css');assert.equal(sheets.slice(-3).join(' '),'/pwa-layout.css /dialog-shell.css /hud.css','18 Oct 2026: the window shell and the farm screen\'s look come after it');
  assert.doesNotMatch(read('public/crazygames.html'),/android-app\.js|android\.css/);
  const out=mkdtempSync(join(tmpdir(),'android-app-'));writeFileSync(join(out,'sitemap.xml'),read('public/sitemap.xml'));
  buildLanguagePages(out,play);
@@ -309,7 +309,7 @@ test('Invite a friend in the app: Share opens the app\'s share sheet with the te
 // both apps, and links to support; CrazyGames (no links to our website, the farm belongs to the CrazyGames account) leaves both out.
 test('Settings\' Privacy has Delete account and Contact support, except on CrazyGames',()=>{
  const privacy=read('public/farm.html').match(/<section id="privacy-settings"[\s\S]*?<\/section>/)[0];
- assert.match(privacy,/<a class="link-button" href="\/privacy" target="_blank" rel="noopener">Privacy Policy<\/a><a id="contact-support-link" class="link-button" href="\/support" target="_blank" rel="noopener">Contact support<\/a><\/div><div id="delete-account-row" class="privacy-danger"><button id="delete-account" class="small-button is-danger" type="button">Delete account<\/button><p id="delete-account-message" class="cloud-form-error" role="alert"><\/p><\/div><\/section>/);
+ assert.match(privacy,/<a class="link-button" href="\/privacy" target="_blank" rel="noopener">Privacy Policy<\/a><a id="contact-support-link" class="link-button" href="\/support" target="_blank" rel="noopener">Contact support<\/a><\/div><div id="delete-account-row" class="privacy-danger"><button id="delete-account" class="small-button is-danger-quiet" type="button">Delete account<\/button><p id="delete-account-message" class="cloud-form-error" role="alert"><\/p><\/div><\/section>/);   // 18 Oct 2026: the first step is the quiet red outline, the confirm card the filled red
  assert.doesNotMatch(privacy,/href="\/delete-account"/,'a button now, not the link to the page');
  assert.match(read('public/portal.css'),/html\[data-portal\] #delete-account-row[,{]/);
  assert.match(read('src/portal-ui.js'),/querySelectorAll\('\.install-copy,\.notify-device-actions,\.privacy-danger'\)\)old\.remove\(\)/);

@@ -90,3 +90,15 @@
 .upgrade-option:has(.ingredient:nth-child(3)) .upgrade-price{grid-column:1;grid-row:1}.upgrade-payments .upgrade-option:has(.ingredient:nth-child(3))>button{grid-column:2;grid-row:1}
 .upgrade-option:has(.ingredient:nth-child(3)) .upgrade-cost .ingredients{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:6px}
 
+/* A building in the window shell (18 Oct 2026, the owner: cleaner, fewer boxes): the chain and the slots are one quiet strip under the
+   heading, without a frame of their own; the slots' rule stays, as a small line under the count. */
+#building-content .milling-chain{border:0;background:#f5efe4;border-radius:14px}
+#building-content .production-capacity{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;padding:2px 2px 0;margin:6px 0 12px;border:0;background:none;box-shadow:none}
+#building-content .production-capacity strong{font:700 15px/1.3 'DM Sans',sans-serif;color:var(--ink,#453e28)}
+#building-content .production-capacity p{margin:0;font-size:13px;color:var(--ink-soft,#7a705f)}
+#building-content .recipe-section-heading h3{font:700 20px/1.2 'Outfit',sans-serif}
+/* The Buildings list and the helping hand's stops in the window shell (18 Oct 2026): each row is a tappable card with the press edge of
+   the game's buttons, on the one card surface. */
+#building-catalog>.building-card,#activities-hub-grid>.building-card{border:2px solid #e6ddd1;background:#fbf8f3;box-shadow:0 3px 0 #e6dccb;transition:transform .1s,box-shadow .1s}
+#building-catalog>.building-card:active,#activities-hub-grid>.building-card:active{transform:translateY(2px);box-shadow:0 1px 0 #e6dccb}
+@media(prefers-reduced-motion:reduce){#building-catalog>.building-card,#activities-hub-grid>.building-card{transition:none}}

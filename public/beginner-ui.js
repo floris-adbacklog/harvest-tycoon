@@ -97,7 +97,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   // A timeline: finished steps get a check, only the current step shows its explanation, every open step its XP.
   const xp=`<b class="beginner-xp">${art('xp')}+${BEGINNER_STEP_XP} XP</b>`;
   $('beginner-summary').innerHTML=`<div class="beginner-summary-top"><span><strong>${done}</strong> / ${steps.length} steps</span><b class="beginner-reward">${art('diamonds')}${BEGINNER_REWARD} ${complete?'earned':'at the end'}</b></div><progress max="${steps.length}" value="${done}" aria-label="Beginner steps completed"></progress>`;
-  const markup=steps.map(q=>`<article class="beginner-step ${q.done?'done':q.current?'current':'upcoming'}" ${q.current?'aria-current="step"':''}><span class="beginner-step-number">${q.done?'✓':q.index+1}</span><div><h3>${q.title}</h3>${q.current?`<p>${q.description}</p>`:''}<span class="beginner-status">${q.done?'Completed':q.current?q.ready?'Ready to complete':'Your current step':q.ready?'Done early · finish the steps before it':''}${q.done?'':xp}</span>${q.current?`<div class="beginner-actions"><button class="small-button" data-beginner-help>Show me</button>${q.ready?`<button class="primary-button" data-beginner-claim ${busy?'disabled':''}>${q.index===9?`Claim ${BEGINNER_REWARD} diamonds`:'Complete step'}</button>`:''}</div>`:''}</div></article>`).join('');
+  const markup=steps.map(q=>`<article class="beginner-step ${q.done?'done':q.current?'current':'upcoming'}" ${q.current?'aria-current="step"':''}><span class="beginner-step-number">${q.done?'✓':q.index+1}</span><div><h3>${q.title}</h3>${q.current?`<p>${q.description}</p>`:''}<span class="beginner-status">${q.done?'Completed':q.current?q.ready?'Ready to complete':'Your current step':q.ready?'Done early · finish the steps before it':''}${q.done?'':xp}</span>${q.current?`<div class="beginner-actions"><button class="${q.ready?'small-button':'primary-button'}" data-beginner-help>Show me</button>${q.ready?`<button class="primary-button" data-beginner-claim ${busy?'disabled':''}>${q.index===9?`Claim ${BEGINNER_REWARD} diamonds`:'Complete step'}</button>`:''}</div>`:''}</div></article>`).join('');
   if(markup!==lastMarkup){$('beginner-list').innerHTML=markup;lastMarkup=markup;icons();}
  }
  function open(){if(state.onboarding?.rewardClaimed&&state.onboarding.completed>=BEGINNER_QUESTS.length)return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();refresh();dialog.scrollTop=0;
@@ -166,12 +166,14 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   const now=farmNow(),goal=finished&&!village?nextGoal(state,now):null,onPhone=phone();
   const wait=goal&&!actNow(goal)&&onPhone?readyAllAt(state,now):0;goalWait=wait;goalDay=new Date(now).toDateString();
   card.hidden=!goal;line.hidden=!goal||!actNow(goal)&&!onPhone;
+  // A quest that is ready is claimed right from the phone's line too (18 Oct 2026, the window shell): the card's own Claim, one at a time.
+  const quick=$('next-goal-claim-mobile');if(quick){quick.hidden=line.hidden||goal?.kind!=='quest';quick.disabled=goalBusy;}$('game')?.classList.toggle('goal-claim',Boolean(quick&&!quick.hidden));
   // The phone's line takes the place of the tap hints under the bar while it shows.
   $('game')?.classList.toggle('goal-line',!line.hidden);
   $('next-goal-body').hidden=folded;const fold=$('next-goal-collapse');fold.setAttribute('aria-expanded',String(!folded));fold.setAttribute('aria-label',folded?'Expand next goal':'Collapse next goal');
   if(!goal){goalKey='';return;}
   // The day too: a time after midnight reads "tomorrow" until the day turns.
-  const today=new Date(now).toDateString(),key=JSON.stringify(goal)+goalBusy+wait+today;if(key===goalKey)return;goalKey=key;
+  const today=new Date(now).toDateString(),key=JSON.stringify(goal)+goalBusy+wait+today+onPhone;if(key===goalKey)return;goalKey=key;
   const kind={quest:'QUEST READY',daily:'DAILY CHALLENGE READY',build:'READY TO BUILD',field:'NEW FIELD',progress:'QUEST IN PROGRESS',level:'NEXT LEVEL'}[goal.kind];
   const title=goal.kind==='build'?`Build the ${goal.name}`:goal.kind==='field'?`Buy field ${goal.field}`:goal.kind==='level'?(goal.name?`Level ${goal.level}: ${goal.name}`:`Level ${goal.level}`):goal.title;
   $('next-goal-kind').textContent=kind;$('next-goal-title').textContent=title;
@@ -190,8 +192,11 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   // "Quest ready:" before the quest's own title (11 Oct 2026: "Next: Claim Your first harvest" glued the title into a sentence, capital kept).
   // A field (Plan F, proposal 3) with its coins; the time everything is ready (proposal 2), today or tomorrow (nothing grows longer than a
   // day); and when nothing grows the quest closest to done with its count, or the next level, as the card says them.
+  // While the phone's own green Claim sits at the end of the line (18 Oct 2026) it says "ready" itself: the line is the trophy and the
+  // quest's name only, so a long name still fits on a 375 px phone.
   const clock=new Date(wait).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  $('next-goal-mobile-copy').textContent=goal.kind==='quest'?`Quest ready: ${goal.title}`:goal.kind==='daily'?`Daily challenge ready: ${goal.title}`:goal.kind==='build'?`Next: Build the ${goal.name}`:goal.kind==='field'?`Next: Buy field ${goal.field} for ${number(goal.cost)} coins`
+  const quickClaim=onPhone&&!$('next-goal-claim-mobile')?.hidden;
+  $('next-goal-mobile-copy').textContent=goal.kind==='quest'?(quickClaim?goal.title:`Quest ready: ${goal.title}`):goal.kind==='daily'?`Daily challenge ready: ${goal.title}`:goal.kind==='build'?`Next: Build the ${goal.name}`:goal.kind==='field'?`Next: Buy field ${goal.field} for ${number(goal.cost)} coins`
    :wait?(new Date(wait).toDateString()===today?`Everything is ready at ${clock}`:`Everything is ready tomorrow at ${clock}`):goal.kind==='progress'?`Quest: ${goal.title} (${number(goal.value)} / ${number(goal.target)})`:title;
   icons();
  }
@@ -213,6 +218,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
  }
  $('next-goal-button')?.addEventListener('click',()=>void goalTap());
  $('next-goal-mobile')?.addEventListener('click',()=>void goalTap(true));
+ $('next-goal-claim-mobile')?.addEventListener('click',()=>$('next-goal-button')?.click());
  $('next-goal-collapse')?.addEventListener('click',()=>{folded=!folded;try{storage?.setItem(GOAL_FOLDED_KEY,folded?'folded':'open');}catch{}goalKey='';refresh();});
  refresh();return {open,refresh,afterAction,tick,landed,autoCheck};
 }

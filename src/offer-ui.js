@@ -35,7 +35,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  const style=doc.createElement('link');style.rel='stylesheet';style.href=import.meta.resolve?.('/offer.css')??'/offer.css';doc.head.append(style);
  const tile=doc.createElement('button');tile.id='offer-button';tile.type='button';tile.hidden=true;
  const chip=doc.createElement('button');chip.id='offer-chip';chip.className='icon-button';chip.type='button';chip.hidden=true;chip.title='Special offer';
- const dialog=doc.createElement('dialog');dialog.id='offer-dialog';dialog.className='game-dialog';dialog.setAttribute('aria-labelledby','offer-title');dialog.tabIndex=-1;
+ const dialog=doc.createElement('dialog');dialog.id='offer-dialog';dialog.className='game-dialog is-sheet is-l';dialog.setAttribute('aria-labelledby','offer-title');dialog.tabIndex=-1;
  doc.body.append(tile,dialog);
  const hud=doc.getElementById('starter-pack-chip')??doc.getElementById('diamond-button');hud?.after(chip);
  const device=()=>({installed:doc.documentElement.dataset.appMode==='standalone',phone:Boolean(win.matchMedia?.('(pointer: coarse)').matches)});
@@ -56,11 +56,11 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
   // Picture with the discount, then what is in it (cards with a + between), what it is worth, the time left and one Buy button.
   dialog.innerHTML=`<button type="button" class="offer-close" aria-label="Close">×</button>`
    +`<div class="offer-hero"><img src="/assets/icons/offer-hero.webp" alt="" draggable="false"><span class="offer-ribbon"><b>${off}%</b><small>OFF</small></span></div>`
-   +`<div class="offer-body"><span class="eyebrow">SPECIAL OFFER</span><h2 id="offer-title">A chest full of treasure</h2>`
+   +`<div class="offer-body"><h2 id="offer-title">A chest full of treasure</h2>`
    +`<div class="offer-parts">${parts.map((p,i)=>`${i?'<span class="offer-plus" aria-hidden="true">+</span>':''}<div class="offer-part is-${p.key}"><img src="/assets/icons/${p.art}.webp" alt="" draggable="false"><strong>${p.amount}</strong><span>${p.detail}</span></div>`).join('')}</div>`
    +`<p class="offer-worth"><span>Worth</span> <s>${worth()}</s> <b>${price()}</b></p>`
    +`<p class="offer-time"><img src="/assets/icons/offer-hourglass.webp" alt=""><span data-offer-left></span></p>`
-   +`<button type="button" class="primary-button offer-buy"></button><p class="offer-feedback" role="status" aria-live="polite"></p>`
+   +`<button type="button" class="primary-button offer-buy is-money"></button><p class="offer-feedback" role="status" aria-live="polite"></p>`
    +`<small class="offer-fine">Once per farmer. Worth: what the same diamonds, coins and VIP cost in the shop.</small></div>`;
   dialog.dataset.parts=String(parts.length);
   dialog.querySelector('.offer-close').onclick=()=>dialog.close();

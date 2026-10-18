@@ -8,7 +8,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 test('one job per window: the market pick lives in the Market only, with tomorrow\'s outlook to plan for (back on 1 Oct 2026)',()=>{
  const today=read('public/retention-ui.js'),market=read('public/economy-ui.js');
  assert.match(today,/\$\('today-market'\)\.hidden=true;\$\('today-market'\)\.innerHTML='';/);assert.doesNotMatch(today,/TODAY’S MARKET PICK/);
- assert.match(market,/<p class="market-forecast">Tomorrow’s outlook: <strong>\$\{ITEMS\[tomorrow\.item\]\.name\}<\/strong> · \$\{tomorrowChange\} expected\.<\/p>/,'tomorrow\'s best price, with how much it rises');assert.match(market,/TODAY’S MARKET/,'today\'s pick stays in the Market');
+ assert.match(market,/<p class="market-forecast">Tomorrow’s outlook: <strong>\$\{ITEMS\[tomorrow\.item\]\.name\}<\/strong> · \$\{tomorrowChange\} expected\.<\/p>/,'tomorrow\'s best price, with how much it rises');assert.match(market,/\$\('market-outlook'\)\.innerHTML=`<div class="market-outlook-heading"><span id="market-countdown"><\/span><\/div><div class="market-highlight">\$\{art\(today\.item\)\}/,'today\'s pick stays in the Market (since 18 Oct 2026 without a small-capitals line over it)');
  assert.match(read('public/wiki-content.js'),/the outlook shows tomorrow’s/,'the wiki says the same');
 });
 

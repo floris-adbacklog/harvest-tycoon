@@ -77,7 +77,7 @@ test('at most one next bonus per group, after the ones the farm has, with the le
  const at=(l,id,change)=>groupOf(farm(l,change),id).rows.find(r=>!r.active),vipOn=s=>{s.vipExpiresAt=now+7*DAY_MS;},withVip=change=>s=>{vipOn(s);change?.(s);};
  // No VIP: from level 10 (the shop) VIP is the next bonus where it makes crops, batches or sales better, and says where to get it.
  for(const [id,sub] of [['crops','10% faster crops'],['production','10% faster production'],['market','+5% market coins']])
-  assert.deepEqual(at(12,id,s=>{s.vipExpiresAt=0;}),{id:'vip',name:'VIP',sub,value:'Diamonds & boosts',active:false},id);
+  assert.deepEqual(at(12,id,s=>{s.vipExpiresAt=0;}),{id:'vip',name:'VIP',sub,value:'Boosts',active:false},id);
  assert.equal(at(40,'crops',s=>{s.vipExpiresAt=0;s.siloLevel=1;}).id,'silo','crops: the next Silo step goes before VIP while there is one');
  assert.equal(at(40,'crops',s=>{s.vipExpiresAt=0;s.siloLevel=5;}).id,'vip');
  assert.deepEqual(at(10,'crops',withVip()),{id:'silo',name:'Silo research',sub:'−10% growing time',value:`From level ${FEATURE_LEVELS.silo}`,active:false});
@@ -107,7 +107,8 @@ test('the tab never shows a " · ": names, lines and chips are separate elements
 // 9 Oct 2026: the Bonuses tab opens with Medals at level 14 (with the diamond boosts at 10 before). The Estate window is reached
 // through Medals (or the projects, from 27), so when Medals moved from 7 to 14 nothing led to the tab from 10 to 13.
 test('the Bonuses tab is the last Estate tab and opens with Medals at level 14, the way into the Estate window; the boosts stay at 10',()=>{
- assert.match(read('public/farm.html'),/<button data-estate-tab="master" aria-pressed="false" hidden>Master<\/button><button data-estate-tab="bonuses" aria-pressed="false" hidden>Bonuses<\/button><\/div>/);
+ // 18 Oct 2026: each tab with its picture (the window shell).
+ assert.match(read('public/farm.html'),/<button data-estate-tab="master" aria-pressed="false" hidden><i data-game-art="master"><\/i><span>Master<\/span><\/button><button data-estate-tab="bonuses" aria-pressed="false" hidden><i data-game-art="boost"><\/i><span>Bonuses<\/span><\/button><\/div>/);
  assert.equal(FEATURE_LEVELS.boosts,10);assert.equal(FEATURE_LEVELS.mastery,14);
  assert.match(read('public/progression-ui.js'),/const sideTools=\{'#boosts-button':'boosts','#estate-button':'mastery'\};/,'the Boosts button from 10, the Estate button from Medals');
  // Just enough of the page for the Estate window: its tabs, its content and the dialog.
@@ -160,5 +161,6 @@ test('the Estate window has no Stall or Chores tab: each opens on its own, from 
  assert.match(html,/data-menu-utility="chores"/,'the Farm chores tile stays');
  assert.match(html,/data-menu-utility="stall"/,'the Farm stall tile stays');
  assert.match(game,/key==='stall'\|\|key==='chores'\|\|key==='mastery'\)growth\.open\(key\)/,'its icon and tile still open it');
- assert.match(ui,/const alone=\{stall:'Farm stall',chores:'Farm chores'\}\[tab\],dlg=\$\('estate-dialog'\);for\(const el of \[dlg\.querySelector\?\.\('\.estate-tabs'\),dlg\.querySelector\?\.\('\.dialog-heading \.eyebrow'\)\]\)if\(el\)el\.hidden=!!alone;\$\('estate-title'\)\.textContent=alone\?\?'Your growing estate';/);
+ // 18 Oct 2026: the Estate's title is the name of its button, and the heading's picture follows the part that is open (the window shell).
+ assert.match(ui,/const alone=\{stall:'Farm stall',chores:'Farm chores'\}\[tab\],dlg=\$\('estate-dialog'\);for\(const el of \[dlg\.querySelector\?\.\('\.estate-tabs'\),dlg\.querySelector\?\.\('\.dialog-heading \.eyebrow'\)\]\)if\(el\)el\.hidden=!!alone;\$\('estate-title'\)\.textContent=alone\?\?'Estate';setDialogBadge\(dlg,\{stall:'stall',chores:'chores'\}\[tab\]\?\?'estate'\);/);
 });

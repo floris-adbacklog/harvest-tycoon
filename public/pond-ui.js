@@ -49,9 +49,9 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
  };
  // The water's own cue: now and then a fish jumps while casts are waiting and nothing is ready meanwhile (a ripe crop, a finished batch).
  const pond3d=createPondScene({scene,reducedMotion,place,cue:()=>!isOpen&&W.open(state)&&waterCasts(W,state,now()).casts>0&&!waiting()});
- const dialog=document.createElement('dialog');dialog.id='pond-view';dialog.className='pond-view';dialog.setAttribute('aria-labelledby','pond-title');
+ const dialog=document.createElement('dialog');dialog.id='pond-view';dialog.className='pond-view is-side';dialog.setAttribute('aria-labelledby','pond-title');
  dialog.innerHTML=`<div class="pond-water" data-pond-water></div>
- <div class="pond-top"><button type="button" class="pond-back" data-pond-back><span aria-hidden="true">‹</span><span>${lake?'Village':'My farm'}</span></button>
+ <div class="pond-top"><button type="button" class="pond-back back-round" data-pond-back><span aria-hidden="true">‹</span><span class="sr-only">${lake?'Village':'My farm'}</span></button>
   <h2 id="pond-title" class="pond-title">${art(ART)}<span>${NAME}</span></h2>
   <div class="pond-top-right"><span class="pond-casts" data-pond-casts><b></b><small></small></span><button type="button" class="pond-book-open" data-pond-book>${art(ART)}<span>Fish book</span></button></div></div>
  <p class="pond-today" data-pond-today></p>
@@ -137,7 +137,7 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   // The book's diamonds (11 Oct 2026, page two): below level 20 the book is one page, as before; from 20 page one's 25 say which page,
   // and the 50 for all 16 kinds (book2, both pages) say the whole book.
   if(r.diamonds)tags.push(['is-book',r.book2||!pageTwo()?'Fish book complete!':pageDone(1)]);
-  card.innerHTML=`<div class="pond-card-fish">${art(`fish-${r.species}`,'pond-card-art')}<div><span class="eyebrow">YOU CAUGHT</span><h3>${f.name}</h3><p class="pond-kg">${kg(r.kg)} kg</p></div></div>
+  card.innerHTML=`<div class="pond-card-fish">${art(`fish-${r.species}`,'pond-card-art')}<div><h3>${f.name}</h3><p class="pond-kg">${kg(r.kg)} kg</p></div></div>
    ${tags.length?`<div class="pond-tags">${tags.map(([cls,text])=>`<b class="pond-tag ${cls}">${text}</b>`).join('')}</div>`:''}
    <div class="pond-rewards"><strong class="reward-coins">${art('coins')}+${number(r.coins)} coins</strong><strong class="reward-xp">${art('xp')}+${number(r.xp)} XP</strong>${r.diamonds?`<strong class="reward-diamonds">${art('diamonds')}+${r.diamonds} diamonds</strong>`:''}</div>
    ${left<1?`<p class="pond-card-note">That was your last cast. A new one comes every ${minutes()} minutes (up to ${POND_MAX_CASTS}).</p>`:''}

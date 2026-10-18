@@ -1,0 +1,180 @@
+/* The farm screen's look (18 Oct 2026, the owner: cleaner, more modern and more like a game than a web page). Loaded last, after
+   dialog-shell.css. One chunky HUD button for every button on the farm (the computer's side tools, the top bar's icons, the tool
+   dock and the camera): cream, a thick soft outline and an edge underneath that sinks when pressed, the game's own picture at about
+   three quarters of the box, and its name on a small cream plate over its bottom edge. The chosen one has a gold ring. The phone's
+   bottom bar (My farm to More) stays flat and clean, as it was: a picture with its name under it on the bar's own background, no
+   box, outline or edge per item (the owner, 18 Oct 2026: "op die schaduw na in de My farm tot aan More knoppen ... Daar moet het
+   clean blijven"); only its badges are the new red ones. Positions and what every button does stay with the screens' own sheets
+   and game.js. */
+:root{--hud-edge:#e6dccb;--hud-line:#ddd2c7}
+
+/* ---- The HUD button ---- */
+.topbar .resources>.icon-button,
+.scene-controls .icon-button,
+#event-rail>button{
+ background:var(--btn-icon);border:2px solid var(--btn-icon-line);border-radius:14px;box-shadow:0 3px 0 var(--btn-icon-edge);
+ transition:transform .1s,box-shadow .1s,background .12s
+}
+.topbar .resources>.icon-button:active:not(:disabled),
+.scene-controls .icon-button:active:not(:disabled),
+#event-rail>button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
+.topbar .resources>.icon-button:hover,.scene-controls .icon-button:hover{background:var(--btn-icon-hover)}
+/* A badge on a HUD button: "something waits for you", one red round badge. */
+.side-tools .side-tool em,#event-rail em,#family-dot,#pass-dot,#chat-dot:not(:empty){background:var(--badge-wait);color:var(--badge-wait-text);border:2px solid #fffdf5;border-radius:999px;font:700 11px/1 'DM Sans',sans-serif;font-style:normal;box-shadow:0 1px 2px #3b322040}
+
+/* ---- The top bar ---- */
+/* The level: a big star with the number, the bar gold. */
+.level-card .level-caption{display:none}
+.level-card{border:2px solid var(--hud-line);border-radius:16px;box-shadow:0 3px 0 var(--hud-edge)}
+.level-card progress,#xp-bar{height:10px;border:0;border-radius:999px;background:#efe6d8;overflow:hidden;-webkit-appearance:none;appearance:none;accent-color:var(--gold-ring)}
+#xp-bar::-webkit-progress-bar{background:#efe6d8;border-radius:999px}
+#xp-bar::-webkit-progress-value{background:linear-gradient(#f2c95c,#e5b64a);border-radius:999px}
+#xp-bar::-moz-progress-bar{background:linear-gradient(#f2c95c,#e5b64a);border-radius:999px}
+/* Coins and diamonds: the picture and a big number; the word stays the name for a screen reader. */
+.resources .coin-counter,.resources .diamond-counter{border-width:2px;box-shadow:0 3px 0 var(--hud-edge)}
+.resources .diamond-counter{box-shadow:0 3px 0 #b8d6e6}
+.resources .resource-label{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+/* The "+" on the diamonds: a round light-blue cap at the end of the pill (the whole pill stays the button). */
+.diamond-counter>span[aria-hidden="true"]:last-child{display:grid;place-items:center;width:28px;height:28px;min-width:28px;border-radius:50%;background:var(--btn-diamond);border:2px solid var(--btn-diamond-line);box-shadow:0 2px 0 var(--btn-diamond-edge);color:var(--btn-diamond-text);font:700 18px/1 'DM Sans',sans-serif;margin-inline-start:6px}
+/* The active boosts: one HUD pill. */
+#active-boosts{background:var(--btn-icon);border:2px solid var(--btn-icon-line);border-radius:999px;box-shadow:0 3px 0 var(--btn-icon-edge);color:var(--ink);font-weight:700}
+#active-boosts.beginner-only{background:#eef8e9;border-color:#bcd9ab}
+
+/* ---- The tool dock: four tool buttons and the crop ---- */
+.tool-dock{border:2px solid var(--hud-line)!important;box-shadow:0 4px 0 var(--hud-edge),0 10px 26px #3b32201f!important}
+.tool-dock .tools .tool{border:2px solid transparent;border-radius:14px}
+.tool-dock .tools .tool.active{background:#fffaf0;border-color:var(--btn-icon-line);box-shadow:0 0 0 2px var(--gold-ring),0 3px 0 var(--btn-icon-edge)}
+.tool-dock .tools .tool.active span{color:var(--ink)}
+/* The keys 1-4 only while the mouse is on a tool or it has keyboard focus. */
+.tool-dock .tools .tool kbd{opacity:0;transition:opacity .12s}
+.tool-dock .tools .tool:is(:hover,:focus-visible) kbd{opacity:1}
+.tool-dock .seed#selected-crop-button{border:2px solid var(--btn-second-line);background:var(--btn-second);box-shadow:0 3px 0 var(--btn-second-edge)}
+.tool-dock .seed#selected-crop-button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-second-edge)}
+
+/* ---- The camera: one HUD button each, the game's pictures where it has one ---- */
+.scene-controls{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;gap:8px!important}
+.scene-controls .icon-button{display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;color:var(--btn-icon-text)}
+.scene-controls .icon-button>.game-art{width:30px;height:30px;object-fit:contain}
+.scene-controls .icon-button>svg{width:22px;height:22px;stroke-width:2.6}
+.scene-controls .icon-button[aria-pressed="true"]{background:#fffaf0;box-shadow:0 0 0 2px var(--gold-ring),0 3px 0 var(--btn-icon-edge)}
+
+/* ---- The next goal and the beginner guide: one ribbon look ---- */
+.next-goal-card,.beginner-card{border:2px solid var(--hud-line)!important;border-radius:18px!important;box-shadow:0 4px 0 var(--hud-edge),0 10px 26px #3b32201a!important;background:#fffdf5!important;overflow:visible!important}
+.next-goal-card .quest-heading,.beginner-card .quest-heading{background:none;border-bottom:0;border-radius:16px 16px 0 0}
+.next-goal-card .quest-heading small,.beginner-card .quest-heading small{letter-spacing:0;text-transform:none;font-weight:700}
+.next-goal-card .next-goal-art{margin-inline-start:-6px}
+.next-goal-card .next-goal-art,.next-goal-card .next-goal-art>.game-art{width:46px;height:46px}
+.next-goal-card .next-goal-art>.game-art{filter:drop-shadow(0 2px 0 #e6dccb)}
+.next-goal-card #next-goal-title{font:700 18px/1.2 'Outfit',sans-serif;color:var(--ink)}
+.beginner-mobile,.next-goal-mobile{border:2px solid var(--hud-line)!important;background:#fffdf5!important;box-shadow:0 3px 0 var(--hud-edge)!important;color:var(--ink)!important}
+.beginner-mobile>.game-art:first-child,.next-goal-mobile>.game-art:first-child{transform:scale(1.25)}
+#beginner-mobile-copy,#next-goal-mobile-copy{font-size:14px!important;color:var(--ink)}
+/* At 14 px a guide step ran out of the phone's line ("Start a batch in the Chick…"): it takes a second line when it needs one. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ #beginner-mobile-copy{white-space:normal;line-height:1.25;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+}
+
+/* ---- The reminder nudge and the coach: cream, a gold ring, house ink ---- */
+.coach-bubble,.coach-tip{background:#fbf8f3!important;color:var(--ink)!important;border:2px solid var(--gold-ring)!important;box-shadow:0 3px 0 #d8b45c,0 10px 24px #3b322026!important}
+
+/* ---- Computers: the rail of side tools with name-plates, More at its end; the rest of the farm screen ---- */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ /* The side tools are HUD buttons on a computer; the chosen one has a gold ring. */
+ .side-tools .side-tool>span{background:var(--btn-icon);border:2px solid var(--btn-icon-line);border-radius:14px;box-shadow:0 3px 0 var(--btn-icon-edge);transition:transform .1s,box-shadow .1s,background .12s}
+ .side-tools .side-tool:active>span{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
+ .side-tools .side-tool:hover>span{background:var(--btn-icon-hover)}
+ .side-tools .side-tool.active>span{background:#fffaf0;border-color:var(--btn-icon-line);box-shadow:0 0 0 2px var(--gold-ring),0 3px 0 var(--btn-icon-edge);color:inherit}
+ /* The name on a cream plate over the button's bottom edge (centred: RTL reads the same). */
+ .side-tools .side-tool b,.side-tools .side-tool.active b{position:relative;z-index:1;margin-top:-11px;padding:2px 7px;border:1px solid #e6ddd1;border-radius:8px;background:#fbf8f3;color:#453e28;font:700 12px/1.25 'DM Sans',sans-serif;text-shadow:none;white-space:nowrap;max-width:84px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 0 #e6dccb}
+ .side-tools{row-gap:16px!important}
+ /* The rail keeps what you use most; the rest is one tap away in More (its tiles open the same windows). */
+ .side-tools #more-button{display:flex;order:99}
+ .side-tools #invite-button,.side-tools #leaderboard-button,.side-tools #boosts-button{display:none}
+ .topbar .resources #sound-button,.topbar .resources #feedback-button,.topbar .resources #help-button{display:none}
+ /* The logo in the corner goes; the farm map stays. */
+ .topbar .brand>img{display:none!important}
+ /* The level card: a bigger star, the number in it, the bar gold. */
+ .level-card .level-star{width:52px!important;height:52px!important;min-width:52px!important}
+ .level-card .level-star>.game-art{width:58px;height:58px;inset:-3px}
+ .level-card .level-star>b{font-size:20px!important}
+ .topbar .resources>.icon-button{width:48px;height:48px}
+ .topbar .resources>.icon-button>.game-art{width:36px;height:36px}
+ /* The camera row: the pictures. */
+ .scene-controls{bottom:20px}
+}
+/* A computer window under 1100 px wide: the tool dock reaches the camera row's corner, so the row sits just above the dock (desktop-hud.css
+   did this up to 1040 px for the old, smaller buttons; at 1000x620 the crop button covered the fields button). */
+@media(min-width:901px) and (max-width:1099px) and (min-height:551px),(min-width:901px) and (max-width:1099px) and (pointer:fine){
+ .scene-controls{bottom:124px}
+}
+
+/* ---- Phones: the bottom bar keeps its own flat look (mobile.css); the rest of the farm screen ---- */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ #active-boosts{min-height:36px;max-height:none;padding:4px 12px}
+ /* Toasts sit just above the tool dock, clear of the top bar and the goal. */
+ .toast:not(.medal-toast){top:auto;bottom:calc(var(--mobile-bottom) + 12px)}
+ /* The event rail (public/event-rail.js, the owner's question b of 18 Oct 2026): at the right-hand edge of the farm under the top bar,
+    clear of the goal line and the boosts pill. The special offer's tile while it runs; Today, Events and the Halloween Pass as round HUD
+    buttons only while something waits there (is-waiting: their badge shows), in this order. Their names stay for a screen reader. */
+ #event-rail{position:fixed;z-index:12;inset-inline-end:max(10px,env(safe-area-inset-right));top:calc(var(--mobile-top) + 94px);display:flex;flex-direction:column;gap:12px;align-items:center;width:58px}
+ #event-rail #offer-button{position:static;order:1;width:58px;min-height:0;padding:4px 4px 6px;border:2px solid #e0a13a;border-radius:16px;background:#fff3d6;box-shadow:0 3px 0 #c98f2e,0 8px 18px #3a2a1026}
+ #event-rail #offer-button img{width:40px;height:40px}
+ #event-rail #offer-button span{display:none}
+ #event-rail #offer-button small{margin-top:-8px;border:2px solid #fffdf5}
+ #event-rail>:is(#today-button,#events-button,#pass-button){display:none}
+ #event-rail>:is(#today-button,#events-button,#pass-button).is-waiting:not([hidden]){position:relative;display:grid;place-items:center;width:52px;height:52px;min-width:52px;min-height:52px;margin:0;padding:0;border-radius:50%;box-shadow:0 3px 0 var(--btn-icon-edge),0 8px 18px #3a2a1026}
+ #event-rail>#today-button{order:2}#event-rail>#events-button{order:3}#event-rail>#pass-button{order:4}
+ #event-rail>.side-tool>span{position:static;display:grid;place-items:center;width:auto;height:auto;border:0;border-radius:0;background:none;box-shadow:none}
+ #event-rail>.side-tool>span>:is(.game-art,svg),#event-rail>#pass-button>.game-art{width:36px;height:36px}
+ #event-rail>.side-tool>b{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+ #event-rail em,#event-rail #pass-dot{position:absolute;top:-4px;inset-inline-end:-4px;display:grid;place-items:center;box-sizing:border-box;min-width:21px;height:21px;padding:0 5px;border-radius:999px}
+}
+#event-rail:empty{display:none}
+/* A phone on its side: the column would run into the tools, so the rail is a row under the boosts pill, the offer at the edge. */
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){
+ #event-rail{flex-direction:row-reverse;align-items:flex-start;width:auto;gap:10px;top:calc(var(--mobile-top) + 92px)}
+ #event-rail>:is(#today-button,#events-button,#pass-button).is-waiting:not([hidden]){width:48px;height:48px;min-width:48px;min-height:48px}
+}
+
+/* ---- Small computer windows: the rail stays icon-only with the name beside it under the mouse (desktop-hud.css) ---- */
+@media(min-width:901px) and (max-height:700px) and (min-height:551px),(min-width:901px) and (max-height:700px) and (pointer:fine){
+ .side-tools .side-tool b,.side-tools .side-tool.active b{margin-top:0;max-width:none}
+ @media(hover:hover){
+  .side-tools .side-tool b,.side-tools .side-tool.active b{position:absolute;padding:5px 10px;border:1px solid #dbd1c6;border-radius:10px;box-shadow:0 3px 8px #44372418}
+ }
+ .level-card .level-star{width:44px!important;height:44px!important;min-width:44px!important}
+ .next-goal-card .next-goal-art,.next-goal-card .next-goal-art>.game-art{width:32px;height:32px}
+ .next-goal-card .next-goal-art{margin-inline-start:0}
+ .topbar .resources>.icon-button{width:42px;height:42px}
+ .topbar .resources>.icon-button>.game-art{width:30px;height:30px}
+}
+@media(prefers-reduced-motion:reduce){
+ .side-tools .side-tool>span,.topbar .resources>.icon-button,.scene-controls .icon-button,#event-rail>button{transition:none}
+}
+/* The phone's goal line: a quest that is ready has its own compact green Claim at the end of the line (public/beginner-ui.js), the card's
+   Claim; the line itself still opens Quests at that quest. Hidden on computers, which have the card. */
+.next-goal-claim-mobile{display:none}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ #game.goal-claim .next-goal-claim-mobile:not([hidden]){display:flex;align-items:center;justify-content:center;position:absolute;z-index:7;top:calc(var(--mobile-top) + 9px);inset-inline-end:20px;min-height:36px!important;height:36px;padding:0 16px;font-size:14px!important;border-radius:12px}
+ #game.goal-claim .next-goal-mobile{padding-inline-end:104px}
+ #game.goal-claim .next-goal-mobile>svg:last-child,#game.goal-claim .next-goal-mobile>.game-art:last-child{display:none}
+}
+/* Computers: the toast just under the top bar, clear of the level card; the goal card's kind of goal ("QUEST READY") stays its name for a
+   screen reader, the card says it. */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ .toast:not(.medal-toast){top:124px}
+ .next-goal-card #next-goal-kind{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+}
+/* The coach's pointer in the same cream and gold as its bubble. */
+.coach-bubble::after{border-top-color:var(--gold-ring)}
+.coach-bubble.is-below::after{border-top-color:transparent;border-bottom-color:var(--gold-ring)}
+.coach-bubble.is-side-right::after{border-top-color:transparent;border-right-color:var(--gold-ring)}
+.coach-bubble.is-side-left::after{border-top-color:transparent;border-left-color:var(--gold-ring)}
+/* The reminder nudge: on a phone it rests on the bottom bar, the full width; on a computer just above the tool dock, never on it. */
+.reminder-nudge{border:2px solid var(--hud-line)!important;box-shadow:0 4px 0 var(--hud-edge),0 12px 28px #3b322026!important}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .reminder-nudge{left:0;transform:none;width:100%;bottom:var(--mobile-nav);border-radius:18px 18px 0 0!important;border-bottom:0!important}
+}
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ .reminder-nudge{bottom:124px}
+}

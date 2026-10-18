@@ -14,12 +14,15 @@ test('on a computer the windows with a long list are wider, with the list in two
 test('on a phone the windows waste less room: title-only headings, a short Family heading and compact market rows',()=>{
  const css=read('public/mobile-windows.css');
  assert.match(css,/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{/,'the same phones as mobile.css');
- assert.match(css,/\.game-dialog \.dialog-heading \.eyebrow\{display:none\}/);
- assert.match(css,/#family-dialog \.family-heading h2\{[^}]*white-space:nowrap;overflow:hidden;text-overflow:ellipsis\}/,'the family name stays on one line');
- assert.match(css,/#market-items \.market-card \.market-sale-controls\{display:none;/);
- assert.match(css,/#market-items \.market-card\.is-open \.market-sale-controls\{display:block\}/);
+ // 18 Oct 2026 (the owner: cleaner windows, on computers and phones): the windows have no small line above their title at all (the
+ // window shell, dialog-shell.css), the family's full name shows in two rows of heading (family.css), and a computer's market has the
+ // phone's rows: Sell all, and Pick amount for the slider.
+ assert.doesNotMatch(read('public/farm.html'),/class="eyebrow"[^>]*>[^<]*<\/span><h2/);
+ assert.match(read('public/family.css'),/#family-dialog \.family-heading h2\{white-space:normal;/,'the family\'s full name');
+ assert.match(css,/^#market-items \.market-card \.market-sale-controls\{display:none;/m,'every size');
+ assert.match(css,/^#market-items \.market-card\.is-open \.market-sale-controls\{display:block\}/m);
  assert.match(css,/\.wiki-quick button\{min-height:40px/);
- assert.match(css,/^\.market-quick,\.market-kept\{display:none\}/m,'a computer keeps the slider and both buttons');
+ assert.match(css,/#market-items \.market-card:not\(:has\(\[data-sell-amount\]\)\) \.market-sale-controls\{display:block\}/,'a row of one keeps its buttons open on a computer');
 });
 
 test('a market row on a phone has Sell all and a Pick amount button that opens the slider',()=>{

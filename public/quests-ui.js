@@ -64,7 +64,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
  const dialog=doc.getElementById('tasks-dialog'),list=doc.getElementById('task-list');
  let showDone=false,world=village?'village':'farm';
  const toolbar=doc.createElement('div');toolbar.className='quest-toolbar';
- toolbar.innerHTML='<button type="button" class="quest-today-line" data-quest-today hidden></button><div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true">Farm</button><button data-quest-world="village" aria-pressed="false">Village</button></div><div id="quest-summary" role="status"></div>';
+ toolbar.innerHTML='<button type="button" class="quest-today-line" data-quest-today hidden></button><div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true"><i data-game-art="farm"></i><span>Farm</span></button><button data-quest-world="village" aria-pressed="false"><i data-game-art="village-badge"></i><span>Village</span></button></div><div id="quest-summary" role="status"></div>';
  list.before(toolbar);
  function row({id,quest:q,value},group){
   const xp=questXp(q),rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;

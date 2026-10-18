@@ -91,7 +91,7 @@ test('the game: the chip, the toast at the bottom, the "!" on the way to Medals 
  assert.match(html,/<section class="bottom-hud" aria-label="Tools and seeds">\n      <div id="medal-toast" class="toast medal-toast" role="status" aria-live="polite"><\/div>/);
  // Under On the farm, after Boosts (level 10) since Medals moved to level 14: the menu lists what is gated in the order it opens.
  assert.match(html,/<button data-menu-action="boosts-button">[^\n]*\n    <button data-menu-utility="mastery"><i data-lucide="medal"><\/i><span><strong>Medals<\/strong><small class="menu-hint">Rewards for every crop<\/small><\/span><\/button>/);
- assert.match(html,/<button data-estate-tab="mastery" aria-pressed="false">Medals<b class="estate-tab-dot" hidden>!<\/b><\/button>/);
+ assert.match(html,/<button data-estate-tab="mastery" aria-pressed="false"><i data-game-art="medal-gold"><\/i><span>Medals<\/span><b class="estate-tab-dot badge-wait" hidden>!<\/b><\/button>/);
  assert.match(growth,/const medals=featureUnlocked\(state,'mastery'\)&&medalsWaiting\(state\)\.length>0;/);
  assert.match(growth,/\[data-menu-utility="mastery"\]'\)\?\.classList\.toggle\('has-dot',medals\)/);
  assert.match(growth,/tabDot\.hidden=!medals;/);

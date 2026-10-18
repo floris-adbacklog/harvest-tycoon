@@ -20,17 +20,17 @@ export const feedbackProblem=error=>{const message=String(error?.message??'');re
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 
 export function createFeedback({doc=globalThis.document,chat=()=>{try{return globalThis.window?.parent?.harvestBridge?.chat??null;}catch{return null;}},level=()=>null,agent=()=>globalThis.navigator?.userAgent??'',language=chosenLanguage}={}){
- const dialog=doc.createElement('dialog');dialog.id='feedback-dialog';dialog.className='game-dialog feedback-dialog';dialog.setAttribute('aria-labelledby','feedback-title');doc.body.append(dialog);
+ const dialog=doc.createElement('dialog');dialog.id='feedback-dialog';dialog.className='game-dialog feedback-dialog is-card is-s';dialog.setAttribute('aria-labelledby','feedback-title');doc.body.append(dialog);
  let kind='feedback',busy=false,sent=false,message='',draft='';
  const close='<button type="button" class="icon-button close-dialog feedback-close" data-feedback-close aria-label="Close"><i data-lucide="x"></i></button>';
  function render(){
   if(sent){
-   dialog.innerHTML=`${close}${art('feedback')}<p class="eyebrow">WE READ EVERY MESSAGE</p><h2 id="feedback-title">Thank you!</h2><p>Your message is with the Harvest Tycoon team.</p><button type="button" class="primary-button" data-feedback-done>Close</button>`;
+   dialog.innerHTML=`<div class="dialog-heading">${art('feedback','dialog-badge')}<div class="dialog-titles"><h2 id="feedback-title">Thank you!</h2></div>${close}</div><p>Your message is with the Harvest Tycoon team.</p><button type="button" class="primary-button" data-feedback-done>Close</button>`;
   }else{
    // Copy link beside the title for the staff (6 Oct 2026, settings-nav.js addFeedbackCopyLink): this window's link, for the chat or News.
    const copy=dialog.dataset.copyLink==='on'?`<button type="button" class="feedback-copy" data-feedback-copy title="Copy link" aria-label="Copy link">${WIKI_COPY_ICON}<span class="feedback-copied" aria-live="polite"></span></button>`:'';
-   dialog.innerHTML=`${close}${art('feedback')}<p class="eyebrow">WE READ EVERY MESSAGE</p><h2 id="feedback-title"><span>Feedback</span>${copy}</h2>`
-    +`<div class="feedback-kinds" role="group" aria-label="What is it about?">${[['feedback','Feedback'],['bug','Report a bug'],['feature','Request a feature']].map(([key,label])=>`<button type="button" data-feedback-kind="${key}" aria-pressed="${kind===key}">${label}</button>`).join('')}</div>`
+   dialog.innerHTML=`<div class="dialog-heading">${art('feedback','dialog-badge')}<div class="dialog-titles"><h2 id="feedback-title"><span>Feedback</span>${copy}</h2></div>${close}</div>`
+    +`<div class="pill-menu feedback-kind-menu"><button type="button" class="pill-menu-toggle" aria-controls="feedback-kind-list" aria-expanded="false"><span class="pill-menu-label">What is it about?</span><b data-pill-current>${{feedback:'Feedback',bug:'Report a bug',feature:'Request a feature'}[kind]}</b></button><div id="feedback-kind-list" class="pill-menu-list feedback-kinds" role="group" aria-label="What is it about?" hidden>${[['feedback','Feedback'],['bug','Report a bug'],['feature','Request a feature']].map(([key,label])=>`<button type="button" data-feedback-kind="${key}" aria-pressed="${kind===key}">${label}</button>`).join('')}</div></div>`
     +`<form class="feedback-form" data-feedback-form><textarea data-feedback-text maxlength="${FEEDBACK_MAX}" rows="5" placeholder="${HINTS[kind]}" aria-label="Your message"></textarea>`
     +`<p class="feedback-note">With your message we send your farmer name, level, device and language.</p><button type="submit" class="primary-button" ${busy?'disabled':''}>Send</button></form>`
     +`<p class="feedback-status" role="status">${esc(message)}</p>`;

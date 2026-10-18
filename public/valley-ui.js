@@ -1,6 +1,7 @@
 import {VALLEY_CUSTOMERS,VALLEY_PREMIUM,valleyRestock,RANCH_HERDS,ranchSpeedup,ranchChangeCost,featureUnlocked,featureUnlockHint,buildingUnlocked,normalizeFarm,marketValue,formatDuration,BUILDINGS,RECIPES,ITEMS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {setDialogBadge} from './dialog-shell.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const CHIPS={coins:n=>`<b>${art('coins')}${number(n)}</b>`,xp:n=>`<b class="is-xp">${art('xp')}${number(n)} XP</b>`};
@@ -27,7 +28,7 @@ export function createValleyUI({state,runAction,onChange,notify,itemList}){
   clearTimeout(timer);
   const market=view==='valleymarket';
   $('valley-eyebrow').textContent=market?'AT THE EDGE OF THE VALLEY':'ONE HERD, A QUARTER FASTER';
-  $('valley-title').textContent=market?'Valley Market':'The Ranch';
+  $('valley-title').textContent=market?'Valley Market':'The Ranch';setDialogBadge($('valley-dialog'),market?'valley-market':'ranch');
   $('valley-content').innerHTML=market?marketMarkup():ranchMarkup();
   if(market)bindMarket();else bindRanch();
   refreshArt();shown=signature();

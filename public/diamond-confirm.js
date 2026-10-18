@@ -3,10 +3,10 @@ import {art} from './visual-icons.js';
 // keep, and the usual buttons (Keep diamonds is focused, so Enter never spends by accident). Resolves to true only on Spend.
 export function confirmDiamondSpend({title,cost,description,picture='diamonds',balance,note='',warning=''}){
  return new Promise(resolve=>{
-  const dialog=document.createElement('dialog');dialog.className='diamond-confirm';
+  const dialog=document.createElement('dialog');dialog.className='diamond-confirm is-card is-s';
   dialog.setAttribute('aria-labelledby','diamond-confirm-title');dialog.setAttribute('aria-describedby','diamond-confirm-description');
   const amount=cost.toLocaleString('en-US'),left=Number.isFinite(balance)?balance-cost:null;
-  dialog.innerHTML=`<div class="diamond-confirm-art">${art(picture)}</div><h2 id="diamond-confirm-title"></h2><p id="diamond-confirm-description"></p>${warning?'<p class="diamond-confirm-warning" id="diamond-confirm-warning"></p>':''}${note?'<p class="diamond-confirm-note" id="diamond-confirm-note"></p>':''}<div class="diamond-confirm-cost"><strong>${art('diamonds')}${amount}</strong>${left!==null&&left>=0?`<small>You keep ${left.toLocaleString('en-US')} diamonds</small>`:''}</div><div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel autofocus>Keep diamonds</button><button type="button" class="primary-button confirm-spend" data-confirm>Spend ${amount}</button></div>`;
+  dialog.innerHTML=`<div class="diamond-confirm-art">${art(picture)}</div><h2 id="diamond-confirm-title"></h2><p id="diamond-confirm-description"></p>${warning?'<p class="diamond-confirm-warning" id="diamond-confirm-warning"></p>':''}${note?'<p class="diamond-confirm-note" id="diamond-confirm-note"></p>':''}${left!==null&&left>=0?`<div class="diamond-confirm-cost"><small>You keep ${left.toLocaleString('en-US')} diamonds</small></div>`:''}<div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel autofocus>Keep diamonds</button><button type="button" class="primary-button confirm-spend is-diamond" data-confirm>${art('diamonds')}<span>Spend ${amount}</span></button></div>`;
   dialog.querySelector('h2').textContent=title;dialog.querySelector('p').textContent=description;
   // A note: what to know before spending, in its own line (the night shift: once it starts it cannot be stopped).
   // A warning: what makes it a poor buy right now (the night shift: fields that stay full), above the note in an amber box.

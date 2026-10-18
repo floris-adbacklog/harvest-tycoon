@@ -40,14 +40,26 @@ function home(){
   results.innerHTML=hits.length?`<ul>${hits.map(h=>`<li><a href="#wiki-${h.topic}" data-wiki-topic="${h.topic}"${h.anchor?` data-wiki-anchor="${h.anchor}"`:''}>${art(h.art)}<strong>${esc(h.label)}</strong><span>${esc(h.topicTitle)}</span></a></li>`).join('')}</ul>`:`<p>${ownLine(`Nothing found for “${q}”. Try a crop, a building or a word like “diamonds”.`,[q])}</p>`;
   refreshArt();
  });
- showBack(el);refreshArt();
+ showBack(el);headerBack(el,null);refreshArt();
+}
+
+// The window's heading (18 Oct 2026, the window shell): on a topic its title, and the way back to all topics as the round back button in
+// front of it; on the home page How to play again. Only in the game's window.
+function headerBack(el,title){
+ const dialog=dialogOf(),heading=dialog?.querySelector('.dialog-heading');if(!heading)return;
+ heading.querySelector('.wiki-back')?.remove();
+ const h=dialog.querySelector('#help-title');
+ if(title==null){if(h)h.textContent='How to play';return;}
+ const back=el?.querySelector('.wiki-back');
+ if(back){back.classList.add('back-round');back.onclick=event=>{event.preventDefault();home();scrollTop();};heading.prepend(back);}
+ if(h)h.textContent=title;
 }
 
 function topic(id,anchor=''){
  const el=root(),article=wikiArticle(id,ctx());if(!el||!article)return home();
  view=id;
  el.innerHTML=`<div class="wiki" data-wiki-view="${id}"><button type="button" class="small-button wiki-back" data-wiki-home>‹ All topics</button>${wikiHero(article)}${wikiJump(article)}<article class="wiki-article">${article.html}</article><section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t,ctx())).join('')}</div></section></div>`;
- refreshArt();stickyOffset();showInstall(el);fadeJump(el);addCopy(el,id);showBack(el);
+ refreshArt();stickyOffset();showInstall(el);fadeJump(el);addCopy(el,id);showBack(el);headerBack(el,article.title);
  const target=anchor&&reveal(anchor);
  if(target)land(target);else scrollTop();
 }

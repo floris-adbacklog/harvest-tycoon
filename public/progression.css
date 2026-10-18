@@ -1,12 +1,12 @@
 .future-unlocks{grid-column:1/-1;min-width:0;margin-top:12px;border:1px solid #dfd7c6;border-radius:16px;background:#f5f1e6;padding:14px}.future-unlocks summary{cursor:pointer;min-height:30px;font-weight:700;color:#5d6446}.future-unlocks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding-top:14px}.future-unlocks .crop-card:disabled{opacity:.8}.future-unlocks .crop-use{white-space:normal;line-height:1.5}.unlock-roadmap{margin:22px 0;padding:18px;border:1px solid #dce0cc;border-radius:16px;background:#f0f3e7}.unlock-roadmap>p{font-size:13px;line-height:1.5;color:#737a63}.unlock-roadmap>div{display:grid;gap:4px;padding:12px 0;border-bottom:1px solid #dce0cc}.unlock-roadmap>div:last-child{border:0}.unlock-roadmap span{font-size:13px;color:#737a63}
-#level-up-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto}#level-up-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}.level-up-art{display:block;width:120px;height:120px;object-fit:contain;margin:0 auto 16px}.level-up-close{position:absolute;inset-inline-end:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#ede9dc;font-size:28px;color:#49563c}#level-up-dialog h2{font:700 34px 'Outfit',sans-serif;margin:8px 0}#level-up-dialog p{font-size:14px;line-height:1.6}#level-up-dialog ul{list-style:none;padding:0;margin:20px 0;display:grid;gap:8px}#level-up-dialog li{padding:12px;border-radius:12px;background:#eef2df;display:grid;gap:4px}#level-up-dialog li span{font-size:12px;color:#6d785d}.level-up-note{color:#7c714e}.level-up-done{width:100%;justify-content:center;min-height:48px}
+#level-up-dialog{text-align:center}.level-up-art{display:block;width:120px;height:120px;object-fit:contain;margin:0 auto 16px}.level-up-close{position:absolute;inset-inline-end:12px;top:12px;width:44px;height:44px;border:0;border-radius:14px;background:#ede9dc;font-size:28px;color:#49563c}#level-up-dialog h2{font:700 34px 'Outfit',sans-serif;margin:8px 0}#level-up-dialog p{font-size:14px;line-height:1.6}#level-up-dialog ul{list-style:none;padding:0;margin:20px 0;display:grid;gap:8px}#level-up-dialog li{padding:12px;border-radius:12px;background:#eef2df;display:grid;gap:4px}#level-up-dialog li span{font-size:12px;color:#6d785d}.level-up-note{color:#7c714e}.level-up-done{width:100%;justify-content:center;min-height:48px}
 [hidden]{display:none!important}
 
 .level-up-rewards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:20px 0 32px}.level-up-rewards strong{padding:12px 16px;background:#f5e5ac;border-radius:14px}.level-up-rewards strong+strong{background:#dfeff7;color:#397391}
 
 /* A gift from the admin (public/player-profiles.js). Same celebration look as level-up, its own small dialog
    since the content shape (amounts + an optional note, no level/unlocks) does not fit that one. */
-#gift-dialog{box-sizing:border-box;width:min(400px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
+#gift-dialog{text-align:center}
 #gift-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 #gift-dialog h2{font:700 32px 'Outfit',sans-serif;margin:6px 0}#gift-dialog p{font-size:14px;line-height:1.6}
 .gift-icon{display:flex;align-items:center;justify-content:center;width:88px;height:88px;margin:0 auto 10px;border-radius:50%;background:radial-gradient(circle,#fff6dc,#f9e5a8)}
@@ -112,7 +112,7 @@
 
 /* A whole collection, done (17 Oct 2026, public/collection-cheer.js): the Seed Lab's 20 heirlooms, the pond's and the lake's fish book. The
    level-up card's look; flex, never grid, for the dialog itself (a grid dialog grew to its max-height in Safari, 29 Sep 2026). */
-#collection-cheer{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
+#collection-cheer{text-align:center}
 #collection-cheer[open]{display:flex;flex-direction:column;align-items:stretch}
 #collection-cheer::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 #collection-cheer .eyebrow{margin:0}
@@ -129,3 +129,11 @@
 #collection-cheer .gift-done{margin-top:20px}
 @media(max-width:360px){#collection-cheer{padding:24px 14px 18px}.collection-cheer-grid{max-width:calc(var(--cheer-columns,5)*50px)}.collection-cheer-grid>span{width:44px;height:44px}.collection-cheer-grid .game-art{width:36px;height:36px}}
 @media(prefers-reduced-motion:reduce){.collection-cheer-grid>span{animation:none}}
+/* The window shell (18 Oct 2026): the level big on the star medal; the rewards as their pictures and big numbers, nothing around them. */
+#level-up-dialog .level-up-medal{position:relative;width:max-content;margin:0 auto 4px}
+#level-up-dialog .level-up-medal>b{position:absolute;left:50%;top:52%;translate:-50% -50%;font:700 26px/1 'Outfit',sans-serif;color:#6b3f08;text-shadow:0 1px 0 #fff3c4,0 0 6px #fff3c4}
+#level-up-dialog .level-up-rewards{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+#level-up-dialog .level-up-rewards .reward-big{font-size:22px}
+#level-up-dialog .level-up-rewards .reward-coins.reward-big{color:#6b4f0f}
+#level-up-dialog .level-up-rewards .reward-diamonds.reward-big{color:#2f6a80}
+#level-up-dialog .level-up-rewards .reward-big>.game-art{width:34px;height:34px}

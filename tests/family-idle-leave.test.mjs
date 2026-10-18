@@ -157,7 +157,8 @@ test('Welcome back: one line with the family and the days, and Join again; nothi
  assert.match(row,/<strong translate="no">You left Bees &amp; &lt;Co&gt; after 31 days away\.<\/strong>/,'the family name as written, never the page\'s translation');assert.match(row,/data-rejoin-family>Join again<\/button>/);
  assert.match(row,/class="family-emblem"/,'the family\'s own emblem');
  const welcome=read('public/welcome-ui.js'),game=read('public/game.js'),api=read('supabase/functions/farm-api/index.ts');
- assert.match(welcome,/\$\{family\?\.rejoin\?welcomeFamilyRow\(summary\.family\):''\}<button class="primary-button welcome-back-go" data-continue>/,'inside the Welcome back card, no pop-up of its own');
+ // 18 Oct 2026: the way to the farm is the second button while today's gift waits to be collected (its Collect is the green one).
+ assert.match(welcome,/\$\{family\?\.rejoin\?welcomeFamilyRow\(summary\.family\):''\}<button class="\$\{gift\?\.offer\?'secondary-button':'primary-button'\} welcome-back-go" data-continue>/,'inside the Welcome back card, no pop-up of its own');
  assert.match(welcome,/try\{await family\.rejoin\(summary\.family\.familyId\);row\.classList\.add\('is-collected'\);rejoin\.remove\(\);row\.querySelector\('strong'\)\.textContent=t\('Welcome back to \{0\}!',summary\.family\.name\);\}/);
  assert.match(welcome,/catch\(error\)\{rejoin\.remove\(\);const strong=row\.querySelector\('strong'\);strong\.removeAttribute\('translate'\);strong\.textContent=error\?\.message\|\|'This family is unavailable or full\.';\}/,'the game\'s own English error, translated by the page');
  assert.match(game,/family:\{rejoin:familyId=>runAction\(\{type:'family_rejoin',familyId\}\)\}\}\);/);

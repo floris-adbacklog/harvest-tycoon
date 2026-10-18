@@ -23,6 +23,22 @@
  .building-label .building-pin>.game-art{width:26px;height:26px}
  .building-label strong{font-size:12.5px}
  .building-label .building-status.idle,.building-label .building-status.family{display:none}
+ /* Building names (16 Oct 2026 in a small window, where Windmill and Chicken Coop touched; 18 Oct 2026 in every computer window, the owner:
+    cleaner): where there is a mouse a building shows its picture only, the name in the farm's own tooltip while the mouse is on it
+    (game.js pointerTarget finds the label, the tooltip names the building) and in full while it has keyboard focus; its aria-label keeps
+    the name. Batches ready to collect keep their number on the picture. A touch screen this wide (a tablet) keeps its names. */
+ @media(hover:hover){
+  .building-label{gap:0;padding:3px;min-width:34px;min-height:34px;justify-content:center}
+  .building-label>span:nth-child(2){display:none}
+  .building-label:focus-visible{gap:6px;padding:4px 10px 4px 4px}
+  .building-label:focus-visible>span:nth-child(2){display:block}
+  .building-label[data-ready]:not([data-ready=""])::before{content:attr(data-ready);position:absolute;top:-7px;inset-inline-end:-7px;display:grid;place-items:center;box-sizing:border-box;min-width:18px;height:18px;padding:0 4px;border:2px solid #fffdf5;border-radius:8px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:700 10px/1 'DM Sans',sans-serif}
+ }
+ /* Field timers (game.js positionLabels): fields that stand together with the same crop and time are one label with how many; the
+    others step aside until the keyboard reaches one. In a small window since 16 Oct 2026, in every computer window since 18 Oct 2026
+    (the owner: cleaner; public/small-window.js computerWindow). */
+ .plot-label.is-grouped:not(:focus-visible){opacity:0}
+ .plot-timer-count{font-style:normal;color:#7c7164}
 }
 /* The logo, small in the bottom-left corner, on screens tall enough that it never meets the side tools. */
 @media(min-width:901px) and (min-height:760px){
@@ -39,13 +55,7 @@
  .beginner-card{max-height:calc(100dvh - 225px)}
 }}
 /* The Market's × stays in the window's top corner while its list scrolls (7 Oct 2026: after Show me scrolled down to Sell all it was
-   out of sight). Phones already keep the whole heading on top (mobile.css). */
-@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
- #market-dialog .dialog-heading{display:contents}
- #market-dialog .dialog-heading>div{float:inline-start;width:calc(100% - 60px);margin-bottom:16px}
- #market-dialog .dialog-heading>.close-dialog{float:inline-end;position:sticky;top:-16px;z-index:4;margin:11px 0 0}
- #market-dialog .dialog-heading+p{clear:both}
-}
+   out of sight). Since 18 Oct 2026 every window's heading stays on top (dialog-shell.css), the Market's too. */
 /* Windows with a long list (the market, the seed shop, a building's recipes, the day's challenges and orders) are wider
    on a computer, with the list in two columns and nearly the full screen height, so you see four crops instead of one
    without scrolling. Windows with text keep their reading width; phones and tablets keep the phone layout. */
@@ -105,10 +115,6 @@
  /* The map, smaller (a click on it still goes there: minimap.js measures the picture as it is shown). */
  .topbar .brand,.minimap{width:150px;height:90px}
  .minimap{border-radius:13px}
- /* Field timers (game.js positionLabels): fields that stand together with the same crop and time are one label with how many; the
-    others step aside until the keyboard reaches one. */
- .plot-label.is-grouped:not(:focus-visible){opacity:0}
- .plot-timer-count{font-style:normal;color:#7c7164}
  /* The Next goal card ("Packing Shed" showed through it, and it was big): narrower, with its title, the reward or the bar, and its
     button. */
  .next-goal-card{width:220px}
@@ -135,13 +141,7 @@
   .side-tools .side-tool b,.side-tools .side-tool.active b{position:absolute;inset-inline-start:calc(100% + 8px);top:50%;translate:0 -50%;max-width:none;overflow:visible;padding:5px 10px;border:1px solid #dbd1c6;border-radius:10px;background:#fffdf5;box-shadow:0 3px 8px #44372418;color:#4d4635;font-size:12px;letter-spacing:0;line-height:1.2;text-shadow:none;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
   .side-tools .side-tool:is(:hover,:focus-visible) b{opacity:1}
   .side-tools .side-tool em{min-width:17px;height:17px;font-size:9px;inset-inline-end:-6px;top:-5px}
-  /* Building names (Windmill and Chicken Coop touched): the picture only, the name in the farm's own tooltip while the mouse is on it
-     (game.js) and in full while it has focus; its aria-label keeps the name. Batches ready to collect keep their number on the picture. */
-  .building-label{gap:0;padding:3px;min-width:34px;min-height:34px;justify-content:center}
-  .building-label>span:nth-child(2){display:none}
-  .building-label:focus-visible{gap:6px;padding:4px 10px 4px 4px}
-  .building-label:focus-visible>span:nth-child(2){display:block}
-  .building-label[data-ready]:not([data-ready=""])::before{content:attr(data-ready);position:absolute;top:-7px;inset-inline-end:-7px;display:grid;place-items:center;box-sizing:border-box;min-width:18px;height:18px;padding:0 4px;border:2px solid #fffdf5;border-radius:8px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:700 10px/1 'DM Sans',sans-serif}
+  /* Building names: since 18 Oct 2026 the picture only in every computer window with a mouse (the computer block above). */
   /* The Next goal card: what to do shows while the mouse is on the card or it has focus, under its button, so the button never moves away
      from the mouse aiming at it (16 Oct 2026 review: it went 32 px down); the kind of goal while the mouse is on the card's heading. */
   #next-goal-body:not([hidden]){display:flex;flex-direction:column}

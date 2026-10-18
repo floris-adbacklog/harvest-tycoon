@@ -81,9 +81,10 @@ test('the admin gift form appears for the admin account who came with Edit, abov
  h.requests[0].resolve({playerProfile:{username:'Tony'}});await pending;await flush();
  const box=h.dialog.querySelector('#admin-grant');
  assert.equal(box.hidden,false);assert.match(box.innerHTML,/admin-grant-give/);
- // Real DOM order (the mock's querySelector does not track it): the static template places #admin-grant before the button.
+ // Real DOM order (the mock's querySelector does not track it). 18 Oct 2026: the way back is the round button in the window's heading (the
+ // window shell), so the gift form sits under the heading with the profile, never under a button at the foot.
  const full=readFileSync(new URL('../src/player-profiles.js',import.meta.url),'utf8');
- assert.ok(full.indexOf('id="admin-grant"')<full.indexOf('farmer-profile-back">Back to leaderboard'));
+ assert.ok(full.indexOf('<div class="dialog-heading"><button type="button" class="small-button farmer-profile-back back-round">Back to leaderboard</button>')<full.indexOf('id="admin-grant"'));
 });
 test('an empty gift is rejected locally: no confirm, no request',async()=>{
  const h=harness({admin:true}),pending=h.controller.open('one',{gift:true});

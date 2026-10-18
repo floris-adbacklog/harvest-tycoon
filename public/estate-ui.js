@@ -1,6 +1,7 @@
 import {VISITOR_DIAMONDS,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,HEIRLOOMS,LAB_FULL_BEDS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,heirloomFound,heirloomOpen,VISITORS,VISITOR_WAIT,VISITOR_STREAK_MAX,visitorStreakBonus,GIANT_TEND_MS,GIANT_TEND_KG,GIANT_FEED,GIANT_FEED_KG,GIANT_COINS_PER_KG,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,giantDiamonds,VALLEY_PROJECTS,valleyProjectLevel,valleyProjectBonus,IMPROVEMENTS,FAIR_CHAMPION_DIAMONDS,hasImprovement,EXPORT_DESTINATIONS,DEPOT_PREMIUM,depotRestock,featureUnlocked,featureUnlockHint,familyWeek,familyWeekStart,levelOf,normalizeFarm,marketValue,formatDuration,ITEMS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {setDialogBadge} from './dialog-shell.js';
 import {showCollectionCheer} from './collection-cheer.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
@@ -38,7 +39,7 @@ export function createEstateUI({state,runAction,onChange,notify,itemList}){
   clearTimeout(timer);
   normalizeFarm(state,farmNow());
   $('estate-place-eyebrow').textContent=VIEWS[view].eyebrow;
-  $('estate-place-title').textContent=VIEWS[view].title;
+  $('estate-place-title').textContent=VIEWS[view].title;setDialogBadge($('estate-place-dialog'),view);
   $('estate-place-content').innerHTML=view==='estateworkshop'?workshopMarkup():view==='tradedepot'?depotMarkup():view==='seedlab'?labMarkup():view==='visitors'?visitorsMarkup():view==='valleyprojects'?projectsMarkup():fairMarkup();
   bind();refreshArt();shown=signature();
   if($('estate-place-dialog').open)timer=setTimeout(()=>{if($('estate-place-dialog').open)render();},30000);

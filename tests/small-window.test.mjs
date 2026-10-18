@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
-import {SMALL_WINDOW,smallWindow,timerKey,timerGroups,fullScreenChoice,createFullScreenOffer,FULL_SCREEN_TIP,FULL_SCREEN_TIP_KEY,FULL_SCREEN_TIP_WAIT_MS} from '../public/small-window.js';
+import {SMALL_WINDOW,COMPUTER_WINDOW,smallWindow,timerKey,timerGroups,fullScreenChoice,createFullScreenOffer,FULL_SCREEN_TIP,FULL_SCREEN_TIP_KEY,FULL_SCREEN_TIP_WAIT_MS} from '../public/small-window.js';
 import {createMinimap} from '../public/minimap.js';
 import {CROPS,canWater} from '../public/farm-state.js';
 import {LANGUAGES} from '../public/languages.js';
@@ -24,6 +24,10 @@ function rules(css){
 }
 const HUD=read('public/desktop-hud.css'),SMALL=rules(HUD).filter(r=>r.media.startsWith(`@media${SMALL_WINDOW}`));
 const rule=selector=>SMALL.find(r=>r.selector===selector)?.body??'';
+// Every computer window (18 Oct 2026): desktop-hud.css's computer block, the same words as small-window.js COMPUTER_WINDOW.
+const COMPUTER=rules(HUD).filter(r=>r.media===`@media${COMPUTER_WINDOW}`),computerRule=selector=>COMPUTER.find(r=>r.selector===selector)?.body??'';
+// The same, only where there is a mouse (18 Oct 2026: the buildings' pictures without their names).
+const MOUSE=rules(HUD).filter(r=>r.media===`@media${COMPUTER_WINDOW} @media(hover:hover)`),mouseRule=selector=>MOUSE.find(r=>r.selector===selector)?.body??'';
 // A small window by the query's own words, for a window of width x height with a mouse (fine) or a touch screen (coarse).
 const matches=(query,{width,height,pointer='fine'})=>query.split(',').some(part=>part.split(' and ').every(cond=>{
  const [,name,value]=cond.trim().match(/^\(([a-z-]+):([a-z0-9]+)\)$/);const n=parseFloat(value);
@@ -45,7 +49,8 @@ test('one query for every small window: a computer window 700 px high or less, i
   assert.ok(!(matches(SMALL_WINDOW,{width,height,pointer})&&matches(PHONE,{width,height,pointer})),`${width}x${height} ${pointer}`);
  assert.equal(smallWindow.matches,false,'no window in node: never small');
  const game=read('public/game.js');
- assert.match(game,/\nimport \{ smallWindow,timerKey,timerGroups,createFullScreenOffer \} from '\.\/small-window\.js';\n/);
+ // 18 Oct 2026: the game asks computerWindow for the grouped timers (every computer window, a small one included).
+ assert.match(game,/\nimport \{ computerWindow,timerKey,timerGroups,createFullScreenOffer \} from '\.\/small-window\.js';\n/);
  assert.match(read('public/farm.html'),/<link rel="modulepreload" href="\/small-window\.js">/,'preloaded with the rest of the game');
 });
 
@@ -121,18 +126,22 @@ test('a field that asks for a tap keeps its own label: ready, extra care; an emp
  assert.deepEqual([new Set(owner.lead).size,owner.count[owner.lead[0]]],[1,16]);
 });
 
-test('the game groups the labels in a small window only, cheaply, and a grouped field\'s label steps aside but its field still works',()=>{
+// 18 Oct 2026 (the owner: cleaner): the same grouping in every computer window, the small ones included; a phone keeps its own pass.
+test('the game groups the labels in every computer window (a small one included), cheaply, and a grouped field\'s label steps aside but its field still works',()=>{
  const game=read('public/game.js'),body=game.slice(game.indexOf('function positionLabels(){'),game.indexOf('function pointerTarget('));
- assert.match(body,/const t=farmNow\(\),groups=smallWindow\.matches\?timerGroups\(plots\.map\(\(v,i\)=>v\.label\.hidden\?null:timerKey\(state\.plots\[i\],t\)\),state\.plots\.map\(p=>p\.readyAt\)\):null;/,'fields on screen, nothing measured');
+ assert.ok(matches(COMPUTER_WINDOW,{width:1000,height:620})&&matches(COMPUTER_WINDOW,{width:1440,height:900})&&!matches(COMPUTER_WINDOW,{width:390,height:844,pointer:'coarse'}),'small and big computer windows, never a phone');
+ for(const [width,height,pointer] of [[1000,620,'fine'],[960,540,'fine'],[1280,700,'fine']])assert.ok(!matches(SMALL_WINDOW,{width,height,pointer})||matches(COMPUTER_WINDOW,{width,height,pointer}),'every small window is a computer window');
+ assert.match(body,/const t=farmNow\(\),groups=computerWindow\.matches\?timerGroups\(plots\.map\(\(v,i\)=>v\.label\.hidden\?null:timerKey\(state\.plots\[i\],t\)\),state\.plots\.map\(p=>p\.readyAt\)\):null;/,'fields on screen, nothing measured');
  assert.match(body,/v\.grouped=Boolean\(groups\)&&groups\.lead\[i\]!==i;v\.label\.classList\.toggle\('is-grouped',v\.grouped\);/);
  assert.match(body,/if\(n>1\)\{const text=`\$\{n\} ×`;if\(!count\)\{count=document\.createElement\('i'\);count\.className='plot-timer-count';v\.label\.querySelector\('\.plot-timer-time'\)\?\.before\(count\);\}/,'"16 × 7h 33m", the crop\'s picture as before');
  assert.match(body,/if\(!groups&&!v\.grouped&&!v\.counted\)continue;/,'a phone or a big window touches no label');
  assert.equal(body.match(/getBoundingClientRect/g).length,1,'only the phone\'s own pass measures');
  assert.match(game,/\$\{p\.tended\?' tended':''\}\$\{v\.grouped\?' is-grouped':''\}`;/,'each tick keeps the label aside');
  assert.match(game,/if\(!state\.plots\[i\]\.crop\|\|v\.label\.hidden\|\|v\.grouped\)continue;/,'a tap on a grouped field is the field\'s own, never a hidden label\'s');
- assert.match(rule('.plot-label.is-grouped:not(:focus-visible)'),/^opacity:0$/,'still there for the keyboard');
- assert.match(rule('.plot-timer-count'),/font-style:normal/);
- assert.doesNotMatch(read('public/retention.css'),/is-grouped/,'only in a small window');
+ assert.match(computerRule('.plot-label.is-grouped:not(:focus-visible)'),/^opacity:0$/,'still there for the keyboard');
+ assert.match(computerRule('.plot-timer-count'),/font-style:normal/);
+ assert.doesNotMatch(read('public/retention.css'),/is-grouped/,'only on a computer');
+ assert.doesNotMatch(read('public/mobile.css'),/is-grouped/,'a phone keeps its own labels');
 });
 
 // 2. The Next goal card.
@@ -176,11 +185,17 @@ test('the Starter Pack\'s price stays inside its own chip at every size: the chi
  assert.match(read('public/pass.css'),/>:is\(#offer-chip,#starter-pack-chip\)\{width:36px;padding-inline:3px\}/,'the pass\'s narrow chip: a longer price wins over its width');
 });
 
-// 4. Building names.
-test('in a small window a building shows its picture; its name on hover (the farm\'s tooltip) and focus, and in its aria-label',()=>{
- assert.equal(rule('.building-label>span:nth-child(2)'),'display:none');
- assert.equal(rule('.building-label:focus-visible>span:nth-child(2)'),'display:block');
- assert.match(rule('.building-label'),/^gap:0;padding:3px;/);
+// 4. Building names. Since 18 Oct 2026 (the owner: cleaner) in every computer window with a mouse, not only in a small one.
+test('on a computer with a mouse a building shows its picture; its name on hover (the farm\'s tooltip) and focus, and in its aria-label',()=>{
+ assert.equal(mouseRule('.building-label>span:nth-child(2)'),'display:none');
+ assert.equal(mouseRule('.building-label:focus-visible>span:nth-child(2)'),'display:block');
+ assert.match(mouseRule('.building-label'),/^gap:0;padding:3px;/);
+ assert.ok(!SMALL.some(r=>r.selector.startsWith('.building-label')),'one rule for every computer window, the small ones included');
+ // A big window and a small one alike (and never a phone, which keeps its names).
+ for(const size of [{width:1440,height:900},{width:1000,height:620},{width:1920,height:1080}])assert.ok(matches(COMPUTER_WINDOW,size),JSON.stringify(size));
+ assert.ok(!matches(COMPUTER_WINDOW,{width:390,height:844,pointer:'coarse'}));
+ // Its own rule comes after the name-and-status label of every computer window, so it wins there.
+ assert.ok(HUD.indexOf('@media(hover:hover){\n  .building-label{gap:0;')>HUD.indexOf(' .building-label{gap:6px;padding:4px 10px 4px 4px;border-radius:10px}'));
  const game=read('public/game.js');
  assert.match(game,/else if\(target\.type==='building'\)\{const b=BUILDINGS\[target\.id\];tooltip\.innerHTML=`<strong>\$\{b\.name\}<\/strong>/,'the mouse over a label or its building names it');
  assert.match(game,/for\(const \[type,views\] of \[\['building',buildingViews\]/,'over its label too');
@@ -188,7 +203,7 @@ test('in a small window a building shows its picture; its name on hover (the far
  assert.match(game,/const aria=`\$\{status\.kind==='ready'&&BUILDINGS\[key\]\.type!=='pier'\?'Collect from':'Open'\} \$\{BUILDINGS\[key\]\.name\}`;/);
  // Batches ready to collect keep their number on the picture.
  assert.match(game,/const ready=!locked&&status\.kind==='ready'&&status\.ready>0\?String\(status\.ready\):'';if\(\(v\.label\.dataset\.ready\?\?''\)!==ready\)v\.label\.dataset\.ready=ready;/);
- assert.match(rule('.building-label[data-ready]:not([data-ready=""])::before'),/^content:attr\(data-ready\);position:absolute;/);
+ assert.match(mouseRule('.building-label[data-ready]:not([data-ready=""])::before'),/^content:attr\(data-ready\);position:absolute;/);
  assert.match(read('public/economy-ui.js'),/if\(ready\)return \{text:`\$\{ready\} ready · \$\{jobs\.length\} \/ \$\{slots\} slots`,kind:'ready',\.\.\.counts\};/,'status.ready is the count');
 });
 
@@ -230,14 +245,22 @@ test('names that show under the mouse hide only where there is a mouse: a short 
  assert.match(read('public/game.js'),/if\(e\.pointerType!=='mouse'\|\|e\.buttons\)\{highlight\(-1\);\$\('tooltip'\)\.hidden=true;return;\}/);
  const HOVER=`@media${SMALL_WINDOW} @media(hover:hover)`;
  // Whatever hides a name or a text, the one column of side tools, the buildings' pictures and the card's order: all there.
- for(const selector of ['.side-tools','.side-tools .side-tool b,.side-tools .side-tool.active b','.building-label','.building-label>span:nth-child(2)','.building-label[data-ready]:not([data-ready=""])::before','#next-goal-body:not([hidden])','#next-goal-description','.next-goal-card:not(:hover,:focus-within) #next-goal-description','.next-goal-card .quest-heading:not(:hover,:focus-within) #next-goal-kind']){
+ for(const selector of ['.side-tools','.side-tools .side-tool b,.side-tools .side-tool.active b','#next-goal-body:not([hidden])','#next-goal-description','.next-goal-card:not(:hover,:focus-within) #next-goal-description','.next-goal-card .quest-heading:not(:hover,:focus-within) #next-goal-kind']){
   const found=SMALL.filter(r=>r.selector===selector);assert.ok(found.length,selector);
   for(const r of found)assert.ok(r.media.startsWith(HOVER),selector);
  }
  for(const r of SMALL.filter(r=>/opacity:0|display:none/.test(r.body)&&r.selector!=='.plot-label.is-grouped:not(:focus-visible)'))assert.ok(r.media.startsWith(HOVER),r.selector);
- // What needs no mouse is for every small window: the map, the grouped timers (one label with how many), the card's size.
- for(const selector of ['.topbar .brand,.minimap','.plot-label.is-grouped:not(:focus-visible)','.plot-timer-count','.next-goal-card','#next-goal-body','.next-goal-card #next-goal-button'])
+ // The buildings' pictures without names (every computer window since 18 Oct 2026): also only where there is a mouse.
+ for(const selector of ['.building-label','.building-label>span:nth-child(2)','.building-label[data-ready]:not([data-ready=""])::before']){
+  const found=rules(HUD).filter(r=>r.selector===selector&&r.media.includes('@media(hover:hover)'));assert.equal(found.length,1,selector);
+  assert.equal(found[0].media,`@media${COMPUTER_WINDOW} @media(hover:hover)`,selector);
+ }
+ assert.ok(!rules(HUD).some(r=>r.selector==='.building-label>span:nth-child(2)'&&!r.media.includes('@media(hover:hover)')),'never without a mouse');
+ // What needs no mouse is for every small window: the map, the card's size; the grouped timers (one label with how many) for every
+ // computer window since 18 Oct 2026, so for every small one too.
+ for(const selector of ['.topbar .brand,.minimap','.next-goal-card','#next-goal-body','.next-goal-card #next-goal-button'])
   assert.equal(SMALL.find(r=>r.selector===selector)?.media,`@media${SMALL_WINDOW}`,selector);
+ for(const selector of ['.plot-label.is-grouped:not(:focus-visible)','.plot-timer-count'])assert.equal(COMPUTER.find(r=>r.selector===selector)?.media,`@media${COMPUTER_WINDOW}`,selector);
 });
 
 // 7. Full screen on Kongregate.

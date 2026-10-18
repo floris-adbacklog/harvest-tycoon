@@ -96,11 +96,11 @@
  /* 11 Oct 2026 (Part A A11): the chips of a harvest wrap inside the float's 230 px (with what the harvest is worth they ran off a phone's
     edge, the float's box being narrower than its row of chips); public/game.js floatClear keeps that box on the screen. */
  .toast{top:calc(var(--mobile-top) + 39px);font-size:14px;line-height:1.4;padding:10px 14px;max-width:calc(100% - 24px)}
- .game-dialog,.wide-dialog{position:fixed;inset:auto 0 0;margin:auto 0 0;width:100%;max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 8px);padding:16px 16px calc(22px + var(--safe-bottom));border:1px solid #d6cbbe;border-bottom:0;border-radius:23px 23px 0 0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:auto;scroll-padding-top:102px;-webkit-overflow-scrolling:touch}
- .game-dialog::backdrop{background:#37332160;backdrop-filter:blur(3px)}
- .game-dialog .dialog-heading{position:sticky;top:-16px;z-index:5;padding:16px 0 12px;margin:-16px 0 16px;background:#fffdf5;border-bottom:1px solid #e7dfd7;gap:12px;min-height:78px}
+ .game-dialog:not(.is-sheet,.is-card,.is-side),.wide-dialog:not(.is-sheet,.is-card,.is-side){position:fixed;inset:auto 0 0;margin:auto 0 0;width:100%;max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 8px);padding:16px 16px calc(22px + var(--safe-bottom));border:1px solid #d6cbbe;border-bottom:0;border-radius:23px 23px 0 0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:auto;scroll-padding-top:102px;-webkit-overflow-scrolling:touch}
+ .game-dialog:not(.is-sheet,.is-card,.is-side)::backdrop{background:#37332160;backdrop-filter:blur(3px)}
+ .game-dialog:not(.is-sheet,.is-card,.is-side) .dialog-heading{position:sticky;top:-16px;z-index:5;padding:16px 0 12px;margin:-16px 0 16px;background:#fffdf5;border-bottom:1px solid #e7dfd7;gap:12px;min-height:78px}
  .dialog-heading h2,.wide-dialog .dialog-heading h2{font-size:26px;line-height:1.15;margin-top:5px;overflow-wrap:normal}
- .game-dialog .dialog-heading .icon-button{min-width:46px;min-height:46px;width:46px;height:46px;margin:0;border-radius:14px;background:#f0e9e2}
+ .game-dialog:not(.is-sheet,.is-card,.is-side) .dialog-heading .icon-button{min-width:46px;min-height:46px;width:46px;height:46px;margin:0;border-radius:14px;background:#f0e9e2}
  .dialog-heading .eyebrow{font-size:12px;letter-spacing:1px}
  .game-dialog button,.game-dialog .small-button,.game-dialog .back-button{min-height:44px}
  .game-dialog input,.game-dialog select{font-size:16px;min-height:48px}
@@ -145,7 +145,7 @@
  .side-tools .side-tool{height:52px;min-height:48px}.side-tools .side-tool>span{width:28px;height:27px}.side-tools .side-tool>span>.game-art,.side-tools .side-tool>span>svg{width:27px;height:27px}.side-tools .side-tool b{font-size:10px}
  #world,#plot-labels,#building-labels{left:calc(80px + env(safe-area-inset-left));right:0}.bottom-hud{inset-inline-start:calc(86px + env(safe-area-inset-left));inset-inline-end:max(10px,env(safe-area-inset-right));bottom:8px}.tool-dock{flex-direction:row;gap:8px;height:57px;padding:5px}.tool-dock .tools{flex:1}.tools .tool{height:46px;flex-direction:row}.tool-dock .seeds{width:150px}.tool-dock .seed#selected-crop-button{height:45px;gap:5px;padding:3px 7px}.seed#selected-crop-button>span:not(.selected-crop-art){display:block;padding-inline-end:8px}.seed#selected-crop-button small{margin-top:3px;font-size:10px}.seed#selected-crop-button strong{font-size:12px}.seed#selected-crop-button img{width:28px}
  .save-status,.active-boosts,.touch-instructions{display:none}.save-status.save-error{display:block;inset-inline-start:calc(90px + env(safe-area-inset-left));top:58px}.scene-controls{inset-inline-end:max(10px,env(safe-area-inset-right));bottom:84px;gap:4px}.mobile-pan-controls{inset-inline-start:calc(88px + env(safe-area-inset-left));bottom:84px;gap:4px}.scene-controls .icon-button,.mobile-pan-controls .icon-button{width:44px;height:44px}
- .game-dialog,.wide-dialog{max-height:calc(100dvh - 8px);padding-inline-start:max(18px,env(safe-area-inset-left));padding-inline-end:max(18px,env(safe-area-inset-right));border-radius:18px 18px 0 0}.mobile-menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mobile-menu-grid button{min-height:100px}.crop-catalog{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .game-dialog:not(.is-sheet,.is-card,.is-side),.wide-dialog:not(.is-sheet,.is-card,.is-side){max-height:calc(100dvh - 8px);padding-inline-start:max(18px,env(safe-area-inset-left));padding-inline-end:max(18px,env(safe-area-inset-right));border-radius:18px 18px 0 0}.mobile-menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mobile-menu-grid button{min-height:100px}.crop-catalog{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 /* The smallest phones (320 wide): the pills keep only the number, which the pill colour already explains. */
 @media(max-width:340px){.resources .coin-icon,.resources .diamond-counter>.game-art{display:none}}

@@ -256,7 +256,8 @@ const BODIES={
   return section('How buildings work',facts([
    ['buildings','Build',`Each building opens at a level and costs coins once; the ${BUILDINGS.dairy.name} needs the ${BUILDINGS.mill.name} first, the ${BUILDINGS.bakery.name} the ${BUILDINGS.dairy.name} and the ${BUILDINGS.windmill.name}. Tap a building to start a batch: it turns crops (or other goods) into goods that sell for more.`],
    ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.${h.level==null||h.level>=WORLD_TWO_LEVEL?` <span>From level ${MASTER_UPGRADES[0].level}, master tools from ${h.link('village',TOPIC.village.title,'sec-past-level-10')} take a building on to level ${TOP_BUILDING_LEVEL}.</span> <span>From level ${RECIPE_LEVELS.builderscrate}, builder’s crates from ${h.link('village',TOPIC.village.title,'sec-builder-s-crates')} take coins off an upgrade, up to half the price.</span>`:''}`],
-   ['collect-all','Collect','When a batch is ready, the building\'s name on the farm turns yellow: tap the name to collect everything that is ready. Or open the building and use Collect all.'],
+   // 18 Oct 2026: a computer with a mouse shows a building's picture without its name (desktop-hud.css), so the label, not the name.
+   ['collect-all','Collect','When a batch is ready, the building\'s label on the farm turns yellow: tap it to collect everything that is ready. Or open the building and use Collect all.'],
    // 11 Oct 2026 (farm-state.js batchDuration).
    ['eggs','A quick first batch',`The first batch in each new building is ready in ${FIRST_BATCH_MS/1000} seconds. After that every batch takes its usual time.`],
    ['feed','Animal feed',`Chickens, cows, sheep, goats and pigs eat animal feed. Mix it at the ${BUILDINGS.mill.name}: ${RECIPES.feed.input.corn} corn make ${RECIPES.feed.output.feed}, ${RECIPES.barleyfeed.input.barley} barley make ${RECIPES.barleyfeed.output.feed} and ${RECIPES.wheatfeed.input.wheat} wheat make ${RECIPES.wheatfeed.output.feed}. At the ${BUILDINGS.windmill.name}, ${RECIPES.windfeed.input.barley} barley make ${RECIPES.windfeed.output.feed}. Feed sells for ${ITEMS.feed.sell} coins.`],
@@ -524,7 +525,7 @@ const BODIES={
    :['farm','Your farm on CrazyGames','Logged in with CrazyGames, your farm is yours on any device. As a guest it stays with this browser: tap “Save your farm: log in with CrazyGames” in Settings to keep it. Your farm comes with you when you log in.']
   ]))
   +section('Settings','<p>In Settings you change your farmer name and avatar, sound and music, private messages and the language.</p>')
-  +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
+  +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap More, then Feedback, choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody(true))
   +section('Privacy',h.signedIn?signedInPrivacy():PORTAL_PRIVACY);
   // In the Android app (Oct 2026): no home screen or Farm app to point at; what the app says instead is the line Getting started already
@@ -537,8 +538,8 @@ const BODIES={
   ]))
   // How you sign in (17 Oct 2026, src/account-sign-in.js): Your account says it, and a Google or Facebook farmer can set a password there.
   +section('Settings',`<p>In Settings you change your farmer name and avatar, sound and music, private messages, reminders and cookies. Your account, at the top, says how you sign in. Signed in with Google or Facebook? Tap Set a password there, and you can also sign in with your email address and password, for example in our apps. Forgot your password? Use “Forgot your password?” on the sign-in page.</p>`)
-  // The mailbox button (30 Sep 2026, public/feedback-ui.js).
-  +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap the mailbox next to How to play (on a phone: More, then Feedback), choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
+  // The mailbox button (30 Sep 2026, public/feedback-ui.js); in More on every screen since 18 Oct 2026 (the window shell).
+  +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap More, then Feedback, choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody())
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
   // Share my farm (Oct 2026, public/farm-share.js).

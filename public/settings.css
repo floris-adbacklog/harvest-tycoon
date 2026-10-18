@@ -75,3 +75,14 @@ html[data-portal] .settings-copy{display:none!important}
 .discord-link-dialog .discord-link-status:empty{display:none}
 .discord-link-dialog .discord-link-status.is-done{color:#3f6b4a}
 .discord-link-dialog .discord-link-status.is-error{color:#b4513f}
+/* The window shell (18 Oct 2026): the open part's name is the window's title, with the round way back in front of it; the part's own
+   heading would say it twice (the staff keep it for its Copy link). */
+#sound-dialog.settings-one :is(#avatar-settings,.settings-section).is-open>h3:not(:has(.settings-copy)){display:none}
+/* The Avatar part's card names itself too ("Avatar" over "Pick a face for your farm."): the title says it once. */
+#sound-dialog.settings-one #avatar-settings.is-open .avatar-settings-header h3:not(:has(.settings-copy)){display:none}
+/* The opened Sound part: its heading is the window's title, so the master switch says its own name ("Sound on") on a row of its own,
+   the switch at the end (18 Oct 2026 review: a bare switch read as part of Background music). */
+#sound-dialog.settings-one #sound-settings>.sound-switch{grid-column:1/-1;width:100%;justify-content:space-between;gap:12px;min-height:44px;padding:0 0 10px;border-bottom:1px solid var(--panel-line,#e6ddd1);border-radius:0}
+#sound-dialog.settings-one #sound-settings>.sound-switch>span{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;font:700 15px/1.3 'DM Sans',sans-serif;color:var(--ink,#453e28)}
+/* The farmer's own face as the Avatar part's picture. */
+#sound-dialog .dialog-heading img.settings-badge-face{border-radius:50%;object-fit:cover;background:#f3ece2}

@@ -48,7 +48,7 @@ export function sharingToday(social,me){
 // It draws into the Sharing tab of Farm Family (mount), or into a dialog of its own (open) where no tab is around.
 export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBack,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge}){
  let dialog=null,root=null,embedded=false;
- function ownDialog(){if(!dialog){dialog=doc.createElement('dialog');dialog.id='sharing-dialog';dialog.className='game-dialog wide-dialog sharing-dialog';dialog.setAttribute('aria-labelledby','sharing-title');doc.body.append(dialog);}return dialog;}
+ function ownDialog(){if(!dialog){dialog=doc.createElement('dialog');dialog.id='sharing-dialog';dialog.className='game-dialog wide-dialog sharing-dialog is-sheet is-m';dialog.setAttribute('aria-labelledby','sharing-title');doc.body.append(dialog);}return dialog;}
  let social=null,busy=false,error='',pick={item:'wheat',quantity:3},gift={to:null,item:null,quantity:1};
  const me=()=>bridge.playerId,stock=key=>state?.inventory?.[key]??0,myLevel=()=>state?levelOf(state):10;
  // The family view keys members by membership row, the sharing list by player; the (unique) farmer name links the two.
@@ -93,7 +93,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
    const gave=(parts.length?parts.map(([id,n])=>`${id===me()?'<span>You</span>':`<span translate="no">${esc(social.members.find(m=>m.id===id)?.name??'')}</span>`} +${Number(n)}`):helpers.map(id=>id===me()?'<span>You</span>':`<span translate="no">${esc(social.members.find(m=>m.id===id)?.name??'')}</span>`)).join(' · ');
    const amounts=giveAmounts(give);
    const action=r.fulfilled_by?`<span class="sharing-chip is-done">✓ ${helpers.includes(me())?'You helped':'Fulfilled'}</span>`:mine?'<span class="sharing-chip">Your request</span>'
-    :amounts.length?`<div class="sharing-give" role="group" aria-label="Give">${amounts.map(n=>`<button class="sharing-action is-primary" data-kind="fulfill" data-request="${esc(r.id)}" data-quantity="${n}">${n===give&&n>1?`Give all ${n}`:`Give ${n}`}</button>`).join('')}</div>`
+    :amounts.length?`<div class="sharing-give" role="group" aria-label="Give">${amounts.map(n=>`<button class="sharing-action${n===give?' is-primary':''}" data-kind="fulfill" data-request="${esc(r.id)}" data-quantity="${n}">${n===give&&n>1?`Give all ${n}`:`Give ${n}`}</button>`).join('')}</div>`
     :'<span class="sharing-chip">You have none</span>';
    const line=r.fulfilled_by?'Filled':given?`${given} of ${r.quantity} in`:mine?'Waiting for your family':`You have ${have}`;
    const bar=given&&!r.fulfilled_by?`<span class="sharing-progress" aria-hidden="true"><i style="width:${Math.round(given/r.quantity*100)}%"></i></span>`:'';
@@ -111,7 +111,7 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
  }
  function render(){
   if(!root)return;
-  const heading=embedded?'':`<div class="dialog-heading"><div><span class="eyebrow">FARM FAMILY</span><h2 id="sharing-title">Daily sharing</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>${onBack?'<button class="back-button sharing-back" data-back><i data-lucide="chevron-left" data-line-icon></i>Back to Farm Family</button>':''}`;
+  const heading=embedded?'':`<div class="dialog-heading">${art('family-sharing','dialog-badge')}<div class="dialog-titles"><h2 id="sharing-title">Daily sharing</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>${onBack?'<button class="back-button sharing-back" data-back><i data-lucide="chevron-left" data-line-icon></i>Back to Farm Family</button>':''}`;
   if(!social){root.innerHTML=heading+(error?`<p class="sharing-empty">${esc(error)}</p>`:skeleton('Opening daily sharing…',{rows:4}));bind();return;}
   const today=sharingToday(social,me());
   // 30 Sep 2026, cleaner: a slim intro with today's count, then what your family asks for (and your own request), then help and

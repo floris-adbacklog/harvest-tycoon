@@ -167,7 +167,8 @@ test('only the Factory groups its recipes by source and collapses them; every ot
  // The working recipe list (once built): grouped only for the Factory, otherwise the same flat list as before.
  assert.match(ui,/const recipeCard=\(rid,r\)=>\{/,'the per-recipe card is a reusable function');
  assert.match(ui,/`<div class="recipe-list factory-recipe-list">\$\{foldFactoryGroups\(recipeEntries,recipeCard,\{ready:canStart\}\)\}<\/div>`/);
- assert.match(ui,/\}else content\+=`<div class="recipe-list">\$\{recipeEntries\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/,'every other building keeps its flat list');
+ // 18 Oct 2026 (the window shell): still one flat list, with what can start now first.
+ assert.match(ui,/content\+=`<div class="recipe-list">\$\{\[\.\.\.recipeEntries\]\.sort\(\(a,b\)=>startable\(a\[0\]\)-startable\(b\[0\]\)\)\.map\(\(\[rid,r\]\)=>recipeCard\(rid,r\)\)\.join\(''\)\}<\/div>`;/,'every other building keeps its flat list');
  assert.match(ui,/data-factory-filter="ready"[^`]*Ready now <span>\$\{readyEntries\.length\}<\/span>/,'a Ready now filter shows only what can start right away');
  // The pre-purchase preview (construction-recipes): grouped the same way, only for the Factory.
  assert.match(ui,/const previewRecipes=key==='factory'\?foldFactoryGroups\(previewEntries,previewCard\):previewEntries\.map\(\(\[rid,r\]\)=>previewCard\(rid,r\)\)\.join\(''\);/);
@@ -234,7 +235,11 @@ test('what is still to come is shown from the first minute, greyed out with a lo
 });
 test('a building that is not built yet shows one status line, what it makes, and Build only when it can be built',()=>{
  const ui=read('public/economy-ui.js');
- assert.match(ui,/\$\{key==='farmhouse'\|\|buildingUnlocked\(state,key\)\?`LEVEL \$\{bs\.level\}`:'NOT BUILT YET'\}/,'no "Level 1" for a building that is not there');
+ // 18 Oct 2026 (the owner: cleaner windows): the level is a chip on the building's picture in the window's heading, the kind of building
+ // the line under its name.
+ assert.match(ui,/const built=key==='farmhouse'\|\|buildingUnlocked\(state,key\)&&b\.type!=='pier';/);
+ assert.match(ui,/\$\{built\?`<b class="lv-badge">Lv\. \$\{bs\.level\}<\/b>`:''\}/,'no "Level 1" for a building that is not there');
+ assert.match(ui,/\$\('building-sub'\)\.textContent=!built\?/);
  assert.match(ui,/<strong>\$\{level<openLevel\?`Opens at level \$\{openLevel\}`:buildingUnlockHint\(state,key\)\}<\/strong>/);
  assert.match(ui,/<details class="build-recipes" data-fold="recipes"><summary>\$\{seeRecipes\}<\/summary>/,'the full recipes are folded away');assert.match(ui,/const seeRecipes=previewEntries\.length===1\?'See the recipe':later\.length\?`See the \$\{previewEntries\.length\} recipes you can make now`:`See all \$\{previewEntries\.length\} recipes`;/);
  // A village place has no Build button of its own (Oct 2026): the golden brief builds it, and only the next one shows it.

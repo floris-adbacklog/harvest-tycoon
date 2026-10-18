@@ -82,7 +82,7 @@
  /* On the phone bar the time sits top right, like the + on the diamonds, so nothing hangs below the bar (27 Sep 2026). */
  #rookie-time{top:-6px;inset-inline-end:-6px;bottom:auto}
 }
-#rookie-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:26px 24px 22px;border:1px solid #cfe3bf;border-radius:24px;background:radial-gradient(ellipse at top,#eaf7dc,#fffdf4 68%);text-align:center;color:#34432d;overflow:auto}
+#rookie-dialog{text-align:center}
 #rookie-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 #rookie-dialog .rookie-art{display:block;width:104px;height:104px;object-fit:contain;margin:0 auto 8px}
 #rookie-dialog h2{font:700 28px 'Outfit',sans-serif;margin:6px 0 8px}
@@ -119,3 +119,10 @@
 @keyframes sweep-swing{35%{rotate:var(--swing,-32deg)}}
 .sweep-ghost{width:56px;height:56px;filter:drop-shadow(0 0 5px #fffbea) drop-shadow(0 3px 3px #3d2f1a55)}
 @media(prefers-reduced-motion:reduce){.sweep-tool.is-cutting>*{animation:none}}
+/* The leaderboard's Rank by in the window shell (18 Oct 2026, the owner: compact pills, not big segmented rows): the drawer's summary is a
+   pill that says what the board ranks by, and the chosen choice is raised cream with a gold ring instead of a dark chip. */
+#leaderboard-dialog .rank-drawer{border:0;background:none;margin:0 0 10px}
+#leaderboard-dialog .rank-drawer>summary{display:inline-flex;width:auto;min-height:40px;padding:6px 14px;border:2px solid var(--btn-second-line);border-radius:999px;background:var(--btn-second);box-shadow:0 3px 0 var(--btn-second-edge);color:var(--btn-second-text);font-weight:700}
+#leaderboard-dialog .rank-drawer .rank-label{font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink-soft,#7a705f);font-weight:600}
+#leaderboard-dialog .rank-drawer .leaderboard-filter{margin-top:10px;padding:10px;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf5;box-shadow:0 4px 0 #e2d3b3}
+#leaderboard-dialog .rank-chip[aria-pressed=true]{background:#fff8e1;border-color:#d9c7a4;color:#453e28;box-shadow:0 0 0 2px #e5b64a,0 3px 0 #e2d3b3}

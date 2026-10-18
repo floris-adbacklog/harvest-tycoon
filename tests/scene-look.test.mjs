@@ -70,7 +70,8 @@ test('goods: a tap on a building\'s yellow name collects everything ready on the
  assert.match(game,/if\(BUILDINGS\[key\]\.type==='pier'\|\|economy\.status\(key\)\.kind!=='ready'\)\{economy\.openBuilding\(key\);return;\}/,'nothing ready: the window opens (the village\'s Pier, Oct 2026, has nothing to collect: its name opens the town boat)');
  assert.match(game,/const result=await runAction\(\{type:'collect_all',building:key\}\)/,'the same as Collect all in the window');
  assert.match(game,/else if\(target\.type==='building'\)\{if\(target\.label\)tapBuilding\(target\.id\);else economy\.openBuilding\(target\.id\);\}/,'a tap on the building itself opens its window');
- assert.match(read('public/wiki-content.js'),/tap the name to collect everything that is ready\. Or open the building and use Collect all\./);
+ // 18 Oct 2026: its label (a computer with a mouse shows the picture without the name, desktop-hud.css).
+ assert.match(read('public/wiki-content.js'),/the building\\'s label on the farm turns yellow: tap it to collect everything that is ready\. Or open the building and use Collect all\./);
 });
 test('no flat water tiles anywhere: flat squares on the ground flickered when zooming and read as loose grey or cyan plates',()=>{
  for(const file of ['public/game.js','public/farm-life.js','public/farm-props.js','public/scenery.js'])assert.doesNotMatch(read(file),/water_001/,file);

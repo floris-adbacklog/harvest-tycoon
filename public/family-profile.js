@@ -70,8 +70,8 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
 }
 
 export function createFamilyProfile({emblem,act,openFamily,request=body=>window.parent.harvestBridge.request(body)}){
- const dialog=document.createElement('dialog');dialog.id='family-profile-dialog';dialog.className='game-dialog family-profile-dialog';dialog.setAttribute('aria-labelledby','family-profile-title');
- dialog.innerHTML='<div class="dialog-heading"><div><span class="eyebrow">FARM FAMILY</span><h2 id="family-profile-title">Family profile</h2></div><button type="button" class="icon-button" data-family-profile-close aria-label="Close family profile">×</button></div><div id="family-profile-content" class="family-profile" aria-live="polite"></div>';
+ const dialog=document.createElement('dialog');dialog.id='family-profile-dialog';dialog.className='game-dialog family-profile-dialog is-sheet is-m';dialog.setAttribute('aria-labelledby','family-profile-title');
+ dialog.innerHTML='<div class="dialog-heading"><i class="dialog-badge" data-game-art="familyhall" aria-hidden="true"></i><div class="dialog-titles"><h2 id="family-profile-title">Family profile</h2></div><button type="button" class="icon-button" data-family-profile-close aria-label="Close family profile">×</button></div><div id="family-profile-content" class="family-profile" aria-live="polite"></div>';
  document.body.append(dialog);
  const content=dialog.querySelector('#family-profile-content');
  dialog.querySelector('[data-family-profile-close]').onclick=()=>dialog.close();

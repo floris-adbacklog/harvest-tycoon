@@ -73,7 +73,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const markSeen=id=>{try{globalThis.localStorage?.setItem(SEEN_KEY,String(id));}catch{}};
  const unseen=live=>Boolean(live)&&!hasQualified(leagueGoals(live))&&!eligibilityNote(data?.eligibility,now())&&seenId()!==String(live.id);
  const seeLive=()=>{if(!data)return;const {live}=eventView(data.events,now());if(live)markSeen(live.id);};
- const dialog=doc.createElement('dialog');dialog.id='events-dialog';dialog.className='game-dialog wide-dialog events-dialog';dialog.setAttribute('aria-labelledby','events-title');doc.body.append(dialog);
+ const dialog=doc.createElement('dialog');dialog.id='events-dialog';dialog.className='game-dialog wide-dialog events-dialog is-sheet is-m';dialog.setAttribute('aria-labelledby','events-title');doc.body.append(dialog);
  let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0;
 
  const countdown=at=>`<span data-countdown="${at}">${formatDuration(at-now())}</span>`;
@@ -135,7 +135,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  const rules=`<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>5 hours of play, then a 1-hour break</span></summary><ul><li>Complete every goal and you have finished.</li><li>Everyone who finishes wins; the sooner you finish, the more. The list above shows what each place wins in total.</li><li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.<span class="event-league-list">${EVENT_LEAGUES.map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li><li>Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  function render(){
-  const heading='<div class="dialog-heading"><div><span class="eyebrow">PLAY TOGETHER, FOR A LITTLE WHILE</span><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
+  const heading='<div class="dialog-heading">'+art('live-events','dialog-badge')+'<div class="dialog-titles"><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
   // Drawn anew every 30 seconds and when a countdown ends: How events work stays as the player left it (16 Oct 2026, public/keep-folds.js).
   keepFolds(dialog,heading+(data?collect()+hero()+history()+rules:error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening events…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>');
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();

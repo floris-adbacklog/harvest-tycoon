@@ -7,12 +7,12 @@ import {art,refreshArt} from './visual-icons.js';
 export function showCollectionCheer({doc=globalThis.document,title,pictures=[],line='',rewards={},perk='',perkArt=''}){
  if(!doc?.body)return null;
  doc.getElementById('collection-cheer')?.remove();
- const dialog=doc.createElement('dialog');dialog.id='collection-cheer';dialog.setAttribute('aria-labelledby','collection-cheer-title');
+ const dialog=doc.createElement('dialog');dialog.id='collection-cheer';dialog.className='is-card is-s is-cheer';dialog.setAttribute('aria-labelledby','collection-cheer-title');
  // Full rows: 16 fish in rows of 4, 20 heirlooms or lake fish in rows of 5.
  const columns=pictures.length%5===0?5:pictures.length%4===0?4:5;
- const chips=[rewards.diamonds?`<strong class="reward-diamonds">${art('diamonds')}+${rewards.diamonds} diamonds</strong>`:''].join('');
+ const chips=[rewards.diamonds?`<strong class="reward-diamonds reward-big">${art('diamonds')}+${rewards.diamonds} diamonds</strong>`:''].join('');
  dialog.innerHTML=`<button type="button" class="level-up-close" data-cheer-close aria-label="Close">×</button>`
-  +`<p class="eyebrow">COLLECTION COMPLETE</p><h2 id="collection-cheer-title">${title}</h2>`
+  +`<h2 id="collection-cheer-title">${title}</h2>`
   +`<div class="collection-cheer-grid" style="--cheer-columns:${columns}" aria-hidden="true">${pictures.map(key=>`<span>${art(key)}</span>`).join('')}</div>`
   +(line?`<p>${line}</p>`:'')+(chips?`<div class="gift-rewards">${chips}</div>`:'')
   +(perk?`<p class="collection-cheer-perk">${perkArt?art(perkArt):''}<span>${perk}</span></p>`:'')

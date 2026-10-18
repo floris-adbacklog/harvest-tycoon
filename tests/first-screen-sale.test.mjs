@@ -22,12 +22,14 @@ test('on a narrow, short computer frame the camera buttons step aside while the 
  assert.ok(css.indexOf('max-height:calc(100dvh - 225px)')>css.indexOf('max-height:calc(100dvh - 320px)'),'after the rule that lifts them above the dock');
 });
 
+// 18 Oct 2026: every window's heading stays on top while its list scrolls, on computers and phones (the window shell): the Market's with its
+// tabs, and its Sell all in the action bar at the foot.
 test('the Market\'s × stays in sight while the list scrolls on a computer',()=>{
- const css=read('public/desktop-hud.css');
- assert.match(css,/#market-dialog \.dialog-heading\{display:contents\}/);
- assert.match(css,/#market-dialog \.dialog-heading>\.close-dialog\{float:inline-end;position:sticky;top:-16px;z-index:4;/);
- assert.match(css,/#market-dialog \.dialog-heading\+p\{clear:both\}/);
- assert.match(read('public/mobile.css'),/\.game-dialog \.dialog-heading\{position:sticky;/,'phones keep their whole heading on top');
+ const shell=read('public/dialog-shell.css'),html=read('public/farm.html');
+ assert.match(shell,/dialog\.is-sheet \.dialog-top,dialog\.is-card \.dialog-top\{position:sticky;top:calc\(-1\*var\(--panel-pad\)\);/);
+ assert.match(html,/<dialog id="market-dialog" class="game-dialog is-sheet is-l" aria-labelledby="market-title"><div class="dialog-top"><div class="dialog-heading">[^\n]*<button class="icon-button close-dialog" aria-label="Close">/);
+ assert.match(html,/<div class="market-total dialog-actions">/);
+ assert.match(shell,/dialog\.is-sheet \.dialog-actions\{position:sticky;/);
 });
 
 test('Show me scrolls a button into view when a sticky part of its own window covers it, not when another layer does',async()=>{

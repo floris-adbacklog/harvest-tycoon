@@ -21,10 +21,15 @@ test('the kinds: main green, second cream, light blue for diamonds, gold for mon
  assert.match(css,/#boost-dialog \.boost-buy:disabled\{\n background:var\(--btn-off\)/);
 });
 
+// 18 Oct 2026, the owner ("Maak het iets moderner, minder AI-gegenereerd ogend"): chunkier, more game-like buttons. A 2 px outline, a 4 px
+// edge in each family's own colour that the button sinks 3 px onto when pressed, and one 44 px close with a drawn × for every window.
 test('every button sinks onto its edge when pressed, and every close button has the same shape',()=>{
- assert.match(css,/transform:translateY\(2px\);box-shadow:0 1px 0 var\(--btn-main-edge\)/);
- assert.match(css,/\.dialog-heading \.icon-button,\.game-dialog \.dialog-heading \.icon-button\{width:42px;height:42px\}/);
- for(const close of ['.payment-dialog .payment-dismiss','.starter-close','.rookie-close','.level-up-close'])assert.ok(css.includes(close),close);
+ assert.match(css,/transform:translateY\(3px\);box-shadow:0 1px 0 var\(--btn-main-edge\)/);
+ assert.match(css,/#boost-dialog \.boost-buy:not\(:disabled\):active,\.is-diamond:active:not\(:disabled\)[^{]*\{box-shadow:0 1px 0 var\(--btn-diamond-edge\)\}/,'each family sinks onto its own edge');
+ assert.match(css,/\.dialog-heading \.icon-button,\.game-dialog \.dialog-heading \.icon-button\{width:44px;height:44px;/);
+ for(const close of ['.payment-dialog .payment-dismiss','.starter-close','.rookie-close','.level-up-close','.offer-close','.popup-close','.farmer-profile-close','[data-family-profile-close]','[data-book-close]','.chat-close'])assert.ok(css.includes(close),close);
+ assert.match(css,/::before\{rotate:45deg\}/,'the × is drawn, the same in every window');
+ for(const kind of ['main','second','diamond','gold','red'])assert.match(css,new RegExp(`box-shadow:var\\(--btn-top\\),0 4px 0 var\\(--btn-${kind}-edge\\)`),kind);
 });
 
 test('tabs share the style: a sunken track and the chosen tab raised like a second button',()=>{
@@ -35,5 +40,6 @@ test('tabs share the style: a sunken track and the chosen tab raised like a seco
 
 test('hovering or pressing a green or red small button keeps its own border and edge',()=>{
  assert.doesNotMatch(css,/:hover\{background:var\(--btn-second-hover\);border-color/);
- assert.match(css,/\.market-sale-buttons \[data-sell\]:active:not\(:disabled\)\{box-shadow:0 1px 0 var\(--btn-main-edge\)\}/);
+ // 18 Oct 2026: the Market's Sell 1 and Sell N are second buttons (the one green button of the window is Sell all), with the cream edge.
+ assert.match(css,/\.market-sale-buttons \[data-sell\]:active:not\(:disabled\)\{box-shadow:0 1px 0 var\(--btn-second-edge\)\}/);
 });

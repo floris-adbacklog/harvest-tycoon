@@ -114,7 +114,8 @@ test('from the first harvest to the first sale: the badge says what the basket i
  // place all the way up, between the side tools and the guide card, its chips wrapping on a phone.
  assert.match(game,/\$\('game'\)\.append\(e\);floatClear\(e\);setTimeout/);
  assert.match(game,/const FLOAT_RISE=75,FLOAT_OVER=\['#journal-button','\.resources','#beginner-mobile','#next-goal-mobile'\];/);
- assert.match(game,/if\(t\)\{const w=Math\.max\(t\.offsetWidth,360\),c=g\.left\+g\.width\/2,top=g\.top\+t\.offsetTop;over\.push\(/,'the toast\'s place, also before its line comes');
+ // 18 Oct 2026: only where the toast is at the top (computers); on a phone it sits above the tool dock (hud.css), under every float.
+ assert.match(game,/if\(t&&t\.offsetTop<g\.height\/2\)\{const w=Math\.max\(t\.offsetWidth,360\),c=g\.left\+g\.width\/2,top=g\.top\+t\.offsetTop;over\.push\(/,'the toast\'s place, also before its line comes');
  assert.match(read('public/styles.css'),/@keyframes reward\{0%\{opacity:1;transform:translate\(-50%,0\)\}100%\{opacity:0;transform:translate\(-50%,-75px\)\}\}/,'the rise floatClear allows for');
  assert.match(read('public/mobile.css'),/\.floating-reward\{font-size:17px;max-width:230px;text-align:center;flex-wrap:wrap;justify-content:center;row-gap:4px\}/);
  assert.match(read('public/beginner.css'),/\.side-tool\.guide-next>span\{box-shadow:0 0 0 3px #f2c14e/);

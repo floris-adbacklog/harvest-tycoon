@@ -2,7 +2,7 @@
    data-admin-view before the page shows. Coins, diamonds and everything to buy or play step aside; the topbar shows the farmers online
    and the open chat reports, the menu is My farm, How to play, Chat, Admin panel and More. Every rule starts with html[data-admin-view]. */
 html[data-admin-view] .resources>:is(.coin-counter,#diamond-button,#rookie-button,#pass-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
-html[data-admin-view] :is(#starter-pack-button,#offer-button,#active-boosts,.beginner-card,#beginner-mobile,#next-goal-card,#next-goal-mobile,.touch-instructions,#more-dot),
+html[data-admin-view] :is(#starter-pack-button,#offer-button,#event-rail,#active-boosts,.beginner-card,#beginner-mobile,#next-goal-card,#next-goal-mobile,#next-goal-claim-mobile,.touch-instructions,#more-dot),
 html[data-admin-view] .bottom-hud>:is(.tool-dock,.context-hint,.bottom-note),
 html[data-admin-view] .mobile-menu-grid>:is([data-menu-action="all-quests-mobile"],#pass-menu-entry,[data-menu-action="boosts-button"]){display:none!important}
 /* The two numbers, in the coin pill's look: a big number with a short word under it. Red while a report waits, quiet at none. */

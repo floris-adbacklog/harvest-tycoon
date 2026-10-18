@@ -84,6 +84,7 @@
  "{0} Kreds",
  "Only a diamond pack",
  "Purchase without a farmer",
+ "(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine)",
  "(min-width:901px) and (max-height:700px) and (min-height:551px),(min-width:901px) and (max-height:700px) and (pointer:fine)",
  "APPLE_PRIVATE_KEY is not a .p8 key."
 ]

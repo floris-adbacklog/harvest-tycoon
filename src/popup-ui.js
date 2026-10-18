@@ -1,4 +1,4 @@
-import {refreshArt} from '../public/visual-icons.js';
+import {art,refreshArt} from '../public/visual-icons.js';
 import {rookieLeft} from '../public/farm-state.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {portal,portalOff} from '../public/portal.js';
@@ -9,7 +9,7 @@ import {androidApp,googlePlayApp} from '../public/android.js';
 // the browser, anyone in the browser, phones or computers, or (9 Oct 2026) our Android app from Google Play or our website (decided
 // here, on the device: nothing records who installed the app), and from a farm level (decided by the server). Never in a farmer's first
 // half hour, and never over another window: it waits until nothing else is open.
-export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Diamond shop',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
+export const POPUP_SCREENS=Object.freeze({install:'How to install the app',today:'Daily gift',events:'Events',leaderboard:'Leaderboard',chat:'Chat',shop:'Boosts',family:'Farm family',wiki:'How to play',feedback:'Feedback'});
 export const POPUP_AUDIENCES=Object.freeze({all:'Everyone',phone_browser:'Phones in the browser',browser:'In the browser (phone or computer)',phone:'Phones only',desktop:'Computers only',android_app:'Android app (Google Play)',web:'Website (not the apps or the game portals)',crazygames:'CrazyGames players',phone_web:'Phones on the website (not the apps or the game portals)'});
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Web addresses in news and pop-ups open in a new tab (https only; the text around them stays plain text). On CrazyGames (Oct 2026,
@@ -36,7 +36,7 @@ export function fitsDevice(audience,{installed,phone,playApp=false,web=false,cra
 }
 
 export function createPopupUI({client,chat,state,doc=document,win=window,now=()=>Date.now()}){
- const dialog=doc.createElement('dialog');dialog.id='popup-dialog';dialog.setAttribute('aria-labelledby','popup-title');doc.body.append(dialog);
+ const dialog=doc.createElement('dialog');dialog.id='popup-dialog';dialog.className='is-card is-s is-cheer';dialog.setAttribute('aria-labelledby','popup-title');doc.body.append(dialog);
  // Our Android app (Oct 2026, public/android.js) counts as installed: a pop-up for players in the browser is not for it.
  // The Android app group (9 Oct 2026): only our Google Play app, never the iPhone app, a browser or a portal. The website group: no app
  // marks the page and no portal is around it (public/portal.js).
@@ -55,8 +55,10 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
   // On CrazyGames (Oct 2026, public/portal.js) a button to a web page or to installing the app is left out: neither is allowed there.
   // In our Android app (Oct 2026) the button to installing the web app is left out: the app is installed.
   const offered=button&&!(portalOff('links')&&/^https:\/\/|^(screen:)?install$/.test(popup.buttonTarget))&&!(androidApp(win)&&/^(screen:)?install$/.test(popup.buttonTarget));
-  dialog.innerHTML=`<button type="button" class="popup-close" data-popup-close aria-label="Close">×</button><img class="popup-art" src="/assets/harvest-tycoon-logo.webp" alt="" width="88" height="88" draggable="false"><h2 id="popup-title"${keep('title')}>${esc(popup.title)}</h2><p${keep('body')}>${linkify(popup.body)}</p>`
-   +(offered?`<button type="button" class="primary-button" data-popup-go><span${keep('buttonLabel')}>${esc(popup.buttonLabel)}</span>${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
+  // The picture of what the pop-up is about (18 Oct 2026, the window shell); the logo for news without a screen of its own.
+  const subject={pass:'giant-small',today:'gift',events:'live-events',leaderboard:'trophy',chat:'chat',shop:'diamonds',family:'family-members',wiki:'guide',feedback:'feedback',install:'farmapp'}[String(popup.buttonTarget??'').replace(/^screen:/,'')];
+  dialog.innerHTML=`<button type="button" class="popup-close" data-popup-close aria-label="Close">×</button>${subject&&art(subject)?art(subject,'popup-art'):'<img class="popup-art" src="/assets/harvest-tycoon-logo.webp" alt="" width="88" height="88" draggable="false">'}<h2 id="popup-title"${keep('title')}>${esc(popup.title)}</h2><p${keep('body')}>${linkify(popup.body)}</p>`
+   +(offered?`<button type="button" class="primary-button" data-popup-go><span${keep('buttonLabel')}>${esc(popup.buttonLabel)}</span>${popup.buttonTarget.startsWith('https://')?' ↗':''}</button><button type="button" class="popup-later text-button" data-popup-close>Not now</button>`:'<button type="button" class="primary-button" data-popup-close>Got it</button>');
   dialog.onclick=event=>{
    if(event.target.closest('[data-popup-go]')){dialog.close();go(popup.buttonTarget);}
    else if(event.target.closest('[data-popup-close]'))dialog.close();

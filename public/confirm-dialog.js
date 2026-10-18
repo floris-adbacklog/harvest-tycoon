@@ -9,7 +9,7 @@ import {setOwnText} from './i18n.js';
 // names: players' own words in the title or the line (a farmer), shown as typed (public/i18n.js setOwnText); the name to type is one.
 export function confirmAction({title,description,confirmLabel='Confirm',cancelLabel='Cancel',picture='',tone='',typeToConfirm='',names=[]}){
  return new Promise(resolve=>{
-  const dialog=document.createElement('dialog');dialog.className=`diamond-confirm sale-confirm${tone==='danger'?' is-danger':''}`;
+  const dialog=document.createElement('dialog');dialog.className=`diamond-confirm sale-confirm is-card is-s${tone==='danger'?' is-danger':''}`;
   dialog.setAttribute('aria-labelledby','sale-confirm-title');dialog.setAttribute('aria-describedby','sale-confirm-description');
   dialog.innerHTML=`${picture?`<div class="diamond-confirm-art">${art(picture)}</div>`:''}<h2 id="sale-confirm-title"></h2><p id="sale-confirm-description"></p>${typeToConfirm?'<label class="confirm-type"><span data-type-label></span><input type="text" data-type autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus></label>':''}<div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel${typeToConfirm?'':' autofocus'}></button><button type="button" class="primary-button confirm-spend" data-confirm></button></div>`;
   const own=typeToConfirm?[...names,typeToConfirm]:names;
@@ -34,7 +34,7 @@ export function confirmAction({title,description,confirmLabel='Confirm',cancelLa
 // new text, or null when cancelled. Enter saves, Shift+Enter is a new line; Save is off while the box is empty.
 export function promptText({title,description='',value='',maxLength=200,confirmLabel='Save',cancelLabel='Cancel',picture=''}){
  return new Promise(resolve=>{
-  const dialog=document.createElement('dialog');dialog.className='diamond-confirm sale-confirm prompt-text';dialog.setAttribute('aria-labelledby','sale-confirm-title');
+  const dialog=document.createElement('dialog');dialog.className='diamond-confirm sale-confirm prompt-text is-card is-s';dialog.setAttribute('aria-labelledby','sale-confirm-title');
   dialog.innerHTML=`${picture?`<div class="diamond-confirm-art">${art(picture)}</div>`:''}<h2 id="sale-confirm-title"></h2>${description?'<p id="sale-confirm-description"></p>':''}<textarea class="prompt-text-field" rows="3" data-text aria-labelledby="sale-confirm-title" autofocus></textarea><small class="prompt-text-count" data-count aria-live="polite"></small><div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel></button><button type="button" class="primary-button confirm-spend" data-confirm></button></div>`;
   dialog.querySelector('h2').textContent=title;if(description)dialog.querySelector('p').textContent=description;
   dialog.querySelector('[data-cancel]').textContent=cancelLabel;

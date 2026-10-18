@@ -338,7 +338,7 @@ test('every control CrazyGames does not allow is hidden by the portal flag, and 
  }
  for(const [,selectors] of css.replace(/\/\*[^]*?\*\//g,'').replace(/@media[^{]*\{/g,'').matchAll(/([^{}]+)\{[^}]*\}/g))for(const selector of selectors.split(',').map(s=>s.trim()).filter(Boolean))
   assert.ok(selector.startsWith('html[data-portal]')||/(^|\s)\.portal-/.test(selector)||selector.startsWith('.i18n-wait .portal-'),`scoped to the portal: ${selector}`);
- const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);assert.ok(sheets.includes('/portal.css')&&sheets.at(-1)==='/pwa-layout.css');
+ const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);assert.ok(sheets.includes('/portal.css')&&sheets.slice(-3).join(' ')==='/pwa-layout.css /dialog-shell.css /hud.css');   // 18 Oct 2026: the window shell and the farm screen's look last
  assert.doesNotMatch(farm,/data-portal/,'the farm page is only marked inside CrazyGames (src/portal-ui.js)');
 });
 test('the farm frame on CrazyGames: SDK events at farm ready, no purchases, the privacy notice, Save your farm for a guest',()=>{

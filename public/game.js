@@ -1,3 +1,6 @@
+import './dialog-shell.js';
+import './pill-menu.js';
+import './event-rail.js';
 import {createLiveEventsUI} from './live-events-ui.js';
 import {createToast} from './toast-ui.js';
 import {haptic} from './haptics.js';
@@ -58,7 +61,7 @@ import { guideSteps } from './guide-steps.js';
 import { guardWheel } from './wheel-guard.js';
 import { nextGoal, readyAllAt } from './next-goal.js';
 import { createWaitTip } from './wait-tip.js';
-import { smallWindow,timerKey,timerGroups,createFullScreenOffer } from './small-window.js';
+import { computerWindow,timerKey,timerGroups,createFullScreenOffer } from './small-window.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -229,7 +232,7 @@ function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',
  if(pond?.hold(()=>giftPopup(gift,{eyebrow,title,icon,text,action,names})))return;
  const actions=document.querySelector('#gift-dialog .gift-actions'),go=document.querySelector('#gift-dialog .gift-action');
  if(actions&&go){actions.hidden=!action;document.querySelector('#gift-dialog .gift-done').hidden=Boolean(action);go.textContent=action?.label??'';go.onclick=action?()=>{$('gift-dialog').close();action.run();}:null;}
- $('gift-icon').innerHTML=art(icon);document.querySelector('#gift-dialog .eyebrow').textContent=eyebrow;setOwnText($('gift-title'),title,names);
+ $('gift-icon').innerHTML=art(icon);const kicker=document.querySelector('#gift-dialog .eyebrow');if(kicker)kicker.textContent=eyebrow;setOwnText($('gift-title'),title,names);
  const rewards=[];
  if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
  if(gift.xp)rewards.push(`<strong class="reward-xp">${art('xp')}+${gift.xp.toLocaleString('en-US')} XP</strong>`);
@@ -683,7 +686,8 @@ function drawCrop(i,cut=0){
  v.soil.traverse(n=>{if(n.isMesh)n.material.color.setHex(p.watered?0x8b8a82:0xc4b39a)});
  if(!p.crop){v.label.innerHTML='';v.label.dataset.crop='';v.label.className='plot-label';v.label.setAttribute('aria-label',`Field ${i+1}, empty. Plant ${CROPS[selectedCrop].name}.`);}
  else if(ripe){
-  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(['apples','berries','greenbeans','squash','polebeans','ciderapples','cherries'].includes(p.crop)?p.crop:'vegetables');
+  // Each ripe crop shows its own picture (18 Oct 2026, the owner: more like a game); the crate only for a crop without one.
+  if(!v.lastReady||!v.label.querySelector('.game-art'))v.label.innerHTML=art(p.crop)||art('vegetables');
   v.label.className='plot-label ready';v.label.setAttribute('aria-label',`Harvest ${CROPS[p.crop].name} from field ${i+1}`);
  }else{
   const remaining=p.readyAt-farmNow(),time=mobileLayout.matches?(remaining>=3600000?(m=>`${Math.floor(m/60)}h${m%60?String(m%60).padStart(2,'0'):''}`)(Math.ceil(remaining/60000)):remaining>=60000?`${Math.ceil(remaining/60000)}m`:`${Math.ceil(Math.max(0,remaining)/1000)}s`):formatDuration(remaining);
@@ -754,7 +758,9 @@ function floatClear(e){
  const f=e.getBoundingClientRect();if(!f.width)return;
  const box=sel=>{const el=document.querySelector(sel);return el&&!el.hidden&&el.getClientRects().length?el.getBoundingClientRect():null;};
  const over=FLOAT_OVER.map(box),t=$('toast'),g=$('game').getBoundingClientRect();
- if(t){const w=Math.max(t.offsetWidth,360),c=g.left+g.width/2,top=g.top+t.offsetTop;over.push({left:c-w/2,right:c+w/2,top,bottom:top+Math.max(t.offsetHeight,46),width:w});}
+ // The toast's place counts where it is at the top of the farm (computers); on a phone it sits just above the tool dock since 18 Oct 2026
+ // (hud.css), under every float, and a float that started near it would only be pushed further down.
+ if(t&&t.offsetTop<g.height/2){const w=Math.max(t.offsetWidth,360),c=g.left+g.width/2,top=g.top+t.offsetTop;over.push({left:c-w/2,right:c+w/2,top,bottom:top+Math.max(t.offsetHeight,46),width:w});}
  const tools=box('.side-tools'),side=tools&&tools.top<innerHeight*.6&&tools.left<innerWidth*.3?tools.right:g.left;
  const card=[box('.beginner-card'),box('#next-goal-card')].find(Boolean),end=card&&card.left>innerWidth*.6?card.left:g.right;
  let shift=0;if(end-side>200)shift=f.width<=end-side-12?(f.left<side+6?side+6-f.left:f.right>end-6?end-6-f.right:0):(side+end)/2-(f.left+f.right)/2;
@@ -894,9 +900,11 @@ function hudNumbers(){
  // 37, mostly starter stock that cannot be sold yet): the same number as "This basket is worth" on the Crops tab that Market then opens on
  // (the corn and the starter wheat). Its name says it too.
  const worth=guideAt('sell')?marketWorth(state,'crops',farmNow()):0,badge=$('stock-count'),market=$('market-button');
- badge.hidden=!worth&&count===0;badge.classList.toggle('is-worth',worth>0);
+ // Otherwise no badge (18 Oct 2026, the owner, the window shell): a red badge means something waits for you, and the count of goods in the
+ // barn is no task; the Market's heading says it ("N in your barn").
+ badge.hidden=!worth;badge.classList.toggle('is-worth',worth>0);
  if(worth){const text=worth.toLocaleString('en-US');if(badge.dataset.worth!==text){badge.dataset.worth=text;badge.innerHTML=`${art('coins')}${text}`;}market.setAttribute('aria-label',`Market: your basket is worth ${text} coins`);}
- else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent=count;market.removeAttribute('aria-label');}
+ else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent='';market.removeAttribute('aria-label');}
 }
 function updateUI(){
  hudNumbers();
@@ -1084,11 +1092,12 @@ function positionLabels(){
   v.label.style.left=`${(point.x*.5+.5)*width}px`;v.label.style.top=`${(-point.y*.5+.5)*height}px`;
   v.label.hidden=point.z>1||point.z< -1||Math.abs(point.x)>1||Math.abs(point.y)>1;
  }
- // Small windows (16 Oct 2026, the owner: 16 red cabbages at "7h 33m" piled up over the fields; public/small-window.js): fields on screen
+ // Small windows (16 Oct 2026, the owner: 16 red cabbages at "7h 33m" piled up over the fields; public/small-window.js), and since 18 Oct
+ // 2026 every computer window (the owner: cleaner): fields on screen
  // that stand together with the same crop, ready within a minute, show one label with how many ("16 × 7h 33m") over the group's middle
  // field; the others step aside (a tap on the field still works it, and the keyboard still reaches them). A field that asks for a tap
  // (ready, extra care) keeps its own label. Nothing is measured here.
- const t=farmNow(),groups=smallWindow.matches?timerGroups(plots.map((v,i)=>v.label.hidden?null:timerKey(state.plots[i],t)),state.plots.map(p=>p.readyAt)):null;
+ const t=farmNow(),groups=computerWindow.matches?timerGroups(plots.map((v,i)=>v.label.hidden?null:timerKey(state.plots[i],t)),state.plots.map(p=>p.readyAt)):null;
  for(let i=0;i<plots.length;i++){
   const v=plots[i],n=groups?.lead[i]===i?groups.count[i]:1;if(!groups&&!v.grouped&&!v.counted)continue;
   v.grouped=Boolean(groups)&&groups.lead[i]!==i;v.label.classList.toggle('is-grouped',v.grouped);v.counted=n>1;
@@ -1379,6 +1388,27 @@ function positionBuildingLabels(){
   if(!locked){const aria=`${status.kind==='ready'&&BUILDINGS[key].type!=='pier'?'Collect from':'Open'} ${BUILDINGS[key].name}`;if(v.label.getAttribute('aria-label')!==aria)v.label.setAttribute('aria-label',aria);}
  }
  placeLandmarks(width,height);
+ clearRail();
+}
+// The phone's event rail (public/event-rail.js, hud.css; 18 Oct 2026: the Offer tile, Today, Events and the pass at the right-hand edge
+// under the top bar): a place's pin that would sit under one of its buttons moves inward, clear of the rail, so a building ready to
+// collect, a helping hand or a village place is never covered there and needs no pan. Read after every pin has its place; only pins
+// near the rail are measured, and only while the rail shows something.
+function clearRail(){
+ if(!mobileLayout.matches)return;
+ const rail=document.getElementById('event-rail');if(!rail)return;
+ const blocks=[...rail.children].map(b=>b.getClientRects().length?b.getBoundingClientRect():null).filter(r=>r&&r.width>0);
+ if(!blocks.length)return;
+ // At the right-hand edge, or the left one in Arabic: a pin moves away from the edge the rail is at.
+ const atRight=(blocks[0].left+blocks[0].right)/2>innerWidth/2;
+ const box={left:Math.min(...blocks.map(r=>r.left))-8,right:Math.max(...blocks.map(r=>r.right))+8,top:Math.min(...blocks.map(r=>r.top))-6,bottom:Math.max(...blocks.map(r=>r.bottom))+6};
+ const pins=[...utilityViews.values(),...buildingViews.values(),...landmarkViews.values(),...(farmLife?.views?.values()??[])].map(v=>v.label).filter(l=>l&&!l.hidden);
+ const moves=[];
+ for(const label of pins){
+  const r=label.getBoundingClientRect();
+  if(r.right>box.left&&r.left<box.right&&r.bottom>box.top&&r.top<box.bottom)moves.push([label,atRight?box.left-r.right:box.right-r.left]);
+ }
+ for(const [label,shift] of moves)label.style.left=`${parseFloat(label.style.left)+shift}px`;
 }
 // After every answer from the server (farm-client.js onChange). The village has no fields and never loads the farm's models: createPlots
 // there threw "Missing model: ground_004", so each reply in the village (a request, a build, a batch) ended in that error.
@@ -1395,7 +1425,8 @@ function bindUI(){
  // renderWiki's {from}, where it was opened from for its way back (the chat's wiki chip: "‹ Chat", src/chat-ui.js).
  window.harvestWiki=(id,anchor='',options={})=>{openDialog('help-dialog');renderWiki(state,id,anchor,options);};
  $('village-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!villageWorld)travel('village');});
- $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(villageWorld){travel('farm');return;}resetView();toast('Back to the heart of your farm.');});
+ // My farm: back to the farm's own view. No toast (18 Oct 2026, the owner: the camera move shows it).
+ $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(villageWorld){travel('farm');return;}resetView();});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
  // A click on the dimmed backdrop closes the open dialog. One delegated listener, so dialogs created later (farm events,
  // daily sharing, Welcome Back, the starter pack) behave exactly like the ones in farm.html.

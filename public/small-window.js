@@ -8,6 +8,10 @@
 import {portal} from './portal.js';
 export const SMALL_WINDOW='(min-width:901px) and (max-height:700px) and (min-height:551px),(min-width:901px) and (max-height:700px) and (pointer:fine)';
 export const smallWindow=typeof matchMedia==='function'?matchMedia(SMALL_WINDOW):{matches:false,addEventListener(){}};
+// Every computer window (18 Oct 2026, the owner: cleaner): the words of desktop-hud.css's computer block. The field timers that stand
+// together are one label in every one of them, not only in a small window.
+export const COMPUTER_WINDOW='(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine)';
+export const computerWindow=typeof matchMedia==='function'?matchMedia(COMPUTER_WINDOW):{matches:false,addEventListener(){}};
 
 // A growing field's look: its crop, and watered and cared for (the label looks the same; when it is ready is timerGroups' part). null for
 // a field that keeps its own label: empty, ready to harvest, or asking for extra care (the label pulses for a tap). The same care rule as

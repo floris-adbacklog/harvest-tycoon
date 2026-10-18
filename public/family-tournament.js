@@ -33,7 +33,7 @@ export function renderFamilyTournament({view,now,emblem,rewards,preview,extra=''
  };
  return `${rewards}<section class="family-tournament-banner">
   ${art('family-tournament')}
-  <div class="family-tournament-title"><span class="eyebrow">THIS WEEK</span><h3>Family Tournament</h3><span>Ends in <strong data-family-countdown>${formatDuration(Math.max(0,view.endsAt-now))}</strong></span></div>
+  <div class="family-tournament-title"><h3>Family Tournament</h3><span>Ends in <strong data-family-countdown>${formatDuration(Math.max(0,view.endsAt-now))}</strong></span></div>
  </section>
  ${yours}
  <section class="family-standings" aria-labelledby="family-standings-heading">

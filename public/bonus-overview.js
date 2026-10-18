@@ -34,7 +34,7 @@ export function bonusOverview(state,now=Date.now()){
  const project=id=>({id,level:FEATURE_LEVELS.valleyprojects,had:projectDone(id),open:featureUnlocked(state,'valleyprojects'),where:'Valley projects',name:VALLEY_PROJECTS[id].name,sub:VALLEY_PROJECTS[id].effect});
  // VIP opens with the shop at level 10: for a farm without it, it is the next bonus in the groups it makes faster or richer. For
  // crops the next Silo research step goes first while there is one (a step to play for, not to buy), so VIP is not in every group.
- const vipNext=sub=>({id:'vip',level:FEATURE_LEVELS.boosts,had:vip,open:featureUnlocked(state,'boosts'),where:'Diamonds & boosts',name:'VIP',sub});
+ const vipNext=sub=>({id:'vip',level:FEATURE_LEVELS.boosts,had:vip,open:featureUnlocked(state,'boosts'),where:'Boosts',name:'VIP',sub});
  const siloNext=(kind,name,sub,first)=>({id:'silo',level:FEATURE_LEVELS.silo,had:silo>=SILO_COSTS.length,open:siloOpen,where:`Next step: −${pct(siloBonus(silo+1)[kind]-siloBonus(silo)[kind])}%`,name,sub:siloOpen?sub:first});
  // The totals are the real growing time against the crop's own: a normal crop, and a cycle that grows back when that has bonuses of its own.
  const regrowing=hasImprovement(state,'ladders')||projectDone('terraces'),faster=1-grow(state)/CROPS[CROP].duration,back=1-regrow(state)/CROPS[REGROW].regrow;

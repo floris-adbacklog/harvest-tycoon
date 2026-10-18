@@ -19,14 +19,15 @@
 
 /* The window. Computer and tablet: the treasure chest on the left, what is in it on the right. Phone: the chest as a banner on
    top and smaller cards, so the Buy button is on screen without scrolling. */
-#offer-dialog{width:min(820px,calc(100vw - 24px));max-width:calc(100vw - 24px);height:fit-content;max-height:calc(100dvh - env(safe-area-inset-top) - 24px);margin:auto;inset-inline-start:0;inset-inline-end:0;padding:0;box-sizing:border-box;overflow:hidden auto;border:3px solid #e2b04d;border-radius:28px;background:radial-gradient(ellipse at 70% 0,#fff1c9,#fffdf4 60%);box-shadow:0 24px 60px #2b1d0855}
+/* 18 Oct 2026: the window shell (dialog-shell.css) draws the frame; the offer keeps its gold outline as its only accent. */
+#offer-dialog{--w:860px;height:fit-content;border:3px solid #e2b04d;overflow:hidden auto}
 /* Flex, not grid (30 Sep 2026): Safari (and the app on an iPhone) made a grid window as tall as its max-height and spread the
    rest as empty space above and below the text. */
 #offer-dialog[open]{display:flex;align-items:stretch}
 #offer-dialog:focus{outline:none}
-#offer-dialog::backdrop{background:#2f2410a6}
-.offer-close{position:absolute;inset-inline-end:14px;top:14px;z-index:2;width:40px;height:40px;border:0;border-radius:13px;background:#efe6d6;color:#5b4b30;font-size:26px;line-height:1}
-.offer-hero{position:relative;flex:0 0 340px;min-width:0;background:#f6e6b8}
+
+
+.offer-hero{position:relative;flex:0 0 340px;min-width:0;background:#f6e6b8;border-radius:18px;overflow:hidden}
 .offer-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%}
 .offer-ribbon{position:absolute;inset-inline-start:16px;top:16px;display:grid;place-items:center;align-content:center;width:100px;height:100px;border:3px solid #fff4d8;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2663f,#c9361c);box-shadow:0 6px 16px #6a1d0b55;color:#fff;transform:rotate(-12deg);font-family:'Outfit',sans-serif}
 .offer-ribbon b{font-size:30px;line-height:.95;font-weight:700}
@@ -61,7 +62,7 @@
 
 /* Phone (and a narrow tablet in portrait): one column, the chest as a banner. */
 @media(max-width:640px){
- #offer-dialog{width:min(440px,calc(100vw - 20px));max-width:calc(100vw - 20px);border-radius:24px}
+ #offer-dialog{border-bottom:0}
  #offer-dialog[open]{flex-direction:column}
  .offer-hero{flex:0 0 150px}
  .offer-ribbon{inset-inline-start:12px;top:12px;width:76px;height:76px}.offer-ribbon b{font-size:23px}.offer-ribbon small{max-width:66px;font-size:12px;letter-spacing:.5px}

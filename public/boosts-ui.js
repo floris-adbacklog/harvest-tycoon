@@ -107,7 +107,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    extra:batches.length?`<span class="field-picker-label">Choose batches</span>${batchPicker({id:'finish-batch-picker',batches,selectedKeys:selectedBatches,multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),now:farmNow(),disabled:finishing,perItem:`${SINGLE_BATCH_COST} diamonds per batch`})}`:''});
   const finishNow=['crops','production'],entries=Object.entries(BOOSTS);
   // An open field or batch picker stays open when a crop ripens or the farm updates (16 Oct 2026, public/keep-folds.js).
-  keepFolds($('boost-catalog'),`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Boosts</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`);
+  keepFolds($('boost-catalog'),`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Power-ups</h3><div class="shop-list">${entries.filter(([id])=>!finishNow.includes(id)).map(boostCard).join('')}</div></section>`);
   if($('finish-batch-picker'))bindFieldPicker($('finish-batch-picker'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),noun:['batch','batches'],onChange:ids=>{selectedBatches=ids.map(i=>batches[i]?.key).filter(Boolean);updateFinish('batch');}});
   if($('finish-crop-field'))bindFieldPicker($('finish-crop-field'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),onChange:ids=>{selectedFields=ids.map(String);updateFinish('crop');}});
   updateFinish('crop');updateFinish('batch');
@@ -159,7 +159,19 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  }
  // "Get diamonds": to the packs, with the smallest that covers what is missing marked for a few seconds.
  let suggestion=0,suggestionTimer=0,packError=null;
+ // The shop's tabs: the part that shows, the others one tap away (the dialog's data-shop-tab, boosts.css). A part a portal or an app
+ // has no shop for (its tab is put aside by portal.css or android.css) is never the one that opens.
+ function showShopTab(id){
+  const dialog=$('boost-dialog');if(!dialog)return;
+  dialog.dataset.shopTab=id;
+  dialog.querySelectorAll('[data-shop-jump]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shopJump===id)));
+ }
+ function firstShopTab(){
+  const tabs=[...$('boost-dialog').querySelectorAll('[data-shop-jump]')];
+  return (tabs.find(b=>b.getClientRects().length)??tabs[1]??tabs[0])?.dataset.shopJump??'shop-finish';
+ }
  function showPacks(short){
+  showShopTab('diamond-store');
   suggestion=(DIAMOND_PACKS.find(p=>p.amount>=short)??DIAMOND_PACKS.at(-1)).amount;render();
   $('diamond-store').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
   clearTimeout(suggestionTimer);suggestionTimer=setTimeout(()=>{suggestion=0;if($('boost-dialog').open)render();},6000);
@@ -168,10 +180,10 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  $('boost-dialog').addEventListener('click',event=>{
   // No packs on CrazyGames (Oct 2026, public/portal.js): short of diamonds says where they are earned instead.
   const more=event.target.closest('[data-get-diamonds]');if(more){if(portalOff('payments')){const tip='Earn diamonds with the daily gift, daily challenges, quests, level-ups and events.';$('boost-feedback').textContent=tip;notify(tip);return;}showPacks(Number(more.dataset.getDiamonds)||0);return;}
-  // The long shop in four parts: a row of small buttons under your balance jumps to each.
-  const jump=event.target.closest('[data-shop-jump]');if(jump)$(jump.dataset.shopJump)?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+  // The long shop in four parts: tabs under your balance (18 Oct 2026, the window shell; they jumped down the one long list before).
+  const jump=event.target.closest('[data-shop-jump]');if(jump)showShopTab(jump.dataset.shopJump);
  });
- async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();track('diamond_shop_view');if(portalOff('payments'))return;try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
+ async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();showShopTab(firstShopTab());track('diamond_shop_view');if(portalOff('payments'))return;try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});
   fitText($('diamonds'));

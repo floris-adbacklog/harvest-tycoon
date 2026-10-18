@@ -1,4 +1,4 @@
-import {refreshArt} from './visual-icons.js';
+import {refreshArt,art} from './visual-icons.js';
 import {settingsLink,settingsSlug} from './game-links.js';
 import {WIKI_COPY_ICON} from './wiki-link.js';
 
@@ -20,8 +20,24 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  // Its picture, never the Copy link button's chain (the Avatar heading has none of its own; 4 Oct 2026 review).
  const iconOf=part=>{const i=[...part.querySelectorAll('h3 [data-game-art],h3 [data-lucide],h3 .game-art,h3 svg')].find(n=>!n.closest('.settings-copy'));const key=i?.getAttribute('data-game-art')??i?.getAttribute('data-art');const lucide=i?.getAttribute('data-lucide');
   return key?`<i data-game-art="${esc(key)}"></i>`:lucide&&i.tagName!=='svg'?`<i data-lucide="${esc(lucide)}"></i>`:i?.tagName==='svg'?i.outerHTML:part.id==='avatar-settings'&&part.querySelector('#avatar-preview')?`<img class="settings-row-avatar" src="${esc(part.querySelector('#avatar-preview').getAttribute('src'))}" alt="">`:'';};
+ // The heading's picture is the open part's own, the one its row shows (18 Oct 2026 review: every part showed the gear); the gear on the
+ // list. The avatar part shows the farmer's own face, as its row does.
+ function badge(part){
+  try{
+   const old=dialog.querySelector('.dialog-heading .dialog-badge');if(!old)return;
+   const want=part?.id??'';
+   const i=part?[...part.querySelectorAll('h3 [data-game-art],h3 [data-art],h3 [data-lucide]')].find(n=>!n.closest('.settings-copy')):null;
+   const LUCIDE={bell:'bell',smartphone:'farmapp'};
+   const key=part?i?.getAttribute('data-game-art')??i?.getAttribute('data-art')??LUCIDE[i?.getAttribute('data-lucide')]:'settings';
+   const face=!key&&part?.id==='avatar-settings'?part.querySelector('#avatar-preview')?.getAttribute('src'):null;
+   const holder=doc.createElement('template');
+   holder.innerHTML=key?art(key,'dialog-badge'):face?`<img class="dialog-badge settings-badge-face" src="${esc(face)}" alt="">`:art('settings','dialog-badge');
+   const picture=holder.content.firstElementChild;if(!picture)return;
+   picture.setAttribute('aria-hidden','true');picture.dataset.badgeFor=want;old.replaceWith(picture);
+  }catch{}
+ }
  const nav=doc.createElement('nav');nav.className='settings-nav';nav.setAttribute('aria-label','Settings');
- const back=doc.createElement('button');back.type='button';back.className='back-button settings-back';back.hidden=true;back.innerHTML='<i data-lucide="chevron-left" data-line-icon></i>All settings';
+ const back=doc.createElement('button');back.type='button';back.className='back-button settings-back back-round';back.hidden=true;back.innerHTML='<i data-lucide="chevron-left" data-line-icon></i>All settings';
  const note=doc.createElement('p');note.className='settings-nav-note';note.setAttribute('role','status');note.hidden=true;note.textContent='That part of Settings is not available here.';
  let open=null,next=null;
  // Not there for this farmer: hidden, or put aside by the page's CSS (AWAY), so it has no row and a link to it gets the note.
@@ -35,7 +51,10 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  }
  function show(id){
   open=id;note.hidden=true;dialog.classList.toggle('settings-one',Boolean(id));
+  // The heading says which part is open (18 Oct 2026, the window shell), Settings on the list.
+  const title=dialog.querySelector('.dialog-heading h2'),part=id?parts().find(p=>p.id===id):null;if(title)title.textContent=part?titleOf(part)||'Settings':'Settings';
   for(const p of parts())p.classList.toggle('is-open',p.id===id);
+  badge(part);
   back.hidden=!id;nav.hidden=Boolean(id);if(!id)list();
   dialog.scrollTop=0;
  }
@@ -51,7 +70,9 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  nav.addEventListener('click',event=>{const row=event.target.closest('[data-settings-open]');if(row)show(row.dataset.settingsOpen);});
  // Back on the list, the focus goes to the row of the part just left (it read open after show(null) cleared it, so found nothing).
  back.addEventListener('click',()=>{const left=open;show(null);nav.querySelector(`[data-settings-open="${esc(left)}"]`)?.focus({preventScroll:true});});
- const anchor=dialog.querySelector('#avatar-settings')??parts()[0];anchor?.before(back,note,nav);
+ const anchor=dialog.querySelector('#avatar-settings')??parts()[0];anchor?.before(note,nav);
+ // The way back sits in the heading, in front of the title (18 Oct 2026, the window shell).
+ const heading=dialog.querySelector('.dialog-heading');if(heading)heading.prepend(back);else anchor?.before(back);
  // Every time Settings opens it starts on the list (or the part a link asked for); a part that shows or hides later updates the list.
  new MutationObserver(()=>{if(!dialog.open)return;const id=next;next=null;if(id)reveal(id);else show(null);}).observe(dialog,{attributes:true,attributeFilter:['open']});
  // Only a part that really shows or hides: setting hidden to what it already is (install-ui.js does on every refresh) changes nothing.

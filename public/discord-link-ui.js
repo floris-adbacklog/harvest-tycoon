@@ -91,7 +91,7 @@ export function createDiscordLinkDialog({request,verify,signOut,farmer=()=>'',do
    const back=Boolean(code||state||error),given=discordTicket(back?state:ticket),box=doc.createElement('dialog');
    // What names this link to our server: the ticket from Discord's link, or back from Discord its state (a state has a ticket's form).
    let named=given?(back?{state:given}:{ticket:given}):null;
-   box.className='diamond-confirm sale-confirm discord-link-dialog';box.setAttribute('aria-labelledby','discord-link-title');box.setAttribute('aria-describedby','discord-link-copy');
+   box.className='diamond-confirm sale-confirm discord-link-dialog is-card is-s';box.setAttribute('aria-labelledby','discord-link-title');box.setAttribute('aria-describedby','discord-link-copy');
    box.innerHTML=`<div class="diamond-confirm-art">${art('farm')}</div><h2 id="discord-link-title"></h2><p id="discord-link-copy"></p><p class="diamond-confirm-note" data-warning hidden></p><p class="diamond-confirm-note" data-note hidden></p><p class="discord-link-status" data-status role="status"></p><div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel autofocus></button><button type="button" class="primary-button confirm-spend" data-link hidden></button></div>`;
    const part=selector=>box.querySelector(selector),copy=part('#discord-link-copy'),warning=part('[data-warning]'),note=part('[data-note]'),status=part('[data-status]'),cancel=part('[data-cancel]'),link=part('[data-link]');
    part('h2').textContent=LINK_TEXT.title;warning.textContent=LINK_TEXT.relink;note.textContent=LINK_TEXT.note;cancel.textContent='Cancel';

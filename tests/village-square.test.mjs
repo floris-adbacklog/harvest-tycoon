@@ -212,7 +212,8 @@ test('the game opens the market square from the Village market\'s pin and lights
  // These actions wait for the server (farm-state.js decides the goods), like the Valley Market's.
  for(const type of ['village_deliver','village_skip','village_build'])assert.ok(!read('public/farm-client.js').match(/INSTANT_ACTIONS=Object\.freeze\(new Set\(\[([^\]]+)\]/)[1].includes(`'${type}'`),type);
  const html=read('public/farm.html');
- assert.match(html,/<dialog id="village-square-dialog" class="game-dialog wide-dialog" aria-labelledby="village-square-title"><div class="dialog-heading"><div><span class="eyebrow">THE HEART OF THE VILLAGE<\/span><h2 id="village-square-title">Market square<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close">/);
+ // 18 Oct 2026: the window shell, the market square's picture beside its title and no small line above it.
+ assert.match(html,/<dialog id="village-square-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="village-square-title"><div class="dialog-heading"><i class="dialog-badge" data-game-art="villagemarket" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="village-square-title">Market square<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close">/);
  const tips=read('public/loading-screen.js');
  for(const tip of ['Villagers at the market square pay at least half again what their goods are worth.','Each golden brief at the market square builds the next village place or landmark.'])assert.ok(tips.includes(tip),tip);
 });
@@ -462,7 +463,8 @@ test('in the village the Pier opens the town boat, and a Pier built from its own
   // Not built yet: its golden brief in its window, with what it is for.
   const t=farm(144,{built:upto(143)}),notes=[],later=economyUI(t,{onBoat:()=>boats.push(2),notify:m=>notes.push(m),runAction:async()=>({place:'pier',name:'Pier',coins:400000,xp:250})});
   later.openBuilding('pier');const html=p.byId.get('building-content').innerHTML;
-  assert.match(html,/NOT BUILT YET · FOR THE TOWN BOAT/);assert.match(html,/The town boat calls here once the pier is mended\./);assert.match(html,/data-village-build="pier"/);assert.doesNotMatch(html,/id="construct-building"/);
+  // 18 Oct 2026: what it is for is the line under its name in the window's heading (the window shell).
+  assert.equal(p.byId.get('building-sub').textContent,'Not built yet · For the town boat');assert.match(html,/The town boat calls here once the pier is mended\./);assert.match(html,/data-village-build="pier"/);assert.doesNotMatch(html,/id="construct-building"/);
   t.buildings.pier.built=true;p.byId.get('building-content').querySelector('[data-village-build]');
   later.renderBuilding();assert.deepEqual(boats,[1,2],'built from there: the boat opens');assert.equal(p.byId.get('building-dialog').open,false);
  });
@@ -483,7 +485,8 @@ test('the game opens the town boat from the Pier, counts a boat ready to sail on
  assert.match(game,/syncVillageExtras\(\);villageArrivals\(now\);icons\(\);/,'in the 500 ms tick');
  const instant=read('public/farm-client.js').match(/INSTANT_ACTIONS=Object\.freeze\(new Set\(\[([^\]]+)\]/)[1];
  for(const type of ['boat_load','boat_skip','landmark_give','landmark_finish'])assert.ok(!instant.includes(`'${type}'`),`${type} waits for the server`);
- assert.match(read('public/farm.html'),/<dialog id="boat-dialog" class="game-dialog wide-dialog" aria-labelledby="boat-title"><div class="dialog-heading"><div><span class="eyebrow">FROM THE OLD PIER<\/span><h2 id="boat-title">Town boat<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"><\/i><\/button><\/div><div id="boat-content"><\/div><\/dialog>/);
+ // 18 Oct 2026: the window shell, the pier's picture beside the title and no small line above it.
+ assert.match(read('public/farm.html'),/<dialog id="boat-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="boat-title"><div class="dialog-heading"><i class="dialog-badge" data-game-art="pier" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="boat-title">Town boat<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"><\/i><\/button><\/div><div id="boat-content"><\/div><\/dialog>/);
  for(const file of ['public/village-square-ui.js','public/economy-ui.js'])assert.ok(read(file).includes("' The town boat waits at the pier.'"),file);
  // The boat's list is the Trade Depot's (one set of cream values, retention.css), and so is a landmark's.
  const css=read('public/retention.css');assert.match(css,/#estate-place-content \.depot-load li,#boat-content \.depot-load li,#village-square-content \.village-landmark \.depot-load li\{/);assert.match(css,/#village-square-content \.order-card,#boat-content \.order-card\{/);

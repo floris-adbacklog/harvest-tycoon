@@ -16,7 +16,7 @@ export const rookieShownLeft=(state,now)=>Math.max(0,rookieBoostLeft(state,now)-
 export const rookieLabel=(ms,boost=ROOKIE_TIMER_BOOST)=>`${Math.round(boost*100)}% shorter waiting · ${rookieTimeLeft(ms)} left`;
 
 export function createRookieUI({state,document:doc=globalThis.document,now=farmNow}){
- const dialog=doc.createElement('dialog');dialog.id='rookie-dialog';dialog.setAttribute('aria-labelledby','rookie-title');
+ const dialog=doc.createElement('dialog');dialog.id='rookie-dialog';dialog.className='is-card is-s is-cheer';dialog.setAttribute('aria-labelledby','rookie-title');
  doc.body.append(dialog);
  let phase='';
  const minutes=ms=>{const n=Math.round(ms/60000);return `${n} minute${n===1?'':'s'}`;};
@@ -25,7 +25,7 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
  const corn=()=>minutes(CROPS.corn.duration*(1-rookieBoost(state,now())));
  function render(left){
   const on=left>0,currentPercent=Math.round(rookieBoost(state,now())*100);phase=on?'on':'ended';
-  dialog.innerHTML=`<button type="button" class="rookie-close" data-rookie-close aria-label="Close">×</button>${art('hourglass','rookie-art')}<p class="eyebrow">BEGINNER BOOST</p>`+
+  dialog.innerHTML=`<button type="button" class="rookie-close" data-rookie-close aria-label="Close">×</button>${art('hourglass','rookie-art')}`+
    // Short on purpose (26 Sep 2026): the whole screen fits a small phone, Got it included, without scrolling.
    (on?`<h2 id="rookie-title"><span data-rookie-percent>${currentPercent}</span>% shorter waiting</h2><p>Waiting times start ${percent}% shorter and ease back to normal over your first ${ROOKIE_BOOST_MS/3600000} hours.</p>
     <div class="rookie-clock"><progress max="${ROOKIE_BOOST_MS-ROOKIE_FADED_MS}" value="${left}" aria-label="Time left of your beginner boost"></progress><b data-rookie-left>${rookieTimeLeft(left)} left</b></div>

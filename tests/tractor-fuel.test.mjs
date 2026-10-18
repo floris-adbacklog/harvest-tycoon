@@ -66,7 +66,8 @@ test('the price on the tile is the most that is charged: a farm that changed ask
 
 test('the window, the wiki and the texts say the rule; the night shift and Full care stay diamonds without fuel',()=>{
  const ui=read('public/retention-ui.js');
- assert.match(ui,/Fuel: \$\{TRACTOR_FUEL_BASE\} coins a job \+ \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of the crop's usual price per field, at least \$\{TRACTOR_FUEL_PER_FIELD\}\. <span>By hand is always free\.<\/span>/);
+ // 18 Oct 2026 (the window shell): "By hand is always free." shows, the fuel's formula is one tap away in How it works (a fold that stays open).
+ assert.match(ui,/<details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free\.<\/span><span class="fold-more">How it works<\/span><\/summary><p class="tractor-foot">Fuel: \$\{TRACTOR_FUEL_BASE\} coins a job \+ \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of the crop's usual price per field, at least \$\{TRACTOR_FUEL_PER_FIELD\}\.<\/p><\/details>/);
  assert.match(ui,/expectedCost:quotes\[mode\]\.total\},r=>`All done! The tractor worked \$\{r\.count\} fields · \$\{r\.cost\} coins spent\.`\)\.then\(r=>\{if\(!r\)renderUtility\(\);\}\);/,'a refused job shows the new price');
  const wiki=read('public/wiki-content.js');
  assert.match(wiki,/Fuel costs \$\{art\('coins'\)\}\$\{TRACTOR_FUEL_BASE\} a job, plus for every field \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of what its crop usually sells for, at least \$\{TRACTOR_FUEL_PER_FIELD\} coins: wheat \$\{fieldFuel\('wheat'\)\}, pumpkin \$\{fieldFuel\('pumpkin'\)\}, sunflower \$\{fieldFuel\('sunflower'\)\}\. Planting also pays the seeds\./);

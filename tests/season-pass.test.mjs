@@ -237,7 +237,7 @@ test('screens: a button and a More tile from level 10, a window that opens only 
  const html=read('public/farm.html'),ui=read('public/pass-ui.js'),game=read('public/game.js');
  assert.match(html,/<button class="icon-button" id="pass-button" aria-label="Open the Halloween Pass" aria-haspopup="dialog" title="Halloween Pass" hidden><i data-game-art="giant-small"><\/i><span id="pass-dot" aria-hidden="true" hidden>!<\/span><\/button><button class="icon-button" id="family-button"/);
  assert.match(html,/<button data-menu-action="events-button">[^\n]*\n    <button data-menu-action="pass-button" id="pass-menu-entry" hidden>/,'under Every day, after Events');
- assert.match(html,/<dialog id="pass-dialog" class="game-dialog wide-dialog" aria-labelledby="pass-title">/);
+ assert.match(html,/<dialog id="pass-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="pass-title">/);   // the window shell (18 Oct 2026)
  assert.match(read('public/pass.css'),/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{#pass-button\{display:none\}\}/,'a clean header on phones, like Farm family');
  // A narrow computer: with the pass button the header held one button too many (Help fell off at 1024 and 1200 px with the chat on).
  const css=read('public/pass.css');

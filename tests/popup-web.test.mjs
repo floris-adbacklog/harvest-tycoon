@@ -63,7 +63,7 @@ test('the Trustpilot pop-up opens on the website (a phone, a computer, an iPhone
   ['added to the home screen',{ua:CHROME,standalone:true}],['itch.io',{ua:DESKTOP,coarse:false,itch:true}]]){
   const run=await play(options);
   assert.equal(run.shown.length,1,name);assert.deepEqual(run.seen,['trustpilot'],`${name}: seen once it is on screen`);
-  assert.match(run.shown[0],/data-popup-go><span>Review on Trustpilot<\/span> ↗<\/button><button type="button" class="popup-later" data-popup-close>Not now<\/button>/,name);
+  assert.match(run.shown[0],/data-popup-go><span>Review on Trustpilot<\/span> ↗<\/button><button type="button" class="popup-later text-button" data-popup-close>Not now<\/button>/,name);   // a quiet text button (18 Oct 2026)
   assert.deepEqual(run.opened,[[TRUSTPILOT,'_blank','noopener,noreferrer']],`${name}: Trustpilot in a new tab`);
  }
 });

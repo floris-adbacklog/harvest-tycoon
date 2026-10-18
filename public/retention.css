@@ -100,7 +100,7 @@
 }
 
 /* Welcome Back: the same celebration card as a gift. */
-#welcome-back-dialog{box-sizing:border-box;width:min(400px,calc(100vw - 28px));max-height:calc(100dvh - 32px);margin:auto;padding:28px 24px 24px;border:1px solid #dfd3ae;border-radius:24px;background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 65%);text-align:center;color:#34432d;overflow:auto;position:relative}
+#welcome-back-dialog{text-align:center}
 #welcome-back-dialog::backdrop{background:#25332370;backdrop-filter:blur(3px)}
 /* Today's gift inside Welcome back: a warm row with its own Collect; once collected it turns green and says the streak. The comeback
    chest (Oct 2026) is the same row, in Welcome back and at the top of Today. */
@@ -134,9 +134,9 @@
 .chore-chance.is-mastered progress{accent-color:#5e9b51}
 .chore-chance.is-mastered strong{color:#3f6b2c}
 /* The chore result: gold and the goods up front when you find something, calm and neutral when you do not. */
-.chore-result.is-bonus{background:radial-gradient(ellipse at top,#fff0bb,#fffdf4 70%);border-color:#dfd3ae}
+
 .chore-result.is-bonus .chore-result-art{background:radial-gradient(circle,#fff6dc,#f9e5a8);border-color:#e8d499;box-shadow:0 0 0 6px #fff3cc}
-.chore-result:not(.is-bonus){background:#fffdf5}
+
 .chore-result:not(.is-bonus) .chore-prizes strong{background:#f1ece4;color:#5d5641}
 .chore-missed{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 14px;border-radius:14px;background:#f3efe7;text-align:start;font-size:13px;line-height:1.5;color:#6f6a58}
 .chore-missed>.game-art{width:34px;height:34px;flex-shrink:0;filter:grayscale(1);opacity:.55}
@@ -298,7 +298,7 @@
 /* Phones: the dock is one panel, not a framed card inside the panel. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.bottom-hud .tool-dock{border-color:transparent;box-shadow:none}}
 
-/* Diamonds & boosts opens like every other menu on a phone: a full-width sheet from the bottom (vip.css capped its
+/* Boosts (the shop; "Diamonds & boosts" until 18 Oct 2026) opens like every other menu on a phone: a full-width sheet from the bottom (vip.css capped its
    width and height for desktop, which made it the only narrower, floating sheet). */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#boost-dialog{max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 8px)}}
 
@@ -411,7 +411,7 @@
 .tractor-seed{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:8px 12px;border:1px solid #ecdcae;border-radius:16px;background:#fff8e4;text-align:start;color:inherit;cursor:pointer}
 .tractor-seed>.game-art{flex:0 0 34px;width:34px;height:34px;object-fit:contain}
 .tractor-seed>span:not(.game-art){flex:1;min-width:0}
-.tractor-seed small{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9b823a}
+.tractor-seed small{display:block;font-size:13px;font-weight:700;color:#7a705f}
 .tractor-seed strong{display:block;font:600 16px 'Outfit',sans-serif;color:#453e28}
 .tractor-seed em{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:13px;font-weight:700;color:#806322;white-space:nowrap}
 .tractor-seed em .game-art{width:17px;height:17px}
@@ -495,7 +495,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 .seed-filters button{white-space:nowrap;padding-inline:6px}
 @media(max-width:340px){.seed-filters button{padding-inline:3px;font-size:12px}}
 
-/* Diamonds & boosts on phones: each boost is one row with its price button on the right (not a card with a full-width
+/* Boosts (the shop) on phones: each boost is one row with its price button on the right (not a card with a full-width
    button under it), and the diamond packs are a 2x2 grid of small tiles. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  #boost-dialog .boost-card{grid-template-columns:44px minmax(0,1fr) 84px;grid-template-areas:"art copy buy" "extra extra extra";gap:8px 12px;padding:12px}
@@ -1047,7 +1047,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #sound-dialog .account-card{display:flex;align-items:center;gap:12px;margin:0 0 12px}
 #sound-dialog .account-avatar{flex:none;width:72px;height:72px;object-fit:contain;border:1px solid #ded7bc;border-radius:16px;background:linear-gradient(145deg,#f6e6bc,#e7edda)}
 #sound-dialog .account-who{min-width:0;display:grid}
-#sound-dialog .account-who small{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9a8457}
+#sound-dialog .account-who small{font-size:13px;font-weight:700;color:#7a705f}
 #sound-dialog .account-who #player-name{font:600 21px/1.2 'Outfit',sans-serif;color:#3f3827;overflow-wrap:anywhere}
 #sound-dialog .account-actions{display:flex;gap:6px;padding:0;border:0}
 #sound-dialog .account-actions button{flex:1 1 0;min-width:0;min-height:40px;padding:6px;font-size:13px;white-space:nowrap}
@@ -1497,7 +1497,7 @@ html[data-portal] .feedback-copy{display:none!important}
 .event-league{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:10px 14px;border:1px solid #e2d6bf;border-radius:14px;background:#fffaf0}
 .event-league img{flex:none;width:56px;height:56px;object-fit:contain}
 .event-league div{display:grid;gap:1px;min-width:0}
-.event-league>div>span{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8a7443}
+.event-league>div>span{font-size:13px;font-weight:700;color:#7a705f}
 .event-league strong{font:700 18px/1.15 'Outfit',sans-serif;color:#3b2c12}
 .event-league small{font-size:13px;color:#7a6c55}
 .event-league-name{margin:-4px 0 4px;font-size:13px;font-weight:700;color:#8a7443}
@@ -1517,3 +1517,35 @@ html[data-portal] .feedback-copy{display:none!important}
 #welcome-back-dialog .welcome-family{flex-wrap:wrap}
 #welcome-back-dialog .welcome-family .welcome-gift-copy{flex:1 1 150px}
 #welcome-back-dialog .welcome-family .small-button{margin-inline-start:auto}
+/* Today in the window shell (18 Oct 2026, the owner: cleaner, more like a game). The streak once (its number is in the title), a day you
+   have collected is just its check, a day to come its diamond and amount; tomorrow's gift on its own row and "Collected" a small line
+   under it; Remind me is a plain second button with the bell; the tabs stay on top under the heading while the list scrolls. */
+#daily-gift .streak-count{display:none}
+#daily-gift .streak-day.collected b{display:none}
+#daily-gift .streak-day.collected svg{width:28px;height:28px}
+#daily-gift .streak-claim{flex-wrap:wrap;row-gap:4px}
+#daily-gift .streak-claim>span:not(.streak-done){flex:1 1 100%}
+#daily-gift .streak-done{flex:1 1 100%;font-size:12.5px;color:#7a8f68}
+#daily-gift .gift-remind.secondary-button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 0;padding:8px 14px;border-style:solid;font-size:14px}
+#daily-gift .gift-remind.secondary-button[hidden]{display:none}
+#daily-gift .gift-remind .game-art{width:26px;height:26px}
+#today-dialog .today-tabs{position:sticky;top:calc(var(--head-h,72px) - var(--panel-pad));z-index:4;margin-top:16px;box-shadow:inset 0 2px 0 #e6dac7,0 6px 10px -8px #3b322033}
+/* Welcome back in the window shell (18 Oct 2026): what waits for you as pictures and bold words, nothing around them; the gift's Collect
+   is the green button until it is collected (welcome-ui.js), the way to the farm the second one until then. */
+#welcome-back-dialog .gift-rewards{display:flex;flex-direction:column;align-items:center;gap:8px}
+#welcome-back-dialog .gift-rewards .reward-big{font-size:17px;gap:8px}
+#welcome-back-dialog .gift-rewards .reward-big>.game-art{width:32px;height:32px}
+/* The window shell (18 Oct 2026): a place's picture is the badge in the window's heading, so its intro line has none of its own; a quest
+   that is ready shows its picture, title, rewards and Claim (its full bar said nothing more). */
+:is(#estate-dialog,#valley-dialog,#estate-place-dialog,#utility-dialog) .estate-lead>.estate-icon{display:none}
+:is(#estate-dialog,#valley-dialog,#estate-place-dialog) .estate-lead{padding-inline-start:0;color:var(--ink-soft,#7a705f)}
+#task-list .quest-item.is-ready .quest-meter{display:none}
+/* Daily sharing (18 Oct 2026, the window shell): the request first, its Give buttons on a row of their own under it; Give all is the green
+   one, Give 1 and Give 5 the second buttons. */
+.sharing-row>.sharing-give{flex:1 0 100%;display:flex;gap:8px}
+.sharing-row>.sharing-give>.sharing-action{flex:1;min-height:44px}
+.sharing-row:has(>.sharing-give){flex-wrap:wrap}
+.sharing-row>.sharing-give{max-width:none;justify-content:stretch}
+/* Confirm your email and Feedback: the close sits in the heading's row now (the window shell), beside the title, not over it. */
+.email-check-dialog .dialog-heading .email-check-close,.feedback-dialog .dialog-heading .feedback-close{position:relative;top:auto;inset-inline-end:auto}
+.email-check-dialog .dialog-heading,.feedback-dialog .dialog-heading{text-align:start}

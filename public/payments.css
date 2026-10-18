@@ -1,7 +1,7 @@
 /* Live store cards. Availability comes from the server, never from styling. */
 
 /* Compact purchase return dialog, separate from the full-height shop. */
-.payment-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:30px 26px 24px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d0dcc0;border-radius:28px;background:radial-gradient(ellipse at top,#edf4df 0,#fffdf4 62%);color:#2e4832;text-align:center;box-shadow:0 24px 70px #162a3150}
+.payment-dialog{text-align:center}
 .payment-dialog::backdrop{background:#173b2d8f;backdrop-filter:blur(5px)}
 .payment-dialog .payment-dismiss{position:absolute;inset-inline-end:12px;top:12px;display:grid;place-items:center;width:44px;height:44px;padding:0;background:#edf1e3;border:1px solid #d9e1cc;border-radius:14px;color:#52684a;cursor:pointer}
 .payment-dismiss svg{width:20px;height:20px}

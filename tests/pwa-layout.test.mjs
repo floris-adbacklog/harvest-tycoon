@@ -76,7 +76,9 @@ test('the game frame and the page load the installed-app files, before anything 
  const farm=read('public/farm.html'),play=read('public/play.html');
  assert(farm.indexOf('/app-mode.js')>0&&farm.indexOf('/app-mode.js')<farm.indexOf('/styles.css'));
  const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(match=>match[1]);
- assert.equal(sheets.at(-1),'/pwa-layout.css','loaded last, so it can correct the rules before it');
+ // 18 Oct 2026: the window shell (dialog-shell.css) and the farm screen's look (hud.css) come after it; their rules have no installed-app
+ // corrections to undo (pwa-layout.css scopes each of its own to html[data-app-mode=standalone], which wins on weight).
+ assert.equal(sheets.slice(-3).join(' '),'/pwa-layout.css /dialog-shell.css /hud.css','loaded last but the shell, so it can correct the rules before it');
  assert(play.indexOf('/app-mode.js')>0&&play.indexOf('/app-mode.js')<play.indexOf('/welcome.css'));
 });
 

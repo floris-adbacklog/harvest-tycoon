@@ -167,7 +167,7 @@ test('the level-up screen shows the avatar a level opened, and the wiki lists th
  assert.deepEqual(newAvatars({from:30,level:30,reward:{levels:[30]}}).map(a=>a.id),['truffle-hunter'],'a catch-up reward for level 30 names it too');
  assert.deepEqual(newAvatars({from:21,level:22}),[]);
  const ui=readFileSync(new URL('../public/progression-ui.js',import.meta.url),'utf8');
- assert.match(ui,/New avatar · pick it in Settings/);assert.match(ui,/new CustomEvent\('harvest-level',\{detail:\{level,state\}\}\)/);
+ assert.match(ui,/New avatar: pick it in Settings/);   // 18 Oct 2026: a sentence, no middle dotassert.match(ui,/new CustomEvent\('harvest-level',\{detail:\{level,state\}\}\)/);
  const wiki=JSON.stringify(wikiArticle('account'));
  assert.match(wiki,/Pick your avatar in Settings\. 20 are yours from the start; the others you earn by playing\./);
  assert.match(wiki,/Family farmer<\/span><\/td><td>Level 10<\/td>/);assert.match(wiki,/Valley legend<\/span><\/td><td>Level 100<\/td>/);

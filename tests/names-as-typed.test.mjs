@@ -100,7 +100,7 @@ for(const code of LANGUAGES){
   const invited=shown(renderFamilyInvitation(view,Date.now(),emblem,actionButton)+renderSentInvitations(view,Date.now(),actionButton),t);
   assert.ok(plain(invited.text).includes(plain(fill(dict['Invited by {0} · {1} / {2} farmers'],'Sunny Acres','2','10'))),`${code}: the invitation's line, translated around the name`);
   assert.ok(invited.text.includes('Harvest')&&invited.text.includes('Wheat')&&!invited.text.includes(dict['Sunny Acres']));
-  assert.ok(invited.text.includes(dict['YOU ARE INVITED']));
+  assert.ok(!invited.text.includes('YOU ARE INVITED'),'no small-capitals line over the invitation (18 Oct 2026, the window shell)');
   // A farmer's profile and the search: the farmer, their family, the family button's label; the staff member in the log.
   const farmer=shown(renderPlayerProfile({playerId:'a',username:'Sunny Acres',level:30,online:true,stats:{},badges:[],family:{id:'f1',name:'Harvest',emblem:'5',role:'Leader'}}),t);
   assert.ok(farmer.text.includes('Sunny Acres')&&farmer.text.includes('Harvest'));assert.ok(!farmer.text.includes(dict['Sunny Acres'])&&!farmer.text.includes(dict.Harvest));

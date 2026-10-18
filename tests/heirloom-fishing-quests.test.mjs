@@ -192,6 +192,6 @@ test('the farm log names the order; the card for a whole collection is its own s
  const s=farm(115),before=structuredClone(s);Object.assign(s.inventory,{goldenloaf:6,heirloompie:2});const r=act(s,{type:'miller_deliver',week:familyWeek(now)});
  const [row]=farmLog({type:'miller_deliver',week:familyWeek(now)},before,s,r);assert.equal(row.category,'market');assert.equal(row.action,'miller_deliver');assert.match(row.text,/^Delivered the miller’s order at the market square/);
  const cheer=read('public/collection-cheer.js');
- assert.match(cheer,/dialog\.showModal\(\)/);assert.match(cheer,/COLLECTION COMPLETE/);assert.match(cheer,/Wonderful!/);
+ assert.match(cheer,/dialog\.showModal\(\)/);assert.doesNotMatch(cheer,/COLLECTION COMPLETE/,'18 Oct 2026: no small line above the title (the window shell)');assert.match(cheer,/is-card is-s is-cheer/);assert.match(cheer,/Wonderful!/);
  assert.match(read('public/progression.css'),/#collection-cheer\[open\]\{display:flex;flex-direction:column/);
 });

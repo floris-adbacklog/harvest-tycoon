@@ -92,7 +92,8 @@ test('delivery orders have one name everywhere, and their tab says what they are
  assert.match(texts,/Complete 3 delivery orders\./);assert.match(texts,/Special delivery Complete 1 delivery order\./);
  assert.equal(FEATURE_NAMES.cart,'Delivery orders');
  assert.match(read('public/farm.html'),/<button data-menu-utility="cart"><i data-lucide="truck"><\/i><span><strong>Delivery orders<\/strong>/);
- assert.match(read('public/farm.html'),/<button data-today-tab="orders" aria-pressed="false">Delivery orders<\/button>/);
+ // 18 Oct 2026: the tabs have their pictures (the window shell); the name stays.
+ assert.match(read('public/farm.html'),/<button data-today-tab="orders" aria-pressed="false"><i data-game-art="cart"><\/i><span>Delivery orders<\/span><\/button>/);
  assert.match(read('public/game.js'),/cart:\{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'\}/);
  assert.match(read('public/retention-ui.js'),/<p class="section-copy orders-lead">Customers pay more than the Market\. New orders every day\.<\/p><p class="delivery-summary">/);
  assert.match(read('public/wiki-content.js'),/Tap the cart on your farm, or open Delivery orders in Today\./);

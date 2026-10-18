@@ -97,7 +97,7 @@ test('the screens: places on the map and in the menu, the Master tab, the fair t
  const game=read('public/game.js'),estate=read('public/estate-ui.js');
  for(const key of ['seedlab','visitors','valleyprojects'])assert.match(game,new RegExp(`addUtility\\('${key}',`),key);
  assert.match(game,/if\(ENDGAME_PLACES\.includes\(key\)\)\{const shown=endgameInSight\(state\);/,'hidden until level 90');
- assert.match(read('public/farm.html'),/<button data-estate-tab="master" aria-pressed="false" hidden>Master<\/button>/);
+ assert.match(read('public/farm.html'),/<button data-estate-tab="master" aria-pressed="false" hidden><i data-game-art="master"><\/i><span>Master<\/span><\/button>/);   // with its picture (18 Oct 2026)
  assert.match(estate,/data-fair-tab="pumpkin"/);for(const fn of ['labMarkup','visitorsMarkup','projectsMarkup','pumpkinMarkup'])assert.match(estate,new RegExp(`function ${fn}\\(`),fn);
  assert.match(read('public/wiki-content.js'),/section\('After level 90'/);
  for(const f of ['heirloom-savoycabbage','visitor-cook','project-canal','giant-prize','endgame-master-star'])assert.ok(readFileSync(new URL(`../public/assets/icons/${f}.webp`,import.meta.url)).length>1000,f);

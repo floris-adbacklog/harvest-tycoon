@@ -2,42 +2,51 @@
    main (green) for the thing to do, second (cream) for the other choices, light blue for spending diamonds, gold for real
    money, red for what is hard to undo, and the round icon buttons. All share the corners, bold text and an edge underneath that sinks when pressed; a button that
    is off looks the same everywhere. Sizes and spacing stay with each screen. The main green is a lighter, cheerful leaf green
-   (7 Oct 2026: the game should look fun and cheerful; it was a dark forest green #3f6b4a), still clearly readable with white text. */
+   (7 Oct 2026: the game should look fun and cheerful; it was a dark forest green #3f6b4a), still clearly readable with white text.
+   18 Oct 2026, the owner ("Maak het iets moderner, minder AI-gegenereerd ogend"): chunkier and more like a game's buttons. A thick
+   soft outline (2 px), a light top edge and a 4 px edge underneath in each family's own colour, extra-bold text, and a press that
+   sinks 3 px onto that same edge. */
 :root{
- --btn-radius:12px;
+ --btn-radius:14px;
  --btn-main:#3f8a4a;--btn-main-hover:#397c43;--btn-main-line:#316c3a;--btn-main-edge:#2b5e32;--btn-main-text:#fffef3;
  --btn-second:#f7f0e3;--btn-second-hover:#f0e5d1;--btn-second-line:#d9c7a4;--btn-second-edge:#e2d3b3;--btn-second-text:#5b4520;
  --btn-diamond:#e3f3fd;--btn-diamond-hover:#cdeafb;--btn-diamond-line:#9fc4da;--btn-diamond-edge:#b8d6e6;--btn-diamond-text:#1f5877;
  --btn-gold:#e3a53c;--btn-gold-hover:#d8982d;--btn-gold-line:#b07a22;--btn-gold-edge:#9c6214;--btn-gold-text:#3f2806;
  --btn-red:#b4513f;--btn-red-hover:#a3473a;--btn-red-line:#96402f;--btn-red-edge:#7d3526;--btn-red-text:#fff;
- --btn-off:#ede7dc;--btn-off-line:#ddd3c4;--btn-off-text:#a39784;
- --btn-icon:#fffdf5;--btn-icon-hover:#f7f0e3;--btn-icon-line:#ddd2c7;--btn-icon-edge:#e6dccb;--btn-icon-text:#5b4520
+ --btn-off:#f1ebe2;--btn-off-line:#e6ddd1;--btn-off-text:#b3a893;
+ --btn-icon:#fffdf5;--btn-icon-hover:#f7f0e3;--btn-icon-line:#ddd2c7;--btn-icon-edge:#e6dccb;--btn-icon-text:#5b4520;
+ --btn-top:inset 0 2px 0 #ffffff47
 }
 
 /* Main */
 .primary-button,
 .collect-all-panel .primary-button,
-.diamond-confirm .confirm-spend,
 .sharing-action.is-primary,
-.payment-dialog [data-close],
-.market-sale-buttons [data-sell]{
- background:var(--btn-main);border:1px solid var(--btn-main-line);border-radius:var(--btn-radius);color:var(--btn-main-text);
- box-shadow:0 3px 0 var(--btn-main-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
+.payment-dialog [data-close]{
+ background:var(--btn-main);border:2px solid var(--btn-main-line);border-radius:var(--btn-radius);color:var(--btn-main-text);
+ box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge);font-weight:700;text-shadow:0 1px 0 #0000002e;transition:background .12s,box-shadow .12s,transform .12s
 }
 .primary-button:hover:not(:disabled),
 .collect-all-panel .primary-button:hover:not(:disabled),
-.diamond-confirm .confirm-spend:hover:not(:disabled),
 .sharing-action.is-primary:hover:not(:disabled),
-.payment-dialog [data-close]:hover,
-.market-sale-buttons [data-sell]:hover:not(:disabled){background:var(--btn-main-hover);border-color:var(--btn-main-line)}
+.payment-dialog [data-close]:hover{background:var(--btn-main-hover);border-color:var(--btn-main-line)}
 
-/* Diamonds: the price boxes in the shop, light blue like the diamonds themselves. */
-#boost-dialog .boost-buy{
- background:var(--btn-diamond);border:1px solid var(--btn-diamond-line);border-radius:var(--btn-radius);color:var(--btn-diamond-text);
- box-shadow:0 3px 0 var(--btn-diamond-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
+/* Diamonds: light blue like the diamonds themselves, the diamond and the number on the button: the shop's price boxes, the
+   "Spend diamonds?" confirm, Replace this order, the tractor's Full care and night shift. */
+#boost-dialog .boost-buy,
+.is-diamond,
+.primary-button.is-diamond,.small-button.is-diamond,.secondary-button.is-diamond,
+.diamond-confirm:not(.sale-confirm) .confirm-spend,
+.diamond-option{
+ background:var(--btn-diamond);border:2px solid var(--btn-diamond-line);border-radius:var(--btn-radius);color:var(--btn-diamond-text);
+ box-shadow:var(--btn-top),0 4px 0 var(--btn-diamond-edge);font-weight:700;text-shadow:none;transition:background .12s,box-shadow .12s,transform .12s
 }
-#boost-dialog .boost-buy:not(:disabled):hover{background:var(--btn-diamond-hover)}
+#boost-dialog .boost-buy{
+ background:var(--btn-diamond)}
+#boost-dialog .boost-buy:not(:disabled):hover,.is-diamond:hover:not(:disabled),.diamond-confirm:not(.sale-confirm) .confirm-spend:hover:not(:disabled),.diamond-option:hover:not(:disabled){background:var(--btn-diamond-hover)}
 #boost-dialog .boost-buy .boost-price,#boost-dialog .boost-buy small{color:inherit}
+.is-diamond>.game-art,.diamond-confirm:not(.sale-confirm) .confirm-spend>.game-art{width:22px;height:22px;flex:none}
+.diamond-confirm:not(.sale-confirm) .confirm-spend{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 
 /* Second */
 .small-button,
@@ -45,61 +54,93 @@
 .sharing-action,
 .payment-dialog [data-retry],
 .payment-dialog .payment-shop,
-#boost-dialog .boost-buy.is-short{
- background:var(--btn-second);border:1px solid var(--btn-second-line);border-radius:var(--btn-radius);color:var(--btn-second-text);
- box-shadow:0 3px 0 var(--btn-second-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
+.market-sale-buttons [data-sell],
+.seed-shop-button,
+.rank-chip{
+ background:var(--btn-second);border:2px solid var(--btn-second-line);border-radius:var(--btn-radius);color:var(--btn-second-text);
+ box-shadow:var(--btn-top),0 4px 0 var(--btn-second-edge);font-weight:700;transition:background .12s,box-shadow .12s,transform .12s
 }
 .small-button:hover:not(:disabled),
 .secondary-button:hover:not(:disabled),
 .sharing-action:hover:not(:disabled),
 .payment-dialog [data-retry]:hover:not(:disabled),
 .payment-dialog .payment-shop:hover,
-#boost-dialog .boost-buy.is-short:hover{background:var(--btn-second-hover)}
+.market-sale-buttons [data-sell]:hover:not(:disabled),
+.seed-shop-button:hover,.rank-chip:hover{background:var(--btn-second-hover)}
 /* A gift picker that is open keeps its gold edge. */
 .sharing-action.is-open{border-color:#c9a45a;background:#fff8e1}
+/* Hard to undo, the first step: a cream button with a red outline and red words (Leave family, Delete account, Remove all, Report,
+   Block). The red confirm card after it is the filled red one. */
+.is-danger-quiet,.small-button.is-danger-quiet,.secondary-button.is-danger-quiet{background:var(--btn-second);border:2px solid #d69a8d;color:#a3402f;box-shadow:var(--btn-top),0 4px 0 #ecc9bf;text-shadow:none}
+.is-danger-quiet:hover:not(:disabled){background:#fbeee9}
 
 /* Gold: real money */
+.primary-button.starter-buy,
+.primary-button.is-money,.small-button.is-money,.secondary-button.is-money,.is-money{background:var(--btn-gold);border:2px solid var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-gold-edge);text-shadow:none;font-weight:700}
 .primary-button.starter-buy{background:var(--btn-gold);border-color:var(--btn-gold-line);color:var(--btn-gold-text);box-shadow:0 3px 0 var(--btn-gold-edge)}
-.primary-button.starter-buy:hover:not(:disabled){background:var(--btn-gold-hover);border-color:var(--btn-gold-line)}
+.primary-button.starter-buy,.primary-button.is-money{box-shadow:var(--btn-top),0 4px 0 var(--btn-gold-edge)}
+.primary-button.starter-buy:hover:not(:disabled),.is-money:hover:not(:disabled){background:var(--btn-gold-hover);border-color:var(--btn-gold-line)}
 
 /* Red: hard to undo */
 .small-button.is-danger,
 .primary-button.is-danger,
-.diamond-confirm.is-danger .confirm-spend{background:var(--btn-red);border-color:var(--btn-red-line);color:var(--btn-red-text);box-shadow:0 3px 0 var(--btn-red-edge)}
+.diamond-confirm.is-danger .confirm-spend{background:var(--btn-red);border-color:var(--btn-red-line);color:var(--btn-red-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-red-edge);text-shadow:0 1px 0 #0000002e}
 .small-button.is-danger:hover:not(:disabled),
 .primary-button.is-danger:hover:not(:disabled),
 .diamond-confirm.is-danger .confirm-spend:hover:not(:disabled){background:var(--btn-red-hover);border-color:var(--btn-red-line)}
 
-/* Pressed: the button sinks onto its edge. */
+/* Pressed: the button sinks onto its own edge. */
 .primary-button:active:not(:disabled),
 .small-button:active:not(:disabled),
 .secondary-button:active:not(:disabled),
 .sharing-action:active:not(:disabled),
-.diamond-confirm .confirm-spend:active:not(:disabled),
+.diamond-confirm:not(.sale-confirm) .confirm-spend:active:not(:disabled),
 .payment-dialog .payment-actions button:active:not(:disabled),
-#boost-dialog .boost-buy:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-main-edge)}
-#boost-dialog .boost-buy:not(:disabled):active{box-shadow:0 1px 0 var(--btn-diamond-edge)}
+.is-diamond:active:not(:disabled),.is-money:active:not(:disabled),.is-danger-quiet:active:not(:disabled),.diamond-option:active:not(:disabled),
+.seed-shop-button:active,.rank-chip:active,
+#boost-dialog .boost-buy:not(:disabled):active{transform:translateY(3px);box-shadow:0 1px 0 var(--btn-main-edge)}
+#boost-dialog .boost-buy:not(:disabled):active,.is-diamond:active:not(:disabled),.diamond-confirm:not(.sale-confirm) .confirm-spend:active:not(:disabled),.diamond-option:active:not(:disabled){box-shadow:0 1px 0 var(--btn-diamond-edge)}
 .small-button:active:not(:disabled),
 .secondary-button:active:not(:disabled),
 .sharing-action:not(.is-primary):active:not(:disabled),
 .payment-dialog [data-retry]:active:not(:disabled),
 .payment-dialog .payment-shop:active,
+.seed-shop-button:active,.rank-chip:active,
 #boost-dialog .boost-buy.is-short:active{box-shadow:0 1px 0 var(--btn-second-edge)}
-.market-sale-buttons [data-sell]:active:not(:disabled){box-shadow:0 1px 0 var(--btn-main-edge)}
+.market-sale-buttons [data-sell]:active:not(:disabled){box-shadow:0 1px 0 var(--btn-second-edge)}
 .small-button.is-danger:active:not(:disabled),.diamond-confirm.is-danger .confirm-spend:active:not(:disabled){box-shadow:0 1px 0 var(--btn-red-edge)}
-.primary-button.starter-buy:active:not(:disabled){box-shadow:0 1px 0 var(--btn-gold-edge)}
+.primary-button.starter-buy:active:not(:disabled),.is-money:active:not(:disabled){box-shadow:0 1px 0 var(--btn-gold-edge)}
+.is-danger-quiet:active:not(:disabled){box-shadow:0 1px 0 #ecc9bf}
 
-/* Off */
+/* Off: one look for every button that cannot be pressed now: flat and faded (18 Oct 2026 review: a grey button with a dark word and a
+   thick outline still looked tappable on a phone), the same on a phone and a computer. */
 .primary-button:disabled,
 .job-panel>.primary-button:disabled,
 .collect-all-panel .primary-button:disabled,
 .small-button:disabled,
 .secondary-button:disabled,
 .sharing-action:disabled,
-.diamond-confirm .confirm-spend:disabled,
+.diamond-confirm:not(.sale-confirm) .confirm-spend:disabled,
 .payment-dialog .payment-actions button:disabled,
+.is-diamond:disabled,.is-money:disabled,.is-danger-quiet:disabled,.diamond-option:disabled,
+.chat-send:disabled,
 #boost-dialog .boost-buy:disabled{
- background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default
+ background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default;text-shadow:none;opacity:1
+}
+#boost-dialog .boost-buy:disabled{
+ background:var(--btn-off)}
+
+/* Chat: Send is the main button when there is something to send, off while the box is empty. */
+.chat-send{background:var(--btn-main);border:2px solid var(--btn-main-line);border-radius:var(--btn-radius);box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge)}
+.chat-send:hover:not(:disabled){background:var(--btn-main-hover)}
+.chat-send:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--btn-main-edge)}
+.chat-compose:has(textarea:placeholder-shown) .chat-send,.chat-compose:has(input:placeholder-shown) .chat-send{background:var(--btn-off);border-color:var(--btn-off-line);box-shadow:none}
+
+/* Sizes: something you can hit with a thumb. Phones 44 px (the main button 48 px), computers 40 px. */
+.primary-button,.secondary-button,.small-button,.is-diamond,.is-money,.is-danger-quiet{min-height:40px}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .primary-button,.secondary-button,.small-button,.is-diamond,.is-money,.is-danger-quiet{min-height:44px}
+ dialog .primary-button{min-height:48px;font-size:max(16px,1em)}
 }
 
 /* Round icon buttons: the close × of every pop-up and the other icon buttons, one shape. The small map controls keep their
@@ -112,21 +153,40 @@
 .rookie-close,
 .level-up-close,
 #level-up-dialog .level-up-close{
- background:var(--btn-icon);border:1px solid var(--btn-icon-line);border-radius:14px;color:var(--btn-icon-text);
+ background:var(--btn-icon);border:2px solid var(--btn-icon-line);border-radius:14px;color:var(--btn-icon-text);
  box-shadow:0 3px 0 var(--btn-icon-edge);transition:background .12s,box-shadow .12s,transform .12s
 }
-.dialog-heading .icon-button,.game-dialog .dialog-heading .icon-button{width:42px;height:42px}
+.dialog-heading .icon-button,.game-dialog .dialog-heading .icon-button{width:44px;height:44px;min-width:44px;min-height:44px;margin:0;padding:0;display:grid;place-items:center;flex:none}
+.dialog-heading .icon-button>.game-art{width:30px;height:30px}
+/* The close of every window: one 44 px rounded square with a drawn ×, in the heading's corner (a card's in its top corner). Its name
+   and what it does stay as they were. */
+.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.level-up-close,.starter-close,.rookie-close,.payment-dialog .payment-dismiss,.offer-close,.popup-close,
+.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close]{
+ width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border-radius:14px;background:var(--btn-icon);border:2px solid var(--btn-icon-line);
+ box-shadow:0 3px 0 var(--btn-icon-edge);color:var(--btn-icon-text);font-size:0;line-height:0;flex:none;margin-inline-start:auto;cursor:pointer
+}
+:where(.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.starter-close,.rookie-close,.offer-close,.popup-close,.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close]){position:relative}
+#level-up-dialog .level-up-close{width:44px;height:44px;top:12px;inset-inline-end:12px;border-radius:14px}
+:is(.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.level-up-close,.starter-close,.rookie-close,.payment-dialog .payment-dismiss,.offer-close,.popup-close,.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close])>*{display:none!important}
+:is(.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.level-up-close,.starter-close,.rookie-close,.payment-dialog .payment-dismiss,.offer-close,.popup-close,.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close])::before,
+:is(.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.level-up-close,.starter-close,.rookie-close,.payment-dialog .payment-dismiss,.offer-close,.popup-close,.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close])::after{
+ content:"";position:absolute;left:50%;top:50%;width:20px;height:3px;border-radius:2px;background:currentColor;translate:-50% -50%}
+:is(.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.level-up-close,.starter-close,.rookie-close,.payment-dialog .payment-dismiss,.offer-close,.popup-close,.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close])::before{rotate:45deg}
+:is(.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.level-up-close,.starter-close,.rookie-close,.payment-dialog .payment-dismiss,.offer-close,.popup-close,.farmer-profile-close,[data-family-profile-close],[data-book-close],.chat-close,[data-cloud-close])::after{rotate:-45deg}
+/* On a card the × sits in its top corner. */
+dialog.is-card>:is(.level-up-close,.starter-close,.rookie-close,.payment-dismiss,.offer-close,.popup-close,.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button),.feedback-close,.email-check-close),
+dialog.is-sheet>:is(.starter-close,.offer-close){position:absolute;top:12px;inset-inline-end:12px;inset-inline-start:auto;margin:0;z-index:6}
 .icon-button:hover:not(:disabled),
 .payment-dialog .payment-dismiss:hover,
 .starter-close:hover,
 .rookie-close:hover,
-.level-up-close:hover{background:var(--btn-icon-hover)}
+.level-up-close:hover,.offer-close:hover,.popup-close:hover,.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button):hover{background:var(--btn-icon-hover)}
 .icon-button:active:not(:disabled),
 .payment-dialog .payment-dismiss:active,
 .starter-close:active,
 .rookie-close:active,
-.level-up-close:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
-.scene-controls .icon-button,.mobile-pan-controls .icon-button{box-shadow:none;transform:none}
+.level-up-close:active,.offer-close:active,.popup-close:active,.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button):active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
+.scene-controls .icon-button,.mobile-pan-controls .icon-button{transform:none}
 
 /* Keyboard focus, the same ring everywhere. */
 .primary-button:focus-visible,
@@ -134,19 +194,23 @@
 .secondary-button:focus-visible,
 .sharing-action:focus-visible,
 .icon-button:focus-visible,
-.diamond-confirm .confirm-spend:focus-visible,
+.close-dialog:not(.primary-button,.secondary-button,.small-button,.text-button):focus-visible,
+.is-diamond:focus-visible,.is-money:focus-visible,.is-danger-quiet:focus-visible,
+.diamond-confirm:not(.sale-confirm) .confirm-spend:focus-visible,
 .payment-dialog button:focus-visible,
 #boost-dialog .boost-buy:focus-visible{outline:3px solid #c2912d;outline-offset:2px}
 
 @media(prefers-reduced-motion:reduce){
- .primary-button,.small-button,.secondary-button,.sharing-action,.icon-button,.diamond-confirm .confirm-spend,#boost-dialog .boost-buy{transition:none}
+ .primary-button,.small-button,.secondary-button,.sharing-action,.icon-button,.diamond-confirm:not(.sale-confirm) .confirm-spend,#boost-dialog .boost-buy,.is-diamond,.is-money,.is-danger-quiet{transition:none}
  .primary-button:active,.small-button:active,.secondary-button:active,.sharing-action:active,.icon-button:active,#boost-dialog .boost-buy:active{transform:none}
 }
 
 /* Tabs in the same style: a slightly sunken track, and the chosen tab a raised cream button with the edge of the second
-   buttons. Covers every tab bar (market, quests, Farm family, daily, chat, admin, estate, journal, seeds, factory). */
-.market-tabs,.chat-tabs,.auth-tabs{background:#efe6d8;border:1px solid #e3d6c1;border-radius:14px;padding:4px;box-shadow:inset 0 2px 0 #e6dac7}
-.market-tabs button,.chat-tabs button,.auth-tabs button{border:1px solid transparent;border-radius:10px;font-weight:700;color:#857660;transition:background .12s,color .12s,box-shadow .12s}
+   buttons. Covers every tab bar (market, quests, Farm family, daily, chat, admin, estate, journal, seeds, factory). A tab with a
+   picture shows it beside its name; a red badge on a tab means something waits there. */
+.market-tabs,.chat-tabs,.auth-tabs{background:#efe6d8;border:1px solid #e3d6c1;border-radius:16px;padding:4px;box-shadow:inset 0 2px 0 #e6dac7}
+.market-tabs button,.chat-tabs button,.auth-tabs button{border:2px solid transparent;border-radius:12px;font-weight:700;color:#857660;transition:background .12s,color .12s,box-shadow .12s}
+.market-tabs>button:has(>.game-art,>i[data-game-art]){display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .market-tabs button:not(.active):not([aria-selected="true"]):not([aria-pressed="true"]):not(:disabled):hover,
 .chat-tabs button:not(.active):hover,
 .auth-tabs button:not([aria-selected="true"]):hover{background:#f7f0e3;color:#5b4520}
@@ -160,8 +224,8 @@
 
 /* A checkout that was closed or expired (27 Sep 2026): the way back to the shop is the main button, the farm the second, and
    "Check payment" a small link underneath (nothing was paid in most of these). */
-.payment-dialog[data-state="closed"] .payment-shop{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:0 3px 0 var(--btn-main-edge)}
+.payment-dialog[data-state="closed"] .payment-shop{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge)}
 .payment-dialog[data-state="closed"] .payment-shop:hover{background:var(--btn-main-hover)}
-.payment-dialog[data-state="closed"] [data-close]{background:var(--btn-second);border-color:var(--btn-second-line);color:var(--btn-second-text);box-shadow:0 3px 0 var(--btn-second-edge)}
+.payment-dialog[data-state="closed"] [data-close]{background:var(--btn-second);border-color:var(--btn-second-line);color:var(--btn-second-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-second-edge);text-shadow:none}
 .payment-dialog[data-state="closed"] [data-close]:hover{background:var(--btn-second-hover)}
 .payment-dialog[data-state="closed"] .payment-actions [data-retry]{min-height:0;padding:6px;border:0;background:none;box-shadow:none;color:#7a6b4b;font-weight:600;text-decoration:underline;text-underline-offset:3px}

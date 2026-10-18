@@ -7,7 +7,7 @@ import {EMAIL_BONUS} from './farm-state.js';
 // Change it" (or Settings) asks for the new address and the password; the code then goes to the new address and only that code
 // moves the account (farm-api event-service.js sendEmailChange). The new address counts as confirmed, so its diamonds follow.
 export function createEmailCheck({doc=globalThis.document,bridge,email,canChange=()=>false,onDone,onChanged,timers=globalThis}){
- const dialog=doc.createElement('dialog');dialog.id='email-check-dialog';dialog.className='game-dialog email-check-dialog';dialog.setAttribute('aria-labelledby','email-check-title');doc.body.append(dialog);
+ const dialog=doc.createElement('dialog');dialog.id='email-check-dialog';dialog.className='game-dialog email-check-dialog is-card is-s';dialog.setAttribute('aria-labelledby','email-check-title');doc.body.append(dialog);
  let sent=false,busy=false,waitUntil=0,timer=0,message='',news=null,digest=null;
  // Changing: 'form' (new address and password), 'code' (the code sent to the new address), or null. From Settings there is no way back to confirming.
  let change=null,changeOnly=false,newEmail='',typed={email:'',password:''};
@@ -28,7 +28,7 @@ export function createEmailCheck({doc=globalThis.document,bridge,email,canChange
  function render(){
   const wait=Math.max(0,Math.ceil((waitUntil-Date.now())/1000));
   if(change){renderChange();return;}
-  dialog.innerHTML=`<button type="button" class="icon-button close-dialog email-check-close" data-email-close aria-label="Close"><i data-lucide="x"></i></button>${art('letter')}<p class="eyebrow">${EMAIL_BONUS} DIAMONDS FOR YOU</p><h2 id="email-check-title">Confirm your email</h2>`
+  dialog.innerHTML=`<div class="dialog-heading">${art('letter','dialog-badge')}<div class="dialog-titles"><h2 id="email-check-title">Confirm your email</h2><p class="dialog-sub"><span class="tag-info email-check-reward">${art('diamonds')}+${EMAIL_BONUS}</span></p></div><button type="button" class="icon-button close-dialog email-check-close" data-email-close aria-label="Close"><i data-lucide="x"></i></button></div>`
    +(sent?`<p>We sent a 6-digit code to <b>${esc(email())}</b>. Type it here and the diamonds are yours.</p><form class="email-check-form" data-email-form><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" aria-label="The 6-digit code" data-email-code><button type="submit" class="primary-button" ${busy?'disabled':''}>Confirm</button></form><button type="button" class="link-button email-check-resend" data-email-send ${busy||wait?'disabled':''}>${wait?`Send a new code in ${wait}s`:'Send a new code'}</button>`
     :`<p>Confirm your email address once and get ${EMAIL_BONUS} diamonds. We send a 6-digit code to <b>${esc(email())}</b>.</p><button type="button" class="primary-button" data-email-send ${busy?'disabled':''}>Send code</button>`)
    +(canChange()?'<button type="button" class="link-button email-check-change" data-email-change>Wrong address? Change it</button>':'')
@@ -43,7 +43,7 @@ export function createEmailCheck({doc=globalThis.document,bridge,email,canChange
  }
  function renderChange(){
   const back=changeOnly?'':'<button type="button" class="link-button" data-change-back>Back</button>';
-  dialog.innerHTML=`<button type="button" class="icon-button close-dialog email-check-close" data-email-close aria-label="Close"><i data-lucide="x"></i></button>${art('letter')}<p class="eyebrow">YOUR ACCOUNT</p><h2 id="email-check-title">Change your email</h2>`
+  dialog.innerHTML=`<div class="dialog-heading">${art('letter','dialog-badge')}<div class="dialog-titles"><h2 id="email-check-title">Change your email</h2></div><button type="button" class="icon-button close-dialog email-check-close" data-email-close aria-label="Close"><i data-lucide="x"></i></button></div>`
    +(change==='code'?`<p>We sent a 6-digit code to <b>${esc(newEmail)}</b>. Type it here and your account moves to this address.</p><form class="email-check-form" data-change-code-form><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" aria-label="The 6-digit code" data-email-code><button type="submit" class="primary-button" ${busy?'disabled':''}>Confirm</button></form><button type="button" class="link-button" data-change-again>Use another address</button>`
     :`<p>Now: <b>${esc(email())}</b>. Type your new address and your password. We send a code to the new address; your account moves there once you type it.</p><form class="email-change-form" data-change-form><label>New email address<input type="email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required data-new-email></label><label>Your password<input type="password" autocomplete="current-password" required data-password></label><button type="submit" class="primary-button" ${busy?'disabled':''}>Send code</button></form>`)
    +back+`<p class="email-check-status" role="status">${esc(message)}</p>`;
