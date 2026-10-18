@@ -36,11 +36,11 @@ test('the converted sprite sheets and pictures are served as WebP, are all prese
 });
 test('every sprite sheet reference (art() and the welcome-page CSS sheet) points at the .webp file',()=>{
  for(const name of WEBP_SHEETS){
-  assert.match(read('public/visual-icons.js'),new RegExp(`file:'${name}\\.webp'`));
+  assert.match(read('public/visual-icons.js'),new RegExp(`file:'${name}\\.webp(\\?v=\\d+)?'`));  // 18 Oct 2026: a ?v= when a picture in the sheet changed
   assert.doesNotMatch(read('public/visual-icons.js'),new RegExp(`file:'${name}\\.png'`));
  }
  const welcome=read('public/welcome.css');
- for(const name of WEBP_SHEETS)assert.match(welcome,new RegExp(`/assets/icons/${name}\\.webp`));
+ for(const name of WEBP_SHEETS)assert.match(welcome,new RegExp(`/assets/icons/${name}\\.webp(\\?v=\\d+)?'`));
 });
 test('pictures that were not converted still ask for a plain PNG (the extension swap is per-key, not global)',()=>{
  // (The Family Hall render and the windmill joined the second, larger batch: see tests/speed-seo.test.mjs.)

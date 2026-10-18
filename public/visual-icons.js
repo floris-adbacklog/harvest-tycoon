@@ -4,7 +4,9 @@ import {LANGUAGES} from './languages.js';
 const sheets=[
  {file:'crops-v2.webp',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
  {file:'goods-v2.webp',columns:4,keys:['grainmeal','flour','feed','fertilizer','salad','pickles','oil','milk','eggs','cheese','bread','pie','vegetables','tractor','silo','cart']},
- {file:'interface-v2.webp',columns:4,keys:['farm','estate','buildings','market','gift','quests','boost','trophy','coins','diamonds','seeds','water','harvest','care','hammer','xp']}
+ // ?v=: the sheet's address changes when a picture in it changes, so a browser that keeps the sheet a day gets the new one at once
+ // (18 Oct 2026: the Care glove lost its leaf).
+ {file:'interface-v2.webp?v=20261018',columns:4,keys:['farm','estate','buildings','market','gift','quests','boost','trophy','coins','diamonds','seeds','water','harvest','care','hammer','xp']}
 ];
 const pictures={'family-sharing':'family-sharing','live-events':'live-events',vip:'vip','familyhall-model':'familyhall-model',lock:'lock','family-weekly-order':'family-weekly-order','family-members':'family-members','family-tournament':'family-tournament','family-management':'family-management',familyhall:'familyhall','helping-hand':'helping-hand','collect-all':'collect-all','instant-harvest':'instant-harvest','double-harvest':'double-harvest','invite-friends':'invite-friends',farmhouse:'farmhouse',mill:'mill',dairy:'dairy',coop:'coop',bakery:'bakery',packing:'packing',windmill:'windmill',stall:'stall',chores:'chores',honey:'honey'};
 for(const key of ['rank-gold','rank-silver','rank-bronze','family-bee','family-oak','family-barn','family-fox','family-owl','family-windmill','family-horseshoe'])pictures[key]=key;
