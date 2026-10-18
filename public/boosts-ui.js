@@ -173,7 +173,9 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  function showPacks(short){
   showShopTab('diamond-store');
   suggestion=(DIAMOND_PACKS.find(p=>p.amount>=short)??DIAMOND_PACKS.at(-1)).amount;render();
-  $('diamond-store').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+  // To the marked pack itself: the Special offer and the pass sit above the packs on the same tab (18 Oct 2026).
+  const pack=$('diamond-packs').querySelector('.is-suggested');
+  (pack??$('diamond-store')).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:pack?'center':'start'});
   clearTimeout(suggestionTimer);suggestionTimer=setTimeout(()=>{suggestion=0;if($('boost-dialog').open)render();},6000);
   track('get_diamonds_clicked',{short});
  }

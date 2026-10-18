@@ -85,9 +85,10 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  // The Diamond shop (public/farm.html #boost-dialog): the offer as a banner at the top while it runs, so a farmer who closed the
  // window can open it again there.
  function banner(show){
-  let b=doc.getElementById('shop-offer');const wallet=doc.querySelector('#boost-dialog .boost-wallet');
-  if(!b&&!wallet)return;
-  if(!b){b=doc.createElement('button');b.type='button';b.id='shop-offer';b.className='shop-offer';b.onclick=open;wallet.after(b);}
+  // At the top of the shop's Diamonds tab, above the packs (18 Oct 2026, the window shell: once above the tabs, on every tab).
+  let b=doc.getElementById('shop-offer');const deals=doc.querySelector('#boost-dialog .shop-deals');
+  if(!b&&!deals)return;
+  if(!b){b=doc.createElement('button');b.type='button';b.id='shop-offer';b.className='shop-offer';b.onclick=open;deals.prepend(b);}
   b.hidden=!show;if(!show)return;
   const html=`<img src="/assets/icons/offer-hero.webp" alt=""><span class="shop-offer-copy"><b>Special offer</b><small>Ends in ${duration(left())}</small></span><span class="shop-offer-price"><s>${worth()}</s><b>${price()}</b></span><span class="shop-offer-tag">-${offerDiscount(offer)}%</span>`;
   if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;}

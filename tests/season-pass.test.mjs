@@ -295,8 +295,8 @@ function passPage(){
  const buy=node(),content={html:'',set innerHTML(v){this.html=v;},get innerHTML(){return this.html;},querySelectorAll:()=>[],querySelector:sel=>sel==='.pass-buy'&&content.html.includes('pass-buy')?buy:null};
  const dialog=node({open:false,showModal(){this.open=true;},close(){this.open=false;}});
  const nodes={'pass-button':node(),'pass-dot':node(),'pass-dialog':dialog,'pass-content':content,'pass-menu-hint':node()};
- const wallet={after(b){nodes['shop-pass']=b;}};
- const doc={getElementById:id=>nodes[id]??null,querySelectorAll:()=>[],querySelector:sel=>sel==='#boost-dialog .boost-wallet'?wallet:null,createElement:()=>({hidden:false,dataset:{},set innerHTML(v){this.html=v;}})};
+ const deals={append(b){nodes['shop-pass']=b;}};
+ const doc={getElementById:id=>nodes[id]??null,querySelectorAll:()=>[],querySelector:sel=>sel==='#boost-dialog .shop-deals'?deals:null,createElement:()=>({hidden:false,dataset:{},set innerHTML(v){this.html=v;}})};
  const listeners={};
  return {doc,nodes,dialog,content,buy,window:{addEventListener(name,fn){listeners[name]=fn;},removeEventListener(){}},close:()=>listeners.pagehide?.()};
 }

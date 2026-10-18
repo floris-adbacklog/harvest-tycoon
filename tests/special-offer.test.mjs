@@ -84,7 +84,7 @@ test('the offer window: its cards, once per device, a sound, and the Diamond sho
  assert.match(ui,/const running=\(\)=>Boolean\(offer\)&&!offer\.bought&&left\(\)>0&&fitsDevice\(offer\.audience,device\(\)\);/);
  assert.match(ui,/if\(!running\(\)\|\|seen\(\)\|\|waiting\|\|doc\.documentElement\?\.hasAttribute\?\.\('data-admin-view'\)\)return;\n  let fished=0;const quiet=\(\)=>\{if\(doc\.body\?\.classList\?\.contains\?\.\('fishing'\)\)fished=Date\.now\(\);return !doc\.querySelector\('dialog\[open\]'\)&&Date\.now\(\)-fished>=AFTER_FISHING;\};/);
  assert.match(ui,/win\.harvestSound\?\.\('offer'\);/);
- assert.match(ui,/wallet\.after\(b\);/);
+ assert.match(ui,/deals\.prepend\(b\);/,'first on the shop\'s Diamonds tab, above the pass and the packs');
  assert.match(ui,/await bridge\.checkout\('offer',requestId,offer\.id\);/);
  assert.match(read('src/starter-pack-ui.js'),/window\.dispatchEvent\(new CustomEvent\('harvest-catalog',\{detail:data\}\)\);/,'no second catalogue request');
  assert.match(read('public/sound-kit.js'),/case 'offer':/);

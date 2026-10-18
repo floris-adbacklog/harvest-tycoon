@@ -141,9 +141,10 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
  // The Diamond shop (farm.html #boost-dialog): a banner at the top while the paid row is for sale and not bought yet, also before the
  // season (the pre-sale, Oct 2026: there it says when it starts). Tapped, it opens the pass; it never opens by itself.
  function banner(show){
-  let b=$('shop-pass');const wallet=doc.querySelector('#boost-dialog .boost-wallet');
-  if(!b&&!wallet)return;
-  if(!b){b=doc.createElement('button');b.type='button';b.id='shop-pass';b.className='shop-pass';b.onclick=open;wallet.after(b);}
+  // Under the Special offer on the shop's Diamonds tab (18 Oct 2026, the window shell).
+  let b=$('shop-pass');const deals=doc.querySelector('#boost-dialog .shop-deals');
+  if(!b&&!deals)return;
+  if(!b){b=doc.createElement('button');b.type='button';b.id='shop-pass';b.className='shop-pass';b.onclick=open;deals.append(b);}
   b.hidden=!show;if(!show)return;
   const html=`${art(PASS_ART)}<span class="shop-pass-copy"><b>Halloween Pass</b><small>${passPhase(now())==='soon'?passStartsLine(state,now()):passPhaseLine(now())}</small></span><span class="shop-pass-price"><b>${shopPrice(catalog,'pass',catalog?.pass?.cents??SEASON_PASS.cents)}</b></span>`;
   if(b.dataset.html!==html){b.dataset.html=html;b.innerHTML=html;}

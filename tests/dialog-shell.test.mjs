@@ -254,6 +254,17 @@ test('the review\'s fixes in windows: a button that is off is flat and faded, Se
  // The shop's tab says what it holds; the window keeps the owner's title.
  assert.match(farm,/<button type="button" data-shop-jump="shop-boosts" aria-controls="shop-boosts" aria-pressed="false"><i data-game-art="boost"><\/i><span>Power-ups<\/span><\/button>/);
  assert.match(farm,/<h2 id="boost-title">Boosts<\/h2>/);
+ // The diamond shop looked at again (18 Oct 2026, the owner): the balance in the heading on every tab, the Special offer and the pass
+ // above the packs on the Diamonds tab only, one small Secure checkout line, Earn daily a row at the bottom of every tab.
+ assert.match(farm,/<i class="dialog-badge" data-game-art="boost" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="boost-title">Boosts<\/h2><\/div><span class="shop-balance"><i data-game-art="diamonds" aria-hidden="true"><\/i><strong id="boost-wallet">0<\/strong><span class="sr-only">diamonds to spend<\/span><\/span>/);
+ assert.match(farm,/<i data-game-art="diamonds"><\/i><span>Diamonds<\/span><\/button>/);
+ assert.match(farm,/<section class="diamond-store" id="diamond-store"[^>]*><h3 id="diamond-store-title">Get diamonds<\/h3><div class="shop-deals" id="shop-deals"><\/div><div id="diamond-packs" class="diamond-packs"><\/div><p class="shop-secure"><i data-lucide="lock"><\/i>Secure checkout<\/p><\/section>/);
+ assert.match(farm,/<div id="boost-catalog"><\/div><button type="button" class="shop-earn" id="boost-daily">/);
+ assert.doesNotMatch(farm,/class="boost-wallet"/);
+ assert.match(read('public/pass-ui.js'),/deals\.append\(b\);/);
+ const shop=read('public/shop.css');
+ assert.match(shop,/#boost-dialog \.boost-detail\[data-state=ready\]\{display:none\}/);
+ assert.match(shop,/#diamond-packs \.pack-best\{position:absolute;top:-12px;/);
  // How to play names the one way to Feedback on every screen.
  const wiki=read('public/wiki-content.js');
  assert.ok(!wiki.includes('Tap the mailbox next to How to play'));assert.equal(wiki.split('Tap More, then Feedback, choose Feedback').length,3);
