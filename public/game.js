@@ -1058,7 +1058,9 @@ function resize(){
 }
 // The village is three times as wide as the farm and its houses are smaller on screen: further out to zoom and to move (as far as
 // its mountains allow, resize), and much further in, so a house comes as close as a farm building does.
-const minZoom=()=>villageWorld?villageMinZoom:.75,maxZoom=()=>villageWorld?6:2.2;
+// The whole farm is as far as the farm goes (18 Oct 2026, the owner: zooming out further "biedt weinig toegevoegde waarde", only empty
+// edges): there it stops at the whole farm in view; the fields and the heart of the farm keep their .75.
+const minZoom=()=>villageWorld?villageMinZoom:viewMode==='overview'?1:.75,maxZoom=()=>villageWorld?6:2.2;
 function panFarm(delta,depth=0){const limit=villageWorld?60:Math.round(24*SPREAD);pan=Math.max(-limit,Math.min(limit,pan+delta));panDepth=Math.max(-limit,Math.min(limit,panDepth+depth));resize();}
 // The farm's three views go from close to far: the fields (Focus on your crop fields), the heart of the farm (Center the farm) and the
 // whole farm (18 Oct 2026, the owner: "als je max uitzoomt dat hij naar de volgende variant gaat"). Zooming out at a view's widest goes on

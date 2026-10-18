@@ -79,7 +79,7 @@ test('the camera draws the front of the ring, and a phone on its side has no emp
  assert.match(init,/camera\.near=-200;/,'the front mountains rise past the camera: drawn from 200 behind it, not cut open');
  assert.match(game,/camera=new THREE\.OrthographicCamera\(-25,25,17,-17,\.1,300\);/,'the farm\'s camera as it was');
  assert.match(read('public/world-two.css'),/@media\(max-height:550px\) and \(orientation:landscape\) and \(max-width:900px\),\(max-height:550px\) and \(orientation:landscape\) and \(pointer:coarse\)\{html\[data-world="village"\]\{--mobile-bottom:0px\}\}/);
- assert.match(game,/const minZoom=\(\)=>villageWorld\?villageMinZoom:\.75/,'zooming out stops at the mountains');
+ assert.match(game,/const minZoom=\(\)=>villageWorld\?villageMinZoom:(?:viewMode==='overview'\?1:)?\.75/,'zooming out stops at the mountains');
 });
 // "Show me" on the golden brief (Oct 2026): game.js's own villagePan moves the village's normal view so a place is in the middle. On
 // every screen each place (and the market) then stands clear of the edges where game.js hides a name (beyond .92 of the half-width,
