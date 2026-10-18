@@ -68,7 +68,7 @@ test('the page is marked before it shows, from the load\'s adminView, never on C
  const mark=cloud.indexOf('if(adminView)markAdminView(document);'),shown=cloud.indexOf('document.body.hidden=false;');
  assert.ok(mark>0&&mark<shown,'marked before the body shows');
  assert.match(cloud,/const adminView=!portal&&window\.harvestInitialFarm\.adminView===true;/);
- assert.ok(cloud.indexOf('if(adminView)startAdminView({bridge});')>cloud.indexOf('createAdminDashboard(bridge,{chat});'),'after the dashboard, whose buttons it presses');
+ assert.ok(cloud.indexOf('if(adminView)part(()=>startAdminView({bridge}));')>cloud.indexOf('part(()=>createAdminDashboard(bridge,{chat}));')&&cloud.indexOf('part(()=>createAdminDashboard(bridge,{chat}));')>0,'after the dashboard, whose buttons it presses');
  assert.doesNotMatch(farm,/admin-view|data-admin-view|data-admin-tool/);
  const doc={documentElement:{dataset:{}},head:{children:[],append(el){this.children.push(el);}},createElement:()=>({})};
  markAdminView(doc);assert.equal(doc.documentElement.dataset.adminView,'');assert.match(doc.head.children[0].href,/^(?:file:\/\/)?\/admin-view\.css$/,'its own address (through the import map in a browser: scripts/cache-bust.mjs)');

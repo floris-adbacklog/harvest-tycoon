@@ -206,7 +206,7 @@ const IPHONE='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit
 const NOW=Date.UTC(2026,9,15,12),GOOD={id:'0b6f2a1c-3d4e-4f5a-8b6c-7d8e9f0a1b2c',kind:'left',step:'models',percent:47,models:96,view:42,total:65,hidden:true,online:true,protocol:'h3',waiting:2,files:['/game.js','/model-atlas.js'],at:NOW-60000};
 test('stallRow: a checked row with the platform and device type, never a player, an IP address or a user agent',()=>{
  const row=stallRow(GOOD,{platform:'browser',agent:IPHONE,portal:undefined,staff:false,now:NOW});
- assert.deepEqual(row,{note_id:GOOD.id,created_at:'2026-10-15T12:00:00.000Z',platform:'web',device:'iPhone · Safari',staff:false,kind:'left',step:'models',percent:47,models:96,view_s:42,total_s:65,hidden:true,online:true,protocol:'h3',waiting:2,files:['/game.js','/model-atlas.js']});
+ assert.deepEqual(row,{note_id:GOOD.id,created_at:'2026-10-15T12:00:00.000Z',platform:'web',device:'iPhone · Safari',staff:false,kind:'left',step:'models',percent:47,models:96,view_s:42,total_s:65,hidden:true,online:true,protocol:'h3',waiting:2,files:['/game.js','/model-atlas.js'],stage:null,error:null});
  for(const key of Object.keys(row))assert.doesNotMatch(key,/player|user|ip|agent|email|name/,key);assert.ok(!Object.values(row).includes(IPHONE));
  assert.equal(stallRow({...GOOD,player_id:'f1',ip:'1.2.3.4'},{now:NOW}).player_id,undefined,'what else comes along stays out');
  assert.equal(stallRow({...GOOD,kind:'refresh'},{agent:`${IPHONE} HarvestTycoonApp/1.1`,staff:true,now:NOW}).platform,'ios_app');assert.equal(stallRow(GOOD,{staff:true,now:NOW}).staff,true);

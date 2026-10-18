@@ -110,9 +110,9 @@ test('src/main.js: the bridge says how the signed-in user signs in and mails the
 
 test('the line shows on the website and in both apps, never on a portal or in the admin view',()=>{
  const cloud=read('src/game-cloud.js');
- assert.ok(cloud.includes('if(!portal&&!adminView&&bridge.signIn)createSignInLine({info:bridge.signIn,setPassword:bridge.setPassword});'));
+ assert.ok(cloud.includes('if(!portal&&!adminView&&bridge.signIn)part(()=>createSignInLine({info:bridge.signIn,setPassword:bridge.setPassword}));'));
  assert.ok(cloud.includes("import {createSignInLine} from './account-sign-in-ui.js';"));
- assert.ok(cloud.indexOf('const ui=createCloudUI(')<cloud.indexOf('createSignInLine({'),'after Your account is there');
+ assert.ok(cloud.indexOf('const ui=part(()=>createCloudUI(')<cloud.indexOf('createSignInLine({'),'after Your account is there');
  // The portals' own bridge (CrazyGames, Kongregate, Discord) has neither.
  const session=read('src/farm-session.js');assert.ok(!/\bsignIn\b|setPassword/.test(session));
  for(const page of ['src/crazygames.js','src/kongregate-page.js','src/discord-page.js','src/kongregate.js','src/discord.js'])assert.ok(!read(page).includes('account-sign-in'),page);

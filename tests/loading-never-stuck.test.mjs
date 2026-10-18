@@ -183,7 +183,7 @@ test('a farm on screen (a finished bar) is never opened again, even when its sta
  const f=innerFixture();f.win.harvestLoading={models:141,of:141,account:true,finished:true};f.el.progress.value=100;f.pass(LOAD_STALL_MS*10);assert.deepEqual(f.reloads,[]);
  const game=read('public/game.js');
  assert.match(game,/await new Promise\(resolve=>setTimeout\(\(\)=>\{try\{\$\('loading'\)\.hidden=true;stopTips\(\);progression\.refresh\(\);\}finally\{resolve\(\);\}\},450\)\);/,'the farm\'s start ends whatever the refresh does');
- assert.match(read('src/game-cloud.js'),/const ready=game\?await game\.farmReady\.catch\(error=>\{console\.error\('The game could not load',error\);game=null;return false;\}\):false;\n  if\(!game\)watch\.failed\(\);else watch\.done\(ready\);/,'a start that fails is a load that failed');
+ assert.match(read('src/game-cloud.js'),/const ready=game\?await game\.farmReady\.catch\(error=>\{firstError\(error\);console\.error\('The game could not load',error\);game=null;return false;\}\):false;\n  if\(ready\)startup\.stage='ready';\n  if\(!game\)watch\.failed\(\);else watch\.done\(ready,\{brokenPart\}\);/,'a start that fails is a load that failed');
 });
 
 // The trip to the village (World II): the real village-scene.js and the real files over a pretend network and a pretend clock.

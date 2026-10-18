@@ -72,7 +72,7 @@ const CONNECTION_STAGES=new Set(['reconnecting','paused']);
 // A farm that did not open (3 Oct 2026, public/loading-screen.js watchLoading): its code failed to load, or the bar stood still; again =
 // the second time within ten minutes, when it shows Try again instead of opening once more by itself. 15 Oct 2026: 'reload_hung', the page
 // opened again by itself that was still there 15 seconds later (its reload got no answer), now showing Try again.
-const LOAD_REASONS=new Set(['failed','stalled','reload_hung']);
+const LOAD_REASONS=new Set(['failed','stalled','reload_hung','code_stalled']);
 // 8 Oct 2026: which step stood still (loading-screen.js loadStep) and how many models had arrived by then. 11 Oct 2026: 'village', the
 // village's own download, and 'frame', a farm page that never showed itself (the page around it noticed: loading-screen.js farmHandOver).
 const LOAD_STEPS=new Set(['code','models','account','scene','village','frame']);

@@ -195,6 +195,11 @@ export const LOAD_STALL_MS=30000,LOAD_RETRY_KEY='harvest-tycoon:farm-retry',LOAD
 // player refreshed. Still here 15 seconds after the reload: "Your farm could not load" with Try again (farmHandOver: the page's own
 // pause card), counted as reason 'reload_hung'. Never a second reload by itself: that would only start the waiting one over.
 export const RELOAD_HUNG_MS=15000;
+// 18 Oct 2026 (the 12% report, option 3): every file the farm page asked for has come and the game still has not started (step 'code',
+// no public/game.js) for 8 seconds in view: its start stopped (src/game-cloud.js), and waiting longer brings nothing, so it opens again
+// then instead of after 30 (live: 5 such stalls in 3 days sat out the 30 seconds, the owner refreshed others by hand). A file still on
+// its way keeps the 30 seconds (a slow line). The second time within ten minutes it is Try again, as with every reload by itself.
+export const CODE_STALL_MS=8000;
 // 11 Oct 2026: 'village' is the village's own models step, 'frame' a farm page that never showed (farmHandOver above).
 export const loadStep=at=>!at?'code':at.models<at.of?(at.village?'village':'models'):!at.account?'account':'scene';
 // The one count of a farm opened again by itself, for this page and the page around it (11 Oct 2026): true when it already was within
@@ -208,7 +213,8 @@ function retriedLately(storage,now){
 // What a stalled load leaves for the next one (15 Oct 2026, the 12% report, option 5): farm_load_retry reaches Tag Manager only for players
 // who accepted cookies, and never from the iPhone app, so many stalls were never seen. Both watches now also leave a short note in this
 // tab (sessionStorage, which the farm page and the page around it share): what happened (kind: 'auto' opened again by itself, 'card' Try
-// again, 'reload_hung' its reload got no answer, 'left' the page went while still loading; src/supabase.js takeStall makes that 'refresh'
+// again, 'reload_hung' its reload got no answer, 'left' the page went while still loading, 'part' the farm opened but a part of its page
+// broke (18 Oct 2026); src/supabase.js takeStall makes 'left' 'refresh'
 // when the player refreshed by hand), the step and the bar, the seconds in view and in all, whether it was ever out of view, online, the
 // connection's protocol and which of the page's own files never arrived. The next farm load takes it along (farm-api
 // load-stall-service.js, supabase/load-stalls.sql): no account, no cookies, the same for every player and every platform.
@@ -225,13 +231,37 @@ export function missingFiles(doc,win,max=5){
   return {waiting:missing.length,files:missing.slice(0,max)};
  }catch{return {waiting:0,files:[]};}
 }
+// The first thing that broke while the farm page started (18 Oct 2026, the 12% report, option 1; src/game-cloud.js harvestStartup): an
+// error's name and message and where it was thrown (the file's path and line, never its address's ?v= or another site's address),
+// on one line of at most 160 characters. Never throws: anything unreadable is null.
+export const STARTUP_STAGES=Object.freeze(['begin','watch','parts','game','farm','ready']);
+// 160 characters as Postgres counts them (code points): a cut by UTF-16 units could split an emoji in two, and farm-api's insert of a
+// lone half fails, the whole row with it (review of 18 Oct 2026).
+const cut160=text=>Array.from(text).slice(0,160).join('');
+export function errorLine(reason,event){
+ try{
+  const name=typeof reason?.name==='string'?reason.name:event||typeof reason==='object'&&reason?'Error':'Rejected';
+  const text=String(typeof reason?.message==='string'?reason.message:typeof reason==='string'?reason:event?.message??'').replace(/https?:\/\/[^\s)]+/g,url=>{try{return new URL(url).pathname;}catch{return '';}}).replace(/\s+/g,' ').trim();
+  const stack=typeof reason?.stack==='string'?reason.stack:'',frame=/(?:https?:\/\/[^/\s)]+)?(\/[^\s)?:]+)(?:\?[^\s):]*)?:(\d+):(\d+)/.exec(stack);
+  const file=event?.filename?`${(()=>{try{return new URL(event.filename).pathname;}catch{return '';}})()}:${event.lineno??0}`:frame?`${frame[1]}:${frame[2]}`:'';
+  return cut160(`${name}: ${text}${file?` @ ${file}`:''}`)||null;
+ }catch{return null;}
+}
+// Every file the farm page's HTML asked for has come (18 Oct 2026, option 3): true only when the page could be read and nothing is
+// missing; a page that cannot be read is not known to have everything, so it keeps the 30 seconds.
+function allFilesIn(doc,win){try{const base=doc.baseURI||win.location.href,origin=new URL(base).origin,path=address=>{try{const url=new URL(address,base);return url.origin===origin?url.pathname:null;}catch{return null;}};
+ const came=new Set(Array.from(win.performance.getEntriesByType('resource')).filter(entry=>entry.responseStart!==0).map(entry=>path(entry.name)));
+ const asked=Array.from(doc.querySelectorAll('link[rel=modulepreload][href],link[rel=stylesheet][href],script[src]'),el=>path(el.getAttribute('href')??el.getAttribute('src'))).filter(Boolean);
+ return asked.length>0&&asked.every(file=>came.has(file));}catch{return false;}}
 const navProtocol=win=>{try{return String(win.performance.getEntriesByType('navigation')[0]?.nextHopProtocol??'');}catch{return '';}};
 // doc and win: the page whose files are counted (none when it cannot be read); page: where online and, failing win, the protocol come from.
 // 15 Oct 2026, review fix: each note has its own random id, so a load sent again (src/connection.js withRetry) counts its stall once.
 const stallId=()=>{try{return globalThis.crypto.randomUUID();}catch{return null;}};
+// 18 Oct 2026 (option 1): how far the farm page's start came and the first thing that broke there (win.harvestStartup, src/game-cloud.js).
+const startupOf=win=>{try{const s=win?.harvestStartup;return s?{stage:STARTUP_STAGES.includes(s.stage)?s.stage:null,error:typeof s.error==='string'?cut160(s.error):null}:{};}catch{return {};}};
 function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,page=win,at}){
  try{
-  const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),at};
+  const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),...startupOf(win),at};
   storage.setItem(LOAD_STALL_KEY,JSON.stringify(note));return note;
  }catch{return null;}
 }
@@ -278,7 +308,8 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
  const timer=win.setInterval(()=>{
   if(doc.hidden)away=true;else inView++;
   const at=win.harvestLoading,value=`${Number(doc.getElementById('load-progress')?.value??0)} ${at?'':filesIn(win)}`;
-  if(value!==last){last=value;still=0;}else if(!doc.hidden&&!at?.finished&&(still+=1000)>=LOAD_STALL_MS)recover('stalled');
+  if(value!==last){last=value;still=0;}
+  else if(!doc.hidden&&!at?.finished){still+=1000;if(still>=LOAD_STALL_MS)recover('stalled');else if(!at&&still>=CODE_STALL_MS&&allFilesIn(doc,win))recover('code_stalled');}
  },1000);
  // The page going while it still loads (a refresh, Back, another address): 'left', unless this watch is over (it opened the farm
  // again itself, showed Try again, or the farm opened). Back from the back/forward cache, the note goes again.
@@ -286,5 +317,8 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
   win.addEventListener?.('pagehide',()=>{if(!over)left=noteLeft(storage,win,()=>note('left'));});
   win.addEventListener?.('pageshow',event=>{if(event?.persisted&&left){forgetLeft(storage,left);left=null;}});
  }catch{}
- return {failed:()=>recover('failed'),done(ready){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}}};
+ // done: the farm opened (ready) or showed its own error card. brokenPart (18 Oct 2026, review of the 12% fix): one of the farm page's own
+ // parts broke on the way (src/game-cloud.js part) while the farm still opened: a note of kind 'part', with the stage and that error, so
+ // farm-api still learns which part broke.
+ return {failed:()=>recover('failed'),done(ready,{brokenPart=false}={}){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}if(brokenPart)note('part');}};
 }

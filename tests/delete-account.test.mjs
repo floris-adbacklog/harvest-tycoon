@@ -162,7 +162,7 @@ test('the game: two steps (what disappears, then the farmer name), both red, the
 
 test('the wiring: the frame on the website and in both apps only, the page around it signs out and says so',()=>{
  const cloud=read('src/game-cloud.js'),main=read('src/main.js'),session=read('src/farm-session.js');
- assert.match(cloud,/if\(!portal\)createAccountDelete\(\{bridge,name:\(\)=>document\.getElementById\('player-name'\)\?\.dataset\.username\?\?''\}\);/);
+ assert.match(cloud,/if\(!portal\)part\(\(\)=>createAccountDelete\(\{bridge,name:\(\)=>document\.getElementById\('player-name'\)\?\.dataset\.username\?\?''\}\)\);/);
  assert.match(main,/bridge\.deleteAccount=async username=>\{\n\s+if\(ticket!==generation\|\|!navigator\.onLine\)throw new Error\('Your session is paused\. Reconnect to continue\.'\);\n\s+let data;try\{data=await farmRequest\(\{operation:'delete_account',username\},\{retry:false\}\);\}\n\s+catch\(error\)\{if\(!error\?\.transient\|\|await verifiedUser\(\)\.catch\(\(\)=>user\)\)throw error;data=\{deleted:user\.id\};\}/,'an answer lost on the way after the server deleted: the sign-in is gone, so it is a deletion');
  assert.match(main,/if\(ticket!==generation\|\|data\?\.deleted!==user\.id\)throw new Error\('Your session has ended\.'\);/);
  assert.match(main,/try\{await notifications\?\.push\?\.detach\(\);\}catch\{\}notifications\?\.dispose\?\.\(\);notifications=null;dispose\(\);\n\s+try\{await supabase\.auth\.signOut\(\{scope:'local'\}\);\}catch\{\}/,'the app lets go of its notifications; the session is only ended on this device (the server has none left)');

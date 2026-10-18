@@ -11,7 +11,7 @@ import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
-import {watchLoading} from '../public/loading-screen.js';
+import {watchLoading,errorLine} from '../public/loading-screen.js';
 import {startTranslation} from '../public/i18n.js';
 import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
@@ -25,6 +25,18 @@ import {createDiscordLinkDialog,createDiscordSwitch,createDiscordUnlink} from '.
 // and Chrome keeps only 250 entries by default, so the watch's count of arrived files (public/loading-screen.js filesIn) and its list of
 // files that never came (missingFiles) stay right.
 try{performance.setResourceTimingBufferSize?.(1000);}catch{}
+// How far this start comes and the first thing that breaks on the way (18 Oct 2026, the 12% report, option 1): the stall note takes both
+// (public/loading-screen.js noteStall), so a farm that stood still at 12% says where it stopped and why. The first error or rejected
+// promise in this page, as one short line (errorLine), whatever threw it.
+const startup=window.harvestStartup={stage:'begin',error:null};
+const firstError=(reason,event)=>{try{if(!startup.error)startup.error=errorLine(reason,event);}catch{}};
+window.addEventListener('error',event=>firstError(event?.error??event?.message,event));
+window.addEventListener('unhandledrejection',event=>firstError(event?.reason));
+// One part of this page that breaks (18 Oct 2026, review of the 12% fix): its error is the first error, and the page carries on without
+// it, so the farm still opens, the watch hears so (and notes the broken part for farm-api: 'part') and the steps after the farm (payment
+// return, pop-ups, CrazyGames' start, links from notifications) still run. Before, the rest of this page stopped there.
+let brokenPart=false;
+const part=start=>{try{return start();}catch(error){brokenPart=true;firstError(error);console.error('A part of the farm page could not start',error);return null;}};
 // The game frame never zooms as a page: only the 3D field does (src/page-zoom.js).
 stopPageZoom(document);
 let bridge;
@@ -51,6 +63,12 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   if(adminView)markAdminView(document);
   document.body.hidden=false;
   const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
+  // The game's own code is asked for now, before this page's own parts below (18 Oct 2026, the 12% report, option 2: one of them that
+  // broke kept public/game.js from ever being asked for, and the bar stood at 12% with every file in). It runs only after this start's
+  // own steps, as before (an import never runs within the call), so the parts are there when it does; one that breaks no longer stops it.
+  startup.stage='watch';
+  const gameLoad=import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');gameLoad.catch(()=>{});
+  startup.stage='parts';
   // Our loading screen is on screen now: the page around takes its own away once it is drawn (public/loading-screen.js farmHandOver).
   // A new farm's first look (7 Oct 2026, the CrazyGames launch): the start of the page around this frame (play.html, crazygames.html)
   // and the frame's size in steps of 10 px right away, then when the farm page was first drawn and how long that took (shownAt, loadMs).
@@ -62,39 +80,39 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   nextFrame(()=>nextFrame(()=>{try{window.parent.harvestFarmShown?.();}catch{}}));
   // The game takes the first farm over (and clears harvestInitialFarm); the pop-ups only need its start time (the first half hour).
   const firstState=window.harvestInitialFarm.state;
-  const ui=createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()});
-  const profiles=createPlayerProfiles(bridge,{showBoard:key=>ui.showBoard(key)}),serverOffset=bridge.serverNow-(Number.isFinite(bridge.serverAt)?bridge.serverAt:Date.now());
+  const ui=part(()=>createCloudUI({onOpen:openBoard,onRetry:openBoard,onPlayer:()=>profiles?.open(bridge.playerId),onName:async username=>{const data=await bridge.request({operation:'rename',username});ui?.setProfile(data.profile,{id:bridge.playerId});},onSignOut:()=>bridge.signOut()}));
+  const profiles=part(()=>createPlayerProfiles(bridge,{showBoard:key=>ui?.showBoard(key)})),serverOffset=bridge.serverNow-(Number.isFinite(bridge.serverAt)?bridge.serverAt:Date.now());
   // The chat (header button, next to Farm Family) and the Admin dashboard, which the moderators may open too.
-  const chat=createChatUI({bridge,profiles});
+  const chat=part(()=>createChatUI({bridge,profiles}));
   // Farm Family's chat button (public/family-ui.js) opens it on the family's own tab.
-  window.harvestChat=chat;
-  createAdminDashboard(bridge,{chat});
+  if(chat)window.harvestChat=chat;
+  part(()=>createAdminDashboard(bridge,{chat}));
   // Its own topbar numbers and menu (How to play, Chat, Admin panel), before the game's menu starts.
-  if(adminView)startAdminView({bridge});
+  if(adminView)part(()=>startAdminView({bridge}));
   // On CrazyGames the purchases, links and account buttons step aside (portal.css) and the page's own lines come in (src/portal-ui.js).
-  if(portal)createPortalUI({portal});
+  if(portal)part(()=>createPortalUI({portal}));
   // Discord (Oct 2026, public/discord-link-ui.js): in the Activity, a farm made on Discord only can make way for the farmer's
   // harvesttycoon.com farm (Settings, Your account). Nowhere else: the portal says whether this is one (discordOnly).
   const farmerName=()=>document.getElementById('player-name')?.dataset.username??'',firstLevel=window.harvestInitialFarm.profile?.level;
-  if(portal)createDiscordSwitch({portal,farmer:farmerName,level:()=>firstLevel});
+  if(portal)part(()=>createDiscordSwitch({portal,farmer:farmerName,level:()=>firstLevel}));
   // Settings, Your account: "You sign in with Google." and the masked address, with Set a password for an account without one (17 Oct
   // 2026, src/account-sign-in-ui.js). On the website and in both apps; never on a portal (the portal made the account; its bridge has no
   // signIn) or in the admin view.
-  if(!portal&&!adminView&&bridge.signIn)createSignInLine({info:bridge.signIn,setPassword:bridge.setPassword});
+  if(!portal&&!adminView&&bridge.signIn)part(()=>createSignInLine({info:bridge.signIn,setPassword:bridge.setPassword}));
   // Settings › Privacy › Delete account (3 Oct 2026, src/account-delete.js): on the website and in both apps, never on CrazyGames.
-  if(!portal)createAccountDelete({bridge,name:()=>document.getElementById('player-name')?.dataset.username??''});
+  if(!portal)part(()=>createAccountDelete({bridge,name:()=>document.getElementById('player-name')?.dataset.username??''}));
   // Settings › Privacy › Played on Discord (Oct 2026, public/discord-link-ui.js): a farm a Discord account plays, and Unlink Discord.
   // On the website and in both apps (src/main.js bridge.discordLink), never on a portal.
-  const discordUnlink=!portal&&typeof bridge.discordLink==='function'?createDiscordUnlink({request:bridge.discordLink}):null;
+  const discordUnlink=!portal&&typeof bridge.discordLink==='function'?part(()=>createDiscordUnlink({request:bridge.discordLink})):null;
   // The Family Members list opens a farmer's profile too (public/family-ui.js).
-  window.harvestProfiles=profiles;
-  ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');
-  createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,state:window.harvestInitialFarm.state,owner:loadStaff(bridge.chat).then(()=>staffRole(bridge.playerId)==='admin'),onSaved:profile=>ui.setProfile(profile,{id:bridge.playerId})});
+  if(profiles)window.harvestProfiles=profiles;
+  if(ui)part(()=>{ui.setProfile(window.harvestInitialFarm.profile,{id:bridge.playerId});ui.status('Live rankings');});
+  part(()=>createAvatarSettings(document.getElementById('avatar-settings'),{bridge,profile:window.harvestInitialFarm.profile,state:window.harvestInitialFarm.state,owner:loadStaff(bridge.chat).then(()=>staffRole(bridge.playerId)==='admin'),onSaved:profile=>ui?.setProfile(profile,{id:bridge.playerId})}));
   // Copy link beside each Settings part (4 Oct 2026, public/settings-nav.js) and beside Feedback's title (6 Oct 2026): for an admin or a
   // moderator only, never on CrazyGames.
   if(!portal)void loadStaff(bridge.chat).then(()=>{if(staffRole(bridge.playerId)){addSettingsCopyLinks(document.getElementById('sound-dialog'));addFeedbackCopyLink(document.getElementById('feedback-dialog'));}});
-  const stopPresence=bridge.presence?.subscribe(snapshot=>{if(ui.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});});
-  const boardRefresh=setInterval(()=>{if(ui.open&&!profiles.isOpen&&!document.hidden)openBoard(true);},30000);
+  const stopPresence=part(()=>bridge.presence?.subscribe(snapshot=>{if(ui?.open)updateOnlineIndicators(ui.results,{...snapshot,now:Date.now()+serverOffset});}));
+  const boardRefresh=setInterval(()=>{if(ui?.open&&!profiles?.isOpen&&!document.hidden)openBoard(true);},30000);
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
   let boardRequest=0,board=null,boardPage=0;
   // The board keeps its page when it refreshes (every 30 seconds); a new board, or opening it again, starts on page 1.
@@ -103,17 +121,19 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // the newest loads; a board never seen shows placeholder rows (1 Oct 2026).
   const boardCache=new Map();
   async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own)ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
-  let game=null;try{game=await import(/* @vite-ignore */ '/game.js?v=familyhall-model-2');}catch(error){console.error('The game could not load',error);}
+  startup.stage='game';
+  let game=null;try{game=await gameLoad;startup.stage='farm';}catch(error){firstError(error);console.error('The game could not load',error);}
   // A farm start that broke before the game's own error card (11 Oct 2026: its loading screen, or a farm whose models nearly all failed,
   // public/game.js init) fails like the code that did not come: opened once more by itself, then Try again. Before, neither was said and
   // the bar stood still until the 30 seconds were up.
-  const ready=game?await game.farmReady.catch(error=>{console.error('The game could not load',error);game=null;return false;}):false;
-  if(!game)watch.failed();else watch.done(ready);
+  const ready=game?await game.farmReady.catch(error=>{firstError(error);console.error('The game could not load',error);game=null;return false;}):false;
+  if(ready)startup.stage='ready';
+  if(!game)watch.failed();else watch.done(ready,{brokenPart});
   if(ready){
    // CrazyGames' SDK (src/crazygames.js): the farm is loaded and can be played.
    if(portal){portal.event('loadingStop');portal.event('gameplayStart');}
    // The board the leaderboard opens on, read once in the background, so the first look needs no wait.
-   setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))boardCache.set(result.category,result);}).catch(()=>{});},8000);
+   if(ui)setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))boardCache.set(result.category,result);}).catch(()=>{});},8000);
    // No purchases on CrazyGames (their rule): no payment return, special offer or Starter Pack there. On Kongregate only once it sells
    // Kreds (public/portal.js portalSells, 15 Oct 2026).
    const shop=!portal||portalSells(portal);
@@ -133,7 +153,7 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
    // ready, and hands over what arrives later.
    let discordLink=null;
    window.harvestOpen=intent=>{
-    if(intent?.open==='chat')void chat.open(intent.channel?{channel:intent.channel}:{});
+    if(intent?.open==='chat')void chat?.open(intent.channel?{channel:intent.channel}:{});
     else if(intent?.open==='today')window.harvestToday?.();
     else if(intent?.open==='leaderboard')document.getElementById('leaderboard-button')?.click();
     // Settings at one part (4 Oct 2026, /settings/<part>): public/game.js harvestSettings, the list when the part is not here.

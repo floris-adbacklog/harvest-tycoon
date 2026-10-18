@@ -483,7 +483,7 @@ test('the wiring: the website and our apps ask (the farmer\'s own session), a po
  const cloud=read('src/game-cloud.js'),main=read('src/main.js'),session=read('src/farm-session.js');
  assert.match(cloud,/else if\(intent\?\.open==='discord-link'&&!portal&&typeof bridge\.discordLink==='function'\)void \(discordLink\?\?=createDiscordLinkDialog\(\{request:bridge\.discordLink,verify:bridge\.discordVerify,signOut:bridge\.discordSignOut,farmer:farmerName\}\)\)\.open\(intent\.t,intent\)\.then\(result=>\{if\(result\?\.linked\)discordUnlink\?\.show\(\);\}\);/,'the intent carries Discord\'s answer');
  // Settings › Privacy's Played on Discord: the website and both apps, never a portal.
- assert.match(cloud,/const discordUnlink=!portal&&typeof bridge\.discordLink==='function'\?createDiscordUnlink\(\{request:bridge\.discordLink\}\):null;/);
+ assert.match(cloud,/const discordUnlink=!portal&&typeof bridge\.discordLink==='function'\?part\(\(\)=>createDiscordUnlink\(\{request:bridge\.discordLink\}\)\):null;/);
  // Only src/main.js (the website and our apps) gives the farm a way to ask; the portals' farm session has none.
  assert.doesNotMatch(session,/discordLink|discord-auth/);
  assert.match(main,/const DISCORD_AUTH='discord-auth\?forceFunctionRegion=eu-central-1';/);

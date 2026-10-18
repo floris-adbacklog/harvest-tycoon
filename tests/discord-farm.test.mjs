@@ -185,7 +185,7 @@ test('the row is nowhere else: the website, the other portals, a harvesttycoon.c
  }
  // The frame asks for it on every portal and lets the portal decide; the website never asks.
  const cloud=read('src/game-cloud.js');
- assert.match(cloud,/if\(portal\)createDiscordSwitch\(\{portal,farmer:farmerName,level:\(\)=>firstLevel\}\);/);
+ assert.match(cloud,/if\(portal\)part\(\(\)=>createDiscordSwitch\(\{portal,farmer:farmerName,level:\(\)=>firstLevel\}\)\);/);
  const css=read('public/settings.css');
  assert.match(css,/#sound-dialog \.discord-switch\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;[^}]*border:1px solid #e2d7cb;border-radius:14px;background:#f3ede7\}/,'the cream of the Settings rows');
 });

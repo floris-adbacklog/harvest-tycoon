@@ -51,7 +51,7 @@ test('the profile keeps its stat page on a refresh, starts on page 1 for another
  assert.match(profiles,/renderPlayerProfile\(data\.playerProfile,Date\.now\(\)\+clockOffset,\{statPage,self:id===bridge\.playerId\}\)/);
  assert.match(profiles,/bindStatPages\(content,\{page:statPage,onPage:page=>\{statPage=page;\},onBoard:key=>showBoard\?\.\(key\)\}\)/);
  assert.match(profiles,/selected=playerId;profileUsername=null;statPage=0;/);
- assert.match(read('src/game-cloud.js'),/createPlayerProfiles\(bridge,\{showBoard:key=>ui\.showBoard\(key\)\}\)/);
+ assert.match(read('src/game-cloud.js'),/createPlayerProfiles\(bridge,\{showBoard:key=>ui\?\.showBoard\(key\)\}\)/);
  assert.match(read('src/ui.js'),/function showBoard\(key\)\{if\(!Object\.hasOwn\(LEADERBOARD_CATEGORIES,key\)\)return;show\('leaderboard-dialog'\);picker\.select\(key\);\$\('leaderboard-category'\)\.onchange\(\);\}/);
  const css=read('public/player-profiles.css');
  assert.match(css,/\.farmer-stat-grid\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\);[^}]*scroll-snap-align:start/);
