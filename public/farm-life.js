@@ -117,7 +117,10 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   for(const [id,v] of views){
    const p=new THREE.Vector3(v.object.position.x,v.height+.4,v.object.position.z).project(camera),s=activityStatus(state,id,now);
    v.label.style.left=`${(p.x*.5+.5)*width}px`;v.label.style.top=`${(-p.y*.5+.5)*height}px`;
-   v.label.hidden=!featureUnlocked(state,'activities')||Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
+   // A stop that rests after its job has no pin (19 Oct 2026, the owner: farmers tapped it and only got its timer); it comes back, with
+   // its hop, when the stop is ready. A job that was started keeps its pin. A tap on the stop itself still opens its window.
+   const resting=s.remaining>0&&!s.job;
+   v.label.hidden=!featureUnlocked(state,'activities')||resting||Math.abs(p.x)>.94||Math.abs(p.y)>.86;v.label.classList.toggle('available',!s.remaining);v.label.classList.toggle('working',!!s.job);
    // A stop that is ready again hops twice on the map (11 Oct 2026, the owner's call: a cue on the farm itself, no popup): when its rest
    // ends, and when its pin first shows ready (the farm opens, or the hand opens at level 3). Then it stands still until its next rest ends.
    // The hop waits until the pin can be seen (11 Oct 2026 review: at level 3 it hopped under the level-up card, and on a computer three

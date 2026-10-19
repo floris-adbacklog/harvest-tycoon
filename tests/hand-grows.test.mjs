@@ -192,3 +192,14 @@ test('a ready pin hops once it can be seen, once per ready time',()=>{
  screenX=.5;frame();assert.equal(label.adds,2,'panned into view: it hops');
  status={remaining:0,job:{}};frame();status={remaining:0,job:null};dialogOpen=true;frame();assert.equal(label.adds,2);dialogOpen=false;frame();assert.equal(label.adds,3,'after a job and its rest');
 });
+
+// 19 Oct 2026, the owner: "Haal het bolletje icon weg bij helping hand als je hem al hebt gedaan, mensen klikken erop die dan een timer
+// krijgen": a stop that rests has no pin; a started job keeps its pin, and the pin hops back when the rest ends.
+test('a resting stop has no pin on the farm; a started job keeps it, and the ready pin comes back with its hop',()=>{
+ const life=read('public/farm-life.js');
+ assert.match(life,/const resting=s\.remaining>0&&!s\.job;\n   v\.label\.hidden=!featureUnlocked\(state,'activities'\)\|\|resting\|\|Math\.abs\(p\.x\)>\.94\|\|Math\.abs\(p\.y\)>\.86;/);
+ // The hop needs the pin seen, and ready (no rest, no job) clears it while resting, so the pin hops when it shows again.
+ assert.match(life,/const ready=featureUnlocked\(state,'activities'\)&&!s\.remaining&&!s\.job;\n   if\(!ready\)v\.hopped=false;/);
+ // The stop itself still opens its window (its hit box is unchanged).
+ assert.match(life,/hit\.userData\.activity=id;scene\.add\(hit\);/);
+});
