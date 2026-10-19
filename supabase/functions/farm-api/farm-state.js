@@ -221,7 +221,7 @@ const BASE_RECIPES=Object.freeze({
  salad:{building:'packing',name:'Prepare a fresh salad',input:{lettuce:4,cabbage:2},output:{salad:1},duration:900000,xp:14},
  pickles:{building:'packing',name:'Pickle red cabbage',input:{redcabbage:2},output:{pickles:1},duration:7200000,xp:60},
  flour:{building:'windmill',name:'Refine grain meal into flour',input:{grainmeal:1},output:{flour:4},duration:240000,xp:8},
- feed:{building:'mill',name:'Mix animal feed',input:{corn:2},output:{feed:2},duration:120000,xp:4},
+ feed:{building:'mill',name:'Mix corn feed',input:{corn:2},output:{feed:2},duration:120000,xp:4},   // 'Mix animal feed' until 19 Oct 2026 (the owner: like Mix barley feed)
  wheatfeed:{building:'mill',name:'Mix wheat feed',input:{wheat:5},output:{feed:1},duration:120000,xp:3},
  oil:{building:'mill',name:'Press sunflower oil',input:{sunflower:2},output:{oil:1},duration:14400000,xp:80},
  milk:{building:'dairy',name:'Feed the cows',input:{feed:1},output:{milk:2},duration:600000,xp:10},
