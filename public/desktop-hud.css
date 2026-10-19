@@ -22,7 +22,7 @@
  .building-label .building-pin{width:28px;height:28px;border-radius:8px}
  .building-label .building-pin>.game-art{width:26px;height:26px}
  .building-label strong{font-size:12.5px}
- .building-label .building-status.idle,.building-label .building-status.family{display:none}
+ .building-label .building-status.idle,.building-label .building-status.missing,.building-label .building-status.family{display:none}
  /* Building names (16 Oct 2026 in a small window, where Windmill and Chicken Coop touched; 18 Oct 2026 in every computer window, the owner:
     cleaner): where there is a mouse a building shows its picture only, the name in the farm's own tooltip while the mouse is on it
     (game.js pointerTarget finds the label, the tooltip names the building) and in full while it has keyboard focus; its aria-label keeps

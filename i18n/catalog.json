@@ -2939,6 +2939,8 @@
 "Minimum level":"public/family-ui.js",
 "Minnow":"public/farm-state.js",
 "Missed it. The fish is still there: cast again.":"public/pond-ui.js",
+"Missing goods":"public/economy-ui.js",
+"Missing goods · 0 / {0} slots":"public/economy-ui.js",
 "Missing ingredients for this many batches.":"public/farm-state.js",
 "Missing ingredients: {0}.":"public/farm-state.js",
 "Missing model: {0}":"public/game.js",
