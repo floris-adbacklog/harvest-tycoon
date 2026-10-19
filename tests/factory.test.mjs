@@ -148,7 +148,7 @@ test('the building panel shows the coin price of bottled honey, orders the Facto
  assert.match(ui,/function costList\(id,n=1\)/);assert.match(ui,/r\.coins\?`<span class="ingredient \$\{state\.coins<r\.coins\*n\?'missing':''\}">\$\{art\('coins'\)\}<span>\$\{number\(r\.coins\*n\)\} coins<\/span><\/span>`:''/);
  assert.match(ui,/<div class="ingredients">\$\{costList\(rid\)\}<\/div>/);assert.match(ui,/innerHTML=costList\(id,count\)/);
  assert.match(ui,/a\.poor\?`You need \$\{number\(a\.price\)\} coins for a batch\.`/);
- assert.match(ui,/productionSlots\(b\.level,key\)/);assert.match(ui,/productionSlots\(bs\.level,key\)/);assert.match(ui,/The Factory gets a slot every two levels, up to five\./);
+ assert.match(ui,/slots=buildingSlots\(state,key,now\)/);assert.match(ui,/slots=buildingSlots\(state,key,farmNow\(\)\)/);assert.match(ui,/The Factory gets a slot every two levels, up to five\./);
  assert.match(ui,/sourceOf=r=>r\.base\?buildingOrder\.indexOf\(RECIPES\[r\.base\]\.building\):-1/);
  // The pre-purchase preview (built from itemList(r.input), not costList()) has no coins of its own — without
  // this, bottled honey's row showed as a bare arrow into a honey icon, no hint of the 5,000 coin cost.

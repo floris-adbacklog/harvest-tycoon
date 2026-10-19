@@ -94,7 +94,8 @@ const FARM_ACTIONS={
  tractor_care:['diamonds',(a,s,r)=>`Gave ${r?.count??''} crops full care with the tractor`],
  tractor_shift:['diamonds',(a)=>`Started the tractor's night shift (${CROPS[a.crop]?.name??'crops'})`],
  buy_boost:['diamonds',(a)=>`Used the boost ${BOOSTS[a.boost]?.name??''}`.trim()],
- buy_vip:['diamonds',()=>'Bought VIP']
+ buy_vip:['diamonds',()=>'Bought VIP'],
+ buy_coins:['diamonds',(a,s,r)=>`Bought ${number(r?.coins??0)} coins with diamonds`]
 };
 const FAMILY_ACTIONS={family_create:'Started a family',family_join:'Joined a family',family_accept_invite:'Accepted a family invitation',family_request:'Asked to join a family',family_request_cancel:'Cancelled a request to join',family_request_accept:'Accepted a request to join',family_request_decline:'Declined a request to join',family_join_mode:'Changed who can join the family',family_min_level:'Changed the family minimum level',family_idle_days:'Changed when members who don\'t play leave the family',family_rejoin:'Joined the family again',
  family_decline_invite:'Declined a family invitation',family_leave:'Left the family',family_kick:'Removed a member from the family',

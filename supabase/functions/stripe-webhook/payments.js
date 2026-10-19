@@ -18,29 +18,36 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
  '1000':{diamonds:1000,cents:2499,price:'price_1UH5HL04FdNTUSp41DLz2C1B'}
 });
 // The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time worth €49.99 at the shop's own prices,
-// sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 200
-// for a diamond (the admin's rate; coins are never sold), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
+// sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 500
+// for a diamond (coinsPerDiamond; never sold for money on their own), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
 // takes the contents from the offer itself, never from the browser, and the "worth" line is always this sum.
 // The admin picks the level it opens at per offer: level 10 at the earliest (minLevel, 13 Oct 2026; level 14 before, as the shop and
 // boosts open at 10 since 5 Oct), 14 unless the admin picks another (defaultLevel), up to 200 (supabase/offer-level-10.sql). The
 // Starter Pack keeps its own level 14 (STARTER_LEVEL).
-export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:200,
+// coinsPerDiamond: 500 since 20 Oct 2026 (the owner: "1 diamond = 500 coins"); it was 200 (coinsPerDiamondBefore). No offer was running
+// when it changed, but a purchase begun earlier can still be paid: paidOfferProblem takes either rate. supabase/offer-coins-500.sql sets
+// the same rate in offer_post. (The coin pack in Power-ups has its own rule, game/farm-state.js COIN_PACK.)
+export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:500,coinsPerDiamondBefore:200,
  diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500,60:3000,90:4500}),target:5000,maxDiamonds:20000,maxCoins:10000000,
  minLevel:10,defaultLevel:14,maxLevel:200});
 // What an offer is worth, in euro cents at the shop's prices.
-export function offerValueCents({diamonds=0,coins=0,vipDays=0}={}){
- return Math.round((Number(diamonds)+Number(coins)/OFFER.coinsPerDiamond+(OFFER.vipDiamonds[vipDays]??0))*OFFER.diamondCents);
+export function offerValueCents({diamonds=0,coins=0,vipDays=0}={},coinsPerDiamond=OFFER.coinsPerDiamond){
+ return Math.round((Number(diamonds)+Number(coins)/coinsPerDiamond+(OFFER.vipDiamonds[vipDays]??0))*OFFER.diamondCents);
 }
 // VIP of 60 or 90 days (30 Sep 2026) is two or three of the shop's 30-day plan.
 // A valid offer: whole amounts, VIP of 7, 30, 60 or 90 days or none, something in it, and worth €49.99 (within 2%, so round numbers fit).
-export function offerProblem({diamonds=0,coins=0,vipDays=0}={}){
+export function offerProblem({diamonds=0,coins=0,vipDays=0}={},coinsPerDiamond=OFFER.coinsPerDiamond){
  if(![diamonds,coins,vipDays].every(Number.isInteger))return 'Use whole numbers.';
  if(diamonds<0||diamonds>OFFER.maxDiamonds||coins<0||coins>OFFER.maxCoins||!Object.hasOwn(OFFER.vipDiamonds,vipDays)&&vipDays!==0)return 'Choose amounts within the limits.';
  if(!diamonds&&!coins&&!vipDays)return 'Put something in the offer.';
- const value=offerValueCents({diamonds,coins,vipDays});
+ const value=offerValueCents({diamonds,coins,vipDays},coinsPerDiamond);
  if(Math.abs(value-OFFER.valueCents)>OFFER.valueCents*0.02)return `The offer must be worth €49.99; it is worth €${(value/100).toFixed(2)}.`;
  return null;
 }
+// A paid offer (a checkout, a Google Play or Kongregate purchase) may come from an offer made at 200 coins a diamond, before 20 Oct 2026:
+// a farmer who paid for it later still gets it. Its contents come from the offer row, never from the browser.
+export const paidOfferProblem=purchase=>{const contents={diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0};
+ return offerProblem(contents)&&offerProblem(contents,OFFER.coinsPerDiamondBefore);};
 // The amounts that make €49.99 for the kinds chosen: VIP takes its share, diamonds and coins split the rest evenly.
 export function offerFill({diamonds=false,coins=false,vipDays=0}={}){
  const rest=OFFER.target-(OFFER.vipDiamonds[vipDays]??0);
@@ -92,7 +99,7 @@ export function checkoutPack(id){
 export function validatePaidSession(session,purchase,items){
  const pack=paymentPack(purchase.pack);
  // A special offer's contents come from the offer, written into the purchase by the checkout: they must still make a valid offer.
- if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  // A pass carries no diamonds or coins of its own, only the pass it opens.
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
@@ -183,7 +190,7 @@ export function checkKongPurchase(purchase,{product,player}){
  if(!purchase||typeof product!=='string'||kongProduct(purchase.pack)!==product||purchase.price_id!==product)throw new Error('Product mismatch.');
  if(typeof player!=='string'||purchase.player_id!==player||purchase.store!=='kongregate')throw new Error('Purchase ownership mismatch.');
  const pack=paymentPack(purchase.pack);
- if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {product};
@@ -202,7 +209,7 @@ export function checkPlayPurchase(google,purchase,{product,player}){
  if(google.obfuscatedExternalProfileId!==purchase.id)throw new Error('Purchase reference mismatch.');
  if((google.quantity??1)!==1)throw new Error('Quantity mismatch.');
  const pack=paymentPack(purchase.pack);
- if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  const state=google.purchaseState===0?'purchased':google.purchaseState===2?'pending':'cancelled';
@@ -226,7 +233,7 @@ export function checkApplePurchase(apple,purchase,{product,player}){
  if(typeof apple.appAccountToken!=='string'||typeof purchase.id!=='string'||apple.appAccountToken.toLowerCase()!==purchase.id.toLowerCase())throw new Error('Purchase reference mismatch.');
  if(apple.quantity!==1)throw new Error('Quantity mismatch.');
  const pack=paymentPack(purchase.pack);
- if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||offerProblem({diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0})))throw new Error('Offer mismatch.');
+ if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {state:apple.revocationDate!=null?'revoked':'purchased',test:apple.environment==='Sandbox',transaction:apple.transactionId,original:apple.originalTransactionId??apple.transactionId};

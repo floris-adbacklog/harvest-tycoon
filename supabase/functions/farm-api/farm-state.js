@@ -919,6 +919,12 @@ export const doubleBatchChance=level=>Math.round(Math.max(0,Math.min(TOP_BUILDIN
 // speed bonus. Its batches are as big as the source building allows (factoryBatchCount, at most ×20), so a full Factory adds
 // about one to two buildings of the farm's own level, and at the top a specialised building always makes the same good faster.
 export const FACTORY_MAX_SLOTS=5;
+// The slots a building has now: its level's, and one more while the farmhand works (20 Oct 2026, BOOSTS.farmhand), in every building but
+// the Factory (the owner: "de knecht werkt niet voor de factory"; its batches are up to ×20 already). A batch started in that slot runs
+// on when the farmhand leaves; a new one waits until the building is below its own slots again.
+export const farmhandActive=(state,now=Date.now())=>(state.boosts?.farmhandUntil??0)>now;
+export const farmhandWorks=key=>key!=='factory';
+export function buildingSlots(state,key,now=Date.now()){return productionSlots(state.buildings[key]?.level??1,key)+(farmhandWorks(key)&&farmhandActive(state,now)?1:0);}
 export function productionSlots(level,building){const n=Math.max(1,Math.min(MAX_BUILDING_LEVEL,Math.floor(level)));return building==='factory'?Math.min(FACTORY_MAX_SLOTS,Math.ceil(n/2)):n;}
 // Keep the primary job for older clients; extra jobs run in parallel, not a queue.
 export function productionJobs(building){return [building?.job,...(building?.extraJobs??[])].filter(Boolean);}
@@ -1402,19 +1408,20 @@ export function recipeUnlockHint(state,id){
  }
  return ingredients.length?`Unlock production for ${ingredients.map(k=>ITEMS[k].name).join(', ')} first.`:`Make in the ${BUILDINGS[r.building].name}.`;
 }
-export function recipeAvailability(state,id){
+export function recipeAvailability(state,id,now=Date.now()){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
  const r=recipeFor(state,id);
  const missing=Object.entries(r.input).filter(([k,n])=>state.inventory[k]<n).map(([k,n])=>({item:k,name:ITEMS[k].name,need:n,have:state.inventory[k]}));
- const b=state.buildings[r.building],used=productionJobs(b).length,slots=productionSlots(b.level,r.building),busy=used>=slots;
+ const b=state.buildings[r.building],used=productionJobs(b).length,slots=buildingSlots(state,r.building,now),busy=used>=slots;
  const locked=!recipeUnlocked(state,id);
  const price=r.coins??0,poor=price>0&&state.coins<price;
  const maxCount=locked?0:Math.max(0,Math.min(slots-used,...Object.entries(r.input).map(([k,n])=>Math.floor(state.inventory[k]/n)),...(price?[Math.floor(state.coins/price)]:[])));
  return {canStart:!locked&&!busy&&missing.length===0&&!poor,missing,busy,used,slots,maxCount,locked,price,poor};
 }
 export function startProduction(state,id,now=Date.now(),count=1,random=secureChoreRandom){
- if(!Number.isInteger(count)||count<1||count>MAX_BUILDING_LEVEL)throw new Error(`Choose 1–${MAX_BUILDING_LEVEL} batches.`);
- const a=recipeAvailability(state,id),r=RECIPES[id];
+ const a=recipeAvailability(state,id,now),r=RECIPES[id];
+ // At most the building's slots: its level's, and one more while the farmhand works there (buildingSlots, 20 Oct 2026).
+ if(!Number.isInteger(count)||count<1||count>a.slots)throw new Error(`Choose 1–${a.slots} batches.`);
  if(a.locked)throw new Error(`Unlock this recipe first. ${recipeUnlockHint(state,id)}`);
  if(count>a.slots-a.used)throw new Error('Not enough free production slots. Collect a finished batch first.');
  if(a.price&&state.coins<a.price*count)throw new Error(`You need ${a.price*count} coins for ${count===1?'this batch':`${count} batches`}.`);
@@ -1424,7 +1431,7 @@ export function startProduction(state,id,now=Date.now(),count=1,random=secureCho
 }
 function startSingleProduction(state,id,now=Date.now(),random=secureChoreRandom){
  if(!Object.hasOwn(RECIPES,id))throw new Error('Choose a valid recipe.');
- const r=recipeFor(state,id),b=state.buildings[r.building],a=recipeAvailability(state,id);
+ const r=recipeFor(state,id),b=state.buildings[r.building],a=recipeAvailability(state,id,now);
  if(a.busy)throw new Error('All production slots are occupied. Collect a finished batch first.');
  if(a.missing.length)throw new Error('Missing ingredients: '+a.missing.map(m=>`${m.name} (${m.have}/${m.need})`).join(', ')+'.');
  if(a.poor)throw new Error(`You need ${r.coins} coins for this batch.`);
@@ -1630,7 +1637,7 @@ export function claimVillageQuest(state,id){
  return {coins:q.reward,xp};
 }
 export function farmSummary(state,now=Date.now()) {
- return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:BUILDINGS[id].type==='production'?productionSlots(b.level,id):0,jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
+ return {coins:state.coins,diamonds:state.diamonds,boosts:{...state.boosts},xp:state.xp,level:levelOf(state),inventory:{...state.inventory},plots:state.plots.map(p=>({id:p.id,crop:p.crop,watered:p.watered,fertilized:p.fertilized,status:!p.crop?'empty':now>=p.readyAt?'ready':'growing',secondsRemaining:Math.max(0,Math.ceil((p.readyAt-now)/1000))})),buildings:Object.entries(state.buildings).map(([id,b])=>({id,name:BUILDINGS[id].name,level:b.level,slots:BUILDINGS[id].type==='production'?buildingSlots(state,id,now):0,jobs:productionJobs(b).map(j=>({id:j.id,recipe:j.recipe,secondsRemaining:Math.max(0,Math.ceil((j.readyAt-now)/1000))})),status:productionJobs(b).some(j=>now>=j.readyAt)?'ready':b.job?(now>=b.job.readyAt?'ready':'working'):'idle',job:b.job?{recipe:b.job.recipe,secondsRemaining:Math.max(0,Math.ceil((b.job.readyAt-now)/1000))}:null,upgradeCost:upgradeCost(state,id)})),expansionCost:expansionCost(state),quests:QUESTS.map((q,id)=>({id,title:q.title,progress:Math.min(q.target,state.stats[q.stat]),target:q.target,claimed:state.claimed.includes(id)}))};
 }
 
 export const DAY_MS=86400000;
@@ -1698,12 +1705,16 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
 // 30-minute offer, which is also what an older game gets when it sends no length.
 export const BOOST_DURATIONS=Object.freeze({'30m':1800000,'1h':3600000,'1d':86400000});
 export const BOOST_LENGTH_NAMES=Object.freeze({'30m':'30 minutes','1h':'1 hour','1d':'1 day'});
-const BOOST_UNTIL=Object.freeze({xp:'xpUntil',harvest:'harvestUntil',coins:'coinsUntil'});
+const BOOST_UNTIL=Object.freeze({xp:'xpUntil',harvest:'harvestUntil',coins:'coinsUntil',farmhand:'farmhandUntil'});
 export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:50,duration:1800000,prices:Object.freeze({'30m':50,'1h':90,'1d':300}),art:'double-xp',description:'Earn twice the XP from farm actions.'},
  // Between Double XP and Double earnings: it doubles crops only, not goods or deliveries, and at most one waiting harvest per field.
  harvest:{name:'Double harvest',cost:75,duration:1800000,prices:Object.freeze({'30m':75,'1h':135,'1d':450}),art:'double-harvest',description:'Twice the crops from every harvest.'},
  coins:{name:'Double earnings',cost:100,duration:1800000,prices:Object.freeze({'30m':100,'1h':180,'1d':600}),art:'double-coins',description:'Double coins from sales and deliveries.'},
+ // The farmhand (20 Oct 2026, the owner): one more production slot in every building for a day (buildingSlots), the village's too, but
+ // not the Factory ("de knecht werkt niet voor de factory": its batches are up to ×20). One length only; buying it again while it runs
+ // adds a day after it. What it makes counts like any other batch.
+ farmhand:{name:'Farmhand',cost:150,duration:86400000,lengthName:'1 day',art:'farmhand',description:'One more production slot in every building but the Factory for 24 hours.'},
  crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Every growing crop ready to harvest now.'},
  production:{name:'Finish production',cost:200,art:'boost',description:'Every running batch ready now (not the Factory).'},
  upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off the coins and goods of your next building upgrade. Never expires.'}
@@ -1712,7 +1723,7 @@ export const BOOSTS=Object.freeze({
 export function boostOffer(id,length='30m'){
  if(!Object.hasOwn(BOOSTS,id))throw new Error('Choose a valid boost.');
  const boost=BOOSTS[id];
- if(!boost.prices)return {cost:boost.cost,duration:0,length:null};
+ if(!boost.prices)return {cost:boost.cost,duration:boost.duration??0,length:null};
  if(typeof length!=='string'||!Object.hasOwn(BOOST_DURATIONS,length))throw new Error('Choose 30 minutes, 1 hour or 1 day.');
  return {cost:boost.prices[length],duration:BOOST_DURATIONS[length],length};
 }
@@ -1739,6 +1750,18 @@ export function buyBoost(state,id,now=Date.now(),length='30m'){
  spendDiamonds(state,status.cost);
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {boost:id,length:status.length,cost:status.cost,affected,expiresAt:key?state.boosts[key]:null};
+}
+// Coins for diamonds (20 Oct 2026, the owner): 1,000 coins for every level of the farm, for 100 diamonds, in Power-ups, as often as the
+// farmer likes. It grows with the farm so it is worth the same at every level, and an active player still gets more from Double
+// earnings from about level 50 (live, 20 Oct: the best half hour of sales and deliveries is 1,650 coins at 10-14 and 11,500 at 50-89;
+// a fixed 50,000 was 4 to 37 times that below level 90). The coins are not earned (no quests, events or Earned).
+export const COIN_PACK=Object.freeze({perLevel:1000,cost:100,art:'coin-cart'});
+export const coinPackCoins=state=>COIN_PACK.perLevel*levelOf(state);
+export function buyCoinPack(state){
+ if(state.diamonds<COIN_PACK.cost)throw new Error(`You need ${COIN_PACK.cost} diamonds. Earn more from daily gifts and challenges.`);
+ const coins=coinPackCoins(state);
+ spendDiamonds(state,COIN_PACK.cost);state.coins+=coins;state.stats.coins_bought=(state.stats.coins_bought??0)+coins;
+ return {coins,cost:COIN_PACK.cost};
 }
 export function fertilizeFields(state,ids,now=Date.now()){
  if(!Array.isArray(ids)||!ids.length||ids.length>MAX_PLOTS||new Set(ids).size!==ids.length)throw new Error('Select unique growing fields to fertilize.');
@@ -2740,7 +2763,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.villageQuests=Array.isArray(state.villageQuests)?[...new Set(state.villageQuests.filter(id=>Number.isInteger(id)&&VILLAGE_QUESTS[id]))]:[];   // World II's claimed quests
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
- state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
+ state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','farmhandUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
  state.stats??={};migrateProgression(state);migrateFeatureLevels(state);migrateUnlockSpread(state);migrateGradualUnlocks(state);
@@ -3517,7 +3540,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  return result;
 }
 function dispatchFarmAction(state,action,now,random){
- const gates={buy_vip:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',tractor_care:'tractor',tractor_shift:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',master_spend:'master',lab_cross:'seedlab',lab_collect:'seedlab',visitor_serve:'visitors',visitor_decline:'visitors',giant_tend:'giantpumpkin',giant_weigh:'giantpumpkin',vproject_give:'valleyprojects',vproject_finish:'valleyprojects',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
+ const gates={buy_vip:'boosts',buy_coins:'boosts',daily:'challenges',finish_batch:'boosts',replace_order:'cart',activity_start:'activities',activity_work:'activities',chore:'chores',stall_collect:'stall',stall_upgrade:'stall',mastery:'mastery',project_start:'projects',project_collect:'projects',tractor:'tractor',tractor_care:'tractor',tractor_shift:'tractor',silo_upgrade:'silo',delivery:'cart',buy_boost:'boosts',finish_crop:'boosts',valley_sell:'valleymarket',valley_skip:'valleymarket',ranch_focus:'ranch',improve:'estateworkshop',master_spend:'master',lab_cross:'seedlab',lab_collect:'seedlab',visitor_serve:'visitors',visitor_decline:'visitors',giant_tend:'giantpumpkin',giant_weigh:'giantpumpkin',vproject_give:'valleyprojects',vproject_finish:'valleyprojects',depot_load:'tradedepot',depot_skip:'tradedepot',fair_enter:'grandfair'};
  const gate=gates[action.type];if(gate&&!featureUnlocked(state,gate))throw new Error(featureUnlockHint(gate));
  switch(action.type){
   case 'buy_vip':return buyVip(state,action.plan,action.expectedCost,action.expectedExpiresAt,now);
@@ -3533,6 +3556,11 @@ function dispatchFarmAction(state,action,now,random){
    const length=action.length??'30m';
    if(action.expectedCost!==boostOffer(action.boost,length).cost)throw new Error('Boost prices have changed. Reload the game to see current prices.');
    return buyBoost(state,action.boost,now,length);
+  }
+  case 'buy_coins':{
+   // The coins follow the level: a level gained since the shop was drawn changes them, so the farmer sees the new amount first.
+   if(action.expectedCost!==COIN_PACK.cost||action.expectedCoins!==coinPackCoins(state))throw new Error('Prices have changed. Reload the game to see current prices.');
+   return buyCoinPack(state);
   }
   case 'fertilize':return action.ids===undefined?fertilizeField(state,action.id,now):fertilizeFields(state,action.ids,now);
   case 'stall_collect':return collectStall(state,now);

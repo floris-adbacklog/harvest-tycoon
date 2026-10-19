@@ -83,7 +83,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>From level<input id="admin-offer-level" type="number" min="'+OFFER.minLevel+'" max="'+OFFER.maxLevel+'" step="1" value="'+OFFER.defaultLevel+'" inputmode="numeric"></label>'
   +'<label>Runs for<select id="admin-offer-hours"><option value="24">24 hours</option><option value="48" selected>48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="336">14 days</option></select></label></div>'
   +'<p class="admin-offer-worth" id="admin-offer-worth"></p>'
-  +'<p class="admin-popup-note">Always €4.99 for what costs €49.99 in the shop (a diamond as in the 500 pack, 200 coins a diamond (1,000 coins = 5 diamonds), VIP at its diamond price). Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.'
+  +'<p class="admin-popup-note">Always €4.99 for what costs €49.99 in the shop (a diamond as in the 500 pack, 500 coins a diamond (50,000 coins = 100 diamonds), VIP at its diamond price). Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.'
   // The iPhone app shows no offer until Apple sells special_offer (game/payments.js APPLE_SELLS_OFFER, 13 Oct 2026).
   +(APPLE_SELLS_OFFER?'':' The iPhone app does not show it until Apple has approved it as an in-app purchase.')+'</p>'
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'

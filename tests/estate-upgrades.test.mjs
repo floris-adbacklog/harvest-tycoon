@@ -57,7 +57,7 @@ test('the building panel still says what an upgrade gives, and diamonds and coin
  const ui=read('public/economy-ui.js');
  assert.match(ui,/\$\{state\.boosts\.upgradeCredits\?'50% voucher included\. ':''\}/,'the voucher counts at every level');
  assert.doesNotMatch(ui,/id="upgrade-building"[^>]*jobs\.length/,'coins do not wait for a running batch');
- assert.match(ui,/Level \$\{MAX_BUILDING_LEVEL\}: \$\{slots\} simultaneous batches/);
+ assert.match(ui,/Level \$\{MAX_BUILDING_LEVEL\}: \$\{productionSlots\(MAX_BUILDING_LEVEL,key\)\} simultaneous batches/,'the level\'s own slots, not the farmhand\'s');
 });
 test('with many slots the batch picker has a Max button that respects what is available',()=>{
  const ui=read('public/economy-ui.js'),css=read('public/production-controls.css');

@@ -46,7 +46,7 @@ test('a building none of whose recipes is open yet keeps "Ready to work" (nothin
 test('status(), the list order and the refresh: missing goods is its own kind, sorted last and re-sorted while the list is open',()=>{
  const ui=read('public/economy-ui.js');
  assert.match(ui,/if\(!jobs\.length&&!buildingCanWork\(state,key\)\)return \{text:`Missing goods · 0 \/ \$\{slots\} slots`,kind:'missing',\.\.\.counts\};\n  if\(!jobs\.length\)return \{text:`Ready to work · 0 \/ \$\{slots\} slots`,kind:'idle',\.\.\.counts\};/);
- assert.match(ui,/export function buildingCanWork\(state,key\)\{const open=buildingRecipes\(state,key\)\.map\(id=>recipeAvailability\(state,id\)\)\.filter\(a=>!a\.locked\);return !open\.length\|\|open\.some\(a=>a\.canStart\);\}/);
+ assert.match(ui,/export function buildingCanWork\(state,key\)\{const open=buildingRecipes\(state,key\)\.map\(id=>recipeAvailability\(state,id,farmNow\(\)\)\)\.filter\(a=>!a\.locked\);return !open\.length\|\|open\.some\(a=>a\.canStart\);\}/);
  assert.match(ui,/missingLast=key=>status\(key\)\.kind==='missing'\?1:0;/);
  assert.match(ui,/const readyKeys=Object\.keys\(BUILDINGS\)\.map\(key=>\{const kind=status\(key,now\)\.kind;return kind==='ready'\|\|kind==='missing'\?`\$\{key\}:\$\{kind\}`:'';\}\)\.filter\(Boolean\)\.join\(\);/);
  // Locked buildings still fold at the very bottom, after the missing ones (foldLocked runs after the sort).

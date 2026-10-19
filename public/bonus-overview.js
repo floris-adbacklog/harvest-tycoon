@@ -52,7 +52,11 @@ export function bonusOverview(state,now=Date.now()){
  ]);
  // Production: VIP, the beginner boost and Busy hands work in every building and make the total; the rest in one building each.
  const shared=cut(batch,without({vipExpiresAt:0,rookieUntil:0,master:{...state.master,production:0}}));
+ // The farmhand (20 Oct 2026, the owner: also in Bonuses): one more slot in every building but the Factory while it works, in Production
+ // and Running now.
+ const farmhandLeft=boostStatus(state,'farmhand',now).remaining,farmhand=farmhandLeft>0&&row('farmhand',BOOSTS.farmhand.name,`${formatDuration(farmhandLeft)} left`,'+1 slot');
  const production=group('production','Faster production','buildings',[
+  farmhand,
   vip&&row('vip','VIP',vipLeft,less(cut(batch,noVip))),
   rookie,
   ranks('production')&&row('production',MASTER_BRANCHES.production.name,'Master points',less(masterBonus(state,'production'))),
@@ -88,6 +92,6 @@ export function bonusOverview(state,now=Date.now()){
   visitors>0&&row('visitors','Valley visitors',welcome&&bridge?'Warm welcome and Stone bridge':welcome?MASTER_BRANCHES.visitors.name:VALLEY_PROJECTS.bridge.name,more(visitors))
  ],[improvement('wagon'),improvement('crane'),...(nextLeague?[{id:'league',level:nextLeague.from,had:false,open:false,name:nextLeague.name,sub:`Coins ×${nextLeague.coins} in events`}]:[]),
   {id:'visitors',level:FEATURE_LEVELS.visitors,had:visitors>0,open:featureUnlocked(state,'visitors'),where:'Master points',name:'Valley visitors',sub:'Warm welcome and Stone bridge'}]);
- const running=group('running','Running now','boost',[...['xp','harvest','coins'].map(id=>{const left=boostStatus(state,id,now).remaining;return left>0&&row(id,BOOSTS[id].name,`${formatDuration(left)} left`,'×2');}),rookie]);
+ const running=group('running','Running now','boost',[...['xp','harvest','coins'].map(id=>{const left=boostStatus(state,id,now).remaining;return left>0&&row(id,BOOSTS[id].name,`${formatDuration(left)} left`,'×2');}),farmhand,rookie]);
  return {groups:[crops,production,sales,cheaper,rewards,running].filter(Boolean)};
 }
