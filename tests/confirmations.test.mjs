@@ -15,8 +15,9 @@ test('the confirmations share one look: a picture, the question, a line, two but
  assert.match(diamonds,/picture='diamonds',balance/);assert.match(diamonds,/You keep \$\{left\.toLocaleString\('en-US'\)\} diamonds/);assert.match(diamonds,/Spend \$\{amount\}/);
  // 18 Oct 2026: the red of a hard-to-undo confirm is the one red button of buttons.css (the window shell), no colour of its own here.
  assert.match(read('public/buttons.css'),/\.diamond-confirm\.is-danger \.confirm-spend\{background:var\(--btn-red\)/);
- const boosts=read('public/boosts-ui.js');for(const picture of ["picture:kind==='crop'?'harvest':'buildings'","picture:id==='crops'?'instant-harvest':boost.art","picture:'vip'"])assert(boosts.includes(picture),picture);
- assert.equal((boosts.match(/balance:state\.diamonds/g)??[]).length,3,'every diamond confirmation shows what you keep');
+ const boosts=read('public/boosts-ui.js');for(const picture of ["picture:kind==='crop'?'harvest':'buildings'","picture:id==='crops'?'instant-harvest':boost.art","picture:'vip'","picture:COIN_PACK.art"])assert(boosts.includes(picture),picture);
+ // Four: finishing crops or batches, a boost, VIP and the coins (20 Oct 2026).
+ assert.equal((boosts.match(/balance:state\.diamonds/g)??[]).length,4,'every diamond confirmation shows what you keep');
  const family=read('public/family-ui.js');assert.match(family,/if\(ask&&!await confirmAction\(\{\.\.\.ask,cancelLabel:'Cancel',picture:'family-members'\}\)\)return;/);
  assert.match(family,/family_leave:\{title:'Leave this family\?'[^}]*tone:'danger'\}/);
  const economy=read('public/economy-ui.js');assert.match(economy,/confirmLabel:'Remove',cancelLabel:'Keep it',picture:p\.crop,tone:'danger'/);

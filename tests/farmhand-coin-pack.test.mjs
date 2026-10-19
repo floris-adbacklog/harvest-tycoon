@@ -93,6 +93,8 @@ test('the shop shows both under Power-ups, the bonuses list the farmhand, and th
  const order=[...Object.entries(BOOSTS).filter(([id])=>!['crops','production'].includes(id)).map(([id,b])=>[b.cost,id]),[COIN_PACK.cost,'coins-pack']].sort((a,b)=>a[0]-b[0]).map(([,id])=>id);
  assert.deepEqual(order,['xp','harvest','coins','coins-pack','farmhand','upgrade']);
  assert.match(ui,/runAction\(\{type:'buy_coins',expectedCost:COIN_PACK\.cost,expectedCoins:coins\}\)/);
+ // The coins ask first, as the farmhand does (the owner: "kreeg geen confirmatiescherm").
+ assert.match(ui,/try\{if\(!await confirmDiamondSpend\(\{title:`\$\{number\(coins\)\} coins`,cost:COIN_PACK\.cost,description:`\$\{number\(COIN_PACK\.perLevel\)\} coins for every level of your farm, right away\.`,picture:COIN_PACK\.art,balance:state\.diamonds\}\)\)return;\n    const result=await runAction\(\{type:'buy_coins'/);
  assert.match(ui,/\['farmhand','Farmhand',state\.boosts\.farmhandUntil,'farmhand'\]/);
  assert.match(read('public/bonus-overview.js'),/row\('farmhand',BOOSTS\.farmhand\.name,`\$\{formatDuration\(farmhandLeft\)\} left`,'\+1 slot'\)/);
  const icons=read('public/visual-icons.js');assert.match(icons,/webpPictures=new Set\(\['live-events','family-sharing','farmhand','coin-cart',/);

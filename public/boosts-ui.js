@@ -156,7 +156,9 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   });
   $('boost-catalog').querySelectorAll('[data-buy-coins]').forEach(button=>button.onclick=async()=>{
    if(finishing)return;const coins=coinPackCoins(state);finishing=true;render();
-   try{const result=await runAction({type:'buy_coins',expectedCost:COIN_PACK.cost,expectedCoins:coins});onChange();
+   // It asks first, as the farmhand and VIP do (20 Oct 2026, the owner: "kreeg geen confirmatiescherm").
+   try{if(!await confirmDiamondSpend({title:`${number(coins)} coins`,cost:COIN_PACK.cost,description:`${number(COIN_PACK.perLevel)} coins for every level of your farm, right away.`,picture:COIN_PACK.art,balance:state.diamonds}))return;
+    const result=await runAction({type:'buy_coins',expectedCost:COIN_PACK.cost,expectedCoins:coins});onChange();
     const message=`${number(result.coins)} coins added to your farm.`;$('boost-feedback').textContent=message;notify(message);
    }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
   });
