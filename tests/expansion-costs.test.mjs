@@ -33,8 +33,10 @@ test('forty fields: the last twelve are long-term goals that need a level, coins
  const all=structuredClone(s);all.plots=Array.from({length:39},(_,id)=>({...s.plots[0],id}));assert.equal(fields(all).length,12);
  const young=structuredClone(s);young.plots=young.plots.slice(0,20);assert.deepEqual(fields(young),[],'with 20 fields: none of them yet');
 });
+// The Tractor opens at level 18 on every farm since 19 Oct 2026 (older farms had it from level 1): the farm plays at 18; neither the
+// supplies of field 13 nor the fuel follow the level.
 test('missing expansion supplies and insufficient tractor fuel leave balances and plots intact',()=>{
- const s=createFarm(now);s.coins=10000;let old=structuredClone(s);
+ const s=createFarm(now,{level:18});s.coins=10000;let old=structuredClone(s);
  assert.throws(()=>applyFarmAction(s,{type:'expand'},now),/supplies/);assert.deepEqual(s,old);
  s.coins=0;old=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'tractor',mode:'harvest'},now),/fuel/);assert.deepEqual(s,old);
  s.coins=14;const q=tractorQuote(s,'plant','wheat',now);assert.equal(q.count,0);old=structuredClone(s);

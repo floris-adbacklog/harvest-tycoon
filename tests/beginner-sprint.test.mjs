@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward,xpForLevel} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,applyFarmAction as act,rookieLeft,rookieBoost,ROOKIE_MS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,cropDuration,recipeDuration,keptStock,sellableStock,STARTER_KEEP,STARTER_ITEMS,CROPS,ITEMS,QUESTS,STARTER_QUESTS,QUEST_XP,levelOf,levelReward,xpForLevel,questFeatureOpen,FEATURE_LEVELS} from '../game/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 import {questGroups} from '../public/quests-ui.js';
 import {rookieBadge,rookieLabel,rookieTimeLeft} from '../public/rookie-ui.js';
@@ -111,8 +111,14 @@ test('a new farmer sees the quickest starter quests first, three at a time, and 
  assert.throws(()=>act(s,{type:'quest',id:thirsty},now),/already/);
  const titles=questGroups(s).active.map(x=>x.quest.title);assert.equal(titles.length,3);assert(!titles.includes('Thirsty crops'));
  s.xp=xpForLevel(6);assert.equal(levelOf(s),6);assert.equal(questGroups(s).active.length,5,'five at a time from level 6');
- // An older farm sees every quest but those of the endgame (level 90 and up) before their level (17 Oct 2026).
- const legacy=createLegacyFarm(now);assert.equal(questGroups(legacy).ready.length+questGroups(legacy).active.length+questGroups(legacy).done.length,QUESTS.filter(q=>(q.minLevel??1)<90).length);
+ // An older farm sees every quest but those of the endgame (level 90 and up) before their level (17 Oct 2026), and since 19 Oct 2026 also
+ // none for a feature below its level (questFeatureOpen: features follow the level on every farm); one it already claimed stays in Done.
+ const shown=farm=>{const g=questGroups(farm);return [...g.ready,...g.active,...g.done].map(x=>x.quest.title);};
+ const legacy=createLegacyFarm(now);assert.equal(shown(legacy).length,QUESTS.filter(q=>(q.minLevel??1)<90&&questFeatureOpen(legacy,q)).length);
+ assert(shown(legacy).length<QUESTS.filter(q=>(q.minLevel??1)<90).length,'level 1 waits for chores, hands-on jobs, orders and more');
+ assert.equal(FEATURE_LEVELS.chores,15);assert(!shown(createLegacyFarm(now,{level:14})).includes('Chore time'));assert(shown(createLegacyFarm(now,{level:15})).includes('Chore time'));
+ legacy.claimed=[QUESTS.findIndex(q=>q.title==='Chore time')];assert.deepEqual(questGroups(legacy).done.map(x=>x.quest.title),['Chore time']);
+ assert.equal(shown(createLegacyFarm(now,{level:89})).length,QUESTS.filter(q=>(q.minLevel??1)<90).length,'at 89 every feature below the endgame is open: every quest shows');
 });
 
 test('the hourglass sits next to the diamonds like the Family button, opens a screen that closes, and has its own icon',()=>{

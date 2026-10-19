@@ -17,10 +17,14 @@ test('the unlocks between levels 10 and 38 are spread out: one or more new thing
   ...Object.entries(RECIPE_LEVELS).filter(([id,l])=>RECIPES[id]&&RECIPES[id].building!=='factory'&&l>(BUILDING_LEVELS[RECIPES[id].building]??1)).map(([,l])=>l)]);
  for(let level=11;level<=48;level++)assert.ok(levels.has(level),`level ${level} brings something new`);
 });
-test('a farm from before the spread keeps everything it already had; what it had not reached yet follows the new levels',()=>{
+// 19 Oct 2026 (the owner: every feature opens at its level on every farm): what it had is kept for buildings, recipes and order tiers; a
+// kept feature stays in the kept list (a rollback opens it again) but waits for its level like on any farm.
+test('a farm from before the spread keeps the buildings, recipes and order tiers it already had; its features and what it had not reached follow the new levels',()=>{
  const twelve=before(12);
  assert.equal(twelve.progression.version,6,'and then version 6 (9 Oct 2026)');
- for(const key of ['stall','tractor'])assert.ok(featureUnlocked(twelve,key),`level 12 keeps ${key}`);
+ for(const key of ['stall','tractor']){assert.ok(twelve.progression.kept.features.includes(key),`level 12 had ${key}`);assert.ok(!featureUnlocked(twelve,key),`${key} waits for level ${FEATURE_LEVELS[key]}`);}
+ const at=level=>{const s=structuredClone(twelve);s.xp=xpForLevel(level);return s;};
+ assert.ok(!featureUnlocked(at(17),'tractor')&&featureUnlocked(at(18),'tractor'),'the Tractor at 18');assert.ok(!featureUnlocked(at(18),'stall')&&featureUnlocked(at(19),'stall'),'the stall at 19');
  for(const key of ['silo','projects'])assert.ok(!featureUnlocked(twelve,key),`${key} was not reached yet`);
  assert.ok(deliveryTierUnlocked(twelve,'commission'),'commission orders stay');assert.ok(buildingEligible(twelve,'packing'));
  assert.deepEqual(twelve.progression.kept.recipes?.filter(id=>['windflour','berrytart'].includes(id)),['windflour']);

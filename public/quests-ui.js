@@ -1,4 +1,4 @@
-import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,worldTwoOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS,villageQuestOpen} from './farm-state.js';
+import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,questFeatureOpen,worldTwoOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS,villageQuestOpen} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 
@@ -9,6 +9,8 @@ export function questGroups(state){
  QUESTS.forEach((quest,id)=>{
   if(guidedFarm(state)&&!state.claimed.includes(id)&&!availableDaily(state,quest))return;
   if(!guidedFarm(state)&&!state.claimed.includes(id)&&(quest.minLevel??1)>=90&&levelOf(state)<quest.minLevel)return;
+  // Nor one for a feature it has not reached the level for (19 Oct 2026: features follow the level on every farm).
+  if(!guidedFarm(state)&&!state.claimed.includes(id)&&!questFeatureOpen(state,quest))return;
   const value=Math.min(quest.target,Number(state.stats[quest.stat])||0);
   const group=state.claimed.includes(id)?'done':value>=quest.target?'ready':'active';
   groups[group].push({id,quest,value});

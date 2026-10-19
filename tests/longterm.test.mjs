@@ -20,19 +20,22 @@ test('active care yields three crops versus one passive crop and cannot be repea
  assert.equal(CROPS.wheat.duration,120000);assert.equal(CROPS.sunflower.duration,DAY_MS);
 });
 test('passive earnings accrue only once, cap offline time and do not retroactively use upgrades',()=>{
- const s=createFarm(now);assert.equal(stallStatus(s,now+hour).available,36);s.coins=10000;act(s,{type:'stall_upgrade'},now+hour);
+ // The Farm stall opens at level 19 on every farm since 19 Oct 2026 (older farms had it from level 1); its coins do not follow the level.
+ const s=createFarm(now,{level:19});assert.equal(stallStatus(s,now+hour).available,36);s.coins=10000;act(s,{type:'stall_upgrade'},now+hour);
  assert.equal(stallStatus(s,now+hour).available,36);assert.equal(stallStatus(s,now+2*hour).available,90);
  const before=s.coins;act(s,{type:'stall_collect'},now+2*hour);assert.equal(s.coins,before+90);assert.throws(()=>act(s,{type:'stall_collect'},now+2*hour),/first coin/);
  assert.equal(stallStatus(s,now+100*DAY_MS).available,54*28);
  const b=structuredClone(s);assert.equal(stallStatus(s,now-hour).available,0);assert.deepEqual(b,s);
 });
 test('chores remain repeatable but do not pay twice during cooldown',()=>{
- const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>0);const balance=s.coins;assert.throws(()=>act(s,{type:'chore',id:'weeds'},now),/returns in/);assert.equal(s.coins,balance);
+ // Farm chores open at level 15 on every farm since 19 Oct 2026 (older farms had them from level 1); their pay does not follow the level.
+ const s=createFarm(now,{level:15});act(s,{type:'chore',id:'weeds'},now,()=>0);const balance=s.coins;assert.throws(()=>act(s,{type:'chore',id:'weeds'},now),/returns in/);assert.equal(s.coins,balance);
  const wheat=s.inventory.wheat,level=levelOf(s);act(s,{type:'chore',id:'weeds'},now+CHORES.weeds.cooldown,()=>0);assert.equal(s.stats.chores,2);assert.equal(s.coins,balance+27+levelGain(level,levelOf(s),'coins'));assert.equal(s.inventory.wheat,wheat+2,'the bonus is goods, not coins');
  assert.throws(()=>act(s,{type:'chore',id:'constructor'},now),/Choose/);
 });
 test('mastery counts field harvests, claims once and old crop counts receive credit',()=>{
- const s=createFarm(now);s.version=3;delete s.mastery;s.stats.harvest_wheat=100;normalizeFarm(s,now);assert.equal(masteryStatus(s,'wheat')[1].progress,100);
+ // Medals open at level 14 on every farm since 19 Oct 2026 (older farms had them from level 1).
+ const s=createFarm(now,{level:14});s.version=3;delete s.mastery;s.stats.harvest_wheat=100;normalizeFarm(s,now);assert.equal(masteryStatus(s,'wheat')[1].progress,100);
  act(s,{type:'mastery',crop:'wheat',tier:0},now);act(s,{type:'mastery',crop:'wheat',tier:1},now);assert.equal(s.stats.mastery_medals,2);
  assert.throws(()=>act(s,{type:'mastery',crop:'wheat',tier:1},now),/already/);assert.throws(()=>act(s,{type:'mastery',crop:'wheat',tier:2},now),/Keep harvesting/);
 });

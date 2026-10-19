@@ -89,8 +89,9 @@ test('every level up to 20 opens one to three new things, and levels 2 to 10 twe
  assert.equal(CROP_LEVELS.greenbeans,RECIPE_LEVELS.stew);assert.equal(RECIPE_LEVELS.salad,BUILDING_LEVELS.packing);
 });
 // Farm chores (4 -> 10 -> 15), A helping hand (6 -> 8) and seven more unlocks (9 Oct 2026) were moved later on purpose; a farm that
-// already had one keeps it (tests/helping-hands.test.mjs and below).
-test('what moved later on 9 Oct 2026 stays open for every farm that was already past its old level, or had used it',()=>{
+// already had one keeps it (tests/helping-hands.test.mjs and below). Since 19 Oct 2026 that holds for crops, order tiers and recipes only:
+// a feature opens at its level on every farm, kept or used (the owner's rule); the kept list stays in the save, so a rollback opens it again.
+test('what moved later on 9 Oct 2026 stays open for a farm already past its old level, or that had used it; a feature waits for its level',()=>{
  const moved=[['crops','greenbeans',7,12],['features','cart',5,7],['features','mastery',7,14],['features','chores',10,15],['orderTiers','quick',5,7],['recipes','salad',10,11],['recipes','vegetables',11,13],['recipes','fertilizer',9,14],['recipes','windfeed',7,18]];
  const levels={crops:CROP_LEVELS,features:FEATURE_LEVELS,orderTiers:DELIVERY_LEVELS,recipes:RECIPE_LEVELS};
  const open=(s,kind,key)=>kind==='crops'?cropUnlocked(s,key):kind==='features'?featureUnlocked(s,key):kind==='orderTiers'?deliveryTierUnlocked(s,key):recipeLevel(s,key)<=levelOf(s);
@@ -99,13 +100,21 @@ test('what moved later on 9 Oct 2026 stays open for every farm that was already 
  for(const [kind,key,from,to] of moved){
   assert.equal(levels[kind][key],to,`${key} opens at ${to}`);
   const had=saved(from),waiting=saved(from-1);
-  assert.equal(had.progression.version,6);assert.ok(open(had,kind,key),`${key}: a farm at level ${from} keeps it`);
+  assert.equal(had.progression.version,6);
+  if(kind==='features'){
+   // 19 Oct 2026: kept, but locked like on any farm until its level, and open exactly there.
+   assert.ok(had.progression.kept.features.includes(key),`${key}: a farm at level ${from} has it in its kept list`);
+   assert.ok(!open(had,kind,key),`${key}: a farm at level ${from} waits for level ${to} too`);
+   had.xp=xpForLevel(to-1);assert.ok(!open(had,kind,key),`${key}: still at ${to-1}`);had.xp=xpForLevel(to);assert.ok(open(had,kind,key),`${key}: open at ${to}`);
+  }else assert.ok(open(had,kind,key),`${key}: a farm at level ${from} keeps it`);
   assert.ok(!open(waiting,kind,key),`${key}: a farm at level ${from-1} waits for level ${to}`);
   waiting.xp=xpForLevel(to);assert.ok(open(waiting,kind,key),`${key}: and gets it at ${to}`);
  }
- // A farm that already used a feature keeps it at any level; migrating twice changes nothing; a new farm starts at version 6.
+ // A farm that already used deliveries keeps the quick order tier at any level and the cart in its kept list, but the cart itself waits for
+ // level 7 (19 Oct 2026); migrating twice changes nothing; a new farm starts at version 6.
  const used=createFarm(now);used.progression={mode:'guided',version:5,fields:used.progression.fields};used.xp=xpForLevel(4);used.stats.deliveries=1;normalizeFarm(used,now);
- assert.ok(featureUnlocked(used,'cart')&&deliveryTierUnlocked(used,'quick'));
+ assert.ok(deliveryTierUnlocked(used,'quick'));assert.ok(used.progression.kept.features.includes('cart'));
+ assert.ok(!featureUnlocked(used,'cart'),'used at level 4, delivery orders still wait for 7');used.xp=xpForLevel(FEATURE_LEVELS.cart);assert.ok(featureUnlocked(used,'cart'));
  const again=structuredClone(saved(30));const once=structuredClone(again);normalizeFarm(again,now);assert.deepEqual(again,once);
  assert.equal(createFarm(now).progression.version,6);assert.equal(createFarm(now).progression.kept,undefined);
 });
@@ -230,18 +239,22 @@ test('a quest or daily challenge about making a good only shows once a recipe fo
 });
 
 // 9 Oct 2026 (found in review): a daily challenge drawn before an update keeps up with its definition (target, reward, the text the
-// languages translate), and what a farm has used stays open even if it met the old levels after a rollback.
-test('a stored daily challenge follows its new definition; a used feature stays open on every load, also after a rollback',async()=>{
+// languages translate), and what a farm has used stays open even if it met the old levels after a rollback. Since 19 Oct 2026 a used
+// feature stays in the kept list on every load (so a rollback opens it again), but opens at its level like on any farm.
+test('a stored daily challenge follows its new definition; a used feature stays kept on every load, also after a rollback, and opens at its level',async()=>{
  const {DAILY_POOLS}=await import('../game/farm-state.js');
  const s=createFarm(now);s.xp=xpForLevel(12);s.xpOffset=0;normalizeFarm(s,now);
  const honey=DAILY_POOLS.flat().find(q=>q.title==='Honey time');
  s.daily.tasks=[{...honey,target:3,reward:85,description:'Finish 3 Apiary jobs and collect their Honey.'}];
  normalizeFarm(s,now+60000);
  assert.deepEqual([s.daily.tasks[0].target,s.daily.tasks[0].reward,s.daily.tasks[0].description],[2,65,'Finish 2 Apiary jobs and collect their Honey.']);
- // A version-6 farm that used Medals, chores and deliveries below their new levels (the old rules, after a rollback) keeps them.
+ // A version-6 farm that used Medals, chores and deliveries below their new levels (the old rules, after a rollback) keeps them in its
+ // kept list and keeps the quick orders; the features themselves wait for their levels (19 Oct 2026): Medals 14, chores 15.
  const back=createFarm(now);back.xp=xpForLevel(11);back.xpOffset=0;back.stats.chores=3;back.stats.deliveries=2;back.mastery.claimed=['corn:0'];
  normalizeFarm(back,now);
- assert.equal(back.progression.version,6);for(const key of ['chores','mastery','cart'])assert.ok(featureUnlocked(back,key),key);assert.ok(deliveryTierUnlocked(back,'quick'));
+ assert.equal(back.progression.version,6);for(const key of ['chores','mastery','cart'])assert.ok(back.progression.kept.features.includes(key),key);assert.ok(deliveryTierUnlocked(back,'quick'));
+ assert.ok(featureUnlocked(back,'cart'),'level 11 is past the cart\'s 7');assert.ok(!featureUnlocked(back,'chores')&&!featureUnlocked(back,'mastery'),'used below their levels, they still wait');
+ back.xp=xpForLevel(14);assert.ok(featureUnlocked(back,'mastery')&&!featureUnlocked(back,'chores'),'Medals at 14');back.xp=xpForLevel(15);assert.ok(featureUnlocked(back,'chores'),'chores at 15');
  const fresh=createFarm(now);fresh.xp=xpForLevel(11);fresh.xpOffset=0;normalizeFarm(fresh,now);
  assert.ok(!featureUnlocked(fresh,'chores')&&!featureUnlocked(fresh,'mastery'),'a farm that never used them waits for their levels');assert.equal(fresh.progression.kept,undefined);
 });

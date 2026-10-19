@@ -6,7 +6,9 @@ import {PAYMENT_PACKS,paymentPack,checkoutPack,validatePaidSession} from '../gam
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {trackCommerce} from '../src/analytics.js';
 const now=Date.UTC(2026,8,21,12);
-const farm=()=>{const s=createLegacyFarm(now);s.diamonds=10000;return s;};
+// Level 10 since 19 Oct 2026: VIP is bought with the Diamond boosts (level 10), now on every farm, and the Today challenges (3) and delivery
+// orders (7) it doubles open below that. A level-1 legacy farm had them all before.
+const farm=()=>{const s=createLegacyFarm(now,{level:10});s.diamonds=10000;return s;};
 const purchase=(s,plan='week',at=now)=>applyFarmAction(s,{type:'buy_vip',plan,expectedCost:VIP_PLANS[plan].cost,expectedExpiresAt:s.vipExpiresAt},at);
 test('VIP has exact week/month costs and time; renewals add time without stronger bonuses',()=>{
  const s=farm();assert.deepEqual(Object.values(VIP_PLANS).map(p=>[p.cost,p.duration]),[[500,7*DAY_MS],[1500,30*DAY_MS]]);
@@ -61,7 +63,8 @@ test('market totals round once after VIP and Double earnings, without altering b
 });
 test('VIP doubles all Today reward currencies only once, with repeat claims rejected',()=>{
  const s=farm(),plain=farm();purchase(s);
- const gift=applyFarmAction(s,{type:'checkin'},now);assert.equal(gift.coins,DAILY_REWARDS[0]*2);assert.equal(gift.diamonds,DAILY_DIAMONDS[0]*2);assert.equal(gift.xp,20);
+ // The gift's coins are the day's coins × half the level (giftCoins): × 5 at level 10, this farm's level since 19 Oct 2026.
+ const gift=applyFarmAction(s,{type:'checkin'},now);assert.equal(gift.coins,DAILY_REWARDS[0]*5*2);assert.equal(gift.diamonds,DAILY_DIAMONDS[0]*2);assert.equal(gift.xp,20);
  assert.throws(()=>applyFarmAction(s,{type:'checkin'},now),/already collected/);
  const normalTasks=dailyTasks(plain,now),tasks=dailyTasks(s,now);
  for(const [i,q]of tasks.entries()){
@@ -79,7 +82,7 @@ test('VIP doubles all Today reward currencies only once, with repeat claims reje
 test('VIP expiry before a daily claim pays regular rewards; upgrades and level rewards do not change',()=>{
  const s=farm(),regular=farm();purchase(s);const expiry=s.vipExpiresAt;
  const v=dailyOrders(s,expiry),b=dailyOrders(regular,expiry);assert.deepEqual(v,b);
- const gift=applyFarmAction(s,{type:'checkin'},expiry);assert.equal(gift.coins,40);assert.equal(gift.diamonds,DAILY_DIAMONDS[0]);assert.equal(gift.xp,10);
+ const gift=applyFarmAction(s,{type:'checkin'},expiry);assert.equal(gift.coins,200);assert.equal(gift.diamonds,DAILY_DIAMONDS[0]);assert.equal(gift.xp,10);   // 200: day 1's 40 × 5 at level 10 (giftCoins), not doubled
  assert.equal(upgradeCost(s,'mill'),upgradeCost(regular,'mill'));
  assert.deepEqual(levelReward(20),{coins:200,diamonds:2});   // one diamond per ten levels since 7 Oct 2026
  assert.deepEqual(Object.values(BOOSTS).map(b=>b.cost),[50,75,100,150,200,250]);

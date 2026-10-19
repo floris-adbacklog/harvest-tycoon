@@ -145,7 +145,14 @@ test('pre-update guided and legacy saves retain every prior unlock, balance, tim
  for(const {name,state,access}of fixtures){const s=structuredClone(state);normalizeFarm(s,now);
   for(const key of access.crops)assert.ok(cropUnlocked(s,key),`${name}: ${key}`);
   for(const key of access.buildings)assert.ok(buildingUnlocked(s,key),`${name}: ${key}`);
-  for(const key of access.features)assert.ok(featureUnlocked(s,key),`${name}: ${key}`);
+  // 19 Oct 2026 (the owner): every feature opens at its level on every farm, older saves too. What a save had below its level waits for
+  // that level and opens exactly there; a guided save keeps it in its kept list, so a rollback opens it again.
+  for(const key of access.features){
+   assert.equal(featureUnlocked(s,key),levelOf(s)>=FEATURE_LEVELS[key],`${name}: ${key}`);
+   if(s.progression.mode!=='legacy')assert.ok(s.progression.kept.features.includes(key),`${name}: ${key} stays in the kept list`);
+   const at=structuredClone(s);level(at,FEATURE_LEVELS[key]-1);assert.equal(featureUnlocked(at,key),false,`${name}: ${key} below its level`);
+   level(at,FEATURE_LEVELS[key]);assert.ok(featureUnlocked(at,key),`${name}: ${key} at level ${FEATURE_LEVELS[key]}`);
+  }
   for(const key of access.recipes)assert.ok(recipeUnlocked(s,key),`${name}: ${key}`);
   for(const key of ['coins','diamonds','claimed','plots','onboarding','levelRewards'])assert.deepEqual(s[key],state[key],`${name}: ${key}`);
   // Today's challenges stay the same ones; each follows its current target, reward and text (9 Oct 2026: two went from 3 jobs to 2).

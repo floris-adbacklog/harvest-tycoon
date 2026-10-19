@@ -4,9 +4,10 @@ import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {applyFarmAction,dailyTasks,utcDay,DAY_MS,BOOSTS,DAILY_DIAMONDS,xpForLevel,familyWeek,familyWeekStart,normalizeFarm,VILLAGE_CRATE_DIAMONDS,VILLAGE_REQUEST_WAIT,
  BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,DEPOT_DIAMONDS,VILLAGE_LANDMARKS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
-// 7 Oct 2026: 1, 1 and 2 (they were 2, 2 and 4).
+// 7 Oct 2026: 1, 1 and 2 (they were 2, 2 and 4). Daily challenges open at level 3 on every farm since 19 Oct 2026 (older farms had
+// them from level 1): the farm plays at 3; the challenge diamonds do not follow the level.
 test('daily challenges pay 1, 1 and 2 diamonds once, separately from login gifts',()=>{
- const s=createFarm(now);const tasks=dailyTasks(s,now);assert.deepEqual(tasks.map(q=>q.diamonds),[1,1,2]);
+ const s=createFarm(now,{level:3});const tasks=dailyTasks(s,now);assert.deepEqual(tasks.map(q=>q.diamonds),[1,1,2]);
  let levelTotal=0;
  for(const q of tasks){
   assert.throws(()=>applyFarmAction(s,{type:'daily',id:q.id,day:utcDay(now)},now),/Finish/);
@@ -20,8 +21,10 @@ test('daily challenges pay 1, 1 and 2 diamonds once, separately from login gifts
  assert.throws(()=>applyFarmAction(s,{type:'daily',id:0,day:utcDay(now)},now+DAY_MS),/new day/);
  assert.equal(s.diamonds,4+levelTotal);
 });
+// Diamond boosts (Instant harvest, Double XP, one crop for 10 diamonds) open at level 10 on every farm since 19 Oct 2026 (older farms
+// had them from level 1): the boost tests play at 10; boost prices do not follow the level.
 test('old or manipulated boost quotes never charge a different price',()=>{
- const s=createFarm(now);s.diamonds=1000;
+ const s=createFarm(now,{level:10});s.diamonds=1000;
  for(const expectedCost of [undefined,8,0,89,'90']){
   const before=structuredClone(s);
   assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost},now),/prices have changed/);
@@ -31,7 +34,7 @@ test('old or manipulated boost quotes never charge a different price',()=>{
  assert.equal(r.cost,150);assert.equal(s.diamonds,850);
 });
 test('free beginner diamonds still buy an entry boost; premium boost prices preserve their value',()=>{
- const s=createFarm(now);s.diamonds=20;
+ const s=createFarm(now,{level:10});s.diamonds=20;
  const id=s.plots.findIndex(p=>p.crop&&p.readyAt>now);
  applyFarmAction(s,{type:'finish_crop',id,expectedCost:10},now);assert.equal(s.diamonds,10);
  assert.equal(DAILY_DIAMONDS.reduce((a,b)=>a+b,0)+7*4,68,'a first week of gifts and challenges (136 until 7 Oct 2026)');
@@ -39,7 +42,7 @@ test('free beginner diamonds still buy an entry boost; premium boost prices pres
  const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'coins',expectedCost:100},now),/diamonds/);assert.deepEqual(s,before);
 });
 test('Double XP costs 50 diamonds and rejects the old 25-diamond quote',()=>{
- const s=createFarm(now);s.diamonds=50;
+ const s=createFarm(now,{level:10});s.diamonds=50;
  assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:25},now),/prices have changed/);assert.equal(s.diamonds,50);
  applyFarmAction(s,{type:'buy_boost',boost:'xp',expectedCost:50},now);assert.equal(s.diamonds,0);assert.equal(s.boosts.xpUntil,now+1800000);
 });

@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {createFarm,stallNotice,stallStatus,STALL_NOTICE_SHARE} from '../game/farm-state.js';
+import {createFarm,stallNotice,stallStatus,STALL_NOTICE_SHARE,xpForLevel} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,24,12),hour=3600000,minute=60000;
 
 test('the stall asks to be emptied once it is a quarter full: 6 hours at level 1, 12 hours at the top',()=>{
  assert.equal(STALL_NOTICE_SHARE,.25);
- const s=createLegacyFarm(now);s.stall.since=now;s.stall.bank=0;
+ // Stall levels 1 and 8; the farm is level 19, where the stall opens on every farm since 19 Oct 2026 (older farms had it from level 1).
+ const s=createLegacyFarm(now,{level:19});s.stall.since=now;s.stall.bank=0;
  assert.equal(stallNotice(s,now+6*hour-minute),false);assert.equal(stallNotice(s,now+6*hour),true);
  s.stall.level=8;assert.equal(stallStatus(s,now).capacityHours,48);
  assert.equal(stallNotice(s,now+12*hour-minute),false);assert.equal(stallNotice(s,now+12*hour),true);
@@ -18,6 +19,9 @@ test('the stall asks to be emptied once it is a quarter full: 6 hours at level 1
 test('no stall "!" before the stall is unlocked',()=>{
  const s=createFarm(now);s.stall.since=now-100*hour;
  assert.equal(stallNotice(s,now),false);
+ // An older farm too, since 19 Oct 2026: none at level 18, the "!" at 19.
+ const old=createLegacyFarm(now,{level:18});old.stall.since=now-100*hour;
+ assert.equal(stallNotice(old,now),false);old.xp=xpForLevel(19);assert.equal(stallNotice(old,now),true);
 });
 
 test('the "!" sits on the phone menu tile and the More button, not on the map pin or (since 8 Oct 2026) the Estate button, never a "G"',()=>{

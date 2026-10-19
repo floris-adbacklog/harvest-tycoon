@@ -7,9 +7,11 @@ import {art} from '../public/visual-icons.js';
 import {soundForAction} from '../public/farm-audio.js';
 const now=Date.UTC(2026,8,18);
 // Chores pay enough XP to level up a young farm; level-ups pay their own coins and diamonds on top.
+// Farm chores open at level 15 on every farm since 19 Oct 2026 (older farms had them from level 1): the chore tests play at 15.
+const CHORE_LEVEL=15;
 const levelGain=(from,to,key)=>{let sum=0;for(let l=from+1;l<=to;l++)sum+=levelReward(l)[key];return sum;};
 test('practice unlocks chores in order at their mastery threshold and respects caps',()=>{
- const s=createFarm(now);let time=now;
+ const s=createFarm(now,{level:CHORE_LEVEL});let time=now;
  for(const id of ['troughs','sorting'])assert.throws(()=>act(s,{type:'chore',id},time,()=>{throw Error('must not roll');}),/Master/);
  for(const id of Object.keys(CHORES)){
   const c=CHORES[id];assert.equal(choreStatus(s,id,time).locked,false);
@@ -23,7 +25,7 @@ test('practice unlocks chores in order at their mastery threshold and respects c
  }
 });
 test('a regular completion earns guaranteed rewards, advances practice, starts cooldown and ignores forged outcome',()=>{
- const s=createFarm(now),coins=s.coins,xp=s.xp,inventory=structuredClone(s.inventory),level=levelOf(s);
+ const s=createFarm(now,{level:CHORE_LEVEL}),coins=s.coins,xp=s.xp,inventory=structuredClone(s.inventory),level=levelOf(s);
  s.boosts.xpUntil=now+999999;
  const r=act(s,{type:'chore',id:'weeds',success:true,roll:0,chance:100},now,()=>.99);
  assert.equal(r.success,true);assert.equal(r.coins,27);assert.equal(r.xp,90,'45 XP, doubled by the XP boost');
@@ -37,9 +39,9 @@ test('a regular completion earns guaranteed rewards, advances practice, starts c
  assert.equal(act(restored,{type:'chore',id:'weeds'},now+900000,()=>0).bonus,true);
 });
 test('success boundary is strict and a mastered first chore always succeeds',()=>{
- assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.6).bonus,false);
- assert.equal(act(createFarm(now),{type:'chore',id:'weeds'},now,()=>.5999).bonus,true);
- const s=createFarm(now);s.chorePractice.weeds=20;
+ assert.equal(act(createFarm(now,{level:CHORE_LEVEL}),{type:'chore',id:'weeds'},now,()=>.6).bonus,false);
+ assert.equal(act(createFarm(now,{level:CHORE_LEVEL}),{type:'chore',id:'weeds'},now,()=>.5999).bonus,true);
+ const s=createFarm(now,{level:CHORE_LEVEL});s.chorePractice.weeds=20;
  assert.equal(act(s,{type:'chore',id:'weeds'},now,()=>.999999).bonus,true);
 });
 test('old farms retain balances and cooldowns without inventing per-chore practice',()=>{

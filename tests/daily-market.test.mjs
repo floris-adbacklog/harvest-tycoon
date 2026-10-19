@@ -37,7 +37,9 @@ test('stale sale quotes reject before consuming goods, forged prices cannot affe
 });
 test('every fresh board has three tiers; commissions scale, and daily rewards exceed current market',()=>{
  const seenBonus=new Set(),seenCommissions=new Set();
- for(const level of [1,4,8,12,25])for(let day=0;day<30;day++){
+ // Level 3 too since 19 Oct 2026: honey comes from the helping hand, which opens at 3 on every farm now (older farms had it from 1), so
+ // below 3 no board deals the honey commission (A countryside picnic) and all eight are seen only with level 3 in the sample.
+ for(const level of [1,3,4,8,12,25])for(let day=0;day<30;day++){
   const t=now+day*DAY_MS,s=createFarm(t-DAY_MS);s.xp=xpForLevel(level);const orders=dailyOrders(s,t);
   assert.deepEqual(orders.map(o=>o.tier),['quick','village','commission']);assert.equal(new Set(orders.map(o=>o.title)).size,3);
   for(const o of orders){
@@ -59,7 +61,8 @@ test('existing boards keep ingredients, payouts and completed IDs until the next
  const next=dailyOrders(s,now+DAY_MS);assert.deepEqual(next.map(o=>o.tier),['quick','village','commission']);assert.ok(next.every(o=>!o.done));
 });
 test('commissions consume goods and award only server-quoted coins, XP and diamonds once',()=>{
- const s=createFarm(now),o=dailyOrders(s,now)[2];Object.assign(s.inventory,o.input);s.boosts.coinsUntil=now+60000;s.boosts.xpUntil=now+60000;
+ // Delivery orders open at level 7 on every farm since 19 Oct 2026 (older farms had them from level 1).
+ const s=createFarm(now,{level:7}),o=dailyOrders(s,now)[2];Object.assign(s.inventory,o.input);s.boosts.coinsUntil=now+60000;s.boosts.xpUntil=now+60000;
  const before=structuredClone(s),r=act(s,{type:'delivery',id:o.id,day:utcDay(now),diamonds:99999,coins:99999},now);
  assert.equal(r.coins,o.coins*2);assert.equal(r.xp,o.xp*2);assert.equal(r.diamonds,o.diamonds);assert.equal(s.diamonds,before.diamonds+o.diamonds+(r.levelReward?.diamonds??0));
  assert.equal(s.stats.deliveries,before.stats.deliveries+1);assert.equal(s.stats.crafted_deliveries,before.stats.crafted_deliveries+1);

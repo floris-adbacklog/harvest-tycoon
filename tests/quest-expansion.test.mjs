@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {CHORES,normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber,marketValue,COMMISSION_POOL,PRODUCTS} from '../game/farm-state.js';
+import {FEATURE_LEVELS,CHORES,normalizeFarm,applyFarmAction as act,QUESTS,DAILY_POOLS,ORDER_POOL,ITEMS,DAY_MS,utcDay,dailyTasks,dailyOrders,xpForLevel,dayNumber,marketValue,COMMISSION_POOL,PRODUCTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,18,12);
 test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  const s=createFarm(now);s.version=9;s.claimed=[0,31,40];s.onboarding.completed=10;s.onboarding.rewardClaimed=true;
@@ -16,7 +16,8 @@ test('new quests append to old IDs and keep beginner and claimed progress',()=>{
  assert.throws(()=>act(s,{type:'quest',id:QUESTS.findIndex(q=>q.stat==='chore_sorting')},now),/Finish/);
 });
 test('new day selections stay fixed through level-ups, upgrades and reloads',()=>{
- const s=createFarm(now),tasks=dailyTasks(s,now),orders=dailyOrders(s,now);
+ // Daily challenges open at level 3 on every farm since 19 Oct 2026, so the farm starts there: at level 1 it has no tasks to keep fixed.
+ const s=createFarm(now,{level:FEATURE_LEVELS.challenges}),tasks=dailyTasks(s,now),orders=dailyOrders(s,now);assert.equal(tasks.length,3);
  s.xp=xpForLevel(20);s.buildings.mill.level=5;s.chorePractice={weeds:20,troughs:20};
  assert.deepEqual(dailyTasks(s,now),tasks);assert.deepEqual(dailyOrders(s,now),orders);
  const reloaded=JSON.parse(JSON.stringify(s));assert.deepEqual(dailyTasks(reloaded,now),tasks);assert.deepEqual(dailyOrders(reloaded,now),orders);
@@ -37,8 +38,9 @@ test('daily rotation covers accessible orders without locked chores or parallel 
  assert.equal(DAILY_POOLS.flat().length,69,'66, and World II\'s Village errands in each pool from level 100 (Oct 2026)');assert.equal(ORDER_POOL.length,52);
  const tasksSeen=new Set(),ordersSeen=new Set();
  for(let day=0;day<180;day++){
-  const t=now+day*DAY_MS,s=createFarm(t);
-  for(const q of dailyTasks(s,t)){assert.ok(!q.chore);assert.ok(!q.parallel);assert.ok((q.minLevel??1)<=1);}
+  // Starters get their challenges at level 3 (every farm since 19 Oct 2026); at level 1 there are none.
+  const t=now+day*DAY_MS,s=createFarm(t),first=createFarm(t,{level:FEATURE_LEVELS.challenges});assert.deepEqual(dailyTasks(s,t),[]);
+  assert.equal(dailyTasks(first,t).length,3);for(const q of dailyTasks(first,t)){assert.ok(!q.chore);assert.ok(!q.parallel);assert.ok((q.minLevel??1)<=FEATURE_LEVELS.challenges);}
   for(const o of dailyOrders(s,t))assert.ok(o.minLevel<=1);
   s.xp=xpForLevel(20);for(const b of Object.values(s.buildings))b.built=true;s.buildings.mill.level=3;s.chorePractice={weeds:20,troughs:20};
   normalizeFarm(s,t+DAY_MS);
@@ -49,7 +51,7 @@ test('daily rotation covers accessible orders without locked chores or parallel 
  assert.equal(tasksSeen.size,45);for(const o of ORDER_POOL.filter(o=>o.minLevel<=20&&(o.minLevel===1||Object.keys(o.input).some(k=>k!=='honey'&&PRODUCTS[k]))))assert.ok(ordersSeen.has(o.title),o.title);for(const o of COMMISSION_POOL.filter(o=>o.minLevel===16))assert.ok(ordersSeen.has(o.title));
 });
 test('new progress only counts accepted actions; all chores count, ready queues do not',()=>{
- const s=createFarm(now);act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,1);
+ const s=createFarm(now,{level:15});act(s,{type:'chore',id:'weeds'},now,()=>.99);assert.equal(s.stats.chore_weeds,1);   // Farm chores open at level 15 (19 Oct 2026)
  act(s,{type:'chore',id:'weeds'},now+CHORES.weeds.cooldown,()=>0);assert.equal(s.stats.chore_weeds,2);
  s.buildings.mill.level=2;s.inventory.corn=20;
  act(s,{type:'produce',recipe:'feed'},now);act(s,{type:'produce',recipe:'feed'},now+1);assert.equal(s.stats.parallel_batches,1);
@@ -58,7 +60,8 @@ test('new progress only counts accepted actions; all chores count, ready queues 
 });
 test('Honey deliveries consume stock once and advance the dedicated quest',()=>{
  let s,t,order;
- for(let day=0;day<10;day++){t=now+day*DAY_MS;s=createFarm(t);order=dailyOrders(s,t).find(o=>o.input.honey);if(order)break;}
+ // Delivery orders open at level 7 on every farm since 19 Oct 2026 (older farms had them from level 1).
+ for(let day=0;day<10;day++){t=now+day*DAY_MS;s=createFarm(t,{level:7});order=dailyOrders(s,t).find(o=>o.input.honey);if(order)break;}
  assert.ok(order);Object.assign(s.inventory,order.input);const coins=s.coins;
  const result=act(s,{type:'delivery',id:order.id,day:utcDay(t)},t);
  assert.equal(s.stats.honey_deliveries,1);assert.equal(s.inventory.honey,0);assert.equal(s.coins,coins+order.coins+(result.levelReward?.coins??0));

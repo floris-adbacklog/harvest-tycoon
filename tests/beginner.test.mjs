@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction,levelReward,levelOf,BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,QUESTS,beginnerProgress} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction,levelReward,levelOf,BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,QUESTS,FEATURE_LEVELS,beginnerProgress} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,12);
 const act=(state,action,time=now,random=()=>0)=>applyFarmAction(state,action,time,random);
 // Chores pay enough XP to level up a young farm; level-ups pay their own coins and diamonds on top.
@@ -18,14 +18,26 @@ test('the beginner guide teaches ten achievable starter actions and awards 50 di
  done(act(state,{type:'field',id:0,action:'water'}),'water');
  done(act(state,{type:'produce',recipe:'eggs'}),'produce');
  done(act(state,{type:'checkin'}),'gift');
- done(act(state,{type:'chore',id:'weeds'},now,()=>0),'chore');
- done(act(state,{type:'field',id:0,action:'tend'},now+40000),'tend');
- done(act(state,{type:'field',id:0,action:'harvest'},now+120000),'wheat');
- assert.equal(state.onboarding.completed,9);assert.equal(state.onboarding.rewardClaimed,false);
- const before=state.diamonds;
+ // 19 Oct 2026: an older farm has the guided steps 7 and 9 too (its chore step waited for Farm chores at level 15 once features follow the
+ // level on every farm): collect the eggs and sell one, then one helping-hand job (level 3; the guide's XP has the farm past it by then).
+ const before=state.diamonds,beforeLevel=levelOf(state);
  assert.throws(()=>act(state,{type:'collect',building:'coop'},now+120000),/still being made/);
- assert.throws(()=>claim('collect'),/farming action/);assert.equal(state.diamonds,before);
- act(state,{type:'collect',building:'coop'},now+300000);const collected=state.diamonds,level=levelOf(state);
+ assert.throws(()=>claim('collect'),/current beginner step/);assert.equal(state.diamonds,before);
+ act(state,{type:'collect',building:'coop'},now+300000);assert.equal(state.onboarding.completed,6,'the eggs alone are half of step 7');
+ done(act(state,{type:'sell',item:'eggs',quantity:1},now+300000),'sell_egg');
+ const field=state.plots.findIndex(p=>!p.crop);act(state,{type:'field',id:field,action:'plant',crop:'wheat'},now+300000);
+ done(act(state,{type:'field',id:field,action:'tend'},now+340000),'tend');
+ assert.ok(levelOf(state)>FEATURE_LEVELS.activities,'the hand is open at step 9');
+ const {startedAt}=act(state,{type:'activity_start',station:'greenhouse'},now+341000);let job;
+ state.activities.jobs.greenhouse.targets.forEach((target,i)=>{job=act(state,{type:'activity_work',station:'greenhouse',startedAt,target},now+341000+(i+1)*700);});
+ done(job,'hand');
+ assert.equal(state.onboarding.completed,9);assert.equal(state.onboarding.rewardClaimed,false);
+ // Step 10 was done with step 7's eggs (a done action counts whenever it came); its diamonds still wait for the claim.
+ assert.equal(state.diamonds-before,levelGain(beforeLevel,levelOf(state),'diamonds'),'no guide diamonds before the claim');
+ // Without a collected batch step 10 still cannot be claimed (here the eggs are collected in step 7, so a farm at step 10 that never did).
+ const uncollected=createFarm(now);uncollected.onboarding.completed=9;const untouched=structuredClone(uncollected);
+ assert.throws(()=>act(uncollected,{type:'beginner_claim',id:'collect'}),/farming action/);assert.deepEqual(uncollected,untouched);
+ const collected=state.diamonds,level=levelOf(state);
  const reward=claim('collect');assert.equal(reward.diamonds,50);assert.equal(BEGINNER_REWARD,50);const levelDiamonds=levelGain(level,levelOf(state),'diamonds');assert.equal(state.diamonds,collected+BEGINNER_REWARD+levelDiamonds);
  assert.deepEqual(state.claimed,[],'regular quests must not be claimed by the tutorial');
  assert(beginnerProgress(state).every(q=>q.done));
@@ -33,14 +45,15 @@ test('the beginner guide teaches ten achievable starter actions and awards 50 di
  assert.throws(()=>act(reloaded,{type:'beginner_claim',id:'collect'}),/already complete/);
  assert.equal(reloaded.diamonds,collected+50+levelDiamonds);assert.ok(collected>=before);
 });
+// Step 7 is selling an egg on every farm since 19 Oct 2026 (it was a chore on an older farm, and chores open at level 15).
 test('out-of-order actions count but rewards cannot skip steps or trust client fields',()=>{
  const state=createFarm(now);
  assert.throws(()=>act(state,{type:'field',id:3,action:'harvest'}),/Still growing/);
  assert.equal(state.onboarding.milestones.harvest,undefined);
- act(state,{type:'chore',id:'weeds'},now,()=>0);
- assert.throws(()=>act(state,{type:'beginner_claim',id:'chore',completed:9,diamonds:999}),/current beginner step/);
+ act(state,{type:'produce',recipe:'eggs'});act(state,{type:'collect',building:'coop'},now+300000);act(state,{type:'sell',item:'eggs',quantity:1},now+300000);
+ assert.throws(()=>act(state,{type:'beginner_claim',id:'sell_egg',completed:9,diamonds:999},now+300000),/current beginner step/);
  assert.equal(state.onboarding.completed,0);assert.ok(state.diamonds<BEGINNER_REWARD,'only level-up diamonds, never the guide reward');
- assert.equal(state.onboarding.milestones.chore,true);
+ assert.equal(state.onboarding.milestones.sell_egg,true);
 });
 test('existing farms retain regular progress, money, plots and jobs on tutorial migration',()=>{
  const state=createFarm(now);delete state.onboarding;

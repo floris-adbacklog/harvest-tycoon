@@ -14,7 +14,9 @@ test('v10 saves retain balances, timers, quests, tutorial and daily snapshots',(
 });
 test('locked crops, recipes and construction reject without charges, including tractor use',()=>{
  const s=createFarm(now);s.coins=100000;
- for(const crop of crops){const before=structuredClone(s);assert.throws(()=>act(s,{type:'field',id:8,action:'plant',crop},now),/Reach level/);assert.throws(()=>act(s,{type:'tractor',mode:'plant',crop},now),/Reach level/);assert.deepEqual(s,before);}
+ for(const crop of crops){const before=structuredClone(s);assert.throws(()=>act(s,{type:'field',id:8,action:'plant',crop},now),/Reach level/);assert.throws(()=>act(s,{type:'tractor',mode:'plant',crop},now),/unlock Tractor/);assert.deepEqual(s,before);}
+ // The tractor opens at level 18 on every farm since 19 Oct 2026; there it still refuses a crop above the farm's level, and charges nothing.
+ {const t=createFarm(now,{level:18});t.coins=100000;const before=structuredClone(t);assert.throws(()=>act(t,{type:'tractor',mode:'plant',crop:'squash'},now),/^Error: Reach level 28\.$/);assert.deepEqual(t,before);}
  for(const key of buildings){assert.throws(()=>act(s,{type:'construct',building:key},now),/Reach level/);assert.throws(()=>act(s,{type:'upgrade',building:key},now),/Open this building/);}
  s.xp=xpForLevel(20);for(const k of Object.keys(s.inventory))s.inventory[k]=100;
  for(const key of buildings){const recipe=Object.keys(RECIPES).find(k=>RECIPES[k].building===key);assert.throws(()=>act(s,{type:'produce',recipe},now),/Unlock/);const coins=s.coins;act(s,{type:'construct',building:key,cost:0},now);assert.equal(s.coins,coins-BUILDINGS[key].buildCost);assert.throws(()=>act(s,{type:'construct',building:key},now),/already open/);}

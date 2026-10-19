@@ -31,18 +31,23 @@ test('farm chores open at level 15 for a new farm',()=>{
 });
 
 // Hands-on jobs open at level 3 for every guided farm since 11 Oct 2026, so the right kept from level 6 changes nothing any more.
-test('a farm from before keeps what it already had: chores from level 4, hands-on jobs from level 6 (now 3 for all)',()=>{
- for(const [level,chores,jobs] of [[2,false,false],[3,false,true],[4,true,true],[5,true,true],[6,true,true],[7,true,true],[9,true,true]]){
+// 19 Oct 2026 (the owner: every feature opens at its level on every farm): the kept chores from level 4 no longer open them either. The
+// migration still writes the kept features, so a save keeps its shape, but featureUnlocked reads only the level: chores at 15.
+test('a farm from before still has its kept list, but chores and hands-on jobs open at their level (15 and 3) as on every farm',()=>{
+ for(const [level,chores,jobs] of [[2,false,false],[3,false,true],[4,false,true],[5,false,true],[6,false,true],[7,false,true],[9,false,true],[14,false,true],[15,true,true]]){
   for(const version of [2,3]){
    const old=beforeThisChange(level,version);
    assert.equal(featureUnlocked(old,'chores'),chores,`level ${level} v${version} chores`);assert.equal(featureUnlocked(old,'activities'),jobs,`level ${level} v${version} jobs`);
+   if(level>=4)assert.ok(old.progression.kept.features.includes('chores'),`level ${level} v${version}: chores are kept in the save, and still wait for 15`);
    assert.equal(old.progression.version,6,'and then the later spreads of unlocks (versions 5 and 6)');
    const again=structuredClone(old);normalizeFarm(again,now);assert.deepEqual(again,old,'migrating twice changes nothing');
   }
  }
- // What waits keeps waiting for the new level; a farm that did a job or a chore has already used the feature and keeps it.
+ // What waits keeps waiting for the new level; a farm that did a job or a chore keeps it in its kept list, but it opens at its level too.
  const low=beforeThisChange(2);assert.equal(featureUnlocked(low,'activities'),false);low.xp=xpForLevel(3);assert.equal(featureUnlocked(low,'activities'),true);assert.equal(featureUnlocked(low,'chores'),false);low.xp=xpForLevel(15);assert.equal(featureUnlocked(low,'chores'),true);
- const used=at(2);used.progression={mode:'guided',version:3};used.stats.activities=2;normalizeFarm(used,now);assert.equal(featureUnlocked(used,'activities'),true);
+ const used=at(2);used.progression={mode:'guided',version:3};used.stats.activities=2;normalizeFarm(used,now);assert.deepEqual(used.progression.kept.features,['activities']);
+ assert.equal(featureUnlocked(used,'activities'),false,'used before, still locked below level 3');assert.throws(()=>act(used,{type:'activity_start',station:'greenhouse'},now),/Reach level 3/);
+ used.xp=xpForLevel(3);assert.equal(featureUnlocked(used,'activities'),true,'open exactly at level 3');
  // Other rights a farm was given are kept next to them, and a farm that is already at version 4 is left alone.
  const mixed=beforeThisChange(6,2,{features:['mastery'],crops:['corn']});
  assert.deepEqual(mixed.progression.kept.features.sort(),['activities','cart','chores','mastery'],'Delivery orders too: the farm was past level 5, where they opened before 9 Oct 2026');assert.deepEqual(mixed.progression.kept.crops,['corn']);

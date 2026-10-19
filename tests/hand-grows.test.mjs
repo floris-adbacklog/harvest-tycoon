@@ -81,12 +81,14 @@ test('the hand\'s quests and challenges open at level 3; quests and challenges t
  assert.equal(availableDaily(at(6),gentle),true);assert.equal(availableDaily(at(6),soil),true);
 });
 
-test('guide step 9 is A helping hand on a guided farm: one finished job, any stop; the step numbers stay the same',()=>{
+// 19 Oct 2026: older (legacy) farms have the same steps (their chore step waited for Farm chores at 15 once features follow the level on
+// every farm), so step 9 is A helping hand for them too.
+test('guide step 9 is A helping hand on every farm: one finished job, any stop; the step numbers stay the same',()=>{
  const s=createFarm(now);
  assert.deepEqual(beginnerProgress(s,now).map(q=>q.id),['harvest','sell','plant','water','produce','gift','sell_egg','tend','hand','collect']);
  const hand=beginnerProgress(s,now)[8];
  assert.deepEqual([hand.title,hand.guide,hand.description],['A helping hand','hand','Help at the Greenhouse: water the three dry seedlings. Every stop on the farm has a small job like this.']);
- assert.equal(BEGINNER_QUESTS.length,10);assert.deepEqual(beginnerProgress(createLegacyFarm(now),now).map(q=>q.id).slice(6,9),['chore','tend','wheat'],'older farms keep their steps');
+ assert.equal(BEGINNER_QUESTS.length,10);assert.deepEqual(beginnerProgress(createLegacyFarm(now),now).map(q=>q.id),beginnerProgress(s,now).map(q=>q.id),'older farms have the same steps since 19 Oct 2026');
  // A farm in the middle of the guide, at step 9 with the wheat already in: it now needs a helping-hand job.
  const mid=at(5);mid.onboarding={completed:8,milestones:Object.fromEntries(['harvest','sell','plant','water','produce','gift','sell_egg','tend','wheat'].map(k=>[k,true])),rewardClaimed:false};
  const xp=mid.xp;act(mid,{type:'field',id:0,action:'harvest'},now);assert.equal(mid.onboarding.completed,8,'the wheat does not finish it');
@@ -100,9 +102,13 @@ test('guide step 9 is A helping hand on a guided farm: one finished job, any sto
  const early=at(4);job(early,'apiary',now);assert.equal(early.onboarding.milestones.hand,true);
  // Every farmer is at least level 4 at step 9 (eight steps of 15 XP), so the hand is always open there.
  assert.ok(levelOf({xp:8*BEGINNER_STEP_XP,xpOffset:0,xpCurve:createFarm(now).xpCurve})>=FEATURE_LEVELS.activities+1);
- // Older farms do not get the milestone written into their finished guide, and legacy farms never need it.
+ // Older farms do not get the milestone written into their finished guide, legacy ones neither.
  const done=at(12);done.onboarding.rewardClaimed=true;done.onboarding.completed=10;job(done,'greenhouse',now);assert.equal(done.onboarding.milestones.hand,undefined);
- const legacy=at(5,createLegacyFarm);job(legacy,'greenhouse',now);assert.equal(legacy.onboarding.milestones.hand,undefined);
+ const legacyDone=at(12,createLegacyFarm);legacyDone.onboarding.rewardClaimed=true;legacyDone.onboarding.completed=10;job(legacyDone,'greenhouse',now);assert.equal(legacyDone.onboarding.milestones.hand,undefined);
+ // A legacy farm in the middle of the guide now needs step 9 as well (19 Oct 2026; before, it never did): its job finishes the step.
+ const legacy=at(5,createLegacyFarm);legacy.onboarding={completed:8,milestones:Object.fromEntries(['harvest','sell','plant','water','produce','gift','sell_egg','tend'].map(k=>[k,true])),rewardClaimed:false};
+ const lr=job(legacy,'greenhouse',now);assert.equal(legacy.onboarding.milestones.hand,true,'a legacy farm at step 9 gets the milestone');
+ assert.equal(legacy.onboarding.completed,9,'and moves on to step 10, not stuck at A helping hand');assert.equal(lr.guide?.[0]?.step,'hand');
 });
 
 test('Show me for step 9 moves the view to the Greenhouse and points at its pin, or on a phone through More; without either it opens the stops',()=>{

@@ -368,12 +368,13 @@ export const BEGINNER_QUESTS=Object.freeze([
 ]);
 // A guided farm's step 9 is A helping hand (11 Oct 2026, the owner's call; it was "Bring in the wheat", whose wheat was always ripe by
 // then): the hand opens at level 3, and every farmer is at least level 4 there (eight steps of 15 XP). The step numbers stay the same,
-// so a farm in the middle of the guide keeps its place. Older (legacy) farms keep their chore and wheat steps.
+// so a farm in the middle of the guide keeps its place. Older (legacy) farms have the same steps since 19 Oct 2026: their chore step waited
+// for Farm chores at level 15 once features follow the level on every farm. Finished steps count by number, so none goes back.
 const GUIDED_STEPS=Object.freeze({
  chore:{id:'sell_egg',title:'An egg opens new doors',description:'Collect eggs from the Chicken Coop and sell at least one in Market → Goods. Save the coins for your next building.',guide:'eggs',icon:'egg'},
  wheat:{id:'hand',title:'A helping hand',description:'Help at the Greenhouse: water the three dry seedlings. Every stop on the farm has a small job like this.',guide:'hand',icon:'sprout'}
 });
-function beginnerQuests(state){return guidedFarm(state)?BEGINNER_QUESTS.map(q=>GUIDED_STEPS[q.id]??q):BEGINNER_QUESTS;}
+function beginnerQuests(){return BEGINNER_QUESTS.map(q=>GUIDED_STEPS[q.id]??q);}
 // Step 10 says how long the eggs take on this farm now (7 Oct 2026: it said 5 minutes, where the beginner boost makes it about 1),
 // to the nearest 5 seconds (the quick first batch too, 11 Oct 2026).
 export function beginnerProgress(state,now=Date.now()){
@@ -444,7 +445,8 @@ function recordBeginnerAction(state,action,result,before){
  if(action.type==='checkin')m.gift=true;
  if(action.type==='chore'&&result.success)m.chore=true;
  // Step 9 of a guided farm: any finished helping-hand job, also one done before the step came (11 Oct 2026).
- if(guidedFarm(state)&&!state.onboarding.rewardClaimed&&(state.stats.activities??0)>0)m.hand=true;
+ // Every farm since 19 Oct 2026 (older farms have the hand as step 9 too, beginnerQuests); a finished guide stays as it is.
+ if(!state.onboarding.rewardClaimed&&(state.stats.activities??0)>0)m.hand=true;
 }
 
 // Plan F (13 Oct 2026, proposal 5): "Room for more" names field 13 (fields 9-12 are no expansion, so it stayed 0 / 1 after them), the
@@ -984,7 +986,12 @@ export function buildingUnlocked(state,key){return buildingEligible(state,key)&&
 // The Valley Market, the Ranch and the wave-3 places (Estate Workshop, Trade Depot, Grand Valley Fair) are new for every farm,
 // old or new: they open at their level, never earlier. The Fishing pond too (11 Oct 2026): an old farm waits for level 4 like a new one.
 const LATE_FEATURES=Object.freeze(['fishing','valleymarket','ranch','estateworkshop','tradedepot','grandfair','master','seedlab','visitors','giantpumpkin','valleyprojects']);
-export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);if(LATE_FEATURES.includes(key))return levelOf(state)>=FEATURE_LEVELS[key];return !guidedFarm(state)||kept(state,'features',key)||levelOf(state)>=(FEATURE_LEVELS[key]??1);}
+// Every feature opens at its level, on every farm (19 Oct 2026, the owner: what you have not reached the level for is locked, also under
+// More). Before, a farm that had a feature when its level moved later kept it (progression.kept.features) and an older (legacy) farm had
+// every feature from level 1. Nothing is taken away: what was bought keeps working (silo steps, running boosts), and what waits (medals to
+// claim, the order board, a helping-hand job, chore practice) is there again at the level. The kept lists stay in the saves; crops,
+// buildings, recipes and order tiers still keep theirs. The LATE_FEATURES line stays as it is: a closed pond has no level at all.
+export function featureUnlocked(state,key){if(key==='family')return familyUnlocked(state);if(LATE_FEATURES.includes(key))return levelOf(state)>=FEATURE_LEVELS[key];return levelOf(state)>=(FEATURE_LEVELS[key]??1);}
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
@@ -1032,6 +1039,8 @@ export function marketItems(state,tab){
 // Two features were moved later on purpose: A helping hand (level 6 -> 8) and farm chores (level 4 -> 10). Moving a feature later would take it
 // from farms that already have it, so a guided farm from before (progression version below 4) keeps what it had: chores from level 4, hands-on
 // jobs from level 6, or as soon as it has done one. It runs once per farm and keeps any other kept rights. New farms are created at version 4.
+// Since 19 Oct 2026 featureUnlocked no longer reads the kept features (every feature opens at its level on every farm); the migrations still
+// write them, so a save stays the same shape and a rollback opens them again.
 const KEPT_FROM_LEVEL=Object.freeze({chores:4,activities:6});
 function migrateFeatureLevels(state){
  if(!guidedFarm(state)||(state.progression.version??0)>=4)return;
@@ -1041,7 +1050,8 @@ function migrateFeatureLevels(state){
 }
 // Version 5 (25 Sep 2026): unlocks between levels 10 and 38 were spread out, so the first day is less crowded and every level up to 48
 // brings something new: the Packing shed 10 -> 11, the Farm stall 11 -> 19, the Tractor 12 -> 18, commission orders 12 -> 16, Silo
-// research 18 -> 26, Estate projects 19 -> 27, and five recipes. A guided farm that already had one under the old levels keeps it.
+// research 18 -> 26, Estate projects 19 -> 27, and five recipes. A guided farm that already had one under the old levels keeps it (a
+// building, a recipe or an order tier; a feature only until 19 Oct 2026, see migrateFeatureLevels).
 const SPREAD_FROM=Object.freeze({buildings:{packing:10},features:{stall:11,tractor:12,silo:18,projects:19},orderTiers:{commission:12},
  recipes:{windflour:11,berrycheesecake:23,harvesthamper:25,berrytart:25,vegetablefeast:31}});
 function migrateUnlockSpread(state){
@@ -1058,7 +1068,8 @@ function migrateUnlockSpread(state){
 // vegetable stew, their first use; they waited five levels for it), the fresh salad 10 -> 11 (with the Packing shed it is made in), the
 // vegetable box 11 -> 13, Medals 7 -> 14, natural fertilizer 9 -> 14, Farm chores 10 -> 15 and the wind-milled barley feed 7 -> 18.
 // Chores, fertilizer and green beans stay at 15 or below, so every event goal can still be done when events open at level 15. A guided
-// farm that already had one under the old level keeps it, as with version 5, and so does a farm that has already used it.
+// farm that already had one under the old level keeps it, as with version 5, and so does a farm that has already used it (features only
+// until 19 Oct 2026, see migrateFeatureLevels).
 const GRADUAL_FROM=Object.freeze({crops:{greenbeans:7},features:{cart:5,mastery:7,chores:10},orderTiers:{quick:5},
  recipes:{salad:10,vegetables:11,fertilizer:9,windfeed:7}});
 // What a farm has used stays open on every load, not only on the first: a farm that met the old levels after a rollback and used
@@ -1789,6 +1800,16 @@ const VILLAGE_ERRANDS={stat:'village_requests',target:2,description:'Help 2 vill
 const VILLAGE_DAILIES=[[{...VILLAGE_ERRANDS,title:'Market square errands'}],[{...VILLAGE_ERRANDS,title:'Village errands'}],[{...VILLAGE_ERRANDS,title:'Errands for the villagers'}]];
 export const DAILY_POOLS=LEGACY_DAILY_POOLS.map((pool,id)=>Object.freeze([...pool,...ORCHARD_DAILIES[id],...PANTRY_DAILIES[id],...MIDGAME_DAILIES[id],...VALLEY_DAILIES[id],...ESTATE_DAILIES[id],...[[{"stat":"activity_greenhouse","target":2,"title":"Seedling care","description":"Finish 2 Greenhouse jobs.","reward":65},{"stat":"activity_paddock","target":2,"title":"Happy herd","description":"Finish 2 Animal paddock jobs.","reward":65},{"stat":"chore_weeds","target":3,"title":"A tidy start","description":"Successfully clear the paths 3 times.","reward":70},{"stat":"tended","target":4,"title":"More than watering","description":"Give 4 growing crops extra care.","reward":65},{"stat":"harvest_lettuce","target":8,"title":"Leafy little harvest","description":"Harvest 8 lettuce.","reward":55},{"stat":"harvest_corn","target":6,"title":"Golden corn","description":"Harvest 6 corn.","reward":65}],[{"stat":"activity_apiary","target":2,"title":"Honey time","description":"Finish 2 Apiary jobs and collect their Honey.","reward":65},{"stat":"activity_workshop","target":2,"title":"Tools of the trade","description":"Finish 2 Tool workshop jobs.","reward":65},{"stat":"made_feed","target":3,"title":"Feed the farm","description":"Collect 3 animal feed from production.","reward":80},{"stat":"parallel_batches","target":2,"title":"Side by side","description":"Start 2 batches while another batch is still running in the same building.","reward":90,"parallel":true},{"stat":"fertilized","target":2,"title":"A soil boost","description":"Use natural fertilizer on 2 growing fields.","reward":80,"minLevel":3},{"stat":"made_flour","target":4,"title":"Flour power","description":"Collect 4 flour from production.","reward":80,"minLevel":3},{"stat":"made_salad","target":1,"title":"Freshly prepared","description":"Collect 1 fresh salad.","reward":90,"minLevel":4}],[{"stat":"activity_rounds","target":1,"title":"Make the rounds","description":"Finish a full farm round by helping at all four stops.","reward":110},{"stat":"activities","target":6,"title":"A hands-on day","description":"Finish 6 hands-on jobs around the farm.","reward":110},{"stat":"chore_troughs","target":2,"title":"Fresh water rounds","description":"Successfully fill the water troughs twice.","reward":110,"chore":"troughs"},{"stat":"chore_sorting","target":1,"title":"Everything sorted","description":"Successfully sort the seed boxes once.","reward":140,"chore":"sorting"},{"stat":"made_bread","target":2,"title":"Warm from the oven","description":"Collect 2 fresh bread.","reward":100,"minLevel":4},{"stat":"passive_earned","target":30,"title":"Roadside trade","description":"Collect 30 coins from the farm stall.","reward":80,"minLevel":3}]][id],...VILLAGE_DAILIES[id]]));
 export const ORDER_POOL=Object.freeze([{"title": "The judges’ table", "input": {"prizeproduce": 1, "cherryjam": 1}, "xp": 180, "minLevel": 80}, {"title": "Show day at the inn", "input": {"prizeproduce": 1, "goatcheese": 2}, "xp": 190, "minLevel": 82}, {"title": "Milk for the café", "input": {"goatmilk": 6, "honey": 4}, "xp": 90, "minLevel": 54}, {"title": "The goat farmer’s table", "input": {"goatcheese": 1, "bread": 2}, "xp": 100, "minLevel": 55}, {"title": "Evening candles", "input": {"candles": 2, "beeswax": 3}, "xp": 100, "minLevel": 58}, {"title": "A cosy winter", "input": {"blanket": 1, "candles": 1}, "xp": 160, "minLevel": 60}, {"title": "Cherry season", "input": {"cherryjam": 1, "cherries": 6}, "xp": 110, "minLevel": 67}, {"title": "The pie stand", "input": {"cherrypie": 1, "applepie": 1}, "xp": 120, "minLevel": 68}, {"title": "Soup kitchen", "input": {"squashsoup": 1, "bread": 2}, "xp": 90, "minLevel": 32}, {"title": "The candle maker", "input": {"beeswax": 4, "honey": 4}, "xp": 70, "minLevel": 34}, {"title": "The village knitters", "input": {"wool": 6}, "xp": 70, "minLevel": 37}, {"title": "Glasshouse greens", "input": {"cauliflower": 8, "salad": 2}, "xp": 75, "minLevel": 40}, {"title": "The tailor’s shelves", "input": {"yarn": 4, "wool": 4}, "xp": 95, "minLevel": 43}, {"title": "Fabric for the fair", "input": {"cloth": 1, "yarn": 2}, "xp": 120, "minLevel": 45}, {"title": "Harvest cider", "input": {"cider": 1, "ciderapples": 4}, "xp": 110, "minLevel": 47}, {"title": "The baker next door", "input": {"wheat": 5}, "xp": 15, "minLevel": 1}, {"title": "A leafy lunch", "input": {"lettuce": 4, "corn": 2}, "xp": 20, "minLevel": 1}, {"title": "Sweet little favour", "input": {"honey": 2, "wheat": 4}, "xp": 20, "minLevel": 1}, {"title": "Breakfast at the inn", "input": {"eggs": 3, "milk": 2}, "xp": 25, "minLevel": 1}, {"title": "The paddock pantry", "input": {"feed": 2, "corn": 2}, "xp": 25, "minLevel": 1}, {"title": "Honey on toast", "input": {"honey": 2, "bread": 2}, "xp": 35, "minLevel": 3}, {"title": "A cream tea", "input": {"honey": 3, "milk": 2, "bread": 1}, "xp": 35, "minLevel": 3}, {"title": "The village grocer", "input": {"corn": 3, "lettuce": 2, "cabbage": 1}, "xp": 25, "minLevel": 3}, {"title": "The millers basket", "input": {"grainmeal": 2, "flour": 4}, "xp": 30, "minLevel": 3}, {"title": "For the garden club", "input": {"fertilizer": 2, "lettuce": 4}, "xp": 30, "minLevel": 3}, {"title": "The animal sanctuary", "input": {"feed": 3, "barley": 3}, "xp": 30, "minLevel": 3}, {"title": "A picnic in the park", "input": {"bread": 2, "salad": 1, "honey": 1}, "xp": 40, "minLevel": 4}, {"title": "The cheese board", "input": {"cheese": 2, "bread": 1}, "xp": 35, "minLevel": 4}, {"title": "A farm-fresh lunch", "input": {"salad": 2, "eggs": 3}, "xp": 35, "minLevel": 4}, {"title": "Sunday lunch", "input": {"cabbage": 2, "pumpkin": 2}, "xp": 35, "minLevel": 5}, {"title": "The harvest kitchen", "input": {"vegetables": 1, "flour": 3}, "xp": 45, "minLevel": 5}, {"title": "A golden afternoon", "input": {"pie": 1, "honey": 2, "milk": 2}, "xp": 50, "minLevel": 6}, {"title": "Autumn pantry", "input": {"redcabbage": 2, "cauliflower": 2}, "xp": 40, "minLevel": 6}, {"title": "The village feast", "input": {"bread": 3, "cheese": 2, "vegetables": 1}, "xp": 65, "minLevel": 7}, {"title": "Pantry provisions", "input": {"pickles": 1, "vegetables": 1}, "xp": 55, "minLevel": 7}, {"title": "A chefs finishing touch", "input": {"oil": 1, "salad": 2, "honey": 2}, "xp": 65, "minLevel": 8}, {"title": "Golden harvest hamper", "input": {"sunflower": 2, "oil": 1}, "xp": 60, "minLevel": 8}, {"title": "The autumn festival", "input": {"pie": 2, "pickles": 1, "honey": 3}, "xp": 75, "minLevel": 8}, {"title": "The estate banquet", "input": {"oil": 1, "vegetables": 2, "cheese": 2, "bread": 2}, "xp": 85, "minLevel": 10}, {"title": "The kitchen garden", "input": {"stew": 2, "bread": 2}, "xp": 80, "minLevel": 6, "requiresBuildings": ["kitchen"]}, {"title": "An orchard picnic", "input": {"applejuice": 2, "applepie": 1}, "xp": 110, "minLevel": 8, "requiresBuildings": ["juicepress"]}, {"title": "Breakfast preserves", "input": {"berrypreserves": 2, "bread": 3}, "xp": 120, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The orchard tea room", "input": {"berrytart": 2, "applepie": 2}, "xp": 160, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "A colourful orchard refreshment", "input": {"orchardjuice": 1, "bread": 2}, "xp": 65, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "Smoothies for the village", "input": {"berrysmoothie": 1, "bread": 2}, "xp": 68, "minLevel": 10, "requiresBuildings": ["juicepress"]}, {"title": "A honey-sweet breakfast", "input": {"applecompote": 1, "bread": 2}, "xp": 62, "minLevel": 10, "requiresBuildings": ["preserves"]}, {"title": "The pickling pantry", "input": {"applevinegar": 1, "bread": 2}, "xp": 80, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "Beans for the village deli", "input": {"pickledbeans": 1, "bread": 2}, "xp": 100, "minLevel": 10, "requiresBuildings": ["preserves", "juicepress"]}, {"title": "A warming farm supper", "input": {"beangratin": 1, "bread": 2}, "xp": 85, "minLevel": 7, "requiresBuildings": ["kitchen"]}, {"title": "Lunch under the apple trees", "input": {"orchardsalad": 1, "bread": 2}, "xp": 58, "minLevel": 8, "requiresBuildings": []}, {"title": "Cheesecake at the tea room", "input": {"berrycheesecake": 1, "honey": 2}, "xp": 105, "minLevel": 11, "requiresBuildings": []}, {"title": "A gift from the valley", "input": {"harvesthamper": 1, "honey": 2}, "xp": 160, "minLevel": 12, "requiresBuildings": ["juicepress", "preserves"]}]);
+// Whether the feature a quest or challenge counts for is open (19 Oct 2026, with featureUnlocked: features follow the level on every farm,
+// so an older farm is no longer dealt chores, medals or the stall below their level, and its Quests list hides them too, public/quests-ui.js).
+export function questFeatureOpen(state,q){
+ const stat=q.stat??'';
+ const gate=stat==='fish'||stat.startsWith('fish_')||stat==='caught_whiskers'?'fishing':stat==='heirlooms_found'||stat==='lab_crosses'?'seedlab':stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
+ if(gate&&!featureUnlocked(state,gate))return false;
+ if(stat==='boosts_used'&&!featureUnlocked(state,'boosts'))return false;
+ if((stat==='crafted_deliveries'||stat==='honey_deliveries')&&!featureUnlocked(state,'cart'))return false;
+ return true;
+}
 export function availableDaily(state,q){
  if(q.input&&!Object.keys(q.input).every(k=>itemAvailable(state,k)))return false;
  if(guidedFarm(state)){
@@ -1800,18 +1821,16 @@ export function availableDaily(state,q){
   if(stat==='produced'&&!Object.keys(RECIPES).some(id=>recipeUnlocked(state,id)))return false;
   if(stat.startsWith('built_')&&!buildingEligible(state,stat.slice(6)))return false;
   if(stat==='varieties'&&q.target>Object.keys(CROPS).filter(k=>cropUnlocked(state,k)).length)return false;
-  const gate=stat==='fish'||stat.startsWith('fish_')||stat==='caught_whiskers'?'fishing':stat==='heirlooms_found'||stat==='lab_crosses'?'seedlab':stat==='mastery_medals'?'mastery':stat==='projects'?'projects':stat==='silo_upgrades'?'silo':stat==='tractor'?'tractor':stat==='dailies'?'challenges':stat.startsWith('activity')||stat==='activities'?'activities':stat.startsWith('chore')?'chores':stat==='deliveries'?'cart':stat==='passive_earned'?'stall':stat.startsWith('valley_')?'valleymarket':stat==='ranch_focus'?'ranch':stat==='improvements'?'estateworkshop':stat.startsWith('depot_')?'tradedepot':stat.startsWith('fair_')?'grandfair':null;
-  if(gate&&!featureUnlocked(state,gate))return false;
   // Fertilizer is used from the Windmill's window only: from level 3 the paddock's helping hand gives some (11 Oct 2026), and "use
   // fertilizer" quests and challenges wait for the Windmill (level 6), as they did when the hand opened at 8.
   if(stat==='fertilized'&&(!itemAvailable(state,'fertilizer')||!buildingEligible(state,'windmill')))return false;
   // 10 Oct 2026 (balance review): quests for things that are not open yet waited in the list from level 2: the Windmill's, the
   // boosts' (level 10) and the delivery orders' (level 7; honey ones also need honey).
   if(stat.startsWith('windmill_')&&!buildingEligible(state,'windmill'))return false;
-  if(stat==='boosts_used'&&!featureUnlocked(state,'boosts'))return false;
-  if((stat==='crafted_deliveries'||stat==='honey_deliveries')&&!featureUnlocked(state,'cart'))return false;
   if(stat==='honey_deliveries'&&!itemAvailable(state,'honey'))return false;
  }
+ // Quests and challenges for a feature that is still locked wait on every farm (19 Oct 2026, questFeatureOpen).
+ if(!questFeatureOpen(state,q))return false;
  if(q.stat==='village_requests'&&!itemAvailable(state,'packedlunch'))return false;   // no packed lunches (Kitchen or Canteen), no villager comes (Oct 2026)
  return levelOf(state)>=(q.minLevel??1)&&(q.requiresBuildings??[]).every(key=>buildingUnlocked(state,key))&&(!q.chore||!choreStatus(state,q.chore).locked)&&(!q.parallel||Object.entries(state.buildings).some(([id,b])=>BUILDINGS[id].type==='production'&&b.level>=2));
 }
@@ -2802,9 +2821,10 @@ function swapImpossibleOrders(state,now){
 }
 function refreshProgressionDaily(state,now){
  swapImpossibleOrders(state,now);
- if(!guidedFarm(state))return;
  const day=dayNumber(now);
+ // The challenges come the moment they open, on every farm (19 Oct 2026: an older farm waits for level 3 too, and drew them only at midnight).
  if(!state.daily.tasks.length&&featureUnlocked(state,'challenges'))state.daily.tasks=selectDailyTasks(state,day);
+ if(!guidedFarm(state))return;
  const tiers=new Set(state.daily.orderBoard.map(o=>o.tier));
  if(Object.keys(DELIVERY_LEVELS).some(t=>deliveryTierUnlocked(state,t)&&!tiers.has(t)))for(const order of selectDailyOrders(state,day))if(!tiers.has(order.tier))state.daily.orderBoard.push(order);
 }

@@ -26,8 +26,10 @@ test('Starter Pack verifies €2.99, 500 diamonds and 10000 coins against exact 
  assert.equal(validatePaidSession(s,{...p,diamonds:300},items),'pi_starter');assert.throws(()=>validatePaidSession(s,{...p,diamonds:400},items));
  assert.throws(()=>validatePaidSession(s,p,{...items,data:[{quantity:1,price:{id:PAYMENT_PACKS['1250'].price}}]}));
 });
+// Farm chores open at level 15 on every farm since 19 Oct 2026 (older farms had them from level 1): the farm plays at 15; the chances do
+// not follow the level.
 test('seed-box sorting starts at 35%, keeps practice and caps at 60% after 7 attempts',()=>{
- const s=createFarm(start);s.chorePractice={weeds:20,troughs:20,sorting:0};const rest=3600000;   // an hour since 9 Oct 2026 (20 minutes before)
+ const s=createFarm(start,{level:15});s.chorePractice={weeds:20,troughs:20,sorting:0};const rest=3600000;   // an hour since 9 Oct 2026 (20 minutes before)
  assert.equal(choreStatus(s,'sorting',start).chance,35);
  for(let n=0;n<7;n++)applyFarmAction(s,{type:'chore',id:'sorting'},start+n*rest,()=>0);
  assert.equal(choreStatus(s,'sorting',start+7*rest).chance,60);

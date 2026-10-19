@@ -55,7 +55,8 @@ test('login gifts cross UTC boundaries, cannot repeat, stay at day 7 and reset w
  const midnight=Date.UTC(2026,8,30),b=createFarm(midnight-1);apply(b,{type:'checkin'},midnight-1);apply(b,{type:'checkin'},midnight);assert.equal(b.login.streak,2);
 });
 test('daily progress starts today, all-three bonus pays once, old claims fail',()=>{
- const s=createFarm(now),day=utcDay(now);s.stats.harvested=500;
+ // Daily challenges open at level 3 on every farm since 19 Oct 2026 (older farms had them from level 1); their rewards do not follow the level.
+ const s=createFarm(now,{level:3}),day=utcDay(now);s.stats.harvested=500;
  normalizeFarm(s,now+DAY_MS);assert.equal(dailyTasks(s,now+DAY_MS).find(q=>q.stat==='harvested')?.progress??0,0);
  for(const q of dailyTasks(s,now+DAY_MS))s.stats[q.stat]=(s.daily.baseline[q.stat]??0)+q.target;
  const initial=s.coins,qs=dailyTasks(s,now+DAY_MS);
@@ -67,7 +68,7 @@ test('daily progress starts today, all-three bonus pays once, old claims fail',(
 });
 test('delivery pays above market, consumes inventory and rejects duplicate or stale orders',()=>{
  for(let day=0;day<7;day++){
-  const t=now+day*DAY_MS,s=createFarm(t),o=dailyOrders(s,t)[0];
+  const t=now+day*DAY_MS,s=createFarm(t,{level:7}),o=dailyOrders(s,t)[0];   // delivery orders open at level 7 (19 Oct 2026)
   assert(o.coins>marketValue(o.input,t));
   Object.assign(s.inventory,o.input);apply(s,{type:'delivery',id:o.id,day:utcDay(t)},t);
   for(const k of Object.keys(o.input))assert.equal(s.inventory[k],0);
@@ -76,10 +77,12 @@ test('delivery pays above market, consumes inventory and rejects duplicate or st
  }
 });
 test('tractor charges per eligible field and needs no rest (4 Oct 2026); silo changes only future planting',()=>{
- const s=createFarm(now),n=s.plots.filter(p=>!p.crop).length,balance=s.coins;
+ // The Tractor opens at level 18 and the silo at 26 on every farm since 19 Oct 2026 (older farms had both from level 1; the silo step
+ // played at 20 before). Fuel and silo prices do not follow the level.
+ const s=createFarm(now,{level:18}),n=s.plots.filter(p=>!p.crop).length,balance=s.coins;
  const r=apply(s,{type:'tractor',mode:'plant',crop:'corn'});assert.equal(r.count,n);assert.equal(s.coins,balance-n*CROPS.corn.cost-12-2*n);
  apply(s,{type:'tractor',mode:'water'},now+1000);assert.equal(s.tractorReadyAt,undefined,'no rest');
- s.coins=10000;s.xp=xpForLevel(20);const existing=structuredClone(s.plots[8]);apply(s,{type:'silo_upgrade'});assert.deepEqual(s.plots[8],existing);
+ s.coins=10000;s.xp=xpForLevel(26);const existing=structuredClone(s.plots[8]);apply(s,{type:'silo_upgrade'});assert.deepEqual(s.plots[8],existing);
  apply(s,{type:'field',id:8,action:'harvest'},now+DAY_MS);apply(s,{type:'field',id:8,action:'plant',crop:'pumpkin'},now+DAY_MS);
  assert.equal(s.plots[8].readyAt-s.plots[8].plantedAt,CROPS.pumpkin.duration*.9);
  s.coins=100000;for(let i=0;i<4;i++)apply(s,{type:'silo_upgrade'});assert.throws(()=>apply(s,{type:'silo_upgrade'}),/complete/);

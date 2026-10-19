@@ -13,7 +13,9 @@ const source=stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/fa
 const user='11111111-1111-4111-8111-111111111111',requestId='22222222-2222-4222-8222-222222222222';
 const token=`test.${Buffer.from(JSON.stringify({session_id:'test-session'})).toString('base64url')}.fixture`;
 function endpoint({failCommit=false,active=true}={}){
- const state=createLegacyFarm();state.diamonds=2000;
+ // Level 10: VIP opens with the Diamond boosts at level 10, on every farm since 19 Oct 2026. A real level-10 farm has had its level
+ // rewards on the way up; claimed here, so a load does not pay them on top of the 2000 diamonds the VIP asserts count from.
+ const state=createLegacyFarm(Date.now(),{level:10});rules.grantLevelRewards(state);state.diamonds=2000;
  let row={player_id:user,state,revision:10,receipts:[]},handler,commits=0;
  const profile={player_id:user,username:'Test farmer',currency:state.coins,level:rules.levelOf(state),avatar_id:'default'};
  let avatarWrites=0;

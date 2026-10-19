@@ -1,9 +1,12 @@
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction as act,ACTIVE_STATIONS,ACTIVITY_ROUND_REWARD,activityStatus} from '../game/farm-state.js';
+import {createLegacyFarm} from './legacy-farm.mjs';
+import {normalizeFarm,applyFarmAction as act,ACTIVE_STATIONS,ACTIVITY_ROUND_REWARD,activityStatus,FEATURE_LEVELS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,17,15);
+// 19 Oct 2026: A helping hand opens at level 3 on every farm, older ones too, so these farms start there. An older farm keeps the full
+// amounts at every level (handShare 1, tests/hand-grows.test.mjs), so what a job pays and gives does not change with it.
+const createFarm=time=>createLegacyFarm(time,{level:FEATURE_LEVELS.activities});
 function complete(s,station,time){
  const {startedAt}=act(s,{type:'activity_start',station},time);
  const targets=[...s.activities.jobs[station].targets];let result;

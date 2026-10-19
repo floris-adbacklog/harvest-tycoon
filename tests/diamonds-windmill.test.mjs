@@ -20,8 +20,10 @@ test('daily diamond rewards climb to day 7, stay there while the streak holds, r
  }
  const last=act(state,{type:'checkin'},now+11*DAY_MS);assert.equal(state.login.streak,1);assert.equal(state.diamonds,total+DAILY_DIAMONDS[0]+(last.levelReward?.diamonds??0));
 });
+// Diamond boosts open at level 10 on every farm since 19 Oct 2026 (older farms had them from level 1, delivery orders too, which open
+// at 7): the boost tests play at 10.
 test('XP and coin boosts persist, multiply eligible rewards once and expire',()=>{
- let state=createFarm(now);state.diamonds=BOOSTS.xp.cost+BOOSTS.coins.cost;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
+ let state=createFarm(now,{level:10});state.diamonds=BOOSTS.xp.cost+BOOSTS.coins.cost;act(state,{type:'buy_boost',boost:'xp'});act(state,{type:'buy_boost',boost:'coins'});
  state=normalizeFarm(JSON.parse(JSON.stringify(state)),now);const before=state.xp;const harvested=act(state,{type:'field',id:0,action:'harvest'});assert.equal(harvested.xp,10);assert.equal(state.xp-before,10+harvested.guide[0].xp,'the guide step XP comes on top, not doubled');
  state.inventory.wheat=10;assert.equal(act(state,{type:'sell',item:'wheat'}).coins,marketQuote('wheat',now).price*20);
  const order=dailyOrders(state,now)[0];Object.assign(state.inventory,order.input);const delivery=act(state,{type:'delivery',id:order.id,day:utcDay(now)});assert.equal(delivery.coins,order.coins*2);assert.equal(delivery.xp,order.xp*2);
@@ -32,7 +34,7 @@ test('XP and coin boosts persist, multiply eligible rewards once and expire',()=
  assert.equal(act(state,{type:'field',id:1,action:'harvest'},now+BOOSTS.xp.duration).xp,5);
 });
 test('instant boosts affect existing work only and never pay twice',()=>{
- const state=createFarm(now);state.diamonds=BOOSTS.crops.cost+BOOSTS.production.cost;
+ const state=createFarm(now,{level:10});state.diamonds=BOOSTS.crops.cost+BOOSTS.production.cost;
  state.plots[4].watered=true;state.plots[4].tended=true;
  act(state,{type:'buy_boost',boost:'crops'});assert(state.plots.every(p=>!p.crop||p.readyAt<=now));assert.equal(state.plots[8].crop,null);
  const amount=state.diamonds;assert.throws(()=>act(state,{type:'buy_boost',boost:'crops'}),/No crops/);assert.equal(state.diamonds,amount);
@@ -43,7 +45,7 @@ test('instant boosts affect existing work only and never pay twice',()=>{
  assert.throws(()=>act(state,{type:'collect',building:'windmill'}),/Nothing to collect/);
 });
 test('upgrade voucher applies once and survives a rejected upgrade',()=>{
- const state=createFarm(now);state.diamonds=BOOSTS.upgrade.cost;const originalCost=upgradeCost(state,'windmill');act(state,{type:'buy_boost',boost:'upgrade'});
+ const state=createFarm(now,{level:10});state.diamonds=BOOSTS.upgrade.cost;const originalCost=upgradeCost(state,'windmill');act(state,{type:'buy_boost',boost:'upgrade'});
  assert.equal(upgradeCost(state,'windmill'),Math.ceil(originalCost/2));state.coins=0;
  assert.throws(()=>act(state,{type:'upgrade',building:'windmill'}),/need/);assert.equal(state.boosts.upgradeCredits,1);
  state.coins=10000;const result=act(state,{type:'upgrade',building:'windmill'});assert.equal(result.cost,Math.ceil(originalCost/2));assert.equal(state.boosts.upgradeCredits,0);
@@ -61,8 +63,9 @@ test('windmill has a complete grain-to-fertilizer chain and useful one-time crop
  assert.throws(()=>act(state,{type:'fertilize',id:8},fertilizerTime),/still growing/);
  act(state,{type:'field',id:5,action:'harvest'},before);act(state,{type:'field',id:5,action:'plant',crop:'wheat'},before);assert.equal(state.plots[5].fertilized,false);
 });
+// At level 10, so an unknown boost meets the boost check and not the level lock (19 Oct 2026).
 test('real money purchasing is not an available farm action',()=>{
- const state=createFarm(now),before=structuredClone(state);
+ const state=createFarm(now,{level:10}),before=structuredClone(state);
  assert.throws(()=>act(state,{type:'buy_diamonds',amount:1000}),/Unknown farm action/);assert.deepEqual(state,before);
  assert.throws(()=>act(state,{type:'buy_boost',boost:'__proto__'}),/valid boost/);assert.deepEqual(state,before);
 });

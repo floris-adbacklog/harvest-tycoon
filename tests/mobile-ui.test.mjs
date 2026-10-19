@@ -5,7 +5,7 @@ import {bindFarmInput,cameraDragDelta} from '../public/farm-input.js';
 import {OrthographicCamera,Vector3} from '../public/vendor/three.module.js';
 import {createQuestsUI,questGroups,questArt} from '../public/quests-ui.js';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {QUESTS,applyFarmAction} from '../game/farm-state.js';
+import {QUESTS,applyFarmAction,questFeatureOpen} from '../game/farm-state.js';
 
 class Canvas extends EventTarget{
  captured=new Set();
@@ -108,7 +108,12 @@ test('one quest list: rewards to claim first, then quests in progress, completed
  const claim=new Element();claim.dataset.claim='0';elements['task-list'].clickTarget(claim);for(let i=0;i<20&&!state.claimed.includes(0);i++)await new Promise(r=>setImmediate(r));await new Promise(r=>setImmediate(r));assert(state.claimed.includes(0));
  assert.match(elements['task-list'].innerHTML,/data-quest-done aria-expanded="false">Show completed \(1\)/);assert.doesNotMatch(elements['task-list'].innerHTML,/Completed ✓/);
  const toggle=new Element();toggle.dataset.questDone='';elements['task-list'].clickTarget(toggle);assert.match(elements['task-list'].innerHTML,/Completed ✓/);assert.match(elements['task-list'].innerHTML,/Hide completed/);
- const groups=questGroups(state);assert.equal(groups.ready.length+groups.active.length+groups.done.length,QUESTS.filter(q=>(q.minLevel??1)<90).length,'every quest but the endgame\'s, below level 90');
+ // Since 19 Oct 2026 a quest for a feature the farm has not reached the level for waits, older farms too (questFeatureOpen): this level-1
+ // farm sees no chore, delivery, Tractor, Medal, silo or fishing quest; from level 89 every quest but the endgame's (level 90 and up), as before.
+ const listed=g=>[...g.ready,...g.active,...g.done],groups=questGroups(state);
+ assert.equal(listed(groups).length,QUESTS.filter((q,id)=>(q.minLevel??1)<90&&(state.claimed.includes(id)||questFeatureOpen(state,q))).length);
+ assert.ok(!listed(groups).some(({quest})=>/^(chore|deliveries|tractor|mastery_medals|silo_upgrades|fish)/.test(quest.stat)),'nothing for a locked feature at level 1');
+ assert.equal(listed(questGroups(createFarm(Date.now(),{level:89}))).length,QUESTS.filter(q=>(q.minLevel??1)<90).length,'every quest but the endgame\'s, below level 90');
 });
 test('pressed floating buttons retain their position instead of jumping away from the pointer',()=>{
  const css=readFileSync(new URL('../public/styles.css',import.meta.url),'utf8');
