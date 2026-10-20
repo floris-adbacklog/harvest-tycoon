@@ -2,6 +2,7 @@
 -- Run once, in the SQL editor, after a backup of the functions it patches (pg_get_functiondef of each in LIVE_MD5 below). Everything
 -- runs in one transaction; a check that fails rolls all of it back.
 begin;
+set local lock_timeout='5s';
 
 -- 1. Purchases: pack 'season', €19.99, no diamonds, coins or VIP, and the season it is for. One per farmer per season.
 alter table public.harvest_purchases drop constraint if exists harvest_purchases_pack_check;
@@ -117,6 +118,12 @@ end $f$;
 drop trigger if exists harvest_season_refund on public.harvest_purchases;
 create trigger harvest_season_refund after update of status on public.harvest_purchases for each row
  when (new.pack='season' and new.status='refunded' and old.status='credited') execute function public.harvest_season_refund();
+-- New functions get EXECUTE for anon and authenticated by this database's default privileges: only the database itself and farm-api's
+-- service role may call these (harvest_season_late_notice writes admin notices).
+revoke all on function public.harvest_seasons(), public.harvest_season_target(text,jsonb), public.harvest_season_late_notice(uuid),
+ public.harvest_season_paid_looks(text), public.harvest_season_refund() from public, anon, authenticated;
+grant execute on function public.harvest_seasons(), public.harvest_season_target(text,jsonb), public.harvest_season_late_notice(uuid),
+ public.harvest_season_paid_looks(text) to service_role;
 
 -- 4. What a farmer wears on their card. Only farm-api writes it (the service role); everyone signed in may read it.
 alter table public.player_stats add column if not exists look jsonb not null default '{}'::jsonb;
@@ -152,6 +159,8 @@ begin
  if not exists(select 1 from pg_trigger where tgname='harvest_season_refund') then raise exception 'refund trigger'; end if;
  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='player_stats' and column_name='look') then raise exception 'look column'; end if;
  if position('season-' in (select pg_get_constraintdef(oid) from pg_constraint where conname='player_stats_avatar_id_check'))=0 then raise exception 'avatar check'; end if;
+ if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like 'harvest_season%'
+  and (has_function_privilege('anon',p.oid,'execute') or has_function_privilege('authenticated',p.oid,'execute'))) then raise exception 'season functions open to players'; end if;
 end $d$;
 
 commit;
