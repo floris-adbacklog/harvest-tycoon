@@ -56,7 +56,7 @@ test('every row says what it is worth, and Running now has what runs out',()=>{
  assert.deepEqual(rows(rich,'production'),{vip:'−10%',production:'−6%',ranch:'−35%',heating:'−25%',watermill:'−15%'});
  assert.deepEqual(rows(rich,'market'),{vip:'+5%',ledger:'+10%',market:'+8%',barn:'+6%'});
  assert.deepEqual(rows(rich,'cheaper'),{seeds:'−25%',voucher:'−50%'});
- assert.deepEqual(rows(rich,'rewards'),{vip:'×2',family:'+30%',league:'Coins ×8',visitors:'+18%'});
+ assert.deepEqual(rows(rich,'rewards'),{vip:'×2',family:'+30%',league:'Coins ×10',visitors:'+18%'});
  assert.deepEqual(rows(rich,'running'),{coins:'×2'});
  assert.equal(groupOf(rich,'production').rows.find(r=>r.id==='ranch').sub,'Goat Shed','the chosen herd’s building');
  const fresh=STATES['a new farm in its beginner boost'];
@@ -87,6 +87,13 @@ test('at most one next bonus per group, after the ones the farm has, with the le
  assert.equal(at(72,'production',withVip()).value,'Pick a herd');
  assert.equal(at(20,'rewards').name,'Meadow League','the Sprout League pays ×1: the next league is the bonus');
  assert.equal(at(20,'rewards').value,'From level 30');
+ // 20 Oct 2026: the next league is one of the farmer's own world. From 90 to 99 no village league is teased (World II shows from 100);
+ // from 100 the next village league is.
+ const owned=s=>{s.improvements=['wagon','crane'];s.master={...s.master,visitors:10};};
+ assert.equal(groupOf(farm(95,owned),'rewards').rows.find(r=>r.id==='league'&&!r.active),undefined,'level 95: no Cobble League teaser');
+ assert.ok(!JSON.stringify(bonusOverview(farm(95,owned),now)).includes('Cobble'),'level 95: nothing of the village leagues');
+ assert.deepEqual(groupOf(farm(100,owned),'rewards').rows.filter(r=>r.id==='league').map(r=>[r.name,r.value,r.active]),[['Cobble League','Coins ×10',true],['Timber League','From level 121',false]]);
+ assert.equal(groupOf(farm(100,owned),'rewards').rows.find(r=>r.id==='league'&&!r.active).sub,'Coins ×12 in events');
  assert.equal(at(10,'market',withVip()).value,'From level 88','only the nearest, never the ones after it');
 });
 

@@ -3145,9 +3145,10 @@ export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
 // The tractor's diamond work (4 Oct 2026). It counts for no challenges, events or leaderboards: it never raises the harvest, water,
 // care or plant counters (only its own), gives no XP, and farm-api saves it as no event action (NO_EVENT_ACTIONS), so not even
 // the diamonds it costs move an event's "Spend diamonds" goal. Quests that count diamonds spent do count them, as every spend.
-// A fish (11 Oct 2026) counts for nothing else either: no event, no Family Chest, no challenge (its coins are not stats.earned). Nor
-// does a fish at the village lake (12 Oct 2026).
-export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','lake_fish']));
+// A fish (11 Oct 2026) counts for nothing else either: no event, no Family Chest, no challenge (its coins are not stats.earned). A fish
+// at the village lake (12 Oct 2026) counts for the village events since 20 Oct 2026 (their "Catch lake fish" goal), and still for no
+// challenge and no Family Chest: a cast moves no stat a farm event or the chest counts (earned, coins spent, harvests, batches...).
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
 // opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
 // either: FULL_CARE_COST diamonds.
@@ -3901,16 +3902,30 @@ export function familyStanding(c,familyId){
 // A family event bonus (harvest_event_settle, family-chest.sql): when this many members of one family finish the same farm event,
 // each of them gets this on top of their own prize (3 diamonds since 7 Oct 2026, 5 before; supabase/diamonds-2026-10-07.sql).
 export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:3});
-// Farm event leagues (1 Oct 2026): every farmer races against farmers of about their level, with a top 10 and a podium of its own
-// per league. Diamonds per place are the same in every league; coins grow with the league: × its number, 1 to 5, and × 8 for the
-// Valley Legends (harvest_event_settle, supabase/live-event-leagues.sql). The level when the event ends decides the league.
+// Event leagues (1 Oct 2026; World 2 leagues 20 Oct 2026, the owner): every farmer races against farmers of about their level, with
+// a top 10 and a podium of its own per league. Diamonds per place are the same in every league; coins are × the league's number:
+// 1 to 5 on the farm, 8 for the Valley Legends (90-99), and 10 to 20 for the six village leagues from level 100, whose goals are in
+// the village (public/event-goals.js VILLAGE_KINDS). The level when the event ends decides the league (harvest_event_settle,
+// supabase/world-two-leagues-b.sql). Indices 0-5 never change: settled rows keep them.
 // A league's podium pays 25 / 15 / 10 diamonds however many finished in it (8 Oct 2026, supabase/event-podium-2026-10-08.sql; on
 // 7 Oct only with 4 finishers or more).
 export const EVENT_LEAGUES=Object.freeze([
  {id:'sprout',name:'Sprout League',from:15},{id:'meadow',name:'Meadow League',from:30},{id:'orchard',name:'Orchard League',from:45},
- {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8}
-].map((l,i,all)=>Object.freeze({...l,index:i,to:all[i+1]?all[i+1].from-1:null,coins:l.coins??i+1})));
+ {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8},
+ {id:'cobble',name:'Cobble League',from:100,coins:10,world:2},{id:'timber',name:'Timber League',from:121,coins:12,world:2},
+ {id:'linen',name:'Linen League',from:141,coins:14,world:2},{id:'silver',name:'Silver League',from:161,coins:16,world:2},
+ {id:'ruby',name:'Ruby League',from:181,coins:18,world:2},{id:'village',name:'Village Legends',from:201,coins:20,world:2}
+].map((l,i,all)=>Object.freeze({world:1,...l,index:i,to:all[i+1]?all[i+1].from-1:null,coins:l.coins??i+1})));
 export const eventLeague=level=>EVENT_LEAGUES.reduce((found,l)=>Number(level)>=l.from?l:found,EVENT_LEAGUES[0]);
+// An event only has the leagues it was made with (20 Oct 2026): one made before the village leagues (6 entries, or none at all)
+// keeps a farmer of 100+ in the Valley Legends, with the Legends' goals and coins. The database does the same
+// (harvest_event_league_for), so screen, standings and settlement always agree. A farmer who first counted in an event below
+// level 100 (live_event_players.world 1) finishes that event in the Valley Legends, also after reaching 100 during it.
+// (filter(...).length-1 rather than findLastIndex, which older phone browsers lack.)
+const LAST_FARM_LEAGUE=EVENT_LEAGUES.filter(l=>l.world===1).length-1;
+export const eventLeagueCount=event=>Array.isArray(event?.leagues)&&event.leagues.length?Math.min(event.leagues.length,EVENT_LEAGUES.length):LAST_FARM_LEAGUE+1;
+export const eventLeagueIn=(event,index)=>EVENT_LEAGUES[Math.max(0,Math.min(Math.floor(Number(index))||0,eventLeagueCount(event)-1))];
+export const eventLeagueFor=(event,level,world=null)=>eventLeagueIn(event,Number(world)===1?Math.min(eventLeague(level).index,LAST_FARM_LEAGUE):eventLeague(level).index);
 // A farmer counts as active in a family list when they did something on their farm in the last three days.
 const FAMILY_ACTIVE_MS=3*DAY_MS;
 // The weekly Family Order is the same for every family: four crops or goods drawn at random from everything in the game

@@ -1,16 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import {EVENT_LEAGUES,eventLeague,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,RECIPES,RECIPE_LEVELS,itemUnlockLevel} from '../public/farm-state.js';
+import {EVENT_LEAGUES,eventLeague,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,RECIPES,RECIPE_LEVELS,itemUnlockLevel,WORLD_TWO_LEVEL,LAKE_LEVEL} from '../public/farm-state.js';
 import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES} from '../public/event-goals.js';
 import {EVENT_GOALS} from '../public/live-events-ui.js';
 import {eventStandings} from '../supabase/functions/farm-api/event-service.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const H=3600000,now=Date.parse('2026-10-01T12:00:00Z'),iso=t=>new Date(t).toISOString();
 
-test('six leagues from level 15, each with its levels, badge and coins: ×1 to ×5, and ×8 for the Valley Legends',()=>{
- assert.deepEqual(EVENT_LEAGUES.map(l=>[l.id,l.from,l.to,l.coins]),[['sprout',15,29,1],['meadow',30,44,2],['orchard',45,59,3],['harvest',60,74,4],['estate',75,89,5],['legends',90,null,8]]);
- assert.deepEqual([15,29,30,44,45,60,75,89,90,200].map(n=>eventLeague(n).id),['sprout','sprout','meadow','meadow','orchard','harvest','estate','estate','legends','legends']);
+// 20 Oct 2026 (the owner): six village leagues from level 100 (world 2), with coins ×10 to ×20; the Valley Legends are 90-99.
+test('twelve leagues from level 15, each with its levels, badge and coins: ×1 to ×5, ×8 for the Valley Legends, ×10 to ×20 in the village',()=>{
+ assert.deepEqual(EVENT_LEAGUES.map(l=>[l.id,l.from,l.to,l.coins,l.world]),[['sprout',15,29,1,1],['meadow',30,44,2,1],['orchard',45,59,3,1],['harvest',60,74,4,1],['estate',75,89,5,1],['legends',90,99,8,1],
+  ['cobble',100,120,10,2],['timber',121,140,12,2],['linen',141,160,14,2],['silver',161,180,16,2],['ruby',181,200,18,2],['village',201,null,20,2]]);
+ assert.deepEqual([15,29,30,44,45,60,75,89,90,99,100,120,121,141,161,181,200,201,999].map(n=>eventLeague(n).id),
+  ['sprout','sprout','meadow','meadow','orchard','harvest','estate','estate','legends','legends','cobble','cobble','timber','linen','silver','ruby','ruby','village','village']);
+ assert.deepEqual(EVENT_LEAGUES.map(l=>l.index),EVENT_LEAGUES.map((l,i)=>i));
+ for(const l of EVENT_LEAGUES)assert.match(l.id,/^[a-z]+$/,'scripts/build-wiki.mjs reads the badge\'s league from [a-z]+');
  for(const l of EVENT_LEAGUES)assert.ok(existsSync(new URL(`../public/assets/icons/league-${l.id}.webp`,import.meta.url)),`badge for ${l.id}`);
 });
 
@@ -28,7 +33,7 @@ test('every league draws its own goals, open from its first level, with bigger n
  // A goal must be possible from the league's first level, and a batch for it must fit well inside the 5 hours of an event.
  // 9 Oct 2026: the goals that need a feature or a recipe count too, since unlocks moved later (chores 10 -> 15, fertilizer 9 -> 14).
  const feature={chores:'chores',activities:'activities',activity_rounds:'activities',deliveries:'cart',mastery_medals:'mastery',boosts_used:'boosts',diamonds_spent:'boosts',dailies:'challenges'};
- const openAt=stat=>stat==='glasshouse_batches'?BUILDING_LEVELS.glasshouse:stat==='valley_baskets'?FEATURE_LEVELS.valleymarket:stat==='tractor'?FEATURE_LEVELS.tractor
+ const openAt=stat=>['village_batches','village_requests'].includes(stat)?WORLD_TWO_LEVEL:stat==='lake_fish'?LAKE_LEVEL:stat==='glasshouse_batches'?BUILDING_LEVELS.glasshouse:stat==='valley_baskets'?FEATURE_LEVELS.valleymarket:stat==='tractor'?FEATURE_LEVELS.tractor
   :feature[stat]?FEATURE_LEVELS[feature[stat]]:stat==='fertilized'?RECIPE_LEVELS.fertilizer
   :stat.startsWith('sold_')?itemUnlockLevel(stat.slice(5))
   :stat.startsWith('harvest_')?CROP_LEVELS[stat.slice(8)]??1:stat.startsWith('made_')?itemUnlockLevel(stat.slice(5)):1;
@@ -49,8 +54,10 @@ test('every league draws its own goals, open from its first level, with bigger n
  for(const [stat,targets] of Object.entries(lowered))assert.deepEqual(sprout.find(g=>g.stat===stat)?.targets,targets,`Sprout ${stat} since 10 Oct`);
  assert.ok(!sprout.some(g=>g.stat==='made_vegetables'),'vegetable boxes from the Meadow League');
  for(const {stat,targets} of sprout.filter(g=>old.includes(`"stat":"${g.stat}"`)&&g.stat!=='boosts_used'&&!lowered[g.stat]))assert.match(old,new RegExp(`"stat":"${stat}","targets":\\[${targets.join(',')}\\]`),`Sprout keeps ${stat} as before`);
- // Higher leagues ask more of the goals they share with the league below.
+ // Higher leagues ask more of the goals they share with the league below, in the same world (the Valley Legends ask 2 / 3 / 5
+ // upgrades, the Cobble League, the first in the village, 1 / 2 / 3).
  for(let i=1;i<EVENT_GOAL_POOLS.length;i++){
+  if(EVENT_LEAGUES[i-1].world!==EVENT_LEAGUES[i].world)continue;
   const below=new Map(EVENT_GOAL_POOLS[i-1].flat().map(g=>[g.stat,g.targets]));
   for(const {stat,targets} of EVENT_GOAL_POOLS[i].flat())if(below.has(stat))assert.ok(targets[1]>=below.get(stat)[1],`${EVENT_LEAGUES[i].id} ${stat} at least the league below`);
  }
@@ -98,11 +105,12 @@ test('helping-hand goals fit the hour-long rests: events ask at most 8 jobs or 2
   if(/^activity_(greenhouse|apiary|paddock|workshop)$/.test(q.stat))assert.ok(q.target<=2,`${q.title}: one stop ${q.target} times a day`);
   if(q.stat==='activities')assert.ok(q.target<=2*stops,q.title);if(q.stat==='activity_rounds')assert.ok(q.target<=2,q.title);
  }
- const patch=read('supabase/event-goals-2026-10-10.sql'),goals=read('supabase/live-event-league-goals.sql');   // the newest live patch
+ // The newest live patch (20 Oct 2026): supabase/world-two-leagues-b.sql writes the pick of live-event-league-goals.sql, exactly, and
+ // only over the pick that is live today (event-goals-2026-10-10.sql stays as history).
+ const patch=read('supabase/world-two-leagues-b.sql'),goals=read('supabase/live-event-league-goals.sql');
  const pools=goals.slice(goals.indexOf("pools constant jsonb:='")+23,goals.indexOf("';\n",goals.indexOf("pools constant jsonb:='")));
- const {createHash}=await import('node:crypto'),md5=createHash('md5').update(pools).digest('hex');
- // The live patch edits the live list and only applies it when the result is exactly the goals of live-event-league-goals.sql.
- assert.match(patch,new RegExp(`if md5\\(pools\\)<>'${md5}' then raise exception using message='the new goals do not come out`),'the live patch ends on exactly these goals');assert.match(patch,new RegExp(`if md5\\(pools\\)='${md5}' then raise notice`),'a second run does nothing');
+ assert.ok(patch.includes(`pools constant jsonb:='${pools}';`),'the live patch writes exactly these goals');
+ assert.match(patch,/"harvest_event_pick\(bigint\)":\["a3fceccd063225a1c1a35a7f8cc6260c",/,'over the pick that is live');
 });
 
 // 9 Oct 2026 (found in review): a goal must be doable by a farmer who has only just reached the league, within the 5 hours of an event.

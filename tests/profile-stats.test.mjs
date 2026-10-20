@@ -48,12 +48,30 @@ test('the arrows, the dots and the page you are on; the other page cannot be tab
 });
 test('the profile keeps its stat page on a refresh, starts on page 1 for another farmer, and a tap opens the board',()=>{
  const profiles=read('src/player-profiles.js');
- assert.match(profiles,/renderPlayerProfile\(data\.playerProfile,Date\.now\(\)\+clockOffset,\{statPage,self:id===bridge\.playerId\}\)/);
+ assert.match(profiles,/renderPlayerProfile\(data\.playerProfile,Date\.now\(\)\+clockOffset,\{statPage,self:id===bridge\.playerId,village:Boolean\(village\?\.\(\)\)\}\)/);
  assert.match(profiles,/bindStatPages\(content,\{page:statPage,onPage:page=>\{statPage=page;\},onBoard:key=>showBoard\?\.\(key\)\}\)/);
  assert.match(profiles,/selected=playerId;profileUsername=null;statPage=0;/);
- assert.match(read('src/game-cloud.js'),/createPlayerProfiles\(bridge,\{showBoard:key=>ui\?\.showBoard\(key\)\}\)/);
+ assert.match(read('src/game-cloud.js'),/createPlayerProfiles\(bridge,\{showBoard:key=>ui\?\.showBoard\(key\),village:\(\)=>Boolean\(ui\?\.villageShown\)\}\)/);
  assert.match(read('src/ui.js'),/function showBoard\(key\)\{if\(!Object\.hasOwn\(LEADERBOARD_CATEGORIES,key\)\)return;show\('leaderboard-dialog'\);picker\.select\(key\);\$\('leaderboard-category'\)\.onchange\(\);\}/);
  const css=read('public/player-profiles.css');
  assert.match(css,/\.farmer-stat-grid\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\);[^}]*scroll-snap-align:start/);
  assert.match(css,/\.farmer-stats-track\{[^}]*scroll-snap-type:x mandatory/);assert.match(css,/\.farmer-stats-arrow\{width:40px;height:40px;/);
+});
+// 20 Oct 2026: a third page "In the village" for a farmer from level 100, only for a viewer who has the Village boards ({village}).
+test('a farmer from level 100 has a third page "In the village", only for a viewer with the Village boards',()=>{
+ const villager={...player,level:120,stats:{...player.stats,village_events_finished:4,villagers_helped:23,village_goods:57}};
+ const pages=profileStatPages(villager,now,{village:true});
+ assert.deepEqual(pages.map(p=>p.title),['On the farm','In the valley','In the village']);
+ assert.deepEqual(pages[2].stats.map(s=>s.label),['Village events','Villagers helped','Village goods made']);
+ assert.deepEqual(pages[2].stats.map(s=>s.value),[4,23,57]);
+ assert.deepEqual(pages[2].stats.map(s=>s.board??null),['village_events_finished','villagers_helped',null],'two open their boards; goods made has none');
+ for(const s of pages.flatMap(p=>p.stats).filter(s=>s.board))assert.ok(Object.hasOwn(LEADERBOARD_CATEGORIES,s.board),s.board);
+ assert.equal(pages[2].stats[0].icon,'live-events');assert.equal(pages[2].stats[2].icon,'village-badge');
+ assert.equal(profileStatPages(villager,now,{village:false}).length,2,'a viewer without the Village boards sees two pages');
+ assert.equal(profileStatPages(villager,now).length,2,'and so by default');
+ assert.equal(profileStatPages(player,now,{village:true}).length,2,'a farmer below level 100 has two pages, whoever looks');
+ assert.deepEqual(profileStatPages(player,now,{village:true}).map(p=>p.stats.length),[9,9]);
+ assert.match(renderPlayerProfile(villager,now,{village:true}),/aria-label="In the village, page 3 of 3" inert>/,'the profile passes the flag on');
+ assert.match(renderPlayerProfile(villager,now,{village:false}),/aria-label="In the valley, page 2 of 2" inert>/);
+ assert.match(read('src/ui.js'),/get villageShown\(\)\{const chip=\$\('leaderboard-filter'\)\?\.querySelector\('\[data-rank-village\]'\);return Boolean\(chip\)&&!chip\.hidden;\}/);
 });

@@ -1,8 +1,11 @@
-// The goals of farm events per league (1 Oct 2026). Every event draws 3 of 5 groups (fields, crops, buildings, market, helpers)
-// and an easy, medium or hard size, the same for everyone; each league then draws its own kind of goal in each of those groups,
-// one its farmers can do from the league's first level, with numbers to match. The Sprout League keeps the goals every event had
-// before leagues. scripts/event-goals-sql.mjs turns this file into harvest_event_pick (supabase/live-event-league-goals.sql), so
-// the database draws exactly these. Every goal counts a farm stat (state.stats in farm-state.js) that only goes up during play.
+// The goals of events per league (1 Oct 2026). Every event draws 3 of 5 groups (on the farm: fields, crops, buildings, market,
+// helpers) and an easy, medium or hard size, the same for everyone; each league then draws its own kind of goal in each of those
+// groups, one its farmers can do from the league's first level, with numbers to match. The Sprout League keeps the goals every event
+// had before leagues. The six village leagues from level 100 (20 Oct 2026, the owner) draw from VILLAGE_KINDS only, with the same five
+// group numbers but goals in the village. scripts/event-goals-sql.mjs turns this file into harvest_event_pick (supabase/
+// live-event-league-goals.sql, and supabase/world-two-leagues-b.sql for the live switch), so the database draws exactly these. Every
+// goal counts a farm stat (state.stats in farm-state.js) that only goes up during play.
+import {EVENT_LEAGUES} from './farm-state.js';
 
 // Each kind of goal: two titles with their line for the event card (the first goal of an event names it).
 export const EVENT_GOAL_TITLES=Object.freeze({
@@ -70,7 +73,29 @@ export const EVENT_GOAL_TITLES=Object.freeze({
  made_truffleomelette:[['Truffle breakfast','Truffles and eggs into a fine omelette.'],['Chef’s special','The Farm Kitchen’s finest breakfast.']],
  made_berrycheesecake:[['Cheesecake day','Berries and cheese into a creamy cheesecake.'],['Sweet slices','A cheesecake for every celebration.']],
  tractor:[['Tractor day','Let the tractor work the fields.'],['Full throttle','Rows and rows, done in one go.']],
- sold_cheese:[['Cheese market','Bring your cheese to the market stalls.'],['Say cheese, sell cheese','The village wants cheese. Sell it at the market.']]
+ sold_cheese:[['Cheese market','Bring your cheese to the market stalls.'],['Say cheese, sell cheese','The village wants cheese. Sell it at the market.']],
+ // The village leagues' goals (20 Oct 2026); upgrades keeps its own titles.
+ made_stone:[['Quarry day','Dig stone, cart after cart, at the Mine.'],['Rock solid','Good stone for paths, walls and kilns.']],
+ made_ironore:[['Iron rush','Send your miners down for iron ore.'],['Ore cart','Cart after cart of iron ore from the Mine.']],
+ made_timber:[['Woodcutters’ day','Chop logs at the Lumber Camp.'],['Into the woods','Fresh logs from the forest by the lake.']],
+ made_clay:[['Muddy boots','Dig clay from the pit for the Potter’s Kiln.'],['Clay day','Wet clay by the cartload, ready for the kiln.']],
+ made_packedlunch:[['Lunch is packed','Hungry miners and woodcutters are waiting.'],['Lunch break','A packed lunch for every worker in the village.']],
+ made_potatoes:[['Potato patch','Potatoes from the Village Fields, row after row.'],['Spud season','Dig up potatoes for the canteen’s pasties.']],
+ made_flax:[['Blue flax fields','Sow flax in the Village Fields for the looms.'],['Flax harvest','Tall flax for the Linen Loft.']],
+ made_lavender:[['Lavender hills','Purple rows in the Village Fields.'],['Sweet scent','Lavender for soap, sachets and a fresh village.']],
+ village_batches:[['Busy village','Keep every place in the village working.'],['Village at work','Collect batch after batch in every village place.']],
+ made_plank:[['Saw and sawdust','Logs into planks at the Lumber Camp.'],['Plank by plank','Fresh planks for every new building in the village.']],
+ made_ironbar:[['Hot iron','Smelt iron bars at the Smithy.'],['Strike while it’s hot','Ore and logs into iron bars at the forge.']],
+ made_pickaxe:[['Pick it up','Forge pickaxes for the miners.'],['New tools','Sharp pickaxes for the deep tunnels.']],
+ made_rooftile:[['Roof over our heads','Fire roof tiles at the Potter’s Kiln.'],['Red rooftops','Tile after tile for the village roofs.']],
+ made_linen:[['White as linen','Weave flax into linen at the Linen Loft.'],['Loom day','The looms clatter from morning till night.']],
+ made_builderscrate:[['Crated and ready','Builder’s crates from the Lumber Camp for the farm’s upgrades.'],['Packed for building','Planks, tiles and iron, all in one sturdy crate.']],
+ made_lavendersoap:[['Wash day','Lavender soap from the Soap Maker.'],['Soap bubbles','Bar after bar of sweet lavender soap.']],
+ made_scentedsachet:[['Sweet sachets','Lavender and linen sewn into scented sachets.'],['Fresh as lavender','A sachet for every drawer in the village.']],
+ made_silvercandlestick:[['Silver shine','Silver bars and candles into fine candlesticks.'],['Polished silver','Candlesticks fit for the town’s finest tables.']],
+ made_rubyring:[['Ruby red','Set rubies in silver at the Jeweller.'],['A ring of red','Rubies from deep in the Mine, set in silver.']],
+ village_requests:[['Helping the village','Bring the villagers the goods they ask for.'],['A busy square','Villagers are waiting at the market square with their requests.']],
+ lake_fish:[['Gone fishing','Row out on the village lake and cast your line.'],['Lake day','Catch fish from the rowboat on the village lake.']]
 });
 
 // Every kind of goal once: its group (0 fields, 1 crops, 2 buildings, 3 market, 4 helpers), the league it joins in, its easy,
@@ -118,8 +143,33 @@ const KINDS=[
  ['chores',4,0,[2,3,4],1.2],['activities',4,0,[3,4,8],1],['upgrades',4,0,[1,2,3],1.1],['activity_rounds',4,0,[1,1,2],1],
  ['tractor',4,1,[3,5,8],1.15]
 ];
+// Village goals (20 Oct 2026, the owner): the leagues from level 100 draw from these only, never from KINDS. Same five group numbers,
+// another meaning: 0 mine and forest, 1 fields and kitchens, 2 workshops, 3 market square, 4 around the village. Every league has
+// at least one kind in every group (harvest_event_pick divides by the group's size). The league a kind joins in is the absolute
+// league index (6 the Cobble League ... 11 the Village Legends). Left out: saffron (a 6-hour crop), heirloom flour and its bakes
+// (golden wheat from 8-hour Seed Lab crosses), boat trips (the boat is away 12 hours, so every other event could not be finished;
+// harvest_event_progress already counts them, so they come back with one line here: ['boat_trips',4,9,[1,1,1],1]), silver ore and
+// bars, rubies and master tools (kept simple). Iron bars and pickaxes join from the Timber League: the Smithy opens at 102.
+const VILLAGE_KINDS=[
+ // Mine and forest
+ ['made_stone',0,6,[12,20,32],1.35],['made_ironore',0,6,[15,25,40],1.35],['made_timber',0,6,[18,30,48],1.35],['made_clay',0,7,[24,40,64],1.25],
+ // Fields and kitchens
+ ['made_packedlunch',1,6,[12,24,36],1.2],['made_potatoes',1,7,[30,60,100],1.25],['made_flax',1,8,[40,80,120],1.25],['made_lavender',1,8,[45,75,150],1.2],
+ // Workshops
+ ['village_batches',2,6,[5,8,14],1.6],['made_plank',2,6,[4,8,12],1.35],['made_ironbar',2,7,[4,8,12],1.25],['made_pickaxe',2,7,[8,16,24],1.25],['made_rooftile',2,7,[8,16,24],1.25],
+ ['made_linen',2,8,[8,16,24],1.3],['made_builderscrate',2,8,[1,2,4],1.2],['made_lavendersoap',2,8,[8,16,24],1.3],['made_scentedsachet',2,8,[8,16,24],1.3],
+ ['made_silvercandlestick',2,9,[1,2,4],1.25],['made_rubyring',2,9,[1,2,3],1.25],
+ // Market square
+ ['village_requests',3,6,[1,2,3],1.1],
+ // Around the village
+ ['lake_fish',4,6,[5,10,15],1],['upgrades',4,6,[1,2,3],1.1]
+];
+const WORLD_KINDS={1:KINDS,2:VILLAGE_KINDS};
+// The names of the five groups per world, for the wiki (20 Oct 2026).
+export const EVENT_GOAL_GROUPS=Object.freeze({1:['Fields','Crops','Buildings','Market','Helping out'],2:['Mine and forest','Fields and kitchens','Workshops','Market square','Around the village']});
 // Round numbers in the leagues above a kind's own (whole below 20, then to 5, 10 and 100; never 0, easy ≤ medium ≤ hard).
 const nice=x=>x<20?Math.max(1,Math.round(x)):x<100?Math.round(x/5)*5:x<1000?Math.round(x/10)*10:Math.round(x/100)*100;
-export const EVENT_GOAL_POOLS=Object.freeze([0,1,2,3,4,5].map(league=>Object.freeze([0,1,2,3,4].map(group=>Object.freeze(
- KINDS.filter(k=>k[1]===group&&k[2]<=league).map(([stat,,from,targets,grow])=>Object.freeze({stat,targets:Object.freeze(league===from?targets:targets.map(t=>nice(t*grow**(league-from))).map((t,i,all)=>Math.max(t,i?all[i-1]:0)))}))
+// One pool per league (farm-state.js EVENT_LEAGUES): the farm leagues from KINDS, the village leagues from VILLAGE_KINDS.
+export const EVENT_GOAL_POOLS=Object.freeze(EVENT_LEAGUES.map(({index:league,world})=>Object.freeze([0,1,2,3,4].map(group=>Object.freeze(
+ WORLD_KINDS[world].filter(k=>k[1]===group&&k[2]<=league).map(([stat,,from,targets,grow])=>Object.freeze({stat,targets:Object.freeze(league===from?targets:targets.map(t=>nice(t*grow**(league-from))).map((t,i,all)=>Math.max(t,i?all[i-1]:0)))}))
 )))));

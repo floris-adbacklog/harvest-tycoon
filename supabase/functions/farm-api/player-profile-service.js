@@ -5,7 +5,8 @@ import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem} from './farm-state.js';
 const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key));   // the farm's goods, not World II's
 // The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
 // board already shows them). Diamonds and the rest of the account stay private.
-const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges','farm_fields','building_upgrades','best_streak','events_finished','chores_done','helping_rounds','estate_projects','quests_done','currency'];
+// 20 Oct 2026: the village page ("In the village") reads Villagers helped and Village events (supabase/world-two-leagues-a.sql).
+const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges','farm_fields','building_upgrades','best_streak','events_finished','chores_done','helping_rounds','estate_projects','quests_done','currency','villagers_helped','village_events_finished'];
 export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id',...metrics,'goods_made',...cropKeys.map(key=>`harvested_${key}`)].join(',');
 const number=value=>Number.isFinite(Number(value))?Math.max(0,Math.floor(Number(value))):0;
 export const escapePlayerSearch=value=>value.replace(/[\\%_]/g,'\\$&');
@@ -44,5 +45,7 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
   if(typeof id!=='string')return [];const [crop,tier,...extra]=id.split(':');
   return !extra.length&&cropKeys.includes(crop)&&/^[0-3]$/.test(tier)&&MASTERY_TIERS[Number(tier)]?[{crop,tier:Number(tier)}]:[];
  });
- return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),lastOnline:Date.parse(row.last_active_at)||null,stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
+ return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),lastOnline:Date.parse(row.last_active_at)||null,stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length,
+  // Village goods made (20 Oct 2026): every World II good in goods_made, packed lunches included; the client never gets goods_made.
+  village_goods:Object.entries(row.goods_made??{}).filter(([k])=>worldTwoItem(k)).reduce((n,[,v])=>n+number(v),0)},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
 }

@@ -2,7 +2,7 @@ import {writeLog,eventRewardLog,accountLog} from './player-log.js';
 import {isSuperadmin,isAdminAccount,isAdminAddress} from './admin-service.js';
 import {validEmail} from './account-form.js';
 import {codeTexts,playerLanguage,RTL_MAIL} from './mail-text.js';
-import {EVENT_LEAGUES,eventLeague} from './farm-state.js';
+import {EVENT_LEAGUES,eventLeagueIn,eventLeagueFor} from './farm-state.js';
 import {portalOf} from './portal.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
@@ -44,13 +44,16 @@ export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]
   coins:settled?r.coins:r.done?(coins+(PODIUM[i]??FINISHER_PRIZE).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
 }
 // The standings the farmer sees are their own league's: the league they finished in, or the one their level puts them in now.
+// Only the leagues the event was made with (20 Oct 2026): an event from before the village leagues keeps 100+ in the Valley Legends.
+// A farmer with a row gets the board's league, which already caps a farmer who first counted below level 100 (the row's world);
+// without a row there is no world yet, so the level alone decides.
 async function standings(admin,event,user,now){
  const rows=await admin.rpc('harvest_event_board',{p_event:event.id});
  if(rows.error)throw rows.error;
  const mine=rows.data.find(r=>r.player_id===user.id);
- let league=mine&&Number.isInteger(mine.league)?EVENT_LEAGUES[mine.league]:null;
- if(!league){const me=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();if(me.error)throw me.error;league=eventLeague(me.data?.level??0);}
- const all=eventStandings(event,rows.data.filter(r=>(r.league??0)===league.index),now,league),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
+ let league=mine&&Number.isInteger(mine.league)?eventLeagueIn(event,mine.league):null;
+ if(!league){const me=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();if(me.error)throw me.error;league=eventLeagueFor(event,me.data?.level??0);}
+ const all=eventStandings(event,rows.data.filter(r=>eventLeagueIn(event,r.league??0).index===league.index),now,league),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
  const ids=[...new Set([...top.map(r=>r.playerId),...(you?[you.playerId]:[])])];
  const names=ids.length?await admin.from('player_stats').select('player_id,username,level,avatar_id,vip_expires_at').in('player_id',ids):{data:[]};
  if(names.error)throw names.error;
@@ -257,8 +260,12 @@ export async function handleEvents({admin,body,user,passwordOk}){
  }catch(error){if(error.code&&!['P0001','23514','23505','22P02'].includes(error.code))throw error;return respond({error:error.message},422);}
 }
 
+// The farm journal names the farmer's own league's title (20 Oct 2026), not the Sprout League's.
 async function logEventReward(admin,playerId,eventId,reward){
  let title=null;
- try{const found=await admin.from('live_events').select('title').eq('id',eventId).maybeSingle();title=found.data?.title??null;}catch{}
+ try{
+  const [found,row]=await Promise.all([admin.from('live_events').select('title,leagues').eq('id',eventId).maybeSingle(),admin.from('live_event_players').select('league').eq('event_id',eventId).eq('player_id',playerId).maybeSingle()]);
+  title=found.data?.leagues?.[row.data?.league]?.title??found.data?.title??null;
+ }catch{}
  await writeLog(admin,playerId,eventRewardLog(title,reward));
 }

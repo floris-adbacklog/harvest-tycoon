@@ -232,8 +232,13 @@ test('stats: the lake counts on its own (lake_fish, its coins, perfect catches, 
  const after=at(120);for(let k=0;k<4;k++)pond(after,now+k*GAP);for(const k of LAKE_STATS)assert.equal(k in after.stats,false,'and a pond fish moves none of the lake\'s');
 });
 
-test('lists: lake_fish counts for no event or Family Chest, shows at once, and is a line in the farm\'s log',()=>{
- assert.ok(G.NO_EVENT_ACTIONS.has('lake_fish'));assert.ok(G.NO_EVENT_ACTIONS.has('fish'));
+// 20 Oct 2026: a lake cast counts for the village events ("Catch lake fish"), so farm-api saves it as an event action. It still moves
+// no stat a farm event, a challenge or the Family Chest counts.
+test('lists: lake_fish counts for village events, not the Family Chest, shows at once, and is a line in the farm\'s log',()=>{
+ assert.ok(!G.NO_EVENT_ACTIONS.has('lake_fish'));assert.ok(G.NO_EVENT_ACTIONS.has('fish'));
+ {const s=at(110),before=structuredClone(s.stats);lake(s,now);lake(s,now+GAP,false);
+  for(const k of ['earned','coins_spent','diamonds_spent','harvested','produced','deliveries','chores','activities'])assert.equal(s.stats[k]??0,before[k]??0,`a lake cast moves no ${k}`);
+  assert.ok(s.stats.lake_fish>(before.lake_fish??0),'only the lake\'s own counters');}
  assert.ok(INSTANT_ACTIONS.has('lake_fish'));assert.ok(INSTANT_ACTIONS.has('fish'));
  assert.match(read('supabase/functions/farm-api/index.ts'),/eventAction:NO_EVENT_ACTIONS\.has\(body\.action\.type\)\?null:body\.action\.type/);
  assert.equal(G.LAKE_WATER.action,'lake_fish');assert.equal(G.POND_WATER.action,'fish');assert.deepEqual(G.WATERS,{pond:G.POND_WATER,lake:G.LAKE_WATER});

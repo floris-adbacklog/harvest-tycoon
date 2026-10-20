@@ -41,7 +41,7 @@ test('every league pays the same diamonds; only the coins grow with the league, 
   const rows=finishers(2).map(r=>({...r,league:league.index}));
   assert.deepEqual(eventStandings(event,rows,now,league).map(r=>[r.coins,r.diamonds]),[[(200+2000)*league.coins,25],[(200+1000)*league.coins,15]],league.name);
  }
- assert.deepEqual(EVENT_LEAGUES.map(l=>l.coins),[1,2,3,4,5,8]);
+ assert.deepEqual(EVENT_LEAGUES.map(l=>l.coins),[1,2,3,4,5,8,10,12,14,16,18,20]);
  assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:3},'the family bonus stays');
 });
 

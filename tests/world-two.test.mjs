@@ -13,6 +13,7 @@ import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,unlockEntrie
  DEPOT_DIAMONDS,boatValue,boatReturn,landmarkDone,landmarkBonus,villagePremium,exportValue,
  BOAT_GONE,boatReady,boatDiamonds,villageLandmark} from '../game/farm-state.js';
 import {EVENT_GOAL_POOLS} from '../public/event-goals.js';
+import {EVENT_LEAGUES} from '../public/farm-state.js';
 
 const now=Date.parse('2026-10-05T12:00:00Z');
 function farm(level){
@@ -217,7 +218,8 @@ test('level 99 sees nothing new, guided and legacy: no recipe, Market good, high
  }
  // No farm quest or event goal counts the market square (the village's own quests open at 100); the dailies that do open at 100.
  assert.ok(!QUESTS.some(q=>stats.has(q.stat)));assert.ok(DAILY_POOLS.flat().filter(q=>stats.has(q.stat)).every(q=>q.minLevel>=WORLD_TWO_LEVEL));
- assert.ok(!EVENT_GOAL_POOLS.flat(2).some(g=>stats.has(g.stat)));
+ // 20 Oct 2026: the village leagues (from level 100) do; a farm league never.
+ assert.ok(!EVENT_GOAL_POOLS.filter((p,i)=>EVENT_LEAGUES[i].world===1).flat(2).some(g=>stats.has(g.stat)));
  // From 100 the village is open: the Kitchen lists packed lunches (and the heirloom pie of 115 under "Coming later"), the Market the bakes.
  for(const s of [farm(100),legacyFarm(100)]){
   assert.ok(buildingRecipes(s,'kitchen').includes('packedlunch')&&buildingRecipes(s,'kitchen').includes('heirloompie'));
@@ -942,7 +944,7 @@ test('level 99 sees none of the 13 goods of levels 110-200: no recipe, Market ro
   for(const tab of ['crops','goods'])assert.ok(marketItems(s,tab).every(k=>!goods.includes(k)),`${mode} ${tab}`);
   for(const k of goods)assert.equal(itemAvailable(s,k),false,`${mode} ${k}`);
  }
- assert.ok(!QUESTS.some(q=>made.has(q.stat)));assert.ok(!DAILY_POOLS.flat().some(q=>made.has(q.stat)));assert.ok(!EVENT_GOAL_POOLS.flat(2).some(g=>made.has(g.stat)));
+ assert.ok(!QUESTS.some(q=>made.has(q.stat)));assert.ok(!DAILY_POOLS.flat().some(q=>made.has(q.stat)));assert.ok(!EVENT_GOAL_POOLS.filter((p,i)=>EVENT_LEAGUES[i].world===1).flat(2).some(g=>made.has(g.stat)));
  assert.ok(VILLAGE_QUESTS.filter(q=>made.has(q.stat)).every(q=>q.minLevel>=110));
 });
 

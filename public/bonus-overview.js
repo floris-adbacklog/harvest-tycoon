@@ -80,8 +80,9 @@ export function bonusOverview(state,now=Date.now()){
   silo>0&&row('seeds','Seed price','Silo research',less(siloBonus(silo).seeds)),
   state.boosts?.upgradeCredits>0&&row('voucher','Next building upgrade','Buildings discount','−50%')
  ],[siloNext('seeds','Seed price','Silo research',`−${pct(siloBonus(1).seeds)}% seed price`)]);
- // Bigger rewards: a league pays ×1 in the first (no bonus), so the next one with more coins is the one to show.
- const familyLevel=state.family?.familyId?Math.max(1,Number(state.family.level)||1):0,league=level>=EVENT_LEAGUES[0].from?eventLeague(level):null,nextLeague=EVENT_LEAGUES.find(l=>l.from>level&&l.coins>(league?.coins??1));
+ // Bigger rewards: a league pays ×1 in the first (no bonus), so the next one with more coins is the one to show. Only in the farmer's
+ // own world (20 Oct 2026): from 90 to 99 no village league is teased, so World II stays hidden below level 100.
+ const familyLevel=state.family?.familyId?Math.max(1,Number(state.family.level)||1):0,league=level>=EVENT_LEAGUES[0].from?eventLeague(level):null,nextLeague=EVENT_LEAGUES.find(l=>l.world===(league??EVENT_LEAGUES[0]).world&&l.from>level&&l.coins>(league?.coins??1));
  const visitors=featureUnlocked(state,'visitors')?visitorPay(state)-1:0,welcome=ranks('visitors'),bridge=projectDone('bridge');
  const rewards=group('rewards','Bigger rewards','gift',[
   vip&&row('vip','VIP','Daily gift, daily challenges and delivery orders',`×${dailyRewardMultiplier(state,now)}`),

@@ -88,5 +88,13 @@
  "(min-width:901px) and (max-height:700px) and (min-height:551px),(min-width:901px) and (max-height:700px) and (pointer:fine)",
  "APPLE_PRIVATE_KEY is not a .p8 key.",
  "Error",
- "Rejected"
+ "Rejected",
+ "An event is running. Run part B in the break: 05:05-05:55, 11:05-11:55, 17:05-17:55 or 23:05-23:55 UTC.",
+ "Deploy farm-api (step 2) first, then catch one fish at the village lake.",
+ "Part B ran into the next event; run it again in the next break.",
+ "Run part A first.",
+ "an automatic event that has not started still has 6 leagues",
+ "pick {0}",
+ "public.{0} did not come out as generated",
+ "public.{0} is not the one this file expects (md5 {1}); read the live definition first"
 ]

@@ -13,7 +13,7 @@ test('every crop has its own board; only public metrics can be selected',async()
  for(const crop of Object.keys(CROPS))assert(LEADERBOARD_CATEGORIES['harvested_'+crop],crop);
  // Heirlooms (Seed Lab) have no boards, nor the 13 goods of World II's later places (Oct 2026, noBoard).
  const goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!ITEMS[k].noBoard);
- assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,16+Object.keys(CROPS).length+goods.length,'sixteen boards (Villagers helped the sixteenth) plus one per crop and one per good');
+ assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,17+Object.keys(CROPS).length+goods.length,'seventeen boards (Villagers helped the sixteenth, Village events the seventeenth) plus one per crop and one per good');
  // World II's goods are under Village, the farm's under By good (30 Sep 2026).
  for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,ITEMS[good].world===2?'village':'goods',good);
  assert.deepEqual(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard&&LEADERBOARD_CATEGORIES['made_'+k]),[],'no board for a good marked noBoard');
@@ -53,7 +53,7 @@ test('Most quests done: the distinct quests in the farm\'s claimed list, read on
  assert.match(sql,/add column if not exists quests_done integer not null default 0;\ngrant select \(quests_done\) on public\.player_stats to authenticated;/);
  assert.match(sql,/select count\(distinct q\.value\) into new\.quests_done from jsonb_array_elements\(farm->'claimed'\) q where q\.value#>>'\{\}' ~ whole;/);
  assert.match(readFileSync(new URL('../src/leaderboard.js',import.meta.url),'utf8'),/fields=\[\.\.\.BOARD_FIELDS,\.\.\.\(config\.good\?\['goods_made'\]:BOARD_FIELDS\.includes\(category\)\?\[\]:\[category\]\)\]/,'the board reads its own column');
- assert.match(read('supabase/functions/farm-api/player-profile-service.js'),/'estate_projects','quests_done','currency'\]/,'the profile reads the same column');
+ assert.match(read('supabase/functions/farm-api/player-profile-service.js'),/'estate_projects','quests_done','currency','villagers_helped','village_events_finished'\]/,'the profile reads the same column, and the village page its two');
 });
 
 // 3 Oct 2026: the admins are on no board, the moderators are; an admin looking at a board has no "Your rank".

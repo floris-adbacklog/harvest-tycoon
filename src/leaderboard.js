@@ -4,7 +4,7 @@ import {staffRole,staffBadge} from './staff-badge.js';
 import {rankArt} from '../public/rank-art.js';
 import {art} from '../public/visual-icons.js';
 import {rankArtKey} from '../public/rank-picker.js';
-import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem} from '../public/farm-state.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem,WORLD_TWO_LEVEL} from '../public/farm-state.js';
 import {ONLINE_WINDOW} from './presence.js';
 import {countLines} from './player-counts.js';
 import {ownText,setOwnText} from '../public/i18n.js';
@@ -43,6 +43,9 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  // The market square's own board (Oct 2026), first in the Village row: villagers helped, from stats.village_requests (its own column,
  // player_stats.villagers_helped: supabase/world-two-phase-2-5.sql).
  villagers_helped:{label:'Most villagers helped',heading:'Villagers helped',unit:'villagers helped',group:'village',description:'Villagers helped at the market square in the village.'},
+ // Village events (20 Oct 2026): events finished in a village league (player_stats.village_events_finished, supabase/world-two-leagues-a.sql).
+ // They count in Events too; that board's own description stays without the village, since every farmer reads it.
+ village_events_finished:{label:'Most village events finished',heading:'Village events',unit:'village events finished',group:'village',description:`Events you finished in a village league, from level ${WORLD_TWO_LEVEL}. They count in Events too.`},
  ...Object.fromEntries(VILLAGE_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'village',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} made for and in the village.`}]))
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}

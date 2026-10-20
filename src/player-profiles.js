@@ -38,14 +38,14 @@ function familyCard(family,emblem){
 }
 // 30 Sep 2026, cleaner: the name once (the window says Farmer profile), the VIP time left only on your own profile, and what
 // Online means in the dot's own tooltip rather than a line under the profile.
-export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false}={}){
+export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false,village=false}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
  return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
  ${self?'<div class="farmer-share" data-farmer-share hidden></div>':''}
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
- ${renderStatPages(player,now,statPage)}
+ ${renderStatPages(player,now,statPage,{village})}
  <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Medals</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</section>`;
 }
 export function renderPlayerSearch(players,now=Date.now()){
@@ -80,8 +80,9 @@ export function checkAdmin(){
 const adminGrantItemOptions=`<option value="">None</option><optgroup label="Crops">${Object.entries(CROPS).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Goods produced">${Object.entries(ITEMS).filter(([key,c])=>!Object.hasOwn(CROPS,key)&&!c.heirloom).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup><optgroup label="Heirlooms (Seed Lab)">${Object.entries(ITEMS).filter(([,c])=>c.heirloom).map(([key,c])=>`<option value="${key}" data-art="${key}">${esc(c.name)}</option>`).join('')}</optgroup>`;
 // Sequence tokens invalidate pending work as soon as the user types, switches
 // players, closes a dialog or leaves the page. Late responses cannot reopen it.
-// showBoard(category) opens the leaderboard on that board (src/ui.js): a tap on a stat with its own board.
-export function createPlayerProfiles(bridge,{showBoard}={}){
+// showBoard(category) opens the leaderboard on that board (src/ui.js): a tap on a stat with its own board. village() says whether the
+// viewer has the Village boards (20 Oct 2026, src/ui.js villageShown): only then a farmer from level 100 has the page "In the village".
+export function createPlayerProfiles(bridge,{showBoard,village}={}){
  const board=document.getElementById('leaderboard-dialog');
  const search=document.createElement('section');search.className='farmer-search';search.setAttribute('aria-label','Player search');
  search.innerHTML='<label for="farmer-search-input">Find a farmer</label><div class="farmer-search-control"><input id="farmer-search-input" type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Search by player name…" aria-describedby="farmer-search-status"><button type="button" class="small-button" id="farmer-search-clear" hidden>Clear</button></div><p id="farmer-search-status" role="status">Enter at least 2 characters to search all farmers.</p><div id="farmer-search-results"></div>';
@@ -250,7 +251,7 @@ export function createPlayerProfiles(bridge,{showBoard}={}){
  }
  // The farmer's page from a server answer (or the last one, while the newest loads).
  function paint(id,data){
-  clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId});refreshVipBadges(dialog,Date.now()+clockOffset);
+  clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId,village:Boolean(village?.())});refreshVipBadges(dialog,Date.now()+clockOffset);
   // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
   bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
   profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showShare(id);

@@ -100,3 +100,13 @@ test('the profile shows the last online day while the farmer is offline',async()
  assert.ok(!renderPlayerProfile({...player,online:true}).includes('Last online'),'online: the green dot says it');
  for(const missing of [null,0,undefined])assert.ok(!renderPlayerProfile({...player,online:false,lastOnline:missing}).includes('Last online'));
 });
+// 20 Oct 2026: the profile's page "In the village" reads Villagers helped, Village events and the village goods made (only the total
+// leaves farm-api: the client never gets goods_made).
+test('the profile returns the village numbers: Villagers helped, Village events and the World II goods made',async()=>{
+ assert.ok(PLAYER_PUBLIC_FIELDS.split(',').includes('villagers_helped'));assert.ok(PLAYER_PUBLIC_FIELDS.split(',').includes('village_events_finished'));
+ const admin=database({stats:[{player_id:id,username:'Villager',level:120,last_active_at:new Date(now-1000).toISOString(),villagers_helped:23,village_events_finished:4,goods_made:{stone:12,plank:8,packedlunch:30,bread:40}}]});
+ const {data}=await request(admin,{operation:'player_profile',playerId:id}),s=data.playerProfile.stats;
+ assert.equal(s.village_goods,50,'stone, planks and packed lunches; bread is a farm good');
+ assert.equal(s.villagers_helped,23);assert.equal(s.village_events_finished,4);
+ assert.ok(!JSON.stringify(data).includes('goods_made'));
+});

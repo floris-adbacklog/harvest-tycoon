@@ -412,3 +412,29 @@ More tile's mountain lake. A ready village batch on the way back is "Ready to co
 - **العربية** (ar): rowboat قارب التجديف · mountain lake بحيرة الجبل · Back to the village العودة إلى القرية
 - **简体中文** (zh): rowboat 小划艇 · mountain lake 山间湖泊 · Back to the village 回到村庄
 - **हिन्दी** (hi): rowboat चप्पू वाली नाव · mountain lake पहाड़ी झील · Back to the village गाँव में वापस
+
+## Event league names (20 Oct 2026)
+
+The twelve event leagues and the Village events board keep one name per language, in the league card, the rules, the standings, the
+wiki and the leaderboard. The six village leagues (from level 100) are named like the six farm leagues before them; Village Legends
+is built like Valley Legends. Inside a sentence ("…you finish that event in the Valley Legends.") a name keeps its form: Czech puts it after "v lize", Hungarian after a
+colon, Turkish adds a suffix after an apostrophe (Vadi Efsaneleri’nde). Village goods and places inside the league texts are the World II
+words above.
+
+| | Sprout League | Meadow League | Orchard League | Harvest League | Estate League | Valley Legends | Cobble League | Timber League | Linen League | Silver League | Ruby League | Village Legends | Village events |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| cs | Liga výhonků | Luční liga | Sadová liga | Liga úrody | Liga panství | Legendy údolí | Kamenná liga | Dřevařská liga | Lněná liga | Stříbrná liga | Rubínová liga | Legendy vesnice | Vesnické události |
+| de | Sprösslingsliga | Wiesenliga | Obstgartenliga | Ernteliga | Gutsliga | Tallegenden | Kopfsteinliga | Holzliga | Leinenliga | Silberliga | Rubinliga | Dorflegenden | Dorf-Events |
+| es | Liga del Brote | Liga del Prado | Liga del Huerto | Liga de la Cosecha | Liga de la Finca | Leyendas del Valle | Liga del Adoquín | Liga de la Madera | Liga del Lino | Liga de la Plata | Liga del Rubí | Leyendas de la Aldea | Eventos de la aldea |
+| fr | Ligue des Pousses | Ligue des Prés | Ligue du Verger | Ligue des Récoltes | Ligue du Domaine | Légendes de la vallée | Ligue des Pavés | Ligue du Bois | Ligue du Lin | Ligue de l’Argent | Ligue des Rubis | Légendes du village | Événements du village |
+| hu | Hajtásliga | Rétliga | Gyümölcsösliga | Aratási liga | Birtokliga | A völgy legendái | Macskakőliga | Rönkliga | Vászonliga | Ezüstliga | Rubinliga | A falu legendái | Falusi események |
+| id | Liga Tunas | Liga Padang | Liga Kebun Buah | Liga Panen | Liga Perkebunan | Legenda Lembah | Liga Batu | Liga Kayu | Liga Linen | Liga Perak | Liga Rubi | Legenda Desa | Event desa |
+| nl | Spruitliga | Weideliga | Boomgaardliga | Oogstliga | Landgoedliga | Valleilegendes | Keienliga | Houtliga | Linnenliga | Zilverliga | Robijnliga | Dorpslegendes | Dorpsevenementen |
+| pt | Liga do Broto | Liga do Prado | Liga do Pomar | Liga da Colheita | Liga da Propriedade | Lendas do Vale | Liga da Pedra | Liga da Madeira | Liga do Linho | Liga da Prata | Liga do Rubi | Lendas da Vila | Eventos da vila |
+| tr | Filiz Ligi | Çayır Ligi | Meyve Bahçesi Ligi | Hasat Ligi | Malikâne Ligi | Vadi Efsaneleri | Kaldırım Ligi | Kereste Ligi | Keten Ligi | Gümüş Ligi | Yakut Ligi | Köy Efsaneleri | Köy etkinlikleri |
+| ru | Лига ростков | Луговая лига | Садовая лига | Лига урожая | Лига поместья | Легенды долины | Булыжная лига | Бревенчатая лига | Льняная лига | Серебряная лига | Рубиновая лига | Легенды деревни | Деревенские события |
+| uk | Ліга паростків | Лучна ліга | Садова ліга | Ліга врожаю | Ліга маєтку | Легенди долини | Ліга бруківки | Ліга колод | Лляна ліга | Срібна ліга | Рубінова ліга | Легенди села | Сільські події |
+| hi | अंकुर लीग | चरागाह लीग | बाग़ लीग | फ़सल लीग | जागीर लीग | घाटी के दिग्गज | खड़ंजा लीग | लकड़ी लीग | लिनन लीग | चाँदी लीग | माणिक लीग | गाँव के दिग्गज | गाँव के इवेंट |
+| ja | 新芽リーグ | 牧草地リーグ | 果樹園リーグ | 収穫リーグ | 荘園リーグ | 谷のレジェンド | 石畳リーグ | 材木リーグ | リネンリーグ | 銀リーグ | ルビーリーグ | 村のレジェンド | 村のイベント |
+| ar | دوري البراعم | دوري المرج | دوري البستان | دوري الحصاد | دوري الضيعة | أساطير الوادي | دوري الحصى | دوري الأخشاب | دوري الكتان | دوري الفضة | دوري الياقوت | أساطير القرية | فعاليات القرية |
+| zh | 新芽联赛 | 草地联赛 | 果园联赛 | 丰收联赛 | 庄园联赛 | 山谷传奇 | 卵石联赛 | 木材联赛 | 亚麻布联赛 | 白银联赛 | 红宝石联赛 | 村庄传奇 | 村庄活动 |

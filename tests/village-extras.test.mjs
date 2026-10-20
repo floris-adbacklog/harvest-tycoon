@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,dailyTasks,availableDaily,dayNumber,utcDay,
  BUILDINGS,DAILY_POOLS,MAX_BUILDING_LEVEL,worldTwoBuilding} from '../game/farm-state.js';
 import {EVENT_GOAL_POOLS} from '../public/event-goals.js';
+import {EVENT_LEAGUES} from '../public/farm-state.js';
 
 // World II's two extras (Oct 2026, the owner's choice): the daily "Village errands" from level 100, and the leaderboard "Villagers helped".
 const now=Date.parse('2026-10-05T12:00:00Z'),DAY=86400000;
@@ -91,9 +92,11 @@ test('the three dailies never count the same thing: one Village errands a day at
  }
 });
 
-test('no live event goal counts the village',()=>{
+// 20 Oct 2026: the village leagues (from level 100) do count the village; a farm league never does.
+test('no farm league goal counts the village; the village leagues draw villagers and village batches',()=>{
  const village=new Set(['village_requests','village_landmarks','village_sold','village_earned','village_batches','market_crates','builder_crates_used','boat_trips','boat_loaded','boat_coins']);
- assert.ok(!EVENT_GOAL_POOLS.flat(2).some(g=>village.has(g.stat)));
+ assert.ok(!EVENT_GOAL_POOLS.filter((p,i)=>EVENT_LEAGUES[i].world===1).flat(2).some(g=>village.has(g.stat)));
+ for(const [i,pool] of EVENT_GOAL_POOLS.entries())if(EVENT_LEAGUES[i].world===2)for(const stat of ['village_requests','village_batches'])assert.ok(pool.flat().some(g=>g.stat===stat),`${EVENT_LEAGUES[i].id} ${stat}`);
 });
 
 // The board's database side (supabase/world-two-phase-2-5.sql): a column filled from the farm's stats.village_requests on every save, readable
