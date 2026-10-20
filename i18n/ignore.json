@@ -105,5 +105,9 @@
  "an automatic event made ahead is not an hourly event",
  "fewer than 2 hourly events made ahead",
  "public.{0} changed",
- "the cron job does not run every 5 minutes"
+ "the cron job does not run every 5 minutes",
+ "Podium coins must be 3 whole numbers from 0 to 2000.",
+ "Run this between hh:05 and hh:50 UTC.",
+ "an hourly event made ahead has no coins",
+ "the rewards of an event that had started changed"
 ]

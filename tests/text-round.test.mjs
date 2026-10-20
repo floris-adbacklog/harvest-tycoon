@@ -62,7 +62,7 @@ test('the wiki: the 20 starter quests give coins only, the others 15 XP up to 1,
 
 test('loading tips say the level of what opens later, as the rules have it, and every page starts with the same apple tip',()=>{
  const tip=key=>LOADING_TIPS.find(([picture])=>picture===key)[1];
- assert.equal(tip('live-events'),`From level ${EVENTS_LEVEL} a new event starts every hour: finish its goal for diamonds.`);   // hourly events, 20 Oct 2026
+ assert.equal(tip('live-events'),`From level ${EVENTS_LEVEL} a new event starts every hour: finish its goal for coins and diamonds.`);   // hourly events, 20 Oct 2026 (coins again later that day)
  assert.equal(tip('chore-weeds'),`From level ${FEATURE_LEVELS.chores} farm chores pay coins and XP, and sometimes find extra crops.`);
  assert.equal(tip('apples'),`From level ${CROP_LEVELS.apples} apple trees grow back after you pick them, and from level ${CROP_LEVELS.berries} berry bushes too.`);
  for(const page of ['farm','play','crazygames','kongregate','discord'])assert.ok(read(`public/${page}.html`).includes(`<span id="loading-tip-text">${tip('apples')}</span>`),page);

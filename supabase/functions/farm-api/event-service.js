@@ -9,8 +9,8 @@ import {portalOf} from './portal.js';
 // "Sell wheat" instead of "Use a boost" (supabase/live-events-sell-wheat.sql); boosts_used stays valid for events made by hand.
 export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries','harvest_wheat','harvest_corn','harvest_lettuce','harvest_barley','harvest_greenbeans','harvest_cabbage','made_eggs',
  'planted','sold','earned','coins_spent','diamonds_spent','activities','upgrades','made_feed','made_milk','made_cheese','made_flour','fertilized','harvest_cauliflower','made_grainmeal','made_bread','parallel_batches','boosts_used','activity_rounds','sold_wheat'];
-// An event made by hand pays like an hourly event since 20 Oct 2026 (the owner: diamonds only): its rewards are always
-// HOUR_EVENT_REWARDS, whatever the request sends. Its length stays 1–12 hours.
+// An event made by hand pays like an hourly event since 20 Oct 2026 (the owner): its rewards are always HOUR_EVENT_REWARDS, whatever
+// the request sends (diamonds, and coins × the league since later that day). Its length stays 1–12 hours.
 export function validateEvent(config,now=Date.now()){
  if(!config||typeof config.title!=='string'||config.title.trim().length<3||config.title.length>80||typeof config.description!=='string'||config.description.length>500)throw Error('Enter a title (3–80 characters) and description (up to 500).');
  const start=Date.parse(config.starts_at),end=Date.parse(config.ends_at);
@@ -21,7 +21,8 @@ export function validateEvent(config,now=Date.now()){
 }
 const DAY_MS=86400000,HOUR_MS=3600000,TOP=10;
 // LEGACY: the prizes of the 6-hour events made before 20 Oct 2026 (older tests and rewards still owed use them). An event's prizes
-// come from eventPrizes(event.rewards) in farm-state.js: an hourly event pays 8 / 5 / 3 and 1 diamonds and no coins.
+// come from eventPrizes(event.rewards) in farm-state.js: an hourly event pays 8 / 5 / 3 and 1 diamonds, and (50 + 500 / 250 / 125 /
+// 25) coins × the league (none in the first hourly events of 20 Oct 2026, whose rewards have no podiumCoins).
 // The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
 // (same numbers as harvest_event_settle, live-events-bigger-prizes.sql). Diamonds are a fixed prize per place, nothing else; coins
 // come on top of the event's own coins. Every event diamond is paid out: no daily limit since 28 Sep 2026.
@@ -41,10 +42,11 @@ export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]
  const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target);
  const at=r=>Date.parse(r.last_at);
  const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
- // The event's own prizes (20 Oct 2026): an hourly event pays diamonds only; an older one coins × the league as well.
+ // The event's own prizes (20 Oct 2026): (its coins + the place's coins) × the league, and the place's diamonds. The first hourly
+ // events have no coins in their rewards, so they come out at 0.
  const prize=eventPrizes(event.rewards),place=i=>prize.podium[i]??prize.finisher;
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
-  coins:settled?r.coins:r.done&&!prize.hour?(prize.coins+place(i).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?place(i).diamonds:0,podium:r.done&&i<prize.podium.length}));
+  coins:settled?r.coins:r.done?(prize.coins+place(i).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?place(i).diamonds:0,podium:r.done&&i<prize.podium.length}));
 }
 // The standings the farmer sees are their own league's: the league they finished in, or the one their level puts them in now.
 // Only the leagues the event was made with (20 Oct 2026): an event from before the village leagues keeps 100+ in the Valley Legends.

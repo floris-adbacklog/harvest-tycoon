@@ -105,13 +105,15 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  assert.doesNotMatch(wikiArticle('quests').html,/Invite a friend/,'inviting is not a level unlock');
  assert.match(wikiArticle('events').html,/Events open as soon as you reach level 15\./);assert.doesNotMatch(wikiArticle('events').html,/email/);
  assert.match(wikiArticle('account').html,/Confirm it once for 10 diamonds/);assert.match(wikiArticle('diamonds').html,/Confirm your email/);assert.doesNotMatch(wikiArticle('events').html,/48 hours/);
- // 20 Oct 2026 (hourly events, the owner): 8, 5 and 3 diamonds, every other finisher 1, the same in every league; no coins.
- assert.match(wikiArticle('events').html,/The first three to finish in each league win 8, 5 and 3 diamonds, every other finisher 1\.<\/p>/);
- assert.match(wikiArticle('events').html,/<td>Village Legends<\/td><td>201\+<\/td><\/tr><\/tbody><\/table><\/div>/,'the league table: name and levels');
- assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90–99<\/td><\/tr>/);
- assert.doesNotMatch(wikiArticle('events').html,/Coins ×|coins and 25 diamonds|First place|linen and|ruby rings/i);
+ // 20 Oct 2026 (hourly events, the owner): 8, 5 and 3 diamonds, every other finisher 1, the same in every league; and since later that
+ // day coins again, a quarter of the 6-hour events': first place (50 + 500) × the league.
+ assert.match(wikiArticle('events').html,/Everyone who finishes wins coins and diamonds; the sooner you finish, the more\. The first three in each league win 8, 5 and 3 diamonds, every other finisher 1\.<\/p>/);
+ assert.match(wikiArticle('events').html,/<td>Village Legends<\/td><td>201\+<\/td><td>11,000 coins and 8 diamonds<\/td><\/tr><\/tbody><\/table><\/div>/,'the league table: first place in each league');
+ assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90–99<\/td><td>4,400 coins and 8 diamonds<\/td><\/tr>/);
+ assert.match(wikiArticle('events').html,/<td>Sprout League<\/td><td>15–29<\/td><td>550 coins and 8 diamonds<\/td><\/tr>/);
+ assert.doesNotMatch(wikiArticle('events').html,/coins and 25 diamonds|linen and|ruby rings/i);
  // 20 Oct 2026: the village leagues, on the website and in How to play from level 100; below 100 nothing of World II.
- const rows=html=>[...html.matchAll(/<tr><td>[^<]+<\/td><td>[\d–+]+<\/td><\/tr>/g)].length;
+ const rows=html=>[...html.matchAll(/<tr><td>[^<]+<\/td><td>[\d–+]+<\/td><td>[\d,]+ coins and 8 diamonds<\/td><\/tr>/g)].length;
  const web=wikiArticle('events').html,below=wikiArticle('events',{level:99,href:id=>`#${id}`}).html,above=wikiArticle('events',{level:100,href:id=>`#${id}`}).html;
  assert.equal(rows(web),12);assert.equal(rows(above),12);assert.equal(rows(below),6);
  for(const html of [web,above]){
@@ -174,7 +176,8 @@ test('the Farm family article and tips say what the order, the tournament, the c
  assert.equal(C.ORDER_COIN_MULTIPLIER,1.25,'the tip says a quarter more than the Market');assert.match(tips,/The Family Order pays for every full line, finished or not\. A whole order pays a quarter more than the Market’s normal price/);
  assert.doesNotMatch(tips,/A finished Family Order pays/);
  assert.equal(rules.FAMILY_EVENT_BONUS.finishers,3,'the tip says two or more members besides you');
- assert.match(tips,new RegExp(`two or more members of your Farm family: you each get ${rules.FAMILY_EVENT_BONUS.diamonds} diamonds extra`));assert.equal(rules.FAMILY_EVENT_BONUS.coins,undefined,'diamonds only since 20 Oct 2026');
+ // 20 Oct 2026: +500 coins (flat) and +3 diamonds (200 coins before the hourly events, none in the first ones).
+ assert.match(tips,new RegExp(`two or more members of your Farm family: you each get ${rules.FAMILY_EVENT_BONUS.coins} coins and ${rules.FAMILY_EVENT_BONUS.diamonds} diamonds extra`));assert.equal(rules.FAMILY_EVENT_BONUS.coins,500);
 });
 
 test('What opens when lists every level\'s features, buildings, crops and later recipes, so 27 to 62 is not empty',async()=>{
@@ -375,5 +378,5 @@ test('the website wiki has no middle dots: rewards read "and", a building row ke
  assert.match(wikiArticle('diamonds').html,new RegExp(`<strong>Finish production</strong><div class="wiki-stats"><span>${pic('diamonds')}\\d+</span></div>`));
  assert.match(wikiArticle('diamonds').html,/<tr><td>7 days of VIP<\/td>/);
  const pass=wikiArticle('daily').html;if(pass.includes('wiki-boost'))assert.match(pass,/<span class="wiki-boost">[^]*?<span>Double (XP|harvest|earnings)<small>(30 minutes|1 hour|1 day)<\/small><\/span><\/span>/,'a boost and its length: two texts the page translates on their own');
- assert.match(wikiArticle('events').html,/<span class="wiki-league-facts"><span>Levels 15–29<\/span><\/span>/,'a league: its levels (no coins since the hourly events of 20 Oct 2026)');
+ assert.match(wikiArticle('events').html,/<span class="wiki-league-facts"><span>Levels 15–29<\/span><span>Coins ×1<\/span><\/span>/,'a league: its levels, its coins under them (back on 20 Oct 2026, with the hourly coins)');
 });

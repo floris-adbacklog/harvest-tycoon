@@ -40,8 +40,9 @@ export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produc
 // Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
 // opens at 14, became a goal): below it the button stays visible but greyed.
 export const EVENTS_LEVEL=15;
-// What each place wins comes from the event itself (eventPrizes in farm-state.js, 20 Oct 2026): an hourly event pays diamonds only,
-// a 6-hour event from before kept its coins × the league and 25 / 15 / 10 / 3 diamonds. The same rule as harvest_event_settle and
+// What each place wins comes from the event itself (eventPrizes in farm-state.js, 20 Oct 2026): an hourly event pays 8 / 5 / 3 / 1
+// diamonds and (50 + 500 / 250 / 125 / 25) coins × the league (the first hourly events paid no coins), a 6-hour event from before kept
+// its coins × the league and 25 / 15 / 10 / 3 diamonds. The same rule as harvest_event_settle and
 // farm-api's eventStandings. No daily limit on event diamonds since 28 Sep 2026 (supabase/live-events-no-day-cap.sql).
 // In the last 5 minutes of an hour the prizes of the event that just ended are handed out (the cron job at :55).
 const GAP_MS=5*60000;
@@ -92,17 +93,20 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  const leagueRange=l=>l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`;
  // The league's own goals and title (live-event-league-goals.sql); an event without them has one set for everyone.
  const leagueGoals=e=>{const own=e?.leagues?.[leagueOf(e).index];return own?{...e,title:own.title,description:own.description,objectives:own.objectives}:e;};
- // Its name and levels (the prizes are the same in every league since 20 Oct 2026, so no coins line).
- const leagueCard=l=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="56" height="56" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small>${leagueRange(l)}</small></div></div>`;
- // One list of what a farmer wins per place, from the event's own prizes: diamonds only for an hourly event; an older event's coins
- // (its own plus the place's, × the league) and diamonds.
+ // Its name and levels, and under them how much its coins are worth when the event pays coins (the first hourly events of 20 Oct
+ // 2026 paid none, so no coins line for them).
+ const leagueCard=(l,coins)=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="56" height="56" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small>${leagueRange(l)}</small>${coins?`<small>Coins ×${l.coins}</small>`:''}</div></div>`;
+ // One list of what a farmer wins per place, from the event's own prizes (eventPrizes): its coins plus the place's, × the league, and
+ // the place's diamonds. No coins column for an event that pays none (the first hourly events of 20 Oct 2026).
  const rewards=e=>{
-  const prize=eventPrizes(e.rewards),league=leagueOf(e),fam=prize.family;
-  const row=(p,medal,place)=>`<li>${medal}<b>${place}</b>${prize.hour?'':`<span>${art('coins')}${num((prize.coins+p.coins)*league.coins)}</span>`}<span>${art('diamonds')}${num(p.diamonds)}</span></li>`;
-  // One sentence for an hourly event, no picture inside it (20 Oct 2026: a picture cut it in two, and "{0} more." read badly on its own).
-  const bonus=prize.hour?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.diamonds)} diamonds more.`
-   :`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(fam.coins)} and ${art('diamonds')}${num(fam.diamonds)} more.`;
-  return `${leagueCard(league)}<div class="event-podium ${prize.hour?'is-hour':''}"><span>What you win when you finish</span><ol>${prize.podium.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(prize.finisher,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>${bonus}</span></p></div>`;
+  const prize=eventPrizes(e.rewards),league=leagueOf(e),fam=prize.family,coins=prize.paysCoins;
+  const row=(p,medal,place)=>`<li>${medal}<b>${place}</b>${coins?`<span>${art('coins')}${num((prize.coins+p.coins)*league.coins)}</span>`:''}<span>${art('diamonds')}${num(p.diamonds)}</span></li>`;
+  // One sentence for an hourly event, no picture inside it (20 Oct 2026: a picture cut it in two, and "{0} more." read badly on its
+  // own). The family coins are flat: the same in every league.
+  const bonus=!prize.hour?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(fam.coins)} and ${art('diamonds')}${num(fam.diamonds)} more.`
+   :fam.coins?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.coins)} coins and ${num(fam.diamonds)} diamonds more.`
+   :`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.diamonds)} diamonds more.`;
+  return `${leagueCard(league,coins)}<div class="event-podium ${coins?'':'no-coins'}"><span>What you win when you finish</span><ol>${prize.podium.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(prize.finisher,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>${bonus}</span></p></div>`;
  };
  // Goals use the Family Order line: picture, name, "41 / 60" and a bar.
  function goals(e,{preview=false}={}){
@@ -127,7 +131,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const label=r=>r.podium?placeLabel(r.rank):r.finished?'✓ Finished':`${r.progress}% done`;
   const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="${esc(ownText(`Open ${r.username}’s profile`,[r.username]))}"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`${r.coins?`<b>${art('coins')}${num(r.coins)}</b>`:''}${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" translate="no" aria-label="${esc(ownText(`${r.username}: ${r.progress}% done`,[r.username]))}"></progress>`}</span></article>`;
   const league=s.league?leagueOf(e).name:'';
-  return `<h3 class="event-section-title">${final?`Final standings · ${esc(ownTitle(e))}`:'Top farmers'}</h3>${league?`<p class="event-league-name">${league}</p>`:''}<p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:'Prizes if the event ended now. The first three to finish in your league win the most diamonds.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
+  return `<h3 class="event-section-title">${final?`Final standings · ${esc(ownTitle(e))}`:'Top farmers'}</h3>${league?`<p class="event-league-name">${league}</p>`:''}<p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:eventPrizes(e.rewards).paysCoins?'Prizes if the event ended now. The first three to finish in your league win the most coins and diamonds.':'Prizes if the event ended now. The first three to finish in your league win the most diamonds.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }
  function hero(){
   // Each league sees its own title and goals (1 Oct 2026).
@@ -144,19 +148,23 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  function history(){
   const {past}=eventView(data.events,now());
   if(!past.length)return '';
-  // An hourly event pays no coins (20 Oct 2026): then only its diamonds.
-  const collected=p=>p.coins>0?`Collected · ${num(p.coins)} coins${p.paid_diamonds?` + ${num(p.paid_diamonds)} diamond${p.paid_diamonds===1?'':'s'}`:''}`:p.paid_diamonds?`Collected ${num(p.paid_diamonds)} diamond${p.paid_diamonds===1?'':'s'}`:'Collected';
+  // The first hourly events paid no coins (20 Oct 2026): then only their diamonds. One text without " · " inside (20 Oct 2026, the
+  // hourly coins): "{0} · {1} of {2} finished" is then looked up whole, so every word of it is translated ("Collected · 75 coins +
+  // 1 diamond · 22 of 58 finished" was taken apart at its dots and left "coins" and "finished" in English).
+  const collected=p=>p.coins>0?p.paid_diamonds?`Collected ${num(p.coins)} coins and ${num(p.paid_diamonds)} diamond${p.paid_diamonds===1?'':'s'}`:`Collected ${num(p.coins)} coins`
+   :p.paid_diamonds?`Collected ${num(p.paid_diamonds)} diamond${p.paid_diamonds===1?'':'s'}`:'Collected';
   const result=e=>!e.settled_at?'Results coming up':e.player?.claimed_at?collected(e.player):e.player?'Not finished':'You did not take part';
   return `<h3 class="event-section-title">Recent events</h3><div class="family-member-list event-history">${past.map(e=>`<article class="family-list-row"><div><strong>${esc(ownTitle(e))}</strong><span>${result(e)}${e.settled_at?` · ${num(e.qualified)} of ${num(e.participants)} finished`:''}</span></div></article>`).join('')}</div>`;
  }
  // The leagues of the world of the league card on screen (20 Oct 2026), so the window never contradicts itself: below level 100 the six
  // farm leagues; from 100 the six village leagues, unless the event keeps you in the Valley Legends (an event from before the village
  // leagues, or you first counted in it below 100).
- // The rules of the hourly events (20 Oct 2026), with the prizes of the event on screen, or the hourly ones.
+ // The rules of the hourly events (20 Oct 2026), with the prizes of the event on screen, or the hourly ones: with coins when it pays
+ // them (the first hourly events paid diamonds only).
  const rules=()=>{
   const view=eventView(data.events,now()),shown=view.live??view.next,world=(shown?leagueOf(shown):eventLeague(levelOf(state))).world;
   const own=shown&&eventPrizes(shown.rewards),prize=own?.hour?own:eventPrizes(HOUR_EVENT_REWARDS),[first,second,third]=prize.podium.map(p=>num(p.diamonds));
-  return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li><li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.${levelOf(state)>=EVENT_LEAGUES[5].from?` <span>Reach level ${WORLD_TWO_LEVEL} during an event and you finish that event in the Valley Legends.</span>`:''}<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
+  return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li>${prize.paysCoins?'<li>Everyone who finishes wins coins too; the sooner you finish, the more.</li>':''}<li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.${levelOf(state)>=EVENT_LEAGUES[5].from?` <span>Reach level ${WORLD_TWO_LEVEL} during an event and you finish that event in the Valley Legends.</span>`:''}<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>${prize.paysCoins?'Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.':'Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.'}</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  };
  function render(){
   const heading='<div class="dialog-heading">'+art('live-events','dialog-badge')+'<div class="dialog-titles"><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';

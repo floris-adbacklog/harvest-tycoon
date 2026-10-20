@@ -42,8 +42,8 @@ test('every league pays the same diamonds; only the coins grow with the league, 
   assert.deepEqual(eventStandings(event,rows,now,league).map(r=>[r.coins,r.diamonds]),[[(200+2000)*league.coins,25],[(200+1000)*league.coins,15]],league.name);
  }
  assert.deepEqual(EVENT_LEAGUES.map(l=>l.coins),[1,2,3,4,5,8,10,12,14,16,18,20]);
- // 20 Oct 2026 (hourly events): the family bonus is diamonds only now; an event from before keeps its 200 coins too.
- assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,diamonds:3});assert.deepEqual(eventPrizes(event.rewards).family,{finishers:3,coins:200,diamonds:3},'the family bonus of an older event stays');
+ // 20 Oct 2026 (hourly events): the family bonus is 500 coins and 3 diamonds now; an event from before keeps its 200 coins.
+ assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:500,diamonds:3});assert.deepEqual(eventPrizes(event.rewards).family,{finishers:3,coins:200,diamonds:3},'the family bonus of an older event stays');
 });
 
 test('the SQL changes only the diamonds of the live (7 Oct) harvest_event_settle, runs as-is in the SQL editor and can run twice',()=>{
@@ -87,11 +87,11 @@ test('the event screen and the wiki: 25 / 15 / 10 for the top three and 3 for ev
  // 20 Oct 2026 (hourly events): the prize list comes from the event's own prizes, then the family bonus.
  assert.match(ui,/\$\{prize\.podium\.map\(\(p,i\)=>row\(p,art\(MEDALS\[i\]\),placeLabel\(i\+1\)\)\)\.join\(''\)\}\$\{row\(prize\.finisher,'<i aria-hidden="true"><\/i>','Everyone else'\)\}<\/ol><p class="event-family-bonus">/,'the prize list, then the family bonus');
  assert.match(ui,/'Prizes if the event ended now\. The first three to finish in your league win the most diamonds\.'/,'the standings caption');
- assert.match(ui,/Everyone else who finishes wins \$\{num\(prize\.finisher\.diamonds\)\} diamond\$\{prize\.finisher\.diamonds===1\?'':'s'\}\.<\/li><li>You race in your league/,'How events work');
+ assert.match(ui,/Everyone else who finishes wins \$\{num\(prize\.finisher\.diamonds\)\} diamond\$\{prize\.finisher\.diamonds===1\?'':'s'\}\.<\/li>\$\{prize\.paysCoins\?'<li>Everyone who finishes wins coins too; the sooner you finish, the more\.<\/li>':''\}<li>You race in your league/,'How events work');
  assert.doesNotMatch(read('public/retention.css'),/event-podium-note/);
  const events=wikiArticle('events').html;
- assert.match(events,/The first three to finish in each league win 8, 5 and 3 diamonds, every other finisher 1\.<\/p>/);
- assert.match(events,/When 3 or more members of one Farm family finish the same event, each of them gets 3 diamonds more\./);
+ assert.match(events,/The first three in each league win 8, 5 and 3 diamonds, every other finisher 1\.<\/p>/);
+ assert.match(events,/When 3 or more members of one Farm family finish the same event, each of them gets 500 coins and 3 diamonds more\./);
  assert.doesNotMatch(events,/Podium diamonds need|finishers in your league|With fewer|rivals/i);
  for(const path of ['game/farm-state.js','public/farm-state.js','supabase/functions/farm-api/farm-state.js','supabase/functions/farm-api/event-service.js','public/live-events-ui.js','public/wiki-content.js'])
   assert.doesNotMatch(read(path),/PODIUM_MIN_FINISHERS|PODIUM_RULE|need at least 4 finishers|podium only with rivals/,path);

@@ -60,17 +60,20 @@ test('a snapshot of the Sprout League and the Village Legends (spec §2.5.1)',()
   'village_requests 1','lake_fish 2, upgrades 1']);
 });
 
-test('the prizes: diamonds only, 8 / 5 / 3 and 1, +3 for the family; an older event keeps its own',()=>{
- assert.deepEqual(JSON.parse(JSON.stringify(HOUR_EVENT_REWARDS)),{coins:0,diamondMin:1,diamondMax:1,participantStep:25,poolCap:50,podium:[8,5,3],finisher:1,familyFinishers:3,familyDiamonds:3});
- assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:HOUR_EVENT_REWARDS.familyFinishers,diamonds:HOUR_EVENT_REWARDS.familyDiamonds});
- assert.deepEqual(eventPrizes(HOUR_EVENT_REWARDS),{hour:true,coins:0,podium:[{coins:0,diamonds:8},{coins:0,diamonds:5},{coins:0,diamonds:3}],finisher:{coins:0,diamonds:1},family:{finishers:3,coins:0,diamonds:3}});
- assert.deepEqual(eventPrizes({coins:200,diamondMin:1}),{hour:false,coins:200,podium:[{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}],finisher:{coins:100,diamonds:3},family:{finishers:3,coins:200,diamonds:3}});
+// The rewards the first hourly events were made with (diamonds only, 20 Oct 2026), frozen in scripts/hourly-events-sql.mjs. Since later
+// that day HOUR_EVENT_REWARDS has coins too (tests/hourly-coins.test.mjs).
+const FIRST_HOUR_REWARDS=JSON.parse(REWARDS_JSON);
+test('the prizes: diamonds only, 8 / 5 / 3 and 1, +3 for the family, in the first hourly events; an older event keeps its own',()=>{
+ assert.deepEqual(FIRST_HOUR_REWARDS,{coins:0,diamondMin:1,diamondMax:1,participantStep:25,poolCap:50,podium:[8,5,3],finisher:1,familyFinishers:3,familyDiamonds:3});
+ assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:HOUR_EVENT_REWARDS.familyFinishers,coins:HOUR_EVENT_REWARDS.familyCoins,diamonds:HOUR_EVENT_REWARDS.familyDiamonds});
+ assert.deepEqual(eventPrizes(FIRST_HOUR_REWARDS),{hour:true,coins:0,podium:[{coins:0,diamonds:8},{coins:0,diamonds:5},{coins:0,diamonds:3}],finisher:{coins:0,diamonds:1},family:{finishers:3,coins:0,diamonds:3},paysCoins:false});
+ assert.deepEqual(eventPrizes({coins:200,diamondMin:1}),{hour:false,coins:200,podium:[{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}],finisher:{coins:100,diamonds:3},family:{finishers:3,coins:200,diamonds:3},paysCoins:true});
  assert.equal(eventPrizes(null).hour,false);assert.equal(eventPrizes({podium:[8,'x',-2],finisher:null}).podium[1].diamonds,5,'a broken number falls back');
 });
 
-test('farm-api standings: an hourly event gives 8 / 5 / 3 / 1 diamonds and no coins in every league; an older one as before',()=>{
+test('farm-api standings: a first hourly event gives 8 / 5 / 3 / 1 diamonds and no coins in every league; an older one as before',()=>{
  const now=Date.UTC(2026,9,20,13,30),rows=n=>Array.from({length:n},(_,i)=>({player_id:`p${i}`,progress:{harvested:10},actions:3,joined_at:iso(now-20*M),last_at:iso(now-20*M+i*M)}));
- const hour={id:'h',starts_at:iso(now-30*M),ends_at:iso(now+25*M),settled_at:null,objectives:[{stat:'harvested',target:10}],leagues:Array(12).fill({objectives:[{stat:'harvested',target:10}]}),rewards:HOUR_EVENT_REWARDS};
+ const hour={id:'h',starts_at:iso(now-30*M),ends_at:iso(now+25*M),settled_at:null,objectives:[{stat:'harvested',target:10}],leagues:Array(12).fill({objectives:[{stat:'harvested',target:10}]}),rewards:FIRST_HOUR_REWARDS};
  for(const i of [0,5,8])assert.deepEqual(eventStandings(hour,rows(5),now,EVENT_LEAGUES[i]).map(r=>[r.diamonds,r.coins,r.podium]),[[8,0,true],[5,0,true],[3,0,true],[1,0,false],[1,0,false]],EVENT_LEAGUES[i].id);
  const old={...hour,leagues:null,rewards:{coins:200,diamondMin:1,diamondMax:1,participantStep:25,poolCap:50}};
  assert.deepEqual(eventStandings(old,rows(4),now,EVENT_LEAGUES[5]).map(r=>[r.diamonds,r.coins]),[[25,17600],[15,9600],[10,5600],[3,2400]]);
@@ -78,6 +81,7 @@ test('farm-api standings: an hourly event gives 8 / 5 / 3 / 1 diamonds and no co
  assert.deepEqual(eventStandings({...hour,settled_at:iso(now)},[{...rows(1)[0],qualified:true,coins:0,diamonds:11}],now).map(r=>[r.diamonds,r.coins]),[[11,0]]);
  // An event made by hand pays like an hourly one.
  assert.deepEqual(validateEvent({title:'Hand made',description:'',starts_at:iso(now+H),ends_at:iso(now+2*H),objectives:[{stat:'harvested',target:5}],rewards:{coins:300}},now).rewards.podium,[8,5,3]);
+ assert.equal(validateEvent({title:'Hand made',description:'',starts_at:iso(now+H),ends_at:iso(now+2*H),objectives:[{stat:'harvested',target:5}],rewards:{coins:300}},now).rewards.coins,HOUR_EVENT_REWARDS.coins);
 });
 
 test('farm-api lists the events in at most 4 queries: 1 live, 2 next and 3 past',async()=>{
@@ -115,7 +119,8 @@ test('the SQL file: guard, table check, pause, pick, settle, schedule, cron and 
  const s=body('harvest_event_schedule');
  for(const part of ["/3600)::bigint","starts:=to_timestamp(n*3600);","starts+interval '55 minutes'","md5('harvest-hour-event:'||n)::uuid","continue when starts<now()-interval '5 minutes' or starts<paused;",
   "and (e.ends_at-e.starts_at>interval '55 minutes' or e.starts_at<paused)","when raise_exception or unique_violation then null;",`rewards constant jsonb:='${REWARDS_JSON}';`])assert.ok(s.includes(part),part);
- assert.deepEqual(JSON.parse(REWARDS_JSON),JSON.parse(JSON.stringify(HOUR_EVENT_REWARDS)));
+ // The rewards as this file ran (diamonds only), frozen: HOUR_EVENT_REWARDS has the coins since (supabase/hourly-coins.sql).
+ assert.equal(REWARDS_JSON,'{"coins":0,"diamondMin":1,"diamondMax":1,"participantStep":25,"poolCap":50,"podium":[8,5,3],"finisher":1,"familyFinishers":3,"familyDiamonds":3}');
  assert.equal(s,SCHEDULE_BODY);
  // Settle: the hourly branch, Part B's legacy lines byte for byte, the family bonus from the event.
  const settle=body('harvest_event_settle');assert.equal(settle,HOUR_SETTLE_BODY);
@@ -179,10 +184,10 @@ function page({level=20,events=[],now}){
  const ui=createLiveEventsUI({state,notify(){},refreshFarm(){},document:doc,bridge,now});
  return {ui,dialog,els,doc,requests,html:()=>html};
 }
-const hourEvent=(id,start,extra={})=>({id,title:'Harvest rush',description:'Bring it in.',starts_at:iso(start),ends_at:iso(start+55*M),active:true,settled_at:null,participants:4,rewards:{...HOUR_EVENT_REWARDS,podium:[8,5,3]},
+const hourEvent=(id,start,extra={})=>({id,title:'Harvest rush',description:'Bring it in.',starts_at:iso(start),ends_at:iso(start+55*M),active:true,settled_at:null,participants:4,rewards:{...FIRST_HOUR_REWARDS},
  objectives:[{stat:'harvested',target:8}],leagues:EVENT_HOUR_POOLS.map((l,i)=>({title:`League ${i}`,description:'',objectives:[{stat:l[0][0].stat,target:l[0][0].target}]})),player:null,...extra});
 
-test('the events window: a new event every hour, diamonds only, no "0 coins", the hourly rules',async t=>{
+test('the events window: a new event every hour; a first hourly event shows diamonds only, no "0 coins", and the hourly rules',async t=>{
  const now=Date.UTC(2026,9,20,13,20),clock=()=>now;
  const old={id:'old',title:'Rain dance',description:'',starts_at:iso(now-8*H),ends_at:iso(now-3*H),active:true,settled_at:iso(now-3*H),participants:9,qualified:4,rewards:{coins:200,diamondMin:1,diamondMax:1,participantStep:25,poolCap:50},objectives:[{stat:'watered',target:20}],leagues:null,
   player:{qualified:true,claimed_at:null,coins:2200,diamonds:25}};
@@ -197,7 +202,7 @@ test('the events window: a new event every hour, diamonds only, no "0 coins", th
  assert.match(html,/<li>A new event starts every hour, on the hour\. You play for 55 minutes; in the last 5 minutes the prizes are handed out\.<\/li><li>Each event has one goal\. Reach it and you have finished\.<\/li><li>The first three to finish in your league win 8, 5 and 3 diamonds\. Everyone else who finishes wins 1 diamond\.<\/li>/);
  assert.match(html,/The prizes are the same in every league\. The family bonus counts family members from every league\./);
  // The rewards card: diamonds only, with the family bonus.
- const card=html.slice(html.indexOf('<div class="event-podium is-hour">'),html.indexOf('</div>',html.indexOf('<div class="event-podium is-hour">')));
+ const card=html.slice(html.indexOf('<div class="event-podium no-coins">'),html.indexOf('</div>',html.indexOf('<div class="event-podium no-coins">')));
  assert.ok(card.length>0);assert.doesNotMatch(card,/data-art="coins"|art-coins/);
  assert.match(card,/Family bonus: when 3 or more of your Farm Family finish, you each get 3 diamonds more\./);
  // Collect: the hourly reward shows diamonds only, the older one coins and diamonds. History: "Collected 1 diamond".
@@ -240,13 +245,12 @@ test('the texts: the wiki, the tips, the family window, the bonus overview and t
  const events=wikiArticle('events').html;
  assert.match(events,/A new event starts every hour, on the hour\./);assert.match(events,/one per event:/);assert.doesNotMatch(events,/three per event/);
  assert.match(events,/win 8, 5 and 3 diamonds, every other finisher 1\./);
- assert.doesNotMatch(events,/Coins ×|ruby rings|Weave linen|5 hours|six hours/);
- assert.match(wikiArticle('family').html,/each of them gets <span[^>]*data-art="diamonds"[^>]*><\/span>3 on top of their own prize/);
+ assert.doesNotMatch(events,/ruby rings|Weave linen|5 hours|six hours/);
+ assert.match(wikiArticle('family').html,/each of them gets <span[^>]*data-art="coins"[^>]*><\/span>500 and <span[^>]*data-art="diamonds"[^>]*><\/span>3 on top of their own prize/);
  const tips=LOADING_TIPS.map(([,t])=>t).join('\n');
- assert.match(tips,/From level 15 a new event starts every hour: finish its goal for diamonds\./);
- assert.match(tips,new RegExp(`you each get ${FAMILY_EVENT_BONUS.diamonds} diamonds extra\\.`));assert.doesNotMatch(tips,/200 coins/);
- assert.match(read('public/family-ui.js'),/each gets \$\{ev\.diamonds\} diamonds extra\./);
- assert.doesNotMatch(read('public/bonus-overview.js'),/Coins ×/);
+ assert.match(tips,/From level 15 a new event starts every hour: finish its goal for coins and diamonds\./);
+ assert.match(tips,new RegExp(`you each get ${FAMILY_EVENT_BONUS.coins} coins and ${FAMILY_EVENT_BONUS.diamonds} diamonds extra\\.`));assert.doesNotMatch(tips,/200 coins/);
+ assert.match(read('public/family-ui.js'),/each gets \$\{num\(ev\.coins\)\} coins and \$\{ev\.diamonds\} diamonds extra\./);
  assert.match(read('public/farm.html'),/<small id="mobile-events-hint">A new event every hour<\/small>/);
  assert.match(read('scripts/build-wiki.mjs'),/a new event every hour\./);
  // No push: the hourly reminders send nothing about events.

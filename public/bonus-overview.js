@@ -4,9 +4,9 @@
 // so no number here can drift from the game. Three are written out because farm-state.js keeps them inside an action, and its own
 // texts state them: the Water tower's 30% (actOnPlot; its own share is 1 − 0.7/0.8 of what is left), the Buildings discount's 50%
 // (upgradeCost) and the boosts' ×2.
-import {CROPS,RECIPES,BUILDINGS,BOOSTS,IMPROVEMENTS,MASTER_BRANCHES,VALLEY_PROJECTS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_BONUS,FEATURE_LEVELS,SILO_COSTS,FAMILY_LEVEL_BONUS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,DAY_MS,
+import {CROPS,RECIPES,BUILDINGS,BOOSTS,IMPROVEMENTS,MASTER_BRANCHES,VALLEY_PROJECTS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_BONUS,EVENT_LEAGUES,FEATURE_LEVELS,SILO_COSTS,FAMILY_LEVEL_BONUS,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,DAY_MS,
  levelOf,landmarkDone,featureUnlocked,cropDuration,recipeDuration,marketSaleValue,siloBonus,vipActive,dailyRewardMultiplier,rookieBoost,rookieBoostLeft,masterRank,masterBonus,valleyProjectLevel,valleyProjectBonus,
- hasImprovement,ranchFocus,ranchSpeedup,visitorPay,boostStatus,formatDuration} from './farm-state.js';
+ hasImprovement,ranchFocus,ranchSpeedup,visitorPay,eventLeague,boostStatus,formatDuration} from './farm-state.js';
 
 const pct=n=>Math.round(n*100);
 const less=n=>`−${pct(n)}%`,more=n=>`+${pct(n)}%`;
@@ -80,16 +80,19 @@ export function bonusOverview(state,now=Date.now()){
   silo>0&&row('seeds','Seed price','Silo research',less(siloBonus(silo).seeds)),
   state.boosts?.upgradeCredits>0&&row('voucher','Next building upgrade','Buildings discount','−50%')
  ],[siloNext('seeds','Seed price','Silo research',`−${pct(siloBonus(1).seeds)}% seed price`)]);
- // Bigger rewards. No event league row since the hourly events of 20 Oct 2026: every league wins the same diamonds and no coins.
- const familyLevel=state.family?.familyId?Math.max(1,Number(state.family.level)||1):0;
+ // Bigger rewards: a league pays ×1 in the first (no bonus), so the next one with more coins is the one to show. Only in the farmer's
+ // own world (20 Oct 2026): from 90 to 99 no village league is teased, so World II stays hidden below level 100. The first hourly
+ // events of 20 Oct 2026 paid no coins and the row was gone; the owner brought the event coins × the league back the same day.
+ const familyLevel=state.family?.familyId?Math.max(1,Number(state.family.level)||1):0,league=level>=EVENT_LEAGUES[0].from?eventLeague(level):null,nextLeague=EVENT_LEAGUES.find(l=>l.world===(league??EVENT_LEAGUES[0]).world&&l.from>level&&l.coins>(league?.coins??1));
  const visitors=featureUnlocked(state,'visitors')?visitorPay(state)-1:0,welcome=ranks('visitors'),bridge=projectDone('bridge');
  const rewards=group('rewards','Bigger rewards','gift',[
   vip&&row('vip','VIP','Daily gift, daily challenges and delivery orders',`×${dailyRewardMultiplier(state,now)}`),
   familyLevel>1&&row('family',`Family level ${familyLevel}`,'Family Chest and Family Order',more((familyLevel-1)*FAMILY_LEVEL_BONUS)),
+  league?.coins>1&&row('league',league.name,'Events',`Coins ×${league.coins}`),
   hasImprovement(state,'wagon')&&row('wagon',IMPROVEMENTS.wagon.name,IMPROVEMENTS.wagon.effect,'×2'),
   hasImprovement(state,'crane')&&row('crane',IMPROVEMENTS.crane.name,IMPROVEMENTS.crane.effect,'×2'),
   visitors>0&&row('visitors','Valley visitors',welcome&&bridge?'Warm welcome and Stone bridge':welcome?MASTER_BRANCHES.visitors.name:VALLEY_PROJECTS.bridge.name,more(visitors))
- ],[improvement('wagon'),improvement('crane'),
+ ],[improvement('wagon'),improvement('crane'),...(nextLeague?[{id:'league',level:nextLeague.from,had:false,open:false,name:nextLeague.name,sub:`Coins ×${nextLeague.coins} in events`}]:[]),
   {id:'visitors',level:FEATURE_LEVELS.visitors,had:visitors>0,open:featureUnlocked(state,'visitors'),where:'Master points',name:'Valley visitors',sub:'Warm welcome and Stone bridge'}]);
  const running=group('running','Running now','boost',[...['xp','harvest','coins'].map(id=>{const left=boostStatus(state,id,now).remaining;return left>0&&row(id,BOOSTS[id].name,`${formatDuration(left)} left`,'×2');}),farmhand,rookie]);
  return {groups:[crops,production,sales,cheaper,rewards,running].filter(Boolean)};

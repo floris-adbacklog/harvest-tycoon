@@ -56,8 +56,7 @@ test('every row says what it is worth, and Running now has what runs out',()=>{
  assert.deepEqual(rows(rich,'production'),{vip:'−10%',production:'−6%',ranch:'−35%',heating:'−25%',watermill:'−15%'});
  assert.deepEqual(rows(rich,'market'),{vip:'+5%',ledger:'+10%',market:'+8%',barn:'+6%'});
  assert.deepEqual(rows(rich,'cheaper'),{seeds:'−25%',voucher:'−50%'});
- // 20 Oct 2026: no event league row; the hourly events pay every league the same diamonds and no coins.
- assert.deepEqual(rows(rich,'rewards'),{vip:'×2',family:'+30%',visitors:'+18%'});
+ assert.deepEqual(rows(rich,'rewards'),{vip:'×2',family:'+30%',league:'Coins ×10',visitors:'+18%'});
  assert.deepEqual(rows(rich,'running'),{coins:'×2'});
  assert.equal(groupOf(rich,'production').rows.find(r=>r.id==='ranch').sub,'Goat Shed','the chosen herd’s building');
  const fresh=STATES['a new farm in its beginner boost'];
@@ -86,11 +85,15 @@ test('at most one next bonus per group, after the ones the farm has, with the le
  assert.deepEqual(at(40,'cheaper',s=>{s.siloLevel=0;}),{id:'silo',name:'Seed price',sub:'Silo research',value:'Next step: −5%',active:false});
  assert.equal(at(76,'crops',withVip(s=>{s.siloLevel=5;})).value,'Estate Workshop','Orchard ladders can be built');
  assert.equal(at(72,'production',withVip()).value,'Pick a herd');
- // 20 Oct 2026 (hourly events): every league wins the same diamonds and no coins, so no league is a bonus or a next bonus.
- assert.notEqual(at(20,'rewards').name,'Meadow League','no league teaser');
+ assert.equal(at(20,'rewards').name,'Meadow League','the Sprout League pays ×1: the next league is the bonus');
+ assert.equal(at(20,'rewards').value,'From level 30');
+ // 20 Oct 2026: the next league is one of the farmer's own world. From 90 to 99 no village league is teased (World II shows from 100);
+ // from 100 the next village league is.
  const owned=s=>{s.improvements=['wagon','crane'];s.master={...s.master,visitors:10};};
- for(const level of [20,95,100,150])assert.equal(groupOf(farm(level,owned),'rewards')?.rows.find(r=>r.id==='league'),undefined,`level ${level}: no league row`);
+ assert.equal(groupOf(farm(95,owned),'rewards').rows.find(r=>r.id==='league'&&!r.active),undefined,'level 95: no Cobble League teaser');
  assert.ok(!JSON.stringify(bonusOverview(farm(95,owned),now)).includes('Cobble'),'level 95: nothing of the village leagues');
+ assert.deepEqual(groupOf(farm(100,owned),'rewards').rows.filter(r=>r.id==='league').map(r=>[r.name,r.value,r.active]),[['Cobble League','Coins ×10',true],['Timber League','From level 121',false]]);
+ assert.equal(groupOf(farm(100,owned),'rewards').rows.find(r=>r.id==='league'&&!r.active).sub,'Coins ×12 in events');
  assert.equal(at(10,'market',withVip()).value,'From level 88','only the nearest, never the ones after it');
 });
 
@@ -141,7 +144,7 @@ test('every new text of the tab is in the catalog and in all 15 languages',()=>{
  const texts=['Bonuses','Every bonus your farm has now, and the next one to get.','Faster crops','Faster production','The Market pays more','Cheaper','Bigger rewards','Running now',
   'Crops grow {0}% faster','Trees, bushes and climbing plants grow back {0}% faster','Batches take {0}% less time','+{0}% at the Market','When trees, bushes and climbing plants grow back',
   'Windmill and Feed Mill','Every building also gets faster with its own level.','Next building upgrade','Daily gift, daily challenges and delivery orders','Family Chest and Family Order',
-  'Warm welcome and Stone bridge','Next step: −{0}%','Pick a herd','Batches in one barn take {0}% less time.'];
+  'Coins ×{0} in events','Warm welcome and Stone bridge','Next step: −{0}%','Pick a herd','Batches in one barn take {0}% less time.'];
  const all=catalog(),codes=LANGUAGES.filter(l=>l.code!=='en').map(l=>l.code);
  assert.equal(codes.length,15);
  for(const text of texts){
@@ -149,7 +152,7 @@ test('every new text of the tab is in the catalog and in all 15 languages',()=>{
   for(const code of codes){const out=translations(code)[text];assert.ok(out,`${code}: ${text}`);assert.equal(problem(text,out),'',`${code}: ${text}`);}
  }
  // The texts it shares with other screens were already there: the chip for later bonuses among them.
- for(const text of ['From level {0}','Level {0} of {1}','{0} left','Family level {0}','Seed price','−{0}% growing time','−{0}% seed price','Master points','Valley projects','Estate Workshop'])assert.ok(text in all,text);
+ for(const text of ['From level {0}','Level {0} of {1}','{0} left','Coins ×{0}','Family level {0}','Seed price','−{0}% growing time','−{0}% seed price','Master points','Valley projects','Estate Workshop'])assert.ok(text in all,text);
 });
 
 test('the Market wagon and the Loading crane count as bonuses, and picking a herd says what the hay loft makes of it',()=>{

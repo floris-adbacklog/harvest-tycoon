@@ -65,8 +65,8 @@ test('farm events: podium 25 / 15 / 10, every other finisher 3 (since 8 Oct 2026
  assert.deepEqual(eventStandings(e,rows(3),now).map(r=>r.coins),[2200,1200,700],'the podium coins');
  // A farmer still busy wins nothing yet.
  assert.deepEqual(eventStandings(e,[...rows(3),{...rows(1)[0],player_id:'busy',progress:{harvested:9}}],now).map(r=>r.diamonds),[25,15,10,0]);
- // 20 Oct 2026 (hourly events): the family bonus is 3 diamonds and no coins; an event from before still pays 200 coins too (eventPrizes).
- assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,diamonds:3});
+ // 20 Oct 2026 (hourly events): the family bonus is 500 coins and 3 diamonds; an event from before still pays 200 coins (eventPrizes).
+ assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:500,diamonds:3});
  assert.deepEqual(eventPrizes(e.rewards).family,{finishers:3,coins:200,diamonds:3});
 });
 
@@ -157,7 +157,7 @@ test('the texts say the new amounts: the event screen, the wiki, the estate scre
  assert.match(screens,/Deliver it within 12 hours for coins and \$\{VISITOR_DIAMONDS\} diamonds\./);
  assert.match(screens,/coins a kilo<\/b> and 1 diamond for every \$\{GIANT_KG_PER_DIAMOND\} kg, up to \$\{GIANT_MAX_DIAMONDS\}; a new record/);
  // The loading tip, and the tournament's fallback pool when the server sends none.
- assert.ok(LOADING_TIPS.some(([,text])=>text==='Finish an event with two or more members of your Farm family: you each get 3 diamonds extra.'));
+ assert.ok(LOADING_TIPS.some(([,text])=>text==='Finish an event with two or more members of your Farm family: you each get 500 coins and 3 diamonds extra.'));
  const week=familyWeek(now);assert.deepEqual(familyTournament(emptyFamilyContext(),week).pool,50);
  assert.match(read('public/family-tournament.js'),/p=t\.poolSteps\?\?\[50,100,150\];/);
  // No middle dots in any of them (the owner's rule).

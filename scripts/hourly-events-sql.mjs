@@ -18,7 +18,9 @@ import {NEW_MD5 as PART_B_MD5,SETTLE_BODY as PART_B_SETTLE} from './world-two-le
 
 const md5=text=>createHash('md5').update(text).digest('hex');
 const LEAGUES=EVENT_LEAGUES.length;
-export const REWARDS_JSON=JSON.stringify(HOUR_EVENT_REWARDS);
+// The rewards of the first hourly events, as this file ran on 20 Oct 2026 (diamonds only). Frozen here: HOUR_EVENT_REWARDS has the
+// coins since (scripts/hourly-coins-sql.mjs), and this file must keep generating byte for byte what ran.
+export const REWARDS_JSON='{"coins":0,"diamondMin":1,"diamondMax":1,"participantStep":25,"poolCap":50,"podium":[8,5,3],"finisher":1,"familyFinishers":3,"familyDiamonds":3}';
 
 // The live bodies, read with
 //  select p.oid::regprocedure::text, md5(p.prosrc) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
