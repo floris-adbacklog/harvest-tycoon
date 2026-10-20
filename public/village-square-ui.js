@@ -1,6 +1,7 @@
-import {VILLAGERS,VILLAGER_GONE,VILLAGE_REQUEST_WAIT,VILLAGE_THIRD_BOARD,VILLAGE_THREE_KINDS,VILLAGE_BUILD_XP,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,VILLAGE_ALL_BUILT,WORLD_TWO_LEVEL,BUILDINGS,ITEMS,villageBrief,villageLandmark,villagePremium,villageWeek,MILLER_ORDER,MILLER_PREMIUM,MILLER_DIAMONDS,VILLAGE_XP_SHARE,millerValue,millerOpen,millerDelivered,villageRequestGoods,villagerLine,villageRequestExtra,worldTwoOpen,levelOf,familyWeek,familyWeekStart,normalizeFarm,formatDuration} from './farm-state.js';
+import {VILLAGERS,VILLAGER_GONE,VILLAGE_REQUEST_WAIT,VILLAGE_THIRD_BOARD,VILLAGE_THREE_KINDS,VILLAGE_BUILD_XP,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,VILLAGE_ALL_BUILT,WORLD_TWO_LEVEL,BUILDINGS,ITEMS,villageBrief,villageLandmark,villagePremium,villageWeek,MILLER_ORDER,MILLER_PREMIUM,MILLER_DIAMONDS,VILLAGE_XP_SHARE,millerValue,millerOpen,millerDelivered,villageRequestGoods,villagerLine,villageRequestExtra,worldTwoOpen,levelOf,familyWeek,familyWeekStart,normalizeFarm,villageShopStatus,villagerCallsLeft,VILLAGER_CALLS_PER_DAY,formatDuration} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {buyVillage,waitButton} from './village-shop-ui.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const CHIPS={coins:n=>`<b>${art('coins')}${number(n)}</b>`,diamonds:n=>`<b class="is-diamonds">${art('diamonds')}${number(n)}</b>`,xp:n=>`<b class="is-xp">${art('xp')}${number(n)} XP</b>`};
@@ -47,12 +48,19 @@ export function landmarkCard(state,l,{showMe=true}={}){
   +(handedIn?'':`<div class="ingredients"><span class="ingredient ${l.short?'missing':''}">${art('coins')}<span>${number(l.coins)} coins to finish</span></span></div>`)
   +`<div class="task-bottom">${rewardChips({xp:VILLAGE_LANDMARK_XP,diamonds:l.id==='greathall'?GREAT_HALL_DIAMONDS:0})}<span class="brief-actions">${showMe&&l.open?`<button type="button" class="secondary-button village-show" data-village-show="${l.id}">Show me</button>`:''}${action}</span></div>${note}</article>`;
 }
+// Next villager now (20 Oct 2026, the Village tab of the diamond shop) under a waiting board's time: one tap, with the calls left today; once
+// they are used, the rule instead of the button.
+function callButton(state,i,now){
+ const s=villageShopStatus(state,'villager',now,i);
+ if(!s.reason)return `<div class="wait-buy-row">${waitButton(s)}<small class="square-note">${s.left} of ${VILLAGER_CALLS_PER_DAY} left today</small></div>`;
+ return s.reason==='None left today'?`<small class="square-note">You can call ${VILLAGER_CALLS_PER_DAY} villagers a day. More tomorrow.</small>`:'';
+}
 // One board: its villager and what they ask (in a fixed order, so a save never flips the lines), or the time until the next one. A board
 // that is due but empty has nobody to send: the farm makes no village good yet, and packed lunches are the first. line: the villager's
 // line, another than the cards above say (villagerLine).
 function requestCard(state,itemList,board,i,now,line){
  const r=board.request;
- if(!r)return `<article class="order-card valley-stall is-waiting"><div class="order-head"><span class="order-icon">${art('villagemarket')}</span><div><h3>Waiting for a villager</h3></div></div>${board.readyAt>now?`<p class="valley-next">Next villager in <b>${formatDuration(board.readyAt-now)}</b></p>`:'<p class="valley-next">Pack lunches in the Farm Kitchen and a villager will come.</p>'}</article>`;
+ if(!r)return `<article class="order-card valley-stall is-waiting"><div class="order-head"><span class="order-icon">${art('villagemarket')}</span><div><h3>Waiting for a villager</h3></div></div>${board.readyAt>now?`<p class="valley-next">Next villager in <b>${formatDuration(board.readyAt-now)}</b></p>${callButton(state,i,now)}`:'<p class="valley-next">Pack lunches in the Farm Kitchen and a villager will come.</p>'}</article>`;
  const v=VILLAGERS[r.villager],can=inStock(state,r.input),extra=villageRequestExtra(state,r,now),brief=villageBrief(state)?.goods??{};
  // Helping with goods the open golden brief needs leaves the brief short (at level 100 both ask packed lunches): the card says so.
  const forBrief=can&&Object.entries(r.input).some(([k,n])=>brief[k]&&(state.inventory[k]??0)-n<brief[k]);
@@ -122,7 +130,7 @@ export function createVillageSquareUI({state,runAction,onChange,notify,itemList,
  // What the open screen shows: each board's villager with its goods and their stock (or the minutes to the next one), the brief and the
  // count of villagers helped, the market week (a crate, a new week, reaching 116) and the landmark with what is handed in. Only a change
  // draws it again.
- const signature=()=>{const b=villageBrief(state),l=!b&&villageLandmark(state);return JSON.stringify([(state.village?.boards??[]).map(x=>x.request?[x.request.id,Object.entries(villageRequestGoods(x.request)).map(([k,n])=>[k,n,state.inventory[k]])]:Math.ceil(Math.max(0,x.readyAt-farmNow())/60000)),b&&[b.place,b.ready,b.open,Object.values(b.missing),b.short],state.stats.village_requests,levelOf(state)>=VILLAGE_WEEK_LEVEL&&villageWeek(state,farmNow()),millerOpen(state)&&[millerDelivered(state,farmNow()),familyWeek(farmNow()),Object.keys(MILLER_ORDER).map(k=>state.inventory[k]??0)],l&&[l.id,l.ready,l.open,l.short,Object.keys(l.materials).map(k=>[l.given[k]??0,state.inventory[k]??0])],state.village?.landmarks?.done?.length]);};
+ const signature=()=>{const b=villageBrief(state),l=!b&&villageLandmark(state);return JSON.stringify([(state.village?.boards??[]).map(x=>x.request?[x.request.id,Object.entries(villageRequestGoods(x.request)).map(([k,n])=>[k,n,state.inventory[k]])]:Math.ceil(Math.max(0,x.readyAt-farmNow())/60000)),b&&[b.place,b.ready,b.open,Object.values(b.missing),b.short],state.stats.village_requests,levelOf(state)>=VILLAGE_WEEK_LEVEL&&villageWeek(state,farmNow()),millerOpen(state)&&[millerDelivered(state,farmNow()),familyWeek(farmNow()),Object.keys(MILLER_ORDER).map(k=>state.inventory[k]??0)],l&&[l.id,l.ready,l.open,l.short,Object.keys(l.materials).map(k=>[l.given[k]??0,state.inventory[k]??0])],state.village?.landmarks?.done?.length,villagerCallsLeft(state,farmNow())]);};
  // A tap waits for the server: its button stays off until the answer, a refusal is told as it comes, and the screen is drawn again.
  async function act(button,action,message){
   if(busy)return;busy=true;button.disabled=true;
@@ -157,6 +165,10 @@ export function createVillageSquareUI({state,runAction,onChange,notify,itemList,
   root.querySelectorAll('[data-landmark-give]').forEach(b=>b.onclick=()=>act(b,{type:'landmark_give',landmark:b.dataset.landmarkGive,item:b.dataset.item},handed));
   root.querySelectorAll('[data-landmark-all]').forEach(b=>b.onclick=()=>act(b,{type:'landmark_give',landmark:b.dataset.landmarkAll},handed));
   root.querySelectorAll('[data-landmark-finish]').forEach(b=>b.onclick=()=>act(b,{type:'landmark_finish',landmark:b.dataset.landmarkFinish},r=>r.diamonds?`The ${r.name} is finished! +${number(r.xp)} XP and +${number(r.diamonds)} diamonds.`:`The ${r.name} is finished! +${number(r.xp)} XP.`));
+  // Next villager now: one tap; short of diamonds the square closes and the shop opens.
+  root.querySelectorAll('[data-wait-buy]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;
+   try{const done=await buyVillage({state,id:'villager',board:Number(b.dataset.board),now:farmNow(),runAction,close:()=>$('village-square-dialog').close()});if(done)notify(done.message);}
+   catch(error){notify(error.message);}finally{busy=false;onChange();if($('village-square-dialog').open)render();}});
   root.querySelectorAll('[data-village-show]').forEach(b=>b.onclick=()=>{$('village-square-dialog').close();onShow?.(b.dataset.villageShow);});
   const sell=$('square-sell');if(sell)sell.onclick=()=>{$('village-square-dialog').close();onSell?.();};
  }

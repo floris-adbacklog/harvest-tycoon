@@ -62,7 +62,7 @@
 .shop-jump{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
 .shop-jump button{min-height:34px;padding:5px 12px;border:1px solid #e1d6ca;border-radius:999px;background:#f6efe7;color:#5e523a;font:700 13px 'DM Sans',sans-serif;cursor:pointer}
 .shop-jump button:hover{background:#efe5d8}
-#diamond-store,#shop-finish,#shop-boosts,#vip-shop{scroll-margin-top:12px}
+#diamond-store,#shop-finish,#shop-boosts,#vip-shop,#shop-village{scroll-margin-top:12px}
 /* Short of diamonds: "Get diamonds" is the game's own small button, only sized to sit beside the reason. The price button
    opens the packs too, in a softer look. */
 #boost-dialog .get-diamonds{display:inline-flex;align-items:center;gap:6px;width:auto;min-height:34px;margin:0;padding:5px 12px;font-size:13px;grid-column:auto;white-space:nowrap}

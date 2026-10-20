@@ -12,7 +12,7 @@ export function showPaymentReturn(bridge,purchase=bridge.paymentReturn?.()){
  document.body.append(dialog);
  const title=dialog.querySelector('h2'),message=dialog.querySelector('.payment-message'),status=dialog.querySelector('.payment-status'),retry=dialog.querySelector('[data-retry]');
  // A checkout that was closed or expired: straight back to the diamond shop to pick a pack again.
- const shop=dialog.querySelector('[data-shop]');shop.onclick=()=>{dialog.close();window.harvestShop?.open();};
+ const shop=dialog.querySelector('[data-shop]');shop.onclick=()=>{dialog.close();(window.harvestShop?.packs??window.harvestShop?.open)?.();};
  let timer,attempts=0,closed=false,checking=false;
  const stop=()=>{closed=true;clearTimeout(timer);};
  dialog.addEventListener('close',()=>{stop();window.removeEventListener('pagehide',stop);bridge.clearPaymentReturn?.();dialog.remove();});

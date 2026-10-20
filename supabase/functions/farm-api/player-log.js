@@ -1,4 +1,4 @@
-import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,FISH,LAKE_FISH,levelOf,recipeFor} from './farm-state.js';
+import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,levelOf,recipeFor} from './farm-state.js';
 import {isStaff,isSuperadmin} from './admin-service.js';
 
 // A log per farmer (26 Sep 2026): what they did and what it gave or cost, with the time, in categories. The farmer reads their own
@@ -95,7 +95,13 @@ const FARM_ACTIONS={
  tractor_shift:['diamonds',(a)=>`Started the tractor's night shift (${CROPS[a.crop]?.name??'crops'})`],
  buy_boost:['diamonds',(a)=>`Used the boost ${BOOSTS[a.boost]?.name??''}`.trim()],
  buy_vip:['diamonds',()=>'Bought VIP'],
- buy_coins:['diamonds',(a,s,r)=>`Bought ${number(r?.coins??0)} coins with diamonds`]
+ buy_coins:['diamonds',(a,s,r)=>`Bought ${number(r?.coins??0)} coins with diamonds`],
+ // The Village tab of the diamond shop (20 Oct 2026).
+ village_cart:['diamonds',a=>`Bought the ${Object.hasOwn(VILLAGE_SHOP,a.cart)?VILLAGE_SHOP[a.cart].name:'cart'} with diamonds`],
+ boat_now:['diamonds',()=>'Called the town boat back with diamonds'],
+ villager_now:['diamonds',()=>'Called the next villager with diamonds'],
+ lake_casts:['diamonds',()=>'Bought five lake casts with diamonds'],
+ landmark_supplies:['diamonds',a=>`Bought the goods for the ${landmark(a.landmark)} with diamonds`]
 };
 const FAMILY_ACTIONS={family_create:'Started a family',family_join:'Joined a family',family_accept_invite:'Accepted a family invitation',family_request:'Asked to join a family',family_request_cancel:'Cancelled a request to join',family_request_accept:'Accepted a request to join',family_request_decline:'Declined a request to join',family_join_mode:'Changed who can join the family',family_min_level:'Changed the family minimum level',family_idle_days:'Changed when members who don\'t play leave the family',family_rejoin:'Joined the family again',
  family_decline_invite:'Declined a family invitation',family_leave:'Left the family',family_kick:'Removed a member from the family',

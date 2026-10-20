@@ -1,5 +1,6 @@
 import {confirmDiamondSpend} from './diamond-confirm.js';
-import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,boostOffer,BOOST_DURATIONS,BOOST_LENGTH_NAMES,formatDuration,COIN_PACK,coinPackCoins} from './farm-state.js';
+import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,boostOffer,BOOST_DURATIONS,BOOST_LENGTH_NAMES,formatDuration,COIN_PACK,coinPackCoins,VILLAGE_SHOP,villageShopStatus,VILLAGER_CALLS_PER_DAY,worldTwoOpen,normalizeFarm} from './farm-state.js';
+import {buyVillage,villageLine,goodsInBarn,untilText,VILLAGE_ASK} from './village-shop-ui.js';
 import {farmNow} from './farm-client.js';
 import {fitText} from './fit-text.js';
 import {art,refreshArt} from './visual-icons.js';
@@ -37,7 +38,7 @@ export function diamondPackCards({catalog=null,purchasing='',suggestion=0}={}){
   return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
 }
 
-export function createBoostsUI({state,runAction,onChange,notify}){
+export function createBoostsUI({state,runAction,onChange,notify,village=false}){
  let lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
  // The length picked on each timed boost: 30 minutes every time the shop opens and after each purchase.
  let lengths={};const lengthOf=id=>BOOSTS[id].prices?lengths[id]??'30m':undefined;
@@ -46,7 +47,10 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  const track=(event,params={})=>bridge()?.trackCommerce?.(event,params);
  // Factory batches are too big to finish with diamonds (the server refuses them, like Finish production skips them).
  function runningBatches(){return Object.entries(state.buildings).filter(([building])=>building!=='factory').flatMap(([building,b])=>productionJobs(b).map((job,index)=>({building,job,number:index+1,key:building+'/'+job.id})).filter(b=>b.job.readyAt>farmNow()));}
- function signature(){return [state.vipExpiresAt,vipActive(state,farmNow()),finishing,coinPackCoins(state),state.boosts.farmhandUntil,...runningBatches().map(b=>b.key),state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason),...state.plots.filter(p=>p.crop&&p.readyAt>farmNow()).map(p=>`${p.id}:${p.crop}`)].join('|');}
+ function signature(){return [state.vipExpiresAt,vipActive(state,farmNow()),finishing,coinPackCoins(state),state.boosts.farmhandUntil,...runningBatches().map(b=>b.key),state.diamonds,state.boosts.upgradeCredits,...Object.keys(BOOSTS).map(id=>boostStatus(state,id,farmNow()).reason),...state.plots.filter(p=>p.crop&&p.readyAt>farmNow()).map(p=>`${p.id}:${p.crop}`),...villageSignature()].join('|');}
+ // The Village tab's cards (20 Oct 2026): a card that shows or goes, its price, its reason, the calls left, the board, the landmark, and a
+ // wait that ends (the minutes tick by themselves in tick()).
+ function villageSignature(){if(!worldTwoOpen(state))return [];const now=farmNow();return Object.keys(VILLAGE_SHOP).map(id=>{const s=villageShopStatus(state,id,now);return [s.shown,s.reason,s.cost,s.left,s.board,s.landmark,s.until>now,s.shown&&id==='landmark'&&goodsInBarn(state,s)].join(',');});}
  // Finish crops / batches: the selection, its total price, and the button label and state kept in step with it.
  const FINISH={crop:{cost:SINGLE_CROP_COST,button:'finish-one-crop',one:'crop',many:'crops',selected:()=>selectedFields},batch:{cost:SINGLE_BATCH_COST,button:'finish-one-batch',one:'batch',many:'batches',selected:()=>selectedBatches}};
  function finishLabel(kind){const f=FINISH[kind],n=f.selected().length;return `<span class="boost-price">${art('diamonds')}<b>${f.cost*Math.max(1,n)}</b></span><small>${finishing?'Finishing…':`Finish ${n>1?`${n} ${f.many}`:f.one}`}</small>`;}
@@ -78,6 +82,10 @@ export function createBoostsUI({state,runAction,onChange,notify}){
  }
  function render(){
   $('boost-wallet').textContent=number(state.diamonds);
+  // World II (20 Oct 2026): the Village tab from level 100, on the farm and in the village. A boat or a board that fell due shows its cargo
+  // or villager first, as the boat's and the square's own windows do.
+  const worldTwo=worldTwoOpen(state);$('boost-dialog').querySelector('[data-shop-jump="shop-village"]').hidden=!worldTwo;
+  if(worldTwo)normalizeFarm(state,farmNow());
   const batches=runningBatches();selectedBatches=selectedBatches.filter(key=>batches.some(b=>b.key===key));
   const growing=state.plots.filter(p=>p.crop&&p.readyAt>farmNow());selectedFields=selectedFields.filter(id=>growing.some(p=>String(p.id)===id));
   // One card layout for everything: picture, title and text, a status line, and a price button that never changes size.
@@ -119,8 +127,25 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   // Power-ups from cheap to dear (20 Oct 2026, the owner: "zet ze wel op volgorde van goedkoop naar duur"), by the price of their
   // shortest length; at the same price the coins come after Double earnings.
   const powerUps=[...entries.filter(([id])=>!finishNow.includes(id)).map(entry=>[entry[1].cost,boostCard(entry)]),[COIN_PACK.cost,coinCard]].sort((a,b)=>a[0]-b[0]).map(([,html])=>html).join('');
+  // The Village tab (20 Oct 2026, the owner's choices): time and goods for World II, each card from its own level, with its line, its
+  // reason or countdown and its price. Landmark supplies lists the goods it hands in, and says when the barn holds some of them.
+  const villageCard=s=>{
+   const now=farmNow(),short=s.reason?0:s.cost-state.diamonds;
+   const chips=(s.reason?chip('blocked',s.reason):'')+(s.until>now?`<span class="boost-detail" data-state="wait" data-shop-until="${s.until}" data-shop-wait="${s.wait}">${untilText(s.wait,s.until-now)}</span>`:'')
+    +(s.id==='villager'&&!s.reason?chip('left',`${s.left} of ${VILLAGER_CALLS_PER_DAY} left today`):'')+(short>0?chip('need',`Need ${number(short)} more diamonds`)+getMore(short):'');
+   const goods=s.id==='landmark'?`<span class="reward-chips">${Object.entries(s.goods).map(([k,n])=>`<b>${art(k)}${number(n)}</b>`).join('')}</span>${goodsInBarn(state,s)?'<small class="shop-note">Give your own goods at the market square first and it costs less.</small>':''}`:'';
+   const button=short>0?`<button class="boost-buy is-short" data-get-diamonds="${short}" aria-label="${s.name}: get ${number(short)} more diamonds first">${price(s.cost,'Buy')}</button>`
+    :s.cost?`<button class="boost-buy" data-buy-village="${s.id}" ${s.canBuy&&!finishing?'':'disabled'} aria-label="Buy ${s.name} for ${number(s.cost)} diamonds">${price(s.cost,'Buy')}</button>`
+    :'<button class="boost-buy" disabled><small>Buy</small></button>';
+   return card({picture:s.art,title:s.name,text:villageLine(s),detail:goods+(chips?`<div class="boost-status-row">${chips}</div>`:''),button});
+  };
+  const shown=worldTwo?Object.keys(VILLAGE_SHOP).map(id=>villageShopStatus(state,id,farmNow())).filter(s=>s.shown):[];
+  // Cheap to dear (the owner, 20 Oct 2026), Landmark supplies by its price of the moment; with everything handed in (0) it goes last. The
+  // sort is stable: at the same price the VILLAGE_SHOP order, and Landmark supplies at exactly 150 before the Farmhand.
+  const villageCards=[...shown.map(s=>[s.cost||Infinity,villageCard(s)]),[BOOSTS.farmhand.cost,boostCard(['farmhand',BOOSTS.farmhand])]].sort((a,b)=>a[0]-b[0]).map(([,html])=>html).join('');
   // An open field or batch picker stays open when a crop ripens or the farm updates (16 Oct 2026, public/keep-folds.js).
-  keepFolds($('boost-catalog'),`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Power-ups</h3><div class="shop-list">${powerUps}</div></section>`);
+  keepFolds($('boost-catalog'),`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Power-ups</h3><div class="shop-list">${powerUps}</div></section>`
+   +(worldTwo?`<section class="shop-section" id="shop-village"><h3 class="shop-heading">Village</h3><div class="shop-list">${villageCards}</div></section>`:''));
   if($('finish-batch-picker'))bindFieldPicker($('finish-batch-picker'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_BATCH_COST),noun:['batch','batches'],onChange:ids=>{selectedBatches=ids.map(i=>batches[i]?.key).filter(Boolean);updateFinish('batch');}});
   if($('finish-crop-field'))bindFieldPicker($('finish-crop-field'),{multiple:true,available:Math.floor(state.diamonds/SINGLE_CROP_COST),onChange:ids=>{selectedFields=ids.map(String);updateFinish('crop');}});
   updateFinish('crop');updateFinish('batch');
@@ -160,6 +185,13 @@ export function createBoostsUI({state,runAction,onChange,notify}){
    try{if(!await confirmDiamondSpend({title:`${number(coins)} coins`,cost:COIN_PACK.cost,description:`${number(COIN_PACK.perLevel)} coins for every level of your farm, right away.`,picture:COIN_PACK.art,balance:state.diamonds}))return;
     const result=await runAction({type:'buy_coins',expectedCost:COIN_PACK.cost,expectedCoins:coins});onChange();
     const message=`${number(result.coins)} coins added to your farm.`;$('boost-feedback').textContent=message;notify(message);
+   }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
+  });
+  // A Village card: the carts and Landmark supplies ask first (VILLAGE_ASK), the time-skips are one tap (village-shop-ui.js buyVillage).
+  $('boost-catalog').querySelectorAll('[data-buy-village]').forEach(button=>button.onclick=async()=>{
+   if(finishing)return;finishing=true;render();
+   try{const id=button.dataset.buyVillage,done=await buyVillage({state,id,now:farmNow(),runAction,always:VILLAGE_ASK.has(id)});
+    if(done){onChange();$('boost-feedback').textContent=done.message;notify(done.message);}
    }catch(error){$('boost-feedback').textContent=error.message;notify(error.message);}finally{finishing=false;render();}
   });
   let vipPanel=$('vip-shop');if(!vipPanel){vipPanel=document.createElement('section');vipPanel.id='vip-shop';vipPanel.className='vip-shop';$('boost-catalog').after(vipPanel);}
@@ -208,7 +240,7 @@ export function createBoostsUI({state,runAction,onChange,notify}){
   // A tap on a deal in the shop is counted (18 Oct 2026: to see whether the shop's look brings more farmers to a checkout).
   const deal=event.target.closest('#shop-offer,#shop-starter,#shop-pass');if(deal)track('shop_deal_opened',{pack:deal.id.slice(5)});
  });
- async function open(){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();showShopTab(firstShopTab());track('diamond_shop_view');if(portalOff('payments'))return;try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
+ async function open(tab){if(!featureUnlocked(state,'boosts')){notify(featureUnlockHint('boosts'));return;}document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('boost-feedback').textContent='';requests={};lengths={};render();$('boost-dialog').showModal();showShopTab(typeof tab==='string'?tab:village&&worldTwoOpen(state)?'shop-village':firstShopTab());track('diamond_shop_view');if(portalOff('payments'))return;try{catalog=await bridge().payments({operation:'catalog'});render();}catch{catalog=null;$('boost-feedback').textContent='The diamond shop is unavailable. Your existing boosts still work.';render();}}
  function refresh(){
   $('diamonds').textContent=state.diamonds.toLocaleString('en-US',matchMedia('(max-width: 900px), (max-height: 550px) and (pointer: coarse)').matches?{notation:'compact',maximumFractionDigits:1}:{});
   fitText($('diamonds'));
@@ -227,8 +259,10 @@ export function createBoostsUI({state,runAction,onChange,notify}){
 
   for(const [id,label,until,picture] of [['xp','2× XP',state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
    if(until>now)chips.push({id,picture,label,time:formatDuration(until-now)});
-   const el=document.querySelector(`[data-boost-time="${id}"]`);if(el&&until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;
+   // The Farmhand's card is in Power-ups and in the Village tab: each one ticks.
+   document.querySelectorAll(`[data-boost-time="${id}"]`).forEach(el=>{if(until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;});
   }
+  document.querySelectorAll('[data-shop-until]').forEach(el=>{const left=Number(el.dataset.shopUntil)-now;if(left>0)el.textContent=untilText(el.dataset.shopWait,left);});
   if(state.boosts.upgradeCredits)chips.push({id:'upgrade',picture:'hammer',label:'50% upgrade voucher',time:'50%'});
   const pill=$('active-boosts'),key=chips.map(c=>c.id).join(',');pill.hidden=!chips.length;
   if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}<b></b></span>`).join('');refreshArt();}

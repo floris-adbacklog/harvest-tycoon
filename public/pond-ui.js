@@ -1,5 +1,6 @@
 import {art,refreshArt} from './visual-icons.js';
-import {WATERS,POND_MAX_CASTS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,waterCasts,waterFish,waterBookDone,waterBook2Done,waterPageTwoOpen,waterRefill,worldTwoBuilding,productionJobs,formatDuration} from './farm-state.js';
+import {WATERS,POND_MAX_CASTS,POND_PERFECT,POND_NEW_FISH_COINS,POND_NEW_FISH_XP,waterCasts,waterFish,waterBookDone,waterBook2Done,waterPageTwoOpen,waterRefill,worldTwoBuilding,productionJobs,formatDuration,villageShopStatus} from './farm-state.js';
+import {buyVillage,waitButton} from './village-shop-ui.js';
 import {showCollectionCheer} from './collection-cheer.js';
 import {createReel} from './pond-reel.js';
 import {createPondScene} from './pond-scene.js';
@@ -56,7 +57,7 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   <div class="pond-top-right"><span class="pond-casts" data-pond-casts><b></b><small></small></span><button type="button" class="pond-book-open" data-pond-book>${art(ART)}<span>Fish book</span></button></div></div>
  <p class="pond-today" data-pond-today></p>
  <button type="button" class="pond-chip" data-pond-chip hidden></button>
- <div class="pond-play"><p class="pond-say" data-pond-say aria-live="polite"></p><p class="pond-say-more" data-pond-more hidden></p>
+ <div class="pond-play"><p class="pond-say" data-pond-say aria-live="polite"></p><p class="pond-say-more" data-pond-more hidden></p>${lake?`<div class="wait-buy-row pond-refill" data-pond-refill hidden>${waitButton(villageShopStatus(state,'casts',now()))}</div>`:''}
   <div class="pond-controls"><button type="button" class="pond-act" data-pond-act><svg class="pond-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><circle class="pond-ring-fill" cx="50" cy="50" r="46" pathLength="100"/></svg><span data-pond-label>Cast</span></button>
    <div class="pond-bar" data-pond-bar hidden aria-hidden="true"><div class="pond-zone" data-pond-zone></div><span class="pond-mark" data-pond-mark></span></div></div>
   <button type="button" class="pond-letgo" data-pond-letgo hidden>Let it go (uses this cast)</button></div>
@@ -64,7 +65,16 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
  <section class="pond-book" data-pond-bookpanel hidden aria-labelledby="pond-book-title"></section>`;
  game.append(dialog);
  const $=name=>dialog.querySelector(`[data-pond-${name}]`);
- const act=$('act'),label=$('label'),sayLine=$('say'),more=$('more'),bar=$('bar'),zone=$('zone'),mark=$('mark'),card=$('card'),book=$('bookpanel'),letGo=$('letgo'),chip=$('chip');
+ const act=$('act'),label=$('label'),sayLine=$('say'),more=$('more'),bar=$('bar'),zone=$('zone'),mark=$('mark'),card=$('card'),book=$('bookpanel'),letGo=$('letgo'),chip=$('chip'),refill=$('refill');
+ // Five casts now (20 Oct 2026, the Village tab of the diamond shop): the lake only, under "No casts left" and on the last catch's card. Drawn
+ // once (the price never changes); top() and idle() only show or hide it. One tap; short of diamonds the lake closes and the shop opens.
+ let buying=false;
+ async function buyCasts(button){
+  if(buying)return;buying=true;button.disabled=true;
+  try{const done=await buyVillage({state,id:'casts',now:now(),runAction,close:()=>close()});if(done){toast(done.message);card.hidden=true;fishN=current();}if(isOpen)idle();}
+  catch(error){toast(error.message);if(isOpen)idle();}finally{buying=false;button.disabled=false;}
+ }
+ refill?.querySelector('[data-wait-buy]').addEventListener('click',event=>void buyCasts(event.currentTarget));
  const ringFill=dialog.querySelector('.pond-ring-fill');
  // Where to find it: a pin over the pier (with the casts waiting), a tile in the More menu (phones) and in Buildings › Around the farm.
  // The lake (12 Oct 2026): its pin over the rowboat, a tile in the village's More menu right after My farm, and a card in the village's
@@ -141,9 +151,10 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
    ${tags.length?`<div class="pond-tags">${tags.map(([cls,text])=>`<b class="pond-tag ${cls}">${text}</b>`).join('')}</div>`:''}
    <div class="pond-rewards"><strong class="reward-coins">${art('coins')}+${number(r.coins)} coins</strong><strong class="reward-xp">${art('xp')}+${number(r.xp)} XP</strong>${r.diamonds?`<strong class="reward-diamonds">${art('diamonds')}+${r.diamonds} diamonds</strong>`:''}</div>
    ${left<1?`<p class="pond-card-note">That was your last cast. A new one comes every ${minutes()} minutes (up to ${POND_MAX_CASTS}).</p>`:''}
-   <div class="pond-card-actions">${left>0?`<button type="button" class="primary-button" data-card-again>Cast again (${left} left)</button><button type="button" class="secondary-button" data-card-farm>${lake?'Back to the village':'Back to my farm'}</button>`:`<button type="button" class="primary-button" data-card-farm>${lake?'Back to the village':'Back to my farm'}</button>`}</div>`;
+   <div class="pond-card-actions">${left>0?`<button type="button" class="primary-button" data-card-again>Cast again (${left} left)</button><button type="button" class="secondary-button" data-card-farm>${lake?'Back to the village':'Back to my farm'}</button>`:`${lake?waitButton(villageShopStatus(state,'casts',now())):''}<button type="button" class="primary-button" data-card-farm>${lake?'Back to the village':'Back to my farm'}</button>`}</div>`;
   card.querySelector('[data-card-again]')?.addEventListener('click',()=>{card.hidden=true;fishN=current();tries=0;escapes=0;cast();});
   card.querySelector('[data-card-farm]').addEventListener('click',()=>close());
+  card.querySelector('[data-wait-buy]')?.addEventListener('click',event=>void buyCasts(event.currentTarget));
   shown=r.n;paid=state.stats[W.stats.coins]??0;setPhase('result');card.hidden=false;tell('');refreshArt();top();
   // The whole book (17 Oct 2026, the owner's pick 4a): its card in the middle, over the catch, with what the pond gives from now on.
   if(r.book2)showCollectionCheer({title:'Fish book complete!',pictures:Object.keys(FISH).map(key=>`fish-${key}`),
@@ -190,6 +201,7 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   const today=$('today');if(today.dataset.fish!==t){today.dataset.fish=t;today.innerHTML=`${art(`fish-${t}`)}<span>Today’s fish: ${FISH[t].name}. Pays double.</span>`;refreshArt();}
   const ready=waiting(),seen=ready?`${ready.art}:${ready.place??''}`:'';chip.hidden=!ready;
   if(ready&&chip.dataset.seen!==seen){chip.dataset.seen=seen;chip.dataset.place=ready.place??'';chip.innerHTML=`${art(ready.art)}<span>${lake?'Ready to collect!':'Ready to harvest!'}</span><span aria-hidden="true">›</span>`;refreshArt();}
+  if(refill)refill.hidden=!(phase==='idle'&&c.casts===0);
   if(phase==='idle'){const can=c.casts>0;act.disabled=!can;if(!can&&sayLine.textContent===say.cast)tell(emptyLine());if(can&&sayLine.textContent===emptyLine())tell(say.cast);}
  }
  function draw(){

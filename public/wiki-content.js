@@ -7,6 +7,8 @@ import {FEATURE_NAMES,POND_OPEN,POND_LEVEL,POND_START_CASTS,POND_MAX_CASTS,POND_
 import {LAKE_OPEN,LAKE_LEVEL,LAKE_FISH,LAKE_FISH_PAGES,LAKE_PAGE_TWO_LEVEL,LAKE_BOOK_DIAMONDS,LAKE_BOOK2_DIAMONDS,LAKE_LEGEND_BY,LAKE_GHOST_BY} from './farm-state.js';
 // Getting started, longer and clearer (20 Oct 2026): the Beginner guide's own steps and the head start a new farm gets.
 import {beginnerProgress,BEGINNER_STEP_XP,STARTER_COINS,ROOKIE_MS,FIRST_HARVEST_BONUS,RETURN_BOOST_MS,WATER_MIN_MS} from './farm-state.js';
+import {VILLAGE_SHOP,LANDMARK_COINS_PER_DIAMOND,landmarkFullCost} from './farm-state.js';
+import {villageLine} from './village-shop-ui.js';
 import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
@@ -522,6 +524,12 @@ const BODIES={
   // A card's bonus stands on its own line under the goods (10 Oct 2026, review fix): the page translates the text between two pictures
   // on its own, and ". Village Fields batches take 25% less time." after the goods matched no translation.
   const landmarkCards=landmarks.map(l=>card({picture:l.art,title:l.name,badge:h.lvl(l.level),locked:h.locked(l.level),stats:[`${art('coins')}${number(l.coins)}`],note:`Needs ${items(l.materials)}<br>${l.effect}`}));
+  // The Village tab of the diamond shop (20 Oct 2026): each item with its card's line, its price and its level, by level.
+  const shopItems=Object.entries(VILLAGE_SHOP).sort((a,b)=>a[1].level-b[1].level),shopArt=item=>item.art??VILLAGE_LANDMARKS.windpump.art;
+  const shopLine=id=>id==='landmark'?'Everything the next landmark still needs, handed in right away.':villageLine({id});
+  const shopPrice=item=>item.cost?`${art('diamonds')}${number(item.cost)}`:`${art('diamonds')}1 per ${number(LANDMARK_COINS_PER_DIAMOND)} coins`;
+  const villageShopRows=shopItems.map(([id,item])=>h.row(item.level,[`${art(shopArt(item))}${item.name}`,shopLine(id),shopPrice(item),h.lvl(item.level)]));
+  const villageShopCards=shopItems.map(([id,item])=>card({picture:shopArt(item),title:item.name,badge:h.lvl(item.level),locked:h.locked(item.level),stats:[shopPrice(item)],note:shopLine(id)}));
   // What the Village Fields sow (Oct 2026), and the upgrade goods of a place that opens before level 125 and of one after it.
   const sown=Object.values(RECIPES).filter(r=>r.building==='villagefields').map(r=>item(Object.keys(r.output)[0],0)).join('');
   // Lunches and Village crops (10 Oct 2026, review fix): every text ends before its goods' pictures, so each text between two pictures
@@ -552,6 +560,10 @@ const BODIES={
   // The miller's order (17 Oct 2026): the heirloom bakes' weekly use, at the market square.
   +section('The miller’s order',`<p>${h.lvl(MILLER_LEVEL)} Once a week the miller at the market square asks for ${MILLER_ORDER.goldenloaf} golden loaves and ${MILLER_ORDER.heirloompie} heirloom pies, baked with heirloom flour from the Village Windmill. He pays twice what they are worth (${number(millerValue()*MILLER_PREMIUM)} coins), ${MILLER_DIAMONDS} diamonds and a ${VILLAGE_XP_SHARE}th of their worth in XP. One order a week: a week starts on Monday at 00:00 UTC, and a week you miss costs nothing.</p>`)
   +(LAKE_OPEN?lakeSection(h):'')
+  +section('Diamonds in the village',`<p>${h.lvl(WORLD_TWO_LEVEL)} The diamond shop has a Village tab. Opened in the village, the shop starts on it. There is also a small diamond button at the boat, at an empty villager board and at the lake.</p>`
+   +dual(table(['Item','What it does','Diamonds','Opens'],villageShopRows),villageShopCards)
+   +`<p>Landmark supplies hand in everything the next landmark still needs, at 1 diamond for every ${number(LANDMARK_COINS_PER_DIAMOND)} coins the goods are worth: the whole ${VILLAGE_LANDMARKS.windpump.name} costs ${number(landmarkFullCost('windpump'))}. Give your own goods first and it costs less. You still pay the coins to finish it.</p>`
+   +`<p>The ${BOOSTS.farmhand.name} from Power-ups adds a slot in the village places too.</p>`)
   +section('Past level 10',`<p>Master tools from the Smithy take a farm production building past level ${MAX_BUILDING_LEVEL}, one level at a time, up to ${TOP_BUILDING_LEVEL}. Every level past ${MAX_BUILDING_LEVEL} gives each batch a ${Math.round(DOUBLE_BATCH_PER_LEVEL*100)}% chance to come out double, decided when it starts. The Factory and the village's own places stop at level ${MAX_BUILDING_LEVEL}.</p>`+dual(table(['Building level','Opens','Costs','Double batches'],steps),stepCards))
   +section('Builder’s crates',`<p>${h.lvl(RECIPE_LEVELS.builderscrate)} Pack them at the ${BUILDINGS.lumbercamp.name}: ${RECIPES.builderscrate.input.plank} planks, ${RECIPES.builderscrate.input.rooftile} roof tiles and ${RECIPES.builderscrate.input.ironbar} iron bars make one. Each builder’s crate takes ${number(BUILDER_CRATE_COINS)} coins off a farm building upgrade, up to half the price. On the upgrade card of a farm building below level ${MAX_BUILDING_LEVEL}, Use crates pays with as many as it can take, after the Buildings discount. They do not work on the Factory, the steps past level ${MAX_BUILDING_LEVEL} or the village’s own places. An upgrade to level ${MAX_BUILDING_LEVEL} costs ${number(crateTop)} coins: ${crateMax} crates take ${number(crateMax*BUILDER_CRATE_COINS)} off it.</p>`)
   +blocks

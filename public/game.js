@@ -1578,9 +1578,11 @@ function bindUI(){
  // for a cargo the server no longer has loads the farm again, as the market square does.
  boat=createBoatUI({state,runAction,onChange:updateUI,notify:toast,refresh:()=>client.refresh()});
  estatePlaces=createEstateUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
- boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast});
+ boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,village:villageWorld});
  // The purchase pop-up after a cancelled or expired checkout (src/payment-ui.js) offers a way straight back to the shop.
  window.harvestShop={open:()=>boosts.open()};
+ // A cancelled or expired checkout goes back to the packs, also in the village (where the shop itself opens on the Village tab).
+ window.harvestShop.packs=()=>boosts.open('diamond-store');
  // A notification or a shortcut on the app icon can open Today (src/game-cloud.js harvestOpen).
  window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});

@@ -210,7 +210,7 @@ test('the game opens the market square from the Village market\'s pin and lights
  assert.match(game,/if\(!adminView\)\{if\(villageWorld\)toast\('Welcome to the village! '\+\(briefWaits\(\)\?'A golden brief waits at the market square\.':'Your farm keeps growing while you are here\.'\)\);/);
  assert.match(game,/const briefWaits=\(\)=>\{const b=villageBrief\(state\);return Boolean\(b\?\.open\)&&\['mine','lumbercamp'\]\.includes\(b\.place\);\};/);
  // These actions wait for the server (farm-state.js decides the goods), like the Valley Market's.
- for(const type of ['village_deliver','village_skip','village_build'])assert.ok(!read('public/farm-client.js').match(/INSTANT_ACTIONS=Object\.freeze\(new Set\(\[([^\]]+)\]/)[1].includes(`'${type}'`),type);
+ for(const type of ['village_deliver','village_skip','village_build','villager_now'])assert.ok(!read('public/farm-client.js').match(/INSTANT_ACTIONS=Object\.freeze\(new Set\(\[([^\]]+)\]/)[1].includes(`'${type}'`),type);
  const html=read('public/farm.html');
  // 18 Oct 2026: the window shell, the market square's picture beside its title and no small line above it.
  assert.match(html,/<dialog id="village-square-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="village-square-title"><div class="dialog-heading"><i class="dialog-badge" data-game-art="villagemarket" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="village-square-title">Market square<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close">/);
@@ -484,7 +484,7 @@ test('the game opens the town boat from the Pier, counts a boat ready to sail on
  assert.match(arrivals,/if\(hallSerial!==null&&serial>hallSerial&&landmarkDone\(state,'greathall'\)\)farmAudio\.play\('bell'\);hallSerial=serial;/);
  assert.match(game,/syncVillageExtras\(\);villageArrivals\(now\);icons\(\);/,'in the 500 ms tick');
  const instant=read('public/farm-client.js').match(/INSTANT_ACTIONS=Object\.freeze\(new Set\(\[([^\]]+)\]/)[1];
- for(const type of ['boat_load','boat_skip','landmark_give','landmark_finish'])assert.ok(!instant.includes(`'${type}'`),`${type} waits for the server`);
+ for(const type of ['boat_load','boat_skip','landmark_give','landmark_finish','boat_now','landmark_supplies','village_cart','lake_casts'])assert.ok(!instant.includes(`'${type}'`),`${type} waits for the server`);
  // 18 Oct 2026: the window shell, the pier's picture beside the title and no small line above it.
  assert.match(read('public/farm.html'),/<dialog id="boat-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="boat-title"><div class="dialog-heading"><i class="dialog-badge" data-game-art="pier" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="boat-title">Town boat<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"><\/i><\/button><\/div><div id="boat-content"><\/div><\/dialog>/);
  for(const file of ['public/village-square-ui.js','public/economy-ui.js'])assert.ok(read(file).includes("' The town boat waits at the pier.'"),file);

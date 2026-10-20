@@ -1,4 +1,5 @@
-import {BOAT_PREMIUM,BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,BOAT_GONE,VILLAGERS,ITEMS,WORLD_TWO_LEVEL,boatReturn,boatReady,boatDiamonds,villageRequestGoods,villageRequestExtra,worldTwoOpen,buildingUnlocked,normalizeFarm,formatDuration} from './farm-state.js';
+import {BOAT_PREMIUM,BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,BOAT_GONE,VILLAGERS,ITEMS,WORLD_TWO_LEVEL,boatReturn,boatReady,boatDiamonds,villageRequestGoods,villageRequestExtra,worldTwoOpen,buildingUnlocked,normalizeFarm,formatDuration,villageShopStatus} from './farm-state.js';
+import {buyVillage,waitButton} from './village-shop-ui.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 const $=id=>document.getElementById(id);
@@ -25,7 +26,7 @@ export function boatMarkup(state,now=farmNow()){
  const boat=state.village.boat,c=boat.cargo,trips=boat.trips;
  const rule=`<p class="estate-lead valley-lead"><span class="estate-icon">${art('pier')}</span><span>Load the boat bit by bit. A full boat sails at once and pays ${BOAT_PREMIUM} times what its goods are worth, plus ${BOAT_DIAMONDS} diamonds. It is back ${boatReturn(state)/3600000} hours later. Diamonds come with the first ${BOAT_DIAMOND_TRIPS} trips each week.</span></p>`;
  let body;
- if(!c)body=`<article class="order-card is-waiting"><div class="order-head"><span class="order-icon">${art('pier')}</span><div><small>Sailing to town</small><h3>Waiting for the boat</h3></div></div><p class="valley-next">${boat.readyAt>now?`The boat is back in <b>${formatDuration(boat.readyAt-now)}</b>.`:'The boat comes as soon as the village makes goods it can carry.'}</p></article>`;
+ if(!c)body=`<article class="order-card is-waiting"><div class="order-head"><span class="order-icon">${art('pier')}</span><div><small>Sailing to town</small><h3>Waiting for the boat</h3></div></div><p class="valley-next">${boat.readyAt>now?`The boat is back in <b>${formatDuration(boat.readyAt-now)}</b>.`:'The boat comes as soon as the village makes goods it can carry.'}</p>${boat.readyAt>now?`<div class="wait-buy-row">${waitButton(villageShopStatus(state,'boat',now))}</div>`:''}</article>`;
  else{
   const goods=villageRequestGoods(c),loaded=total(c.loaded),needed=total(c.input),extra=villageRequestExtra(state,c,now),skipper=VILLAGERS.find(v=>v.id==='skipper').name;
   const rows=Object.entries(goods).map(([k,n])=>{const have=c.loaded[k],left=n-have,stock=state.inventory[k]??0,load=Math.min(stock,left);return `<li class="${left?'':'is-full'}">${art(k,'product-art')}<span><strong>${ITEMS[k].name}</strong><small>${left?`${number(stock)} in your barn`:'Loaded'}</small></span><b>${number(have)}/${number(n)}</b>${left?`<button type="button" class="secondary-button" data-boat-load="${k}" ${load?'':'disabled'}>Load${load?` ${number(load)}`:''}</button>`:'<i data-lucide="check"></i>'}</li>`;}).join('');
@@ -62,7 +63,12 @@ export function createBoatUI({state,runAction,onChange,notify,refresh}){
  // Drawn again every 30 seconds while open, for the time until the boat is back.
  function later(){clearTimeout(timer);timer=setTimeout(()=>{if($('boat-dialog').open)render();},30000);}
  function bind(){
-  const root=$('boat-content');if(!seen)return;
+  const root=$('boat-content');
+  // Boat back now (20 Oct 2026, the Village tab of the diamond shop): one tap; short of diamonds the window closes and the shop opens.
+  root.querySelectorAll('[data-wait-buy]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;
+   try{const done=await buyVillage({state,id:'boat',now:farmNow(),runAction,close:()=>$('boat-dialog').close()});if(done)notify(done.message);}
+   catch(error){notify(error.message);}finally{busy=false;onChange();if($('boat-dialog').open)render();}});
+  if(!seen)return;
   const loaded=r=>r.sailed?(r.diamonds?`The boat sails for town! +${number(r.coins)} coins and +${number(r.xp)} XP. The trip also brings +${r.diamonds} diamonds.`:`The boat sails for town! +${number(r.coins)} coins and +${number(r.xp)} XP.`):r.units===1?'Loaded 1 good onto the boat.':`Loaded ${number(r.units)} goods onto the boat.`;
   root.querySelectorAll('[data-boat-load]').forEach(b=>b.onclick=()=>act(b,{type:'boat_load',...seen,item:b.dataset.boatLoad},loaded));
   root.querySelectorAll('[data-boat-all]').forEach(b=>b.onclick=()=>act(b,{type:'boat_load',...seen},loaded));

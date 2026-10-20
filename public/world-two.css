@@ -80,3 +80,10 @@ html[data-world="village"] :is(.building-label,.utility-label).is-pointed{z-inde
 /* The miller's order (17 Oct 2026): his painted portrait, round, a little larger than a place's picture. */
 #village-square-content .miller-order .order-icon.miller-portrait{flex:none;display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:50%;background:#f6ecd0;overflow:hidden}
 #village-square-content .miller-order .order-icon.miller-portrait>.game-art{width:56px;height:56px;object-fit:contain}
+/* The small diamond button at a wait (20 Oct 2026, the Village tab of the diamond shop): the boat's "back in" line and an empty villager
+   board, right under the line it shortens, with what is left today beside it. */
+:is(#village-square-content,#boat-content) .wait-buy-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.wait-buy-row .square-note{margin:0}
+/* The button itself: the diamond and its price, then the name, with room between them (the boat, a board and the lake). */
+.wait-buy{display:inline-flex;align-items:center;gap:4px;padding-inline:14px}
+.wait-buy>b{margin-right:6px;font-weight:700}

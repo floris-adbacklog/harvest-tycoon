@@ -3518,6 +3518,146 @@ function stampStarterOffer(state,levelBefore,now){
  if(state.starterOffer!==undefined||levelOf(state)<STARTER_LEVEL)return;
  state.starterOffer={unlockedAt:levelBefore<STARTER_LEVEL?now:0};
 }
+// The Village tab of the diamond shop (20 Oct 2026, the owner's choices 1A, 2 all five, 3 yes, 4 defaults): time and goods for World II,
+// each from its own level; no feature gate (like the market square, each checks its own level). Carts and Landmark supplies are not
+// boosts (no boosts_used); the three time-skips count as boosts like finishing one batch or crop (the owner, 20 Oct 2026). Every buy
+// counts diamonds_spent through spendDiamonds, so "Spend diamonds" event goals count it. Prices: about 3 diamonds a slot-hour at place
+// level 5; a cart's goods at their normal price are worth well under the coin pack per diamond (resold at the Village market on a top
+// day with Double earnings they can beat it by a little: the owner kept 40 and 20, 20 Oct 2026). The carts and Landmark supplies always
+// ask first; the three time-skips are one tap (public/village-shop-ui.js).
+export const PRICES_CHANGED='Prices have changed. Reload the game to see current prices.';
+export const VILLAGER_CALLS_PER_DAY=3,LANDMARK_COINS_PER_DIAMOND=500;
+export const VILLAGE_SHOP=Object.freeze(Object.fromEntries(Object.entries({   // the tab sorts the cards by price (cheap to dear, the Farmhand in at 150); at the same price, this order
+ villager:{name:'Next villager now',level:WORLD_TWO_LEVEL,cost:10,art:'bell'},
+ casts:{name:'Five casts now',level:LAKE_LEVEL,cost:10,art:'villagelake'},
+ tilecart:{name:'Roof tile cart',level:BUILDING_LEVELS.kiln,cost:20,art:'rooftile',goods:{rooftile:40}},
+ boat:{name:'Boat back now',level:BUILDING_LEVELS.pier,cost:30,art:'pier'},
+ supplycart:{name:'Supply cart',level:BUILDING_LEVELS.smithy,cost:40,art:'supply-cart',goods:{plank:40,ironbar:10}},
+ landmark:{name:'Landmark supplies',level:VILLAGE_LANDMARKS.windpump.level,cost:null,art:null}
+}).map(([k,item])=>[k,Object.freeze({...item,...(item.goods?{goods:Object.freeze(item.goods)}:{})})])));
+// Villagers called today (state.daily, so it resets at 00:00 UTC by itself; never under state.village: normalizeVillage rebuilds it).
+export function villagerCallsUsed(state,now=Date.now()){const d=state.daily,n=d?.villagersCalled;return d?.date===utcDay(now)&&Number.isSafeInteger(n)&&n>0?n:0;}
+export const villagerCallsLeft=(state,now=Date.now())=>Math.max(0,VILLAGER_CALLS_PER_DAY-villagerCallsUsed(state,now));
+// Goods at their normal price (ITEMS sell), and what a whole landmark's goods cost as Landmark supplies (the wiki's example).
+const goodsValue=goods=>Object.entries(goods).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);
+export const landmarkFullCost=id=>Math.ceil(goodsValue(VILLAGE_LANDMARKS[id].materials)/LANDMARK_COINS_PER_DIAMOND);
+// The next landmark's missing goods (what is still to hand in after `given`, never the barn) and their price: the value at the goods'
+// normal price, added up first and rounded up once. Also before its level or while a brief is open, so the tab can say so.
+export function landmarkSuppliesQuote(state){
+ if(!worldTwoOpen(state))return null;
+ const id=Object.keys(VILLAGE_LANDMARKS).find(k=>!landmarkDone(state,k));if(!id)return null;
+ const l=VILLAGE_LANDMARKS[id],given=state.village?.landmarks?.given??{};
+ const goods=Object.fromEntries(Object.entries(l.materials).filter(([k,n])=>(given[k]??0)<n).map(([k,n])=>[k,n-(given[k]??0)]));
+ const value=goodsValue(goods);
+ return {id,name:l.name,art:l.art,level:l.level,coins:l.coins,goods,value,cost:Math.ceil(value/LANDMARK_COINS_PER_DIAMOND)};
+}
+// One card of the Village tab (and the small diamond button at a wait), in the shape of boostStatus. reason: a short chip with no full
+// stop, and the button is off; until and wait ('villager', 'boat' or 'cast'): the countdown chip. board: the villager board it calls (the
+// given one, otherwise the waiting board with the latest readyAt: it saves the most). To stay cheap it never makes a villager or a cargo:
+// the rare "nothing to ask or carry" is refused by the server without a charge.
+export function villageShopStatus(state,id,now=Date.now(),board){
+ const item=VILLAGE_SHOP[id];
+ const s={id,name:item.name,art:item.art,shown:worldTwoOpen(state)&&levelOf(state)>=item.level,cost:item.cost,reason:'',until:0,wait:null,left:null,board:null,landmark:null,landmarkName:null,coins:null,goods:item.goods?{...item.goods}:null,canBuy:false};
+ if(id==='villager'){
+  const boards=state.village?.boards??[],waiting=i=>Boolean(boards[i])&&!boards[i].request&&boards[i].readyAt>now;
+  let i=Number.isInteger(board)?board:null;
+  if(i===null)boards.forEach((b,k)=>{if(waiting(k)&&(i===null||b.readyAt>boards[i].readyAt))i=k;});
+  s.board=i;s.left=villagerCallsLeft(state,now);
+  if(i!==null&&waiting(i)){s.until=boards[i].readyAt;s.wait='villager';}
+  s.reason=!s.left?'None left today':s.wait?'':'No board is waiting';
+ }
+ if(id==='casts'){const c=waterCasts(LAKE_WATER,state,now);if(c.casts>0)s.reason=`Casts waiting: ${c.casts}`;if(c.nextAt>now){s.until=c.nextAt;s.wait='cast';}}
+ if(id==='boat'){
+  const boat=state.village?.boat;
+  s.reason=!buildingUnlocked(state,'pier')?'Build the Pier first':boat?.cargo?'The boat is at the pier':!(boat?.readyAt>now)?'Waiting for goods it can carry':'';
+  if(boat&&!boat.cargo&&boat.readyAt>now){s.until=boat.readyAt;s.wait='boat';}
+ }
+ if(id==='landmark'){
+  const q=landmarkSuppliesQuote(state);
+  if(!q)s.shown=false;
+  else{Object.assign(s,{cost:q.cost,goods:q.goods,landmark:q.id,landmarkName:q.name,coins:q.coins,art:q.art});
+   s.reason=villageBrief(state)?'Build every village place first':levelOf(state)<q.level?`Opens at level ${q.level}`:!q.cost?'Everything is handed in':'';}
+ }
+ s.canBuy=s.shown&&!s.reason&&state.diamonds>=s.cost;
+ return s;
+}
+// The action for what the screen showed: its price, and its goods where it has them (a stale screen gets PRICES_CHANGED, never another charge).
+export function villageShopAction(s){
+ if(s.id==='supplycart'||s.id==='tilecart')return {type:'village_cart',cart:s.id,expectedCost:s.cost,expectedGoods:{...s.goods}};
+ if(s.id==='boat')return {type:'boat_now',expectedCost:s.cost};
+ if(s.id==='villager')return {type:'villager_now',board:s.board,expectedCost:s.cost};
+ if(s.id==='casts')return {type:'lake_casts',expectedCost:s.cost};
+ return {type:'landmark_supplies',landmark:s.landmark,expectedCost:s.cost,expectedGoods:{...s.goods}};
+}
+const shortOfDiamonds=cost=>`You need ${cost} diamonds. Earn more from daily gifts and challenges.`;
+// The Supply cart and the Roof tile cart: goods into the barn, from the Smithy's and the Kiln's own levels. No cap; never made_*, produced
+// or earned (sold later at the Village market they count there, as any village good does).
+export function villageCart(state,cart,expectedCost,expectedGoods){
+ villageOpen(state);
+ if(cart!=='supplycart'&&cart!=='tilecart')throw new Error('Choose a cart.');
+ const c=VILLAGE_SHOP[cart];
+ if(levelOf(state)<c.level)throw new Error(`Reach level ${c.level} for the ${c.name}.`);
+ if(expectedCost!==c.cost||!sameGoods(expectedGoods,c.goods))throw new Error(PRICES_CHANGED);
+ if(state.diamonds<c.cost)throw new Error(shortOfDiamonds(c.cost));
+ spendDiamonds(state,c.cost);for(const [k,n] of Object.entries(c.goods))state.inventory[k]=(state.inventory[k]??0)+n;
+ state.stats.village_carts=(state.stats.village_carts??0)+1;
+ return {cart,goods:{...c.goods},cost:c.cost};
+}
+// Boat back now: the boat is back at the pier at once, with the cargo it would have brought (the next running number). Made before the
+// charge, so a boat with nothing to carry costs nothing. trips, week and paid stay as they are: the week's diamond trips still count.
+export function boatNow(state,expectedCost,now=Date.now()){
+ villageOpen(state);
+ if(!buildingUnlocked(state,'pier'))throw new Error('Build the Pier first.');
+ const boat=state.village.boat,waits='The boat comes as soon as the village makes goods it can carry.',cost=VILLAGE_SHOP.boat.cost;
+ if(boat.cargo)throw new Error('The boat is at the pier.');
+ if(!(boat.readyAt>now))throw new Error(waits);
+ if(expectedCost!==cost)throw new Error(PRICES_CHANGED);
+ const cargo=boatCargo(state,boat.serial+1);if(!cargo)throw new Error(waits);
+ if(state.diamonds<cost)throw new Error(shortOfDiamonds(cost));
+ spendDiamonds(state,cost);boat.serial++;boat.cargo=cargo;boat.readyAt=now;
+ state.stats.boat_calls=(state.stats.boat_calls??0)+1;state.stats.boosts_used=(state.stats.boosts_used??0)+1;
+ return {cargo,cost};
+}
+// Next villager now: an empty board that waits gets its next villager at once, VILLAGER_CALLS_PER_DAY a day (UTC). Not a Help: it never
+// counts village_requests, the market week or the daily challenge.
+export function villagerNow(state,board,expectedCost,now=Date.now()){
+ villageOpen(state);
+ const v=state.village,b=Number.isInteger(board)?v.boards[board]:undefined;if(!b)throw new Error('Choose a villager.');
+ if(b.request)throw new Error('A villager is already waiting there.');
+ const taken=new Set(v.boards.flatMap(x=>x.request?Object.keys(x.request.input):[]));
+ const request=b.readyAt>now?villageRequest(state,board,v.serial+1,taken):null;
+ if(!request)throw new Error('Pack lunches in the Farm Kitchen and a villager will come.');
+ const used=villagerCallsUsed(state,now),cost=VILLAGE_SHOP.villager.cost;
+ if(used>=VILLAGER_CALLS_PER_DAY)throw new Error(`You can call ${VILLAGER_CALLS_PER_DAY} villagers a day. More tomorrow.`);
+ if(expectedCost!==cost)throw new Error(PRICES_CHANGED);
+ if(state.diamonds<cost)throw new Error(shortOfDiamonds(cost));
+ spendDiamonds(state,cost);v.serial++;b.request=request;b.readyAt=now;state.daily.villagersCalled=used+1;
+ state.stats.villager_calls=(state.stats.villager_calls??0)+1;state.stats.boosts_used=(state.stats.boosts_used??0)+1;
+ return {board,request,villager:VILLAGERS[request.villager].name,cost,left:VILLAGER_CALLS_PER_DAY-used-1};
+}
+// Five casts now: only with no cast left at the lake (the count of now, never the saved one: a save holds casts 0 after every cast).
+// The fish order and the gap between casts stay as they are; the farm pond is not touched.
+export function lakeCastsNow(state,expectedCost,now=Date.now()){
+ if(!lakeOpen(state))throw new Error(LAKE_WATER.closed());
+ if(waterCasts(LAKE_WATER,state,now).casts>0)throw new Error('You still have casts. Fish them first.');
+ const cost=VILLAGE_SHOP.casts.cost;
+ if(expectedCost!==cost)throw new Error(PRICES_CHANGED);
+ if(state.diamonds<cost)throw new Error(shortOfDiamonds(cost));
+ spendDiamonds(state,cost);state.lake.casts=POND_MAX_CASTS;state.lake.castsAt=now;
+ state.stats.lake_refills=(state.stats.lake_refills??0)+1;state.stats.boosts_used=(state.stats.boosts_used??0)+1;
+ return {casts:waterCasts(LAKE_WATER,state,now),cost};
+}
+// Landmark supplies: everything the open landmark still needs, handed in at once (the whole landmark only, never the barn's goods). It
+// does not finish it: paying its coins stays its own tap.
+export function landmarkSupplies(state,id,expectedCost,expectedGoods){
+ const {l,given}=landmarkStep(state,id),q=landmarkSuppliesQuote(state);
+ if(!(q?.cost>0))throw new Error('Everything is handed in. Pay the coins to finish it.');
+ if(expectedCost!==q.cost||!sameGoods(expectedGoods,q.goods))throw new Error(PRICES_CHANGED);
+ if(state.diamonds<q.cost)throw new Error(shortOfDiamonds(q.cost));
+ spendDiamonds(state,q.cost);let units=0;for(const [k,n] of Object.entries(q.goods)){given[k]=(given[k]??0)+n;units+=n;}
+ state.stats.landmark_supplies=(state.stats.landmark_supplies??0)+1;
+ return {landmark:id,name:l.name,handed:{...q.goods},units,cost:q.cost,ready:state.coins>=l.coins};
+}
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
@@ -3560,7 +3700,7 @@ function dispatchFarmAction(state,action,now,random){
   }
   case 'buy_coins':{
    // The coins follow the level: a level gained since the shop was drawn changes them, so the farmer sees the new amount first.
-   if(action.expectedCost!==COIN_PACK.cost||action.expectedCoins!==coinPackCoins(state))throw new Error('Prices have changed. Reload the game to see current prices.');
+   if(action.expectedCost!==COIN_PACK.cost||action.expectedCoins!==coinPackCoins(state))throw new Error(PRICES_CHANGED);
    return buyCoinPack(state);
   }
   case 'fertilize':return action.ids===undefined?fertilizeField(state,action.id,now):fertilizeFields(state,action.ids,now);
@@ -3607,6 +3747,12 @@ function dispatchFarmAction(state,action,now,random){
   case 'boat_skip':return boatSkip(state,action.cargo,action.input,now);
   case 'landmark_give':return landmarkGive(state,action.landmark,action.item);
   case 'landmark_finish':return landmarkFinish(state,action.landmark);
+  // The Village tab of the diamond shop (20 Oct 2026): no feature gate, each checks its own level (as the market square).
+  case 'village_cart':return villageCart(state,action.cart,action.expectedCost,action.expectedGoods);
+  case 'boat_now':return boatNow(state,action.expectedCost,now);
+  case 'villager_now':return villagerNow(state,action.board,action.expectedCost,now);
+  case 'lake_casts':return lakeCastsNow(state,action.expectedCost,now);
+  case 'landmark_supplies':return landmarkSupplies(state,action.landmark,action.expectedCost,action.expectedGoods);
   case 'ranch_focus':return setRanchFocus(state,action.focus,action.expectedCost);
   case 'improve':return buildImprovement(state,action.improvement);
   case 'depot_load':return depotLoad(state,action.contract,action.item,now);

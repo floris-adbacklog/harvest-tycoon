@@ -130,3 +130,5 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
  .pond-view[data-phase="bite"] .pond-act{animation:none;transform:none}
  .pond-card-art{animation:none}
 }
+/* The lake's Five casts now (20 Oct 2026): right under "No casts left", above the grey Cast button. */
+.pond-refill{pointer-events:auto}
