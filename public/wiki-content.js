@@ -2,6 +2,8 @@ import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_X
 import {art} from './visual-icons.js';
 // The Fishing pond (11 Oct 2026): its section, only once the pond is open (POND_OPEN).
 import {FAMILY_IDLE_DAYS,FAMILY_IDLE_DEFAULT} from './farm-state.js';
+// The farm's pets (20 Oct 2026): their names and finds, for one line in Getting started.
+import {PETS,PET_CAT_CROPS,PET_DEER_PLANKS} from './farm-state.js';
 import {FEATURE_NAMES,POND_OPEN,POND_LEVEL,POND_START_CASTS,POND_MAX_CASTS,POND_REFILL_MS,POND_PERFECT,POND_NEW_FISH_XP,POND_NEW_FISH_COINS,POND_BOOK_DIAMONDS,POND_LEGEND_BY,FISH,FISH_PAGES,POND_PAGE_TWO_LEVEL,POND_BOOK2_DIAMONDS,POND_STURGEON_BY} from './farm-state.js';
 // The village lake (12 Oct 2026, plan D): its section in The Village only, once the lake is open (LAKE_OPEN).
 import {LAKE_OPEN,LAKE_LEVEL,LAKE_FISH,LAKE_FISH_PAGES,LAKE_PAGE_TWO_LEVEL,LAKE_BOOK_DIAMONDS,LAKE_BOOK2_DIAMONDS,LAKE_LEGEND_BY,LAKE_GHOST_BY} from './farm-state.js';
@@ -289,7 +291,9 @@ const BODIES={
    ['trophy','Next goal','After the Beginner guide, the Next goal card shows one thing to do, like a quest to claim, something to build, a field to buy or your next level. On a phone it is the line at the top.'],
    ['xp',`Daily challenges ${h.lvl(FEATURE_LEVELS.challenges)}`,`${DAILY_CHALLENGE_DIAMONDS.length} small goals every day, in Today. Each pays coins, XP and diamonds.${see('daily','sec-daily-challenges')}`],
    ['helping-hand',`A helping hand ${h.lvl(FEATURE_LEVELS.activities)}`,`${Object.keys(ACTIVE_STATIONS).length} stops on your farm each have a small job. Help at a stop for goods and XP, then it rests for a while. Help at all of them for a bonus in coins.${see('helpers','sec-a-helping-hand')}`],
-   ['cart',`Delivery orders ${h.lvl(FEATURE_LEVELS.cart)}`,`Customers ask for crops and goods and pay more than the Market. Tap the cart on your farm, or open Delivery orders in Today.${see('daily','sec-delivery-orders')}`]
+   ['cart',`Delivery orders ${h.lvl(FEATURE_LEVELS.cart)}`,`Customers ask for crops and goods and pay more than the Market. Tap the cart on your farm, or open Delivery orders in Today.${see('daily','sec-delivery-orders')}`],
+   // The farm's pets (20 Oct 2026, farm-state.js PETS): one line, the rule and what each brings.
+   ['coins','The farm’s pets',`Pat ${PETS.dog.name} the dog and ${PETS.cat.name} the cat by the Farmhouse once an hour for a small find: coins from ${PETS.dog.name}, ${PET_CAT_CROPS} crops from ${PETS.cat.name}. From level ${WORLD_TWO_LEVEL}, ${PETS.deer.name} the deer in the village brings ${PET_DEER_PLANKS} planks.`]
   ]))
   +section('Coming back',facts([
    ['instant-harvest','Your farm keeps growing','Crops and batches keep growing while the game is closed. Nothing spoils: a ripe crop waits on its field until you harvest it.'],

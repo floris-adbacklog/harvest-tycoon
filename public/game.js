@@ -68,6 +68,7 @@ import { POND_OPEN } from './farm-state.js';
 import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
+import { petRest,petRestText } from './farm-state.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
 // The apps' Back button and the farm's rest under a window on phones, tablets and the apps (13 Oct 2026, public/windows.js).
 import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
@@ -765,6 +766,22 @@ async function tapBuilding(key){
   updateUI();icons();
  }catch(e){toast(e.message);}
  finally{collecting=false;}
+}
+// A tap on a pet (20 Oct 2026): it hops and a heart pops over it at once. Once an hour it also has a small find (farm-state.js patPet), which
+// floats up over it like a harvest's, once the heart has had its moment (PET_FIND_AFTER: a quick answer would put the two on top of each
+// other); while it naps the line at the top says for how long, and nothing is sent. The admin view only pets.
+const patting=new Set(),PET_FIND_AFTER=550;
+async function patPet(id){
+ if(!pets?.react(id)||adminView||patting.has(id))return;
+ const rest=petRest(state,id,farmNow());if(rest>0){toast(petRestText(id,rest));return;}
+ patting.add(id);const tapped=performance.now();
+ try{
+  const r=await runAction({type:'pet_pat',pet:id});
+  const find=r.coins?floatChip('coins',`+${r.coins.toLocaleString('en-US')}`):r.item?floatChip(r.item,`+${r.count}`):'';
+  setTimeout(()=>{const at=pets.top(id);if(at)floatAt(at.x,at.y,at.z,find+floatChip('xp',`+${r.xp} XP`,'is-xp'));},Math.max(0,PET_FIND_AFTER-(performance.now()-tapped)));
+  updateUI();icons();
+ }catch(e){toast(e.message);}
+ finally{patting.delete(id);}
 }
 // What an action gave, floating up from the field as small chips with their own picture (markup built here, never from input).
 const floatChip=(key,text,cls='')=>`<span class="float-chip ${cls}">${art(key)}${text}</span>`;
@@ -1800,7 +1817,7 @@ async function init(){
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
   const canvas=renderer.domElement;
   bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')pets?.react(target.id);},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);

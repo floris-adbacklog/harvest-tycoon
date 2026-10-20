@@ -42,13 +42,14 @@ test('they come after the farm or the village is on screen, never in the loading
  assert.match(pets,/open=address=>download\(address\)\.then\(data=>loader\.parseAsync\(data,'\/assets\/models\/'\)\);/);
 });
 
-test('a pet never takes a tap from anything else, and a tap on one is only a hop and a heart: no reward, nothing saved',()=>{
+test('a pet never takes a tap from anything else, and a tap on one is a hop and a heart at once (the find is the rules\' pet_pat)',()=>{
  const game=read('public/game.js'),pets=read('public/farm-pets.js'),css=read('public/farm-life.css');
  const pick=/function pointerTarget\(event\)\{[^]*?\n\}/.exec(game)[0];
  assert.match(pick,/obj=obj\.parent;\}\}\n \/\/ A pet[^\n]*\n const pet=pets\?\.pick\(raycaster\);if\(pet\)return \{type:'pet',id:pet\};\n return null;\n\}$/,'asked last, when the tap found no field, building, pin or place');
- assert.match(game,/else if\(target\.type==='pet'\)pets\?\.react\(target\.id\);\},/);
+ assert.match(game,/else if\(target\.type==='pet'\)patPet\(target\.id\);\},/);
+ assert.match(game,/async function patPet\(id\)\{\n if\(!pets\?\.react\(id\)\|\|adminView\|\|patting\.has\(id\)\)return;/,'the hop and the heart first, always');
  assert.match(game,/if\(!target\|\|e\.pointerType==='touch'\|\|target\.type==='pet'\)\{tooltip\.hidden=true;return;\}/,'no tooltip of its own (no new text)');
- assert.doesNotMatch(pets,/runAction|localStorage|sessionStorage|state\.|client\.|track\(/,'nothing is played, saved or counted');
+ assert.doesNotMatch(pets,/runAction|localStorage|sessionStorage|state\.|client\.|track\(/,'the pets themselves play, save and count nothing');
  assert.match(pets,/heart\.className='pet-heart';heart\.setAttribute\('aria-hidden','true'\);/);
  assert.match(css,/\.pet-heart\{position:absolute;z-index:1;transform:translate\(-50%,-100%\);pointer-events:none;color:var\(--btn-red\);/,'nothing to tap, the game\'s red');
  assert.match(css,/@media \(prefers-reduced-motion:reduce\)\{\.pet-heart\{animation:pet-heart-still/);

@@ -210,7 +210,7 @@ export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
 // Anything that fails to load beside the farm itself is left out, not fatal.
 const ACTIVITY=[['harvested','Crops harvested'],['planted','Crops planted'],['watered','Crops watered'],['tended','Crops cared for'],['produced','Goods made'],['sold','Items sold'],
  ['deliveries','Orders delivered'],['dailies','Daily tasks'],['chores','Farm chores'],['activity_rounds','Helping hand rounds'],['tractor','Tractor fields'],['upgrades','Upgrades'],
- ['expansions','Field expansions'],['projects','Estate projects'],['boosts_used','Boosts used']];
+ ['expansions','Field expansions'],['projects','Estate projects'],['boosts_used','Boosts used'],['pets_patted','Pets patted']];
 export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  if(!/^[0-9a-f-]{36}$/i.test(String(playerId??'')))return respond(user,{error:'Unknown farmer.'},400);

@@ -2822,7 +2822,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);normalizePets(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3155,7 +3155,8 @@ export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
 // A fish (11 Oct 2026) counts for nothing else either: no event, no Family Chest, no challenge (its coins are not stats.earned). A fish
 // at the village lake (12 Oct 2026) counts for the village events since 20 Oct 2026 (their "Catch lake fish" goal), and still for no
 // challenge and no Family Chest: a cast moves no stat a farm event or the chest counts (earned, coins spent, harvests, batches...).
-export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish']));
+// A pat of a pet (20 Oct 2026) neither: its coins, crops, planks and XP are a small find, never a goal's progress.
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','pet_pat']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
 // opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
 // either: FULL_CARE_COST diamonds.
@@ -3665,6 +3666,40 @@ export function landmarkSupplies(state,id,expectedCost,expectedGoods){
  state.stats.landmark_supplies=(state.stats.landmark_supplies??0)+1;
  return {landmark:id,name:l.name,handed:{...q.goods},units,cost:q.cost,ready:state.coins>=l.coins};
 }
+// The farm's pets (20 Oct 2026, the owner: "doe wel iets leuks"): Rex the dog and Mimi the cat by the Farmhouse, from the start, and Fawn
+// the deer in the village, from World II (level 100). Each can be patted once an hour (PET_REST_MS, on the server's clock) for a small find
+// and PET_XP: Rex finds PET_DOG_COINS_PER_LEVEL coins for every farm level (about 3 minutes of a steady farmer's income at level 20 and 4 at
+// level 100, as much as a lake cast there; 20 a level was twice that, more than the helping hand's whole round of 250 coins an hour from
+// level 13), Mimi brings PET_CAT_CROPS of one crop the farm grows (the server picks it), and Fawn PET_DEER_PLANKS planks (World II's
+// slowest good, so only 2). A pat counts for no event, challenge or Family Chest (NO_EVENT_ACTIONS; its coins are not stats.earned), only
+// for stats.pets_patted. The last pat of each pet is kept in state.pets ({dog,cat,deer}: its time); a farm that never patted one has no
+// pets key, and older rules keep the key as it is (normalizeFarm keeps keys it does not know).
+export const PET_REST_MS=3600000,PET_XP=5,PET_DOG_COINS_PER_LEVEL=10,PET_CAT_CROPS=3,PET_DEER_PLANKS=2;
+export const PETS=Object.freeze({dog:Object.freeze({name:'Rex',world:1}),cat:Object.freeze({name:'Mimi',world:1}),deer:Object.freeze({name:'Fawn',world:2})});
+export const petOpen=(state,pet)=>Object.hasOwn(PETS,pet)&&(PETS[pet].world!==2||worldTwoOpen(state));
+// How long a pet still naps (0: it can be patted).
+export function petRest(state,pet,now=Date.now()){const at=state.pets?.[pet];return Number.isSafeInteger(at)&&at>0?Math.max(0,at+PET_REST_MS-now):0;}
+export const petRestText=(pet,ms)=>`${PETS[pet].name} is napping. Pat again in ${Math.max(1,Math.ceil(ms/60000))} min.`;
+export const petDogCoins=state=>PET_DOG_COINS_PER_LEVEL*levelOf(state);
+function patPet(state,pet,now,random){
+ if(!Object.hasOwn(PETS,pet))throw new Error('Choose a pet.');
+ if(!petOpen(state,pet))throw new Error(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);
+ const rest=petRest(state,pet,now);if(rest>0)throw new Error(petRestText(pet,rest));
+ const found={pet,name:PETS[pet].name,coins:0,item:null,count:0,xp:PET_XP};
+ if(pet==='dog'){found.coins=petDogCoins(state);state.coins+=found.coins;}
+ else if(pet==='cat'){const crops=Object.keys(CROPS).filter(k=>cropUnlocked(state,k));found.item=crops[Math.min(crops.length-1,Math.floor(random()*crops.length))]??'wheat';found.count=PET_CAT_CROPS;}
+ else{found.item='plank';found.count=PET_DEER_PLANKS;}
+ if(found.item)state.inventory[found.item]=(state.inventory[found.item]??0)+found.count;
+ state.xp+=PET_XP;state.pets={...state.pets,[pet]:now};
+ state.stats.pets_patted=(state.stats.pets_patted??0)+1;
+ return found;
+}
+// A saved state.pets as the rules expect it: only the three pets, each with a real time. Never made here (see above).
+function normalizePets(state){
+ const p=state.pets;if(p===undefined)return;
+ if(!p||typeof p!=='object'||Array.isArray(p)){delete state.pets;return;}
+ state.pets=Object.fromEntries(Object.keys(PETS).filter(k=>Number.isSafeInteger(p[k])&&p[k]>0).map(k=>[k,p[k]]));
+}
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
@@ -3779,6 +3814,8 @@ function dispatchFarmAction(state,action,now,random){
   // The village lake (12 Oct 2026): its own action, never 'fish' with a field more (an older farm-api would ignore the field and pay a pond
   // fish), its own gate (closed until LAKE_OPEN, then level 100).
   case 'lake_fish':return landLakeFish(state,action.n,action.landed,action.perfect,now);
+  // A pat of the farm's dog or cat, or the village's deer (20 Oct 2026): no feature gate, the deer checks World II itself.
+  case 'pet_pat':return patPet(state,action.pet,now,random);
   default:throw new Error('Unknown farm action.');
  }
 }

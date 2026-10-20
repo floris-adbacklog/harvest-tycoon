@@ -1,4 +1,4 @@
-import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,levelOf,recipeFor} from './farm-state.js';
+import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,PETS,levelOf,recipeFor} from './farm-state.js';
 import {isStaff,isSuperadmin} from './admin-service.js';
 
 // A log per farmer (26 Sep 2026): what they did and what it gave or cost, with the time, in categories. The farmer reads their own
@@ -76,6 +76,8 @@ const FARM_ACTIONS={
  fish:['rewards',(a,s,r)=>r?.released?'Let a fish go':`Caught a fish: ${FISH[r?.species]?.name??'fish'}, ${Number(r?.kg??0).toFixed(2)} kg`],
  // The village lake (12 Oct 2026): every lake fish too, with the lake named, so the two waters read apart in the log.
  lake_fish:['rewards',(a,s,r)=>r?.released?'Let a fish go at the village lake':`Caught a fish at the village lake: ${LAKE_FISH[r?.species]?.name??'fish'}, ${Number(r?.kg??0).toFixed(2)} kg`],
+ // The farm's pets (20 Oct 2026): every pat, with the pet's name; the changes after it show its find.
+ pet_pat:['rewards',a=>`Patted ${PETS[a.pet].name}`],
  quest:['rewards',()=>'Claimed a quest'],
  beginner_claim:['rewards',()=>'Claimed a beginner guide step'],
  daily:['rewards',()=>'Claimed a daily challenge'],

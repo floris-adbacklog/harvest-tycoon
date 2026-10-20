@@ -6,8 +6,9 @@ import {sharePalette,shareAtlas,download} from './model-atlas.js';
 // The farm's pets (20 Oct 2026, the owner: "doe de kat en de hond, en het hert in Village II"): a dog and a cat by the lane in front of
 // the Farmhouse, from the start (no level), and a deer in World II, on the quiet slope above the village lake's east cliff by the woods.
 // Each walks slowly between a few spots close together (its walk) and stands a while at each (its idle), sideways to the camera as the
-// farm's other animals stand. A tap on one makes it hop and turn to you, with a small heart over it: nothing more (no reward, nothing
-// saved). They never take a tap from anything else: game.js asks them only when a tap found no field, building, pin or place.
+// farm's other animals stand. A tap on one makes it hop and turn to you, with a small heart over it; once an hour it also has a small find
+// (game.js patPet and the rules' pet_pat and PETS; this file plays, saves and counts nothing itself). They never take a tap
+// from anything else: game.js asks them only when a tap found no field, building, pin or place.
 // The models are ithappy Studios' free animals, rebuilt small for the game (scripts/build-pets.mjs, ASSET-USAGE.md): about 100 KB each,
 // meshopt-packed, painted from the farm's palette.png. They come after the farm or the village is on screen (game.js), so the loading
 // bar never waits for them, and a pet that cannot load is simply not there.
@@ -128,9 +129,11 @@ export async function createPets({scene,kinds,ground=()=>0,labels,reducedMotion}
   }
   return true;
  }
+ // Where a pet's find floats up from (game.js floatAt): just over its head, where it stands now.
+ const top=id=>{const p=pets.get(id);return p?{x:p.root.position.x,y:p.root.position.y+p.height*1.3,z:p.root.position.z}:null;};
  // The camera and the size of the farm on the screen, as the names over the buildings were last placed (game.js positionBuildingLabels).
  function position(camera,width,height){view={camera,width,height};}
  // Where each pet stands on the screen, in pixels of the farm's view.
  const where=()=>view?[...pets.values()].map(p=>{const s=p.root.position.clone();s.y+=p.height/2;s.project(view.camera);return {id:p.id,x:(s.x*.5+.5)*view.width,y:(-s.y*.5+.5)*view.height,world:[p.root.position.x,p.root.position.z]};}):[];
- const herd={pets,animate,pick,react,position,where};PET_HERDS.add(herd);return herd;
+ const herd={pets,animate,pick,react,top,position,where};PET_HERDS.add(herd);return herd;
 }

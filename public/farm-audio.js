@@ -120,7 +120,9 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
   // The miller's order (17 Oct 2026): it pays diamonds every time.
   miller_deliver:'diamond',
   // A landmark (Oct 2026): goods handed in are crates going on, finishing it is a lasting improvement; turning a boat cargo down is quiet.
-  landmark_give:'produce',landmark_finish:'improve'}[action.type]??null;
+  landmark_give:'produce',landmark_finish:'improve',
+  // A pet's find (20 Oct 2026): a small pick-up.
+  pet_pat:'collect'}[action.type]??null;
 }
 // A sweep's snip per field (Oct 2026): step n of the sweep (from 0) is a step higher on a pentatonic scale, up to an octave and then
 // it stays there; every sweep starts low again.
