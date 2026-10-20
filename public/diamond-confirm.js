@@ -1,13 +1,16 @@
 import {art} from './visual-icons.js';
 // "Spend diamonds?" in the look of the other pop-ups: the thing you buy, what it does, the price with a diamond, what you
 // keep, and the usual buttons (Keep diamonds is focused, so Enter never spends by accident). Resolves to true only on Spend.
-export function confirmDiamondSpend({title,cost,description,picture='diamonds',balance,note='',warning=''}){
+// translated: the caller already put title and description in the player's language (t()), so the page's translator leaves them alone
+// (it would read them as English again: nl "Open trede 28 …" matched "Open {0}" and came out as "trede 28 … openen").
+export function confirmDiamondSpend({title,cost,description,picture='diamonds',balance,note='',warning='',translated=false}){
  return new Promise(resolve=>{
   const dialog=document.createElement('dialog');dialog.className='diamond-confirm is-card is-s';
   dialog.setAttribute('aria-labelledby','diamond-confirm-title');dialog.setAttribute('aria-describedby','diamond-confirm-description');
   const amount=cost.toLocaleString('en-US'),left=Number.isFinite(balance)?balance-cost:null;
   dialog.innerHTML=`<div class="diamond-confirm-art">${art(picture)}</div><h2 id="diamond-confirm-title"></h2><p id="diamond-confirm-description"></p>${warning?'<p class="diamond-confirm-warning" id="diamond-confirm-warning"></p>':''}${note?'<p class="diamond-confirm-note" id="diamond-confirm-note"></p>':''}${left!==null&&left>=0?`<div class="diamond-confirm-cost"><small>You keep ${left.toLocaleString('en-US')} diamonds</small></div>`:''}<div class="diamond-confirm-actions"><button type="button" class="small-button" data-cancel autofocus>Keep diamonds</button><button type="button" class="primary-button confirm-spend is-diamond" data-confirm>${art('diamonds')}<span>Spend ${amount}</span></button></div>`;
   dialog.querySelector('h2').textContent=title;dialog.querySelector('p').textContent=description;
+  if(translated)for(const el of [dialog.querySelector('h2'),dialog.querySelector('p')])el.setAttribute('translate','no');
   // A note: what to know before spending, in its own line (the night shift: once it starts it cannot be stopped).
   // A warning: what makes it a poor buy right now (the night shift: fields that stay full), above the note in an amber box.
   if(warning)dialog.querySelector('.diamond-confirm-warning').textContent=warning;

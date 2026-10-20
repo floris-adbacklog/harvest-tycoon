@@ -198,7 +198,7 @@ export function createSeasonUI({state,runAction,notify,onChange=()=>{},bridge=()
   const view=seasonView(state,now());if(busy||!view||view.tier>=SEASON_TIERS)return;
   const next=view.tier+1,level=levelOf(state),s=view.season;
   const list=[...seasonRewardParts(seasonReward(s.tiers[next-1].free,level)).map(p=>t('{0} (free)',p.say)),...(view.premium?seasonRewardParts(seasonReward(s.tiers[next-1].paid,level)).map(p=>t('{0} (paid)',p.say)):[])];
-  if(!await confirmDiamondSpend({title:t('Open tier {0}?',next),cost:SEASON_SKIP_COST,description:`${t('Open tier {0} for {1} diamonds. You get:',next,SEASON_SKIP_COST)} ${list.join(', ')}. ${t('Then collect each reward as usual.')}`,picture:'hourglass',balance:state.diamonds}))return;
+  if(!await confirmDiamondSpend({title:t('Open tier {0}?',next),cost:SEASON_SKIP_COST,description:`${t('Open tier {0} for {1} diamonds. You get:',next,SEASON_SKIP_COST)} ${list.join(', ')}. ${t('Then collect each reward as usual.')}`,picture:'hourglass',balance:state.diamonds,translated:true}))return;
   busy='skip';draw();
   try{const r=await runAction({type:'season_skip',expectedCost:SEASON_SKIP_COST});notify(`Tier ${r.tier} is open. Collect its rewards below.`);onChange();}
   catch(error){notify(error.message);}
