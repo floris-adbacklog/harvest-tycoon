@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync,readdirSync} from 'node:fs';
+import {scheduleSeason} from '../public/farm-state.js';
 import {PLAYER_AVATARS,playerAvatar,isPlayerAvatar,avatarImage,avatarLevel,avatarUnlocked,avatarGoal,avatarOpen} from '../public/player-avatars.js';
 import {avatarSettingsMarkup,createAvatarSettings,avatarBadge} from '../public/avatar-settings.js';
 import {newAvatars} from '../public/progression-ui.js';
 import {wikiArticle} from '../public/wiki-content.js';
 import {savePlayerAvatar} from '../supabase/functions/farm-api/avatar-service.js';
+// The picker and the counts here are the ones without a running season (season avatars: tests/season-pass-autumn.test.mjs).
+scheduleSeason('autumn-2026',null);
 import {handlePlayerDirectory} from '../supabase/functions/farm-api/player-profile-service.js';
 import {renderPlayerProfile,renderPlayerSearch} from '../src/player-profiles.js';
 

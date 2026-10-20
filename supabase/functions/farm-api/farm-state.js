@@ -3161,7 +3161,7 @@ const utc=(month,day,year=2026)=>Date.UTC(year,month-1,day);
 // week before the start falls away, and the goal of the week the start falls in is halved when the start is a Friday or Saturday.
 const AUTUMN_2026=Object.freeze({id:'autumn-2026',name:'Autumn',title:'Autumn 2026',point:'leaf',points:'leaves',
  art:'season-pass-autumn',pointArt:'season-point-autumn',banner:'season-pass-banner-autumn',crop:'cranberries',
- startsAt:null,endsAt:utc(12,22),claimUntil:utc(12,29),
+ startsAt:utc(10,21),endsAt:utc(12,22),claimUntil:utc(12,29),
  weeks:Object.freeze([
   {from:utc(11,1),name:'Falling leaves',art:'season-point-autumn',goal:{kind:'gift',target:5}},
   {from:utc(11,8),name:'Apple picking',art:'apples',goal:{kind:'dailies',target:10}},
@@ -3280,9 +3280,9 @@ export const SEASON_IDS=Object.freeze(SEASON_LIST.map(s=>s.id));
 // 1.4 × the season's days (from its start to its end), rounded to 5: 65 for a start on 6 November.
 export const seasonPerTier=(startsAt,endsAt)=>Math.max(5,Math.round(1.4*Math.round((endsAt-startsAt)/DAY_MS)/5)*5);
 // A season's start can only be set in this file (the owner's go). scheduleSeason is for the tests and the local harness only: it puts
-// a start on a season in this copy of the rules, never in a farm or the database.
+// a start on a season in this copy of the rules, never in a farm or the database. null: as if not scheduled; undefined: the shipped start.
 const scheduled=new Map();
-export function scheduleSeason(id,startsAt){if(!SEASON_IDS.includes(id))throw new Error('Unknown season.');if(startsAt==null)scheduled.delete(id);else scheduled.set(id,startsAt);cache.delete(id);}
+export function scheduleSeason(id,startsAt){if(!SEASON_IDS.includes(id))throw new Error('Unknown season.');if(startsAt===undefined)scheduled.delete(id);else scheduled.set(id,startsAt);cache.delete(id);}
 const cache=new Map();
 export function seasonById(id){
  if(cache.has(id))return cache.get(id);

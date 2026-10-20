@@ -227,13 +227,13 @@ test('old saves: nothing new until it is used; a season entry that is broken is 
 });
 test('the sale: €19.99 once per season from level 20, the dates the game\'s own, a second purchase refused, the season in the row',()=>{
  // The same dates in both (the start: null until the owner's go, then the same 00:00 UTC in both files).
- const shipped=read('game/farm-state.js').match(/id:'autumn-2026',[^]*?startsAt:([^,]+),endsAt:utc\(12,22\)/)[1];
+ const shipped=read('game/farm-state.js').match(/id:'autumn-2026',[^]*?startsAt:(null|utc\(\d+,\d+\)),endsAt:utc\(12,22\)/)[1],utc=(month,day)=>Date.UTC(2026,month-1,day);
  for(const s of P.SEASON_SALE.seasons){const g=G.seasonById(s.id);assert.equal(s.endsAt,g.endsAt);assert.equal(s.claimUntil,g.claimUntil);}
  assert.equal(String(P.SEASON_SALE.seasons[0].startsAt),String(eval(shipped)),'the start in payments.js is the one in farm-state.js');
- const at0=P.SEASON_SALE.seasons[0].startsAt;if(at0!=null)assert.ok(at0%D===0&&at0>=Date.UTC(2026,10,1)&&at0<Date.UTC(2026,11,1),'a start is 00:00 UTC in November');
+ const at0=P.SEASON_SALE.seasons[0].startsAt;if(at0!=null)assert.ok(at0%D===0&&at0>=Date.UTC(2026,9,21)&&at0<Date.UTC(2026,11,1),'a start is 00:00 UTC, from 21 October (the owner\'s go, 20 Oct 2026: "start zsm")');
  assert.deepEqual([P.SEASON_SALE.cents,P.SEASON_SALE.level,P.SEASON_SALE.price,P.SEASON_SALE.product],[1999,20,'price_1USilO04FdNTUSp4FI12JA9l','prod_VTg71Dn0njkTPI']);
  const seasons=[{...P.SEASON_SALE.seasons[0],startsAt:START}],open=START+H;
- assert.deepEqual(P.seasonCheckoutProblem({level:40,now:open}),{error:'The Season Pass is not on sale right now.',status:409},'no start: not for sale');
+ assert.deepEqual(P.seasonCheckoutProblem({level:40,now:open,seasons:[{...P.SEASON_SALE.seasons[0],startsAt:null}]}),{error:'The Season Pass is not on sale right now.',status:409},'no start: not for sale');
  assert.equal(P.seasonCheckoutProblem({level:20,now:open,seasons}),null);
  assert.deepEqual(P.seasonCheckoutProblem({level:19,now:open,seasons}),{error:'The Season Pass is for sale from level 20.',status:409});
  assert.deepEqual(P.seasonCheckoutProblem({level:40,now:open,seasons,owned:true}),{error:'You already have the Season Pass for this season.',status:409});
