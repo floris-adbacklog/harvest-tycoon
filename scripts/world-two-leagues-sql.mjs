@@ -21,15 +21,15 @@ const eventLeagueIndex=level=>eventLeague(level).index;
 // The levels the after-check asks harvest_event_league for: every league's edges.
 const CHECK_LEVELS=[14,15,29,30,89,90,99,100,120,121,140,141,160,161,180,181,200,201,999];
 export const LEAGUE_CASE='case '+EVENT_LEAGUES.slice(1).reverse().map((l,i)=>`when ${i?'p_level':'coalesce(p_level,0)'}>=${l.from} then ${l.index}`).join(' ')+' else 0 end';
-// The live bodies as read on 20 Oct 2026 (md5(prosrc)); harvest_event_schedule stays as it is.
+// The live bodies as read on 20 Oct 2026 (md5(prosrc)). harvest_event_schedule is not replaced and not checked: on 20 Oct 2026 it was
+// paused (events stopped until the hourly events ship; ~/Harvest Tycoon/db-backups/events-pause-2026-10-20), so its body changed.
 export const OLD_MD5=Object.freeze({
  'harvest_event_league(integer)':'70e2346a39150c74e63c49150982785c',
  'harvest_event_settle(uuid)':'f8d03d497d753939a49932b6e0b8f5a6',
  'harvest_event_progress()':'c686226418b81f335a5b2c50f915157d',
  'harvest_event_pick(bigint)':'a3fceccd063225a1c1a35a7f8cc6260c',
  'harvest_event_validate()':'3cef65028f1e6c1a94ac38b9dd51b5c0',
- 'harvest_event_board(uuid)':'49e11423295f02123ada627558bd5ade',
- 'harvest_event_schedule()':'aecdec923a2d0ef6fd71eb320e1b3482'
+ 'harvest_event_board(uuid)':'49e11423295f02123ada627558bd5ade'
 });
 
 // 1. The league by level: 0..11.
@@ -174,8 +174,7 @@ const FUNCTIONS=[
 ];
 export const NEW_MD5=Object.freeze({
  ...Object.fromEntries(FUNCTIONS.map(([name,,body])=>[name,md5(body)])),
- 'harvest_event_pick(bigint)':md5(PICK_BODY),'harvest_event_validate()':md5(VALIDATE_BODY),
- 'harvest_event_schedule()':OLD_MD5['harvest_event_schedule()']
+ 'harvest_event_pick(bigint)':md5(PICK_BODY),'harvest_event_validate()':md5(VALIDATE_BODY)
 });
 // For the guard: each function as it is today, or already as this file makes it (a second run).
 const guardWant=JSON.stringify(Object.fromEntries(Object.entries(OLD_MD5).map(([name,old])=>[name,[...new Set([old,NEW_MD5[name]])]])));

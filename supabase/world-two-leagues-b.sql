@@ -8,7 +8,7 @@
 begin;
 set local lock_timeout='5s';
 do $guard$
-declare want jsonb:='{"harvest_event_league(integer)":["70e2346a39150c74e63c49150982785c","ea594ad4aeb110d5858de5cdaf68ddbe"],"harvest_event_settle(uuid)":["f8d03d497d753939a49932b6e0b8f5a6","b73dea6778379f0bc6503f7bccad1870"],"harvest_event_progress()":["c686226418b81f335a5b2c50f915157d","4681019789851e424d9a12f74f843077"],"harvest_event_pick(bigint)":["a3fceccd063225a1c1a35a7f8cc6260c","56d9b813f0b9223c59251ff07d0bbc28"],"harvest_event_validate()":["3cef65028f1e6c1a94ac38b9dd51b5c0","588cad3b5889d187cfcff6f0f05182fe"],"harvest_event_board(uuid)":["49e11423295f02123ada627558bd5ade","c509587a78de0cdc576cd6681ba9a29f"],"harvest_event_schedule()":["aecdec923a2d0ef6fd71eb320e1b3482"]}';
+declare want jsonb:='{"harvest_event_league(integer)":["70e2346a39150c74e63c49150982785c","ea594ad4aeb110d5858de5cdaf68ddbe"],"harvest_event_settle(uuid)":["f8d03d497d753939a49932b6e0b8f5a6","b73dea6778379f0bc6503f7bccad1870"],"harvest_event_progress()":["c686226418b81f335a5b2c50f915157d","4681019789851e424d9a12f74f843077"],"harvest_event_pick(bigint)":["a3fceccd063225a1c1a35a7f8cc6260c","56d9b813f0b9223c59251ff07d0bbc28"],"harvest_event_validate()":["3cef65028f1e6c1a94ac38b9dd51b5c0","588cad3b5889d187cfcff6f0f05182fe"],"harvest_event_board(uuid)":["49e11423295f02123ada627558bd5ade","c509587a78de0cdc576cd6681ba9a29f"]}';
  fn text; have text;
 begin
  -- Only in the break: nothing is running, so no event ever mixes the old and the new rules.
@@ -233,7 +233,7 @@ update public.live_events e set leagues=x.l
  where e.id=x.id and (select jsonb_agg(v order by i) from jsonb_array_elements(x.l) with ordinality t(v,i) where i<=6)=e.leagues;
 
 -- 8. After-check, in the same transaction.
-do $after$ declare fn text; want jsonb:='{"harvest_event_league(integer)":"ea594ad4aeb110d5858de5cdaf68ddbe","harvest_event_league_for(integer,jsonb,smallint)":"72ba9cc06862bab8a5778cecd96fbaa7","harvest_event_settle(uuid)":"b73dea6778379f0bc6503f7bccad1870","harvest_event_progress()":"4681019789851e424d9a12f74f843077","harvest_event_board(uuid)":"c509587a78de0cdc576cd6681ba9a29f","harvest_event_pick(bigint)":"56d9b813f0b9223c59251ff07d0bbc28","harvest_event_validate()":"588cad3b5889d187cfcff6f0f05182fe","harvest_event_schedule()":"aecdec923a2d0ef6fd71eb320e1b3482"}'; begin
+do $after$ declare fn text; want jsonb:='{"harvest_event_league(integer)":"ea594ad4aeb110d5858de5cdaf68ddbe","harvest_event_league_for(integer,jsonb,smallint)":"72ba9cc06862bab8a5778cecd96fbaa7","harvest_event_settle(uuid)":"b73dea6778379f0bc6503f7bccad1870","harvest_event_progress()":"4681019789851e424d9a12f74f843077","harvest_event_board(uuid)":"c509587a78de0cdc576cd6681ba9a29f","harvest_event_pick(bigint)":"56d9b813f0b9223c59251ff07d0bbc28","harvest_event_validate()":"588cad3b5889d187cfcff6f0f05182fe"}'; begin
  for fn in select jsonb_object_keys(want) loop
   -- is distinct from: a missing function (NULL) fails too.
   if (select md5(prosrc) from pg_proc where oid=to_regprocedure('public.'||fn)) is distinct from want->>fn then raise exception 'public.% did not come out as generated',fn; end if;

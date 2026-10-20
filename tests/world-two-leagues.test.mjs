@@ -102,7 +102,7 @@ test('Part B: the leagues, the coins, the counter, the world, the village goals,
  // The guard: every live md5, the break, Part A and a lake cast saved by farm-api v231.
  const guard=B.slice(B.indexOf('do $guard$'),B.indexOf('end $guard$'));
  for(const old of Object.values(OLD_MD5))assert.ok(guard.includes(old),old);
- assert.deepEqual(Object.keys(OLD_MD5).sort(),['harvest_event_board(uuid)','harvest_event_league(integer)','harvest_event_pick(bigint)','harvest_event_progress()','harvest_event_schedule()','harvest_event_settle(uuid)','harvest_event_validate()']);
+ assert.deepEqual(Object.keys(OLD_MD5).sort(),['harvest_event_board(uuid)','harvest_event_league(integer)','harvest_event_pick(bigint)','harvest_event_progress()','harvest_event_settle(uuid)','harvest_event_validate()']);
  assert.match(guard,/if exists\(select 1 from public\.live_events where active and starts_at<=now\(\) and ends_at>now\(\)\) then\n  raise exception 'An event is running/);
  assert.match(guard,/column_name='village_events_finished'\)\n  or not exists\(select 1 from information_schema\.columns where table_schema='public' and table_name='live_event_players' and column_name='world'\)/);
  assert.match(guard,/receipts @> '\[\{"eventAction":"lake_fish"\}\]'/);
