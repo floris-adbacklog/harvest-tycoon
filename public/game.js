@@ -138,6 +138,7 @@ guardWheel();
 let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
+let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
 Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
@@ -304,6 +305,24 @@ async function addScenery(){
   await loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4);
   buildScenery({scene,models,mobile:mobileLayout.matches});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
+}
+// The farm's dog and cat by the Farmhouse, or the deer in the village (20 Oct 2026, public/farm-pets.js): once the farm or the village is on
+// screen and the page has a quiet moment (the extra scenery and the village's extras start first), so the first picture never waits for
+// them (about 100 KB each); if they fail, the farm simply has no pets.
+async function addPets(){
+ try{
+  await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1500));
+  const {createPets,FARM_PETS,VILLAGE_DEER}=await import('./farm-pets.js');
+  // On the farm the grass is the ground; the lane's top is .085 over it (ROADS, farm-layout.js), and a pet steps up onto it over 0.3.
+  const lanes=roadRects();let ground=(x,z)=>{let y=0;for(const r of lanes){const inside=Math.min(x-r.minX,r.maxX-x,z-r.minZ,r.maxZ-z);if(inside>0)y=Math.max(y,.085*Math.min(1,inside/.3));}return y;};
+  if(villageWorld){
+   // The deer walks on the village's hills: their height under its spots (village-scene.js, as the Village Fields stand on them).
+   const {groundUnder}=await import('./village-scene.js'),xs=VILLAGE_DEER.spots.map(s=>s[0]),zs=VILLAGE_DEER.spots.map(s=>s[1]);
+   ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
+  }
+  pets=await createPets({scene,kinds:villageWorld?{deer:VILLAGE_DEER}:FARM_PETS,ground,labels:$('building-labels'),reducedMotion});
+  positionBuildingLabels();
+ }catch(error){console.warn('The pets were skipped.',error);}
 }
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
 // tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
@@ -1242,6 +1261,8 @@ function pointerTarget(event){
  if(stationHit){let node=stationHit.object;while(node){if(node.userData.activity)return {type:'activity',id:node.userData.activity};node=node.parent;}}
  const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).filter(v=>v.object.visible).flatMap(v=>[v.object,v.hit]),...Array.from(utilityViews.values()).filter(v=>v.object.visible).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?.visible?[windmillRotor]:[]),...(farmLife?.targets()??[])];
  for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
+ // A pet (20 Oct 2026) only when nothing else is there: one standing in front of a building, a field or a pin never takes its tap.
+ const pet=pets?.pick(raycaster);if(pet)return {type:'pet',id:pet};
  return null;
 }
 function addUtility(key,model,x,z,options){
@@ -1471,7 +1492,7 @@ function positionBuildingLabels(){
  for(const [key,list] of Object.entries(yardDecor)){const locked=BUILDINGS[key]?!buildingEligible(state,key):!featureUnlocked(state,key);for(const decor of list)setLocked(decor,locked);}
  if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
  const width=world.clientWidth,height=world.clientHeight;
- farmLife?.position(camera,width,height,farmNow());pond?.position(camera,width,height);
+ farmLife?.position(camera,width,height,farmNow());pond?.position(camera,width,height);pets?.position(camera,width,height);
  for(const [key,v] of utilityViews){
   // The after-90 places (seed lab, visitors, valley projects) are hidden, models and pins, until the farm reaches level 90.
   if(ENDGAME_PLACES.includes(key)){const shown=endgameInSight(state);v.object.visible=shown;for(const d of yardDecor[key]??[])d.visible=shown;if(!shown){v.label.hidden=true;continue;}}
@@ -1619,7 +1640,7 @@ function frame(now){
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -1767,7 +1788,7 @@ async function init(){
    // Over a field the cursor is the tool its sweep would use: a sickle over a ripe crop, a watering can, a seed bag, gloves for care
    // (sweep-tools.js).
    if(target?.type==='plot')world.style.cursor=toolCursor(sweepAction(target))||'pointer';
-   if(!target||e.pointerType==='touch'){tooltip.hidden=true;return;}
+   if(!target||e.pointerType==='touch'||target.type==='pet'){tooltip.hidden=true;return;}
    tooltip.hidden=false;
    if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
@@ -1779,7 +1800,7 @@ async function init(){
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
   const canvas=renderer.domElement;
   bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')pets?.react(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
@@ -1799,7 +1820,7 @@ async function init(){
     panFarm(shift.side,shift.depth);
    }
   });
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();if(villageWorld)void addVillageExtras();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();if(villageWorld)void addVillageExtras();void addPets();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()});

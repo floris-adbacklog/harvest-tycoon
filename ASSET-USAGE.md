@@ -127,3 +127,22 @@ cream fence_008 round them and grows the farm's plant_010 and plant_005 and the 
 from public/assets/models. Their picture is drawn from the same farm models (`fields()` in the script above).
 
 The 13 later goods (potatoes … saffron buns) are painted by the owner, 256 px WebP, copied as they are.
+
+## Farm pets (20 Oct 2026)
+
+A dog and a cat by the lane in front of the Farmhouse and a deer in the village (public/farm-pets.js), from ithappy Studios' free
+animals (https://ithappystudios.com/). Licence: their free asset policy (https://ithappystudios.com/type-of-licenses/): use inside a
+finished game is allowed, commercial too, and no credit is needed, but the assets may not be shared or sold on their own,
+not as they are. So the download (Dog_001, Kitty_001, Deer_001 and their Texture_1.png) stays out of the repository, and the game ships only
+copies rebuilt for it by scripts/build-pets.mjs (see its header for the three steps):
+
+| Model (source) | Purpose | Size as it came → in the game |
+| --- | --- | --- |
+| dog_101 (Dog_001) | The farm's dog, front yard and lane | 996,544 → 105,820 bytes |
+| cat_101 (Kitty_001) | The farm's cat, the grass across the lane | 968,688 → 103,280 bytes |
+| deer_101 (Deer_001) | The deer on the village lake's east slope | 1,128,332 → 142,280 bytes |
+
+Each keeps its walk and its idle (the run is left out), paints from the farm's palette.png (each vertex takes the farm palette's
+cell nearest to the colour it read in the pack's own palette, which has a watermark over it, so none of that picture is shipped),
+carries the farm's baked shade (bake-ao.py, the farm's strength and floor) and is meshopt-compressed and quantized (the village's
+decoder). About 150 KB for all three as the site sends them.

@@ -335,7 +335,7 @@ export function villageFieldPlants(crop){
 // the grass. Read straight off the village's hills (their triangles drawn into a height grid, the highest one on top), not with rays:
 // 340 rays onto the hills took half a second (headless Chrome on a computer, 11 Oct 2026), the grid a few milliseconds.
 const GROUND_STEP=.25;
-function groundUnder(village,p){
+export function groundUnder(village,p){
  const x0=p.x-1,z0=p.z-1,cols=Math.ceil((p.width+2)/GROUND_STEP)+1,rows=Math.ceil((p.depth+2)/GROUND_STEP)+1,h=new Float32Array(cols*rows).fill(-Infinity);
  const area=new THREE.Box3(new THREE.Vector3(x0,-1e3,z0),new THREE.Vector3(x0+(cols-1)*GROUND_STEP,1e3,z0+(rows-1)*GROUND_STEP)),box=new THREE.Box3(),a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
  village.updateMatrixWorld(true);
