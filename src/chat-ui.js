@@ -9,6 +9,7 @@ import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
 import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EMBLEMS,FAMILY_MIN_LEVEL,familyWeek} from '../public/farm-state.js';
 import {familyShareButton} from '../public/family-profile.js';
+import {createFamilyLive,familyCardIds} from './family-live.js';
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
@@ -66,16 +67,22 @@ export function chestCard(m,now=Date.now()){
 export const hiddenAsBlocked=(m,blocked)=>m.kind!=='chest'&&blocked.has(m.sender);
 // A family shared in the global chat (20 Oct 2026, Share in chat; supabase/family-share.sql): the family's emblem with its level, its
 // name as typed, its level and farmers, who shared it, and one button: Join when this farmer can join it straight away (the rules of Join
-// on its profile, public/family-profile.js familyShareButton), otherwise View, which opens its profile. Everything comes from the card's
-// meta, which the database wrote from the family itself; an emblem it does not know is the first one. A game from before this card shows
-// its body as an ordinary message ("Tony shared the family Meadow Friends"). Like any message it hides when you blocked who shared it.
-export function familyShareCard(m,viewer={},now=Date.now()){
- const c=m.meta??{},e=FAMILY_EMBLEMS.find(x=>x.id===String(c.emblem))??FAMILY_EMBLEMS[0],id=String(c.family??'');
+// on its profile, public/family-profile.js familyShareButton), otherwise View, which opens its profile. An emblem it does not know is the
+// first one. A game from before this card shows its body as an ordinary message ("Tony shared the family Meadow Friends"). Like any
+// message it hides when you blocked who shared it.
+// live (the same evening, the owner: "als je iemand verwijdert moet dit wel realtime updaten 10 / 10 boeren"; src/family-live.js): what
+// the family is now, from farm-api, so a card shared at 10 / 10 shows 9 / 10 and Join once a farmer was removed. Until it is there, or
+// when it cannot be had, the card shows its meta, which the database wrote from the family when it was shared. A family that is gone
+// keeps its name and emblem, quietly, with "This family is no longer around." and no button.
+export function familyShareCard(m,viewer={},now=Date.now(),live=null){
+ const c={...(m.meta??{}),...(live&&!live.gone?live:{}),family:m.meta?.family},e=FAMILY_EMBLEMS.find(x=>x.id===String(c.emblem))??FAMILY_EMBLEMS[0],id=String(c.family??'');
+ const top=`<div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Farm Family</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div>`;
+ if(live?.gone)return `<li class="chat-request chat-family-share is-gone" data-id="${esc(m.id)}">${top}<div class="chat-request-body"><span class="chat-request-art chat-share-emblem"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-request-status">This family is no longer around.</small></div></div></li>`;
  const level=Math.max(1,Math.floor(Number(c.level))||1),members=Math.max(0,Math.floor(Number(c.members))||0),max=Math.max(1,Math.floor(Number(c.max))||10),minLevel=Math.floor(Number(c.minLevel))||FAMILY_MIN_LEVEL;
  const from=minLevel>FAMILY_MIN_LEVEL&&(c.mode==='open'||c.mode==='request')?`<span>From level ${minLevel}</span>`:'';
  const join=familyShareButton(c,{...viewer,now})==='join';
  const button=join?`<button type="button" class="primary-button chat-share-button" data-family-join="${esc(id)}">Join</button>`:`<button type="button" class="small-button chat-share-button" data-family-view="${esc(id)}">View</button>`;
- return `<li class="chat-request chat-family-share" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Farm Family</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div><div class="chat-request-body"><span class="chat-request-art chat-share-emblem"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span><b class="family-level-badge" title="Family level ${level}">${level}</b></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-share-facts"><span>Level ${level}</span><span>${members} / ${max} farmers</span>${from}</small><small class="chat-request-status">${ownLine(`Shared by ${m.sender_name}`,[m.sender_name])}</small></div></div>${button}</li>`;
+ return `<li class="chat-request chat-family-share" data-id="${esc(m.id)}">${top}<div class="chat-request-body"><span class="chat-request-art chat-share-emblem"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span><b class="family-level-badge" title="Family level ${level}">${level}</b></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-share-facts"><span>Level ${level}</span><span>${members} / ${max} farmers</span>${from}</small><small class="chat-request-status">${ownLine(`Shared by ${m.sender_name}`,[m.sender_name])}</small></div></div>${button}</li>`;
 }
 // A group message from the admin (8 Oct 2026, supabase/chat-group-filters.sql): every copy carries who it was sent to (meta.group.filters,
 // as the database checked them), so the farmer reads an honest line above it: one pill per filter, in the game's own words (translated
@@ -184,8 +191,16 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const role=()=>overview?.role??null;
  const blocked=()=>new Set(overview?.blocked??[]);
  // Who is looking at a family card: their own family (from the chat's own overview), their level, and the family that removed them, if
- // any (the Family window's last read, public/family-ui.js).
- const shareViewer=()=>({familyId:/^family:(.+)$/.exec(overview?.family?.channel??'')?.[1]??null,level:overview?.level??0,blocked:win.harvestFamilyBlocked?.()??null});
+ // any (the Family window's last read, public/family-ui.js). Once the live cards are in (src/family-live.js), their family and that
+ // family are farm-api's, as fresh as the cards.
+ const shareViewer=()=>{const v=familyLive.viewer,family=v?v.familyId??null:/^family:(.+)$/.exec(overview?.family?.channel??'')?.[1]??null;return {familyId:family,level:overview?.level??0,blocked:v?v.blocked??null:win.harvestFamilyBlocked?.()??null};};
+ // The family cards, live (20 Oct 2026, src/family-live.js): one request for every card on Global, only while the chat is open there
+ // and the tab is in view; drawn again only when something on them changed.
+ const familyLive=createFamilyLive({request:ids=>bridge.request({operation:'family_cards',familyIds:ids}),onChange:()=>{if(dialog.open&&!disposed&&tab==='global')paint();}});
+ function freshFamilies(reason='tick'){
+  if(disposed||!dialog.open||doc.hidden||tab!=='global'||busy)return;
+  const ids=familyCardIds(messages,blocked());if(ids.length)void familyLive.refresh(ids,{reason});
+ }
  const channelOf=()=>tab==='global'?'global':tab==='family'?overview?.family?.channel??null:tab==='private'?thread?.channel??null:null;
  const showing=channel=>dialog.open&&channelOf()===channel;
  // names: farmers' own words in the note, shown as typed (public/i18n.js setOwnText).
@@ -290,7 +305,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(m.kind==='join')return joinRow(m);
   if(m.kind==='kick')return kickRow(m);
   if(m.kind==='chest')return chestCard(m);
-  if(m.kind==='family_share')return familyShareCard(m,shareViewer());
+  if(m.kind==='family_share')return familyShareCard(m,shareViewer(),Date.now(),familyLive.card(m.meta?.family));
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
@@ -359,7 +374,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  async function loadMore(){
   const name=channelOf(),last=messages[messages.length-1];if(!name||!last||loadingMore)return;
   const ticket=loading;loadingMore=true;paint();
-  try{const rows=await chat.messages(name,PAGE,last.created_at);if(ticket!==loading)return;const known=new Set(messages.map(m=>m.id));messages=[...messages,...rows.filter(m=>!known.has(m.id))];more=rows.length>=PAGE;void freshFaces(rows.map(m=>m.sender));}
+  try{const rows=await chat.messages(name,PAGE,last.created_at);if(ticket!==loading)return;const known=new Set(messages.map(m=>m.id));messages=[...messages,...rows.filter(m=>!known.has(m.id))];more=rows.length>=PAGE;void freshFaces(rows.map(m=>m.sender));freshFamilies();}
   catch(error){if(ticket===loading)note(error.message);}
   finally{if(ticket===loading){loadingMore=false;paint();}}
  }
@@ -421,7 +436,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   busy=true;paint();
   more=false;
   try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){messages=[];note(error.message);}}
-  if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);
+  if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');
  }
  function show(next,{keepThread=false}={}){
   tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
@@ -477,7 +492,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   // mention of you in Global or Family (3 Oct 2026: a mention reaches you like a private message).
   const forMe=mentionsMe(m,me);
   if(m.sender!==me&&(m.channel.startsWith('dm:')||m.channel==='crew'||forMe))win.harvestSound?.('message');
-  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,Math.max(100,messages.length+1));paint();void freshFaces([m.sender]);}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
+  // A farmer joined or was removed from your own family (its chat's join and kick cards): your family's card is out of date, and so is
+  // who you are to it. A new family card: every card on screen is asked for again, the new one with them.
+  if((m.kind==='join'||m.kind==='kick')&&m.channel===overview.family?.channel){familyLive.changed();freshFamilies('changed');}
+  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,Math.max(100,messages.length+1));paint();void freshFaces([m.sender]);if(m.kind==='family_share')freshFamilies('open');}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
   if(m.sender===me)return;
   if(m.channel==='global'){overview.unread.global=Math.min(99,(overview.unread.global??0)+1);if(forMe)overview.unread.mentions=Math.min(99,(overview.unread.mentions??0)+1);}
   else if(m.channel===overview.family?.channel)overview.unread.family=Math.min(99,(overview.unread.family??0)+1);
@@ -813,8 +831,13 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const ready=refreshOverview();
  // In case the live connection drops without telling: a quiet check every few minutes while the farm is on screen.
  pollTimer=setInterval(()=>{if(!doc.hidden)void refreshOverview();},180000);
- doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&overview)scheduleOverview(500);});
- win.addEventListener('pagehide',()=>{disposed=true;stop?.();stopPortal?.();clearInterval(pollTimer);clearTimeout(overviewTimer);for(const timer of readTimers.values())clearTimeout(timer);},{once:true});
+ doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&overview)scheduleOverview(500);if(!doc.hidden)freshFamilies();});
+ // The family cards: looked at every 5 seconds, asked for once a minute while the chat is open on them (freshFamilies and
+ // src/family-live.js ask nothing otherwise), and at once after a family action of this farmer's own (public/family-ui.js sends
+ // harvest-family-changed: a join, leaving, a removal, a new rule).
+ const familyTimer=setInterval(()=>freshFamilies(),5000);
+ win.addEventListener?.('harvest-family-changed',()=>{familyLive.changed();freshFamilies('changed');});
+ win.addEventListener('pagehide',()=>{disposed=true;stop?.();stopPortal?.();clearInterval(pollTimer);clearInterval(familyTimer);clearTimeout(overviewTimer);for(const timer of readTimers.values())clearTimeout(timer);},{once:true});
  return {open,get role(){return role();},whenReady:()=>ready.then(()=>overview)};
 }
 // The chat button for a guest on CrazyGames (Oct 2026): one small window that says the chat is for players logged in with CrazyGames,

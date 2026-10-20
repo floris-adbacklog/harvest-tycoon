@@ -177,7 +177,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  // This week in numbers and your family's last weeks (5 Oct 2026, public/family-stats.js).
  function stats(){return renderFamilyStats({view});}
  // Share in chat (20 Oct 2026, the owner's option 1): the family's card in the global chat, with a Join or View button for whoever reads
- // it. The leader and the co-leaders, as they invite farmers and choose who can join; once an hour per family (farm-state.js
+ // it. The leader and the co-leaders, as they invite farmers and choose who can join; once a day per family (farm-state.js
  // familyShareState, checked again by farm-api and the database). When it cannot be shared now, the line under it says why, and the
  // time left counts down with the window's clock. Not where the farm has no chat (a game portal that turned it off).
  const shareLine=()=>{const r=familyShareState(view?.family,farmNow());return r.can?'Post your family in the global chat, with a button to join.':r.reason;};
@@ -270,11 +270,14 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  // Every farmer's and family's name the window knows. farm-api's answers name them ("Sunny Acres joined your family.", "Welcome to
  // <family>!"), and a name that is also a word of the game's must show as typed (17 Oct 2026): the toast holds them out.
  const namesIn=v=>v?[v.family?.name,v.myRequest?.family?.name,v.invitation?.family?.name,v.invitation?.invitedBy,...(v.members??[]).map(m=>m.username),...(v.joinRequests??[]).map(r=>r.username),...(v.sentInvitations??[]).map(i=>i.username),...(v.families??v.openFamilies??[]).map(f=>f.name)].filter(Boolean):[];
+ // A family action of this farmer's own went through (a join, leaving, a removal, a new name or rule): the family cards in the chat
+ // ask what the families are now (20 Oct 2026, src/chat-ui.js, src/family-live.js).
+ const familyChanged=()=>{try{window.dispatchEvent(new CustomEvent('harvest-family-changed'));}catch{}};
  async function act(action){
   if(busy)return;busy=true;generation++;error='';content.querySelectorAll('button').forEach(b=>b.disabled=true);
   let done=false;const names=[...namesIn(view),...inviteSearch.names()];
   // Join again's answer names the family: put in the farmer's language here, so the toast never translates the name (welcome-ui.js).
-  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message,{names:[...names,...namesIn(view)]});if(result.completed)dialog.classList.add('family-celebrate');done=true;}
+  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message,{names:[...names,...namesIn(view)]});if(result.completed)dialog.classList.add('family-celebrate');done=true;familyChanged();}
   catch(e){error=e.message;notify(error,{names});}
   finally{busy=false;render();refresh();}
   return done;
@@ -291,7 +294,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  async function joinFromChat(familyId){
   if(busy)return {ok:false,error:'That did not work. Please try again.'};
   busy=true;generation++;error='';
-  try{const result=await runAction({type:'family_join',familyId});view=result.family;lastRead=Date.now();open();notify(result.message,{names:namesIn(view)});return {ok:true};}
+  try{const result=await runAction({type:'family_join',familyId});view=result.family;lastRead=Date.now();open();notify(result.message,{names:namesIn(view)});familyChanged();return {ok:true};}
   catch(e){return {ok:false,error:e.message};}
   finally{busy=false;render();refresh();}
  }

@@ -351,6 +351,12 @@ span.chat-avatar{cursor:default}
 .chat-share-facts{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:4px}
 .chat-share-facts>span{padding:2px 8px;border-radius:99px;background:#f3e6c4;color:#6b5626;font-size:12px;font-weight:700;line-height:1.5}
 .chat-share-button{width:100%;margin-top:10px}
+/* A shared family that is gone (20 Oct 2026, the cards are live): the card stays, quiet and grey like a given request, its emblem faded,
+   no button. */
+.chat-request.chat-family-share.is-gone{border-color:#ddd5c5;background:#f3efe6}
+.chat-request.chat-family-share.is-gone .chat-request-label{color:#6b6450}
+.chat-family-share.is-gone .chat-share-emblem>.family-emblem{filter:saturate(.35);opacity:.7}
+.chat-request.chat-family-share.is-gone .chat-share-name{color:#6b6450}
 /* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99). */
 .admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:700 14px 'DM Sans',sans-serif}
 .admin-offer-kinds label{display:inline-flex;align-items:center;gap:6px}

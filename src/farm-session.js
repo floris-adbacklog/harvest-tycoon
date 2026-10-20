@@ -50,7 +50,7 @@ export function createFarmSession({
       else if(error.status===409)unavailable(error.message);
       // A failed request never closes the farm by itself: the connection shows "Reconnecting…", checks again and only after a minute pauses.
       // A refusal (4xx) is an answer, not a connection problem: the screen shows its reason. 408 and 425 do mean "try again".
-      else if(!refused(error.status)&&!['player_search','player_profile','avatar'].includes(body.operation))connection.problem(reasonOf(error,nav.onLine));
+      else if(!refused(error.status)&&!['player_search','player_profile','avatar','family_cards'].includes(body.operation))connection.problem(reasonOf(error,nav.onLine));
      }
      throw error;
     }

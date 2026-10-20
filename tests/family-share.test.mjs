@@ -6,7 +6,7 @@ import {familyShareButton} from '../public/family-profile.js';
 import {familyShareCard,hiddenAsBlocked,messageLayout} from '../src/chat-ui.js';
 import {chatParts} from '../src/chat-rich.js';
 import {handleFamilyShare} from '../supabase/functions/farm-api/family-service.js';
-import {familyShareSql,SHARE_BODY,SHARE_MD5,LIVE_MD5,KINDS} from '../scripts/family-share-sql.mjs';
+import {familyShareSql,SHARE_BODY,SHARE_MD5,LIVE_MD5,KINDS,FIRST_GAP_MS} from '../scripts/family-share-sql.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const sql=read('supabase/family-share.sql');
 
@@ -18,14 +18,18 @@ let ids=0;const uuid=()=>`00000000-0000-4000-8000-${String(++ids).padStart(12,'0
 const run=(c,p,a,level=30)=>familyMutate(c,farm(level),p,a,now,{uuid});
 const withPlayers=(c,...names)=>{for(const p of names)if(!c.players.some(x=>x.player_id===p))c.players.push({player_id:p,username:p,level:30,last_active_at:new Date(now).toISOString()});return c;};
 
-test('the rule: only the leader or a co-leader, once an hour per family, and the reason in plain words when not',()=>{
- assert.equal(FAMILY_SHARE_GAP_MS,3600000);
+test('the rule: only the leader or a co-leader, once a day per family, and the reason in plain words when not',()=>{
+ // The owner, 20 Oct 2026: once per 24 hours instead of once an hour.
+ assert.equal(FAMILY_SHARE_GAP_MS,86400000);
  assert.deepEqual(familyShareState(null,now),{can:false,reason:'Join a family first.'});
  assert.deepEqual(familyShareState({manager:false,sharedAt:0},now),{can:false,reason:'Your leader or a co-leader can share the family in chat.'});
  assert.deepEqual(familyShareState({manager:true,sharedAt:0},now),{can:true,wait:0,reason:''},'never shared: at once');
- const r=familyShareState({manager:true,sharedAt:now-18*60000},now);
- assert.equal(r.can,false);assert.equal(r.wait,42*60000);assert.equal(r.reason,'You can share again in 42m.');
- assert.equal(familyShareState({manager:true,sharedAt:now-FAMILY_SHARE_GAP_MS},now).can,true,'exactly an hour later');
+ const r=familyShareState({manager:true,sharedAt:now-(5*60+48)*60000},now);
+ assert.equal(r.can,false);assert.equal(r.wait,(18*60+12)*60000);assert.equal(r.reason,'You can share again in 18h 12m.','hours and minutes');
+ assert.equal(familyShareState({manager:true,sharedAt:now-18*60000},now).reason,'You can share again in 23h 42m.');
+ assert.equal(familyShareState({manager:true,sharedAt:now-FAMILY_SHARE_GAP_MS+42*60000},now).reason,'You can share again in 42m.');
+ assert.equal(familyShareState({manager:true,sharedAt:now-FAMILY_SHARE_GAP_MS},now).can,true,'exactly a day later');
+ assert.equal(familyShareState({manager:true,sharedAt:now-2*3600000},now).can,false,'two hours is not enough any more');
  assert.equal(familyShareState({manager:true,sharedAt:now-FAMILY_SHARE_GAP_MS+1000},now).reason,'You can share again in 1s.');
  assert.equal(familyShareWait(null,now),0);assert.equal(familyShareWait('x',now),0);
  // A member who is not the leader or a co-leader is told who can, also while the hour runs.
@@ -39,7 +43,7 @@ test('the Family window\'s family carries when it was last shared (families.shar
  c.families[0].shared_at=now-60000;
  const lea=familyPublicView(c,'lea',farm(30),now).family,bo=familyPublicView(c,'bo',farm(30),now).family;
  assert.equal(lea.sharedAt,now-60000);assert.equal(lea.manager,true);assert.equal(bo.manager,false);
- assert.equal(familyShareState(lea,now).reason,'You can share again in 59m.');
+ assert.equal(familyShareState(lea,now).reason,'You can share again in 23h 59m.');
  assert.equal(familyShareState(bo,now).reason,'Your leader or a co-leader can share the family in chat.');
 });
 
@@ -73,7 +77,7 @@ test('the kind: every kind the live check allows stays, family_share joins',()=>
  assert.match(sql,/execute format\('alter table public\.chat_messages add constraint chat_messages_kind_check check \(kind in \(%s\)\)',kinds\);/);
 });
 
-test('harvest_family_share: who, the global chat\'s own rules, the hour under a row lock, and a card from the family\'s own row',()=>{
+test('harvest_family_share as first run: who, the global chat\'s own rules, the hour under a row lock, and a card from the family\'s own row',()=>{
  const b=SHARE_BODY,at=text=>{const i=b.indexOf(text);assert.ok(i>=0,text);return i;};
  // Who: a current member of that family, as its leader or a co-leader.
  assert.match(b,/select \* into me from public\.family_members m where m\.player_id=p_player and m\.left_at is null;/);
@@ -86,7 +90,9 @@ test('harvest_family_share: who, the global chat\'s own rules, the hour under a 
  assert.match(b,/if public\.harvest_portal_guest\(p_player\) then/);
  // The hour: the family's row locked, checked and set in one go; a race says so with when (detail), for farm-api's plain sentence.
  assert.match(b,/select \* into f from public\.families where id=p_family and deleted_at is null for update;/);
- assert.ok(b.includes(`if f.shared_at is not null and f.shared_at>now_ms-${FAMILY_SHARE_GAP_MS} then`));
+ assert.equal(FIRST_GAP_MS,3600000,'the hour it was run with; family-share-24h.sql makes it a day');
+ assert.ok(b.includes(`if f.shared_at is not null and f.shared_at>now_ms-${FIRST_GAP_MS} then`));
+ assert.equal(SHARE_MD5,'ac05b2645eb31dde092059a957255205','the body that is live (read 20 Oct 2026)');
  assert.match(b,/using errcode='54000', detail=f\.shared_at::text;/);
  assert.ok(at('for update')<at('update public.families set shared_at=now_ms')&&at('update public.families set shared_at=now_ms')<at('insert into public.chat_messages'));
  assert.ok(at("me.role not in")<at('for update')&&at("global_level")<at('for update'),'every refusal before anything is written');
@@ -121,14 +127,14 @@ function sharedFamily({coleader=false}={}){
  return {...c,now};
 }
 
-test('farm-api: the rule first (no database write for a member, or within the hour), then the database with only the id and the level',async()=>{
+test('farm-api: the rule first (no database write for a member, or within the day), then the database with only the id and the level',async()=>{
  const c=sharedFamily();
  let admin=fakeAdmin(c,()=>assert.fail('not asked'));
  let r=await handleFamilyShare({admin,player:'bo'});
  assert.deepEqual(r,{status:422,data:{error:'Your leader or a co-leader can share the family in chat.',code:'ACTION_REJECTED'}});
  r=await handleFamilyShare({admin,player:'nobody'});assert.equal(r.data.error,'Join a family first.');
  const waited={...c,families:c.families.map(f=>({...f,shared_at:now-18*60000}))};
- r=await handleFamilyShare({admin:fakeAdmin(waited,()=>assert.fail('not asked')),player:'lea'});assert.equal(r.data.error,'You can share again in 42m.');
+ r=await handleFamilyShare({admin:fakeAdmin(waited,()=>assert.fail('not asked')),player:'lea'});assert.equal(r.data.error,'You can share again in 23h 42m.');
  admin=fakeAdmin(c,args=>({data:{sharedAt:now+5,message:'m1'},error:null}));
  r=await handleFamilyShare({admin,player:'lea'});
  assert.equal(r.status,200);assert.deepEqual(r.data,{shared:{familyId:c.families[0].id,sharedAt:now+5},profile:{player_id:'lea'},serverNow:now});
@@ -141,7 +147,7 @@ test('farm-api: the rule first (no database write for a member, or within the ho
 
 test('farm-api: what the database refuses is said plainly; another leader a moment before gives the same wait sentence',async()=>{
  const c=sharedFamily(),ask=error=>handleFamilyShare({admin:fakeAdmin(c,()=>({data:null,error})),player:'lea'});
- assert.equal((await ask({code:'54000',message:'Your family was shared in the chat less than an hour ago.',details:String(now-30*60000)})).data.error,'You can share again in 30m.');
+ assert.equal((await ask({code:'54000',message:'Your family was shared in the chat less than a day ago.',details:String(now-30*60000)})).data.error,'You can share again in 23h 30m.');
  assert.equal((await ask({code:'42501',message:'You are muted until 20 Oct 14:00 UTC.'})).data.error,'You are muted until 20 Oct 14:00 UTC.');
  assert.equal((await ask({code:'42501',message:'The valley chat opens at level 5.'})).status,422);
  assert.equal((await ask({code:'PGRST202',message:'Could not find the function'})).data.error,'Sharing in chat is not open yet. Please try again later.');
@@ -150,7 +156,7 @@ test('farm-api: what the database refuses is said plainly; another leader a mome
 
 test('farm-api: a request of its own, before the farm is read; the page sends nothing but the request',()=>{
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/'family','family_profile','family_share','player_search'/);
+ assert.match(api,/'family','family_profile','family_share','family_cards','player_search'/);
  assert.match(api,/if\(body\.operation==='family_share'\)\{const shared=await handleFamilyShare\(\{admin,player:user\.id\}\);return reply\(shared\.data,shared\.status\);\}/);
  assert.ok(api.indexOf("body.operation==='family_share'")<api.indexOf("const found=await admin.from('player_farms')"),'no farm needed');
  const ui=read('public/family-ui.js');
@@ -219,8 +225,9 @@ test('Join or View: the card offers Join exactly when Join in the family list wo
 
 test('Join and View in the chat: View opens the family profile, Join joins through Farm Family and shows a refusal on the chat',()=>{
  const ui=read('src/chat-ui.js'),family=read('public/family-ui.js');
- assert.match(ui,/if\(m\.kind==='family_share'\)return familyShareCard\(m,shareViewer\(\)\);/);
- assert.match(ui,/const shareViewer=\(\)=>\(\{familyId:\/\^family:\(\.\+\)\$\/\.exec\(overview\?\.family\?\.channel\?\?''\)\?\.\[1\]\?\?null,level:overview\?\.level\?\?0,blocked:win\.harvestFamilyBlocked\?\.\(\)\?\?null\}\);/);
+ assert.match(ui,/if\(m\.kind==='family_share'\)return familyShareCard\(m,shareViewer\(\),Date\.now\(\),familyLive\.card\(m\.meta\?\.family\)\);/);
+ // Who is looking: farm-api's answer once the live cards are in, the chat's overview and the Family window's last read until then.
+ assert.ok(ui.includes("const shareViewer=()=>{const v=familyLive.viewer,family=v?v.familyId??null:/^family:(.+)$/.exec(overview?.family?.channel??'')?.[1]??null;return {familyId:family,level:overview?.level??0,blocked:v?v.blocked??null:win.harvestFamilyBlocked?.()??null};};"));
  assert.match(ui,/if\(view\)\{if\(win\.harvestFamilyProfile\)win\.harvestFamilyProfile\.open\(view\.dataset\.familyView\);/);
  assert.match(ui,/const done=await win\.harvestFamilyJoin\?\.\(button\.dataset\.familyJoin\)/);
  assert.match(ui,/showCenterNotice\(dialog,done\?\.error\|\|'That did not work\. Please try again\.',\{refused:true\}\)/);
@@ -237,7 +244,7 @@ test('an older game shows the card as a plain line from the farmer who shared it
  const ui=read('src/chat-ui.js');
  // Any kind this game does not draw as a card goes on to the ordinary message: its body, escaped, as the farmer's own words.
  const row=ui.slice(ui.indexOf(' function messageRow('),ui.indexOf(' function threadRow('));
- assert.match(row,/if\(m\.kind==='chest'\)return chestCard\(m\);\n  if\(m\.kind==='family_share'\)return familyShareCard\(m,shareViewer\(\)\);\n  const mine=m\.sender===me/);
+ assert.match(row,/if\(m\.kind==='chest'\)return chestCard\(m\);\n  if\(m\.kind==='family_share'\)return familyShareCard\(m,shareViewer\(\),Date\.now\(\),familyLive\.card\(m\.meta\?\.family\)\);\n  const mine=m\.sender===me/);
  // The body the database writes is a whole plain sentence: no link, no mention, no markup.
  const body='Tony shared the family Meadow Friends';
  assert.deepEqual(chatParts(body,undefined).map(p=>Object.keys(p)),[['text']]);
@@ -264,11 +271,13 @@ test('the Family window: Share in chat under Members, for the leader and co-lead
  assert.match(ui,/if\(view\?\.family&&data\?\.shared\?\.familyId===view\.family\.id\)view\.family\.sharedAt=Number\(data\.shared\.sharedAt\)\|\|farmNow\(\);notify\('Your family is in the global chat\.'\);/);
  assert.match(read('public/family.css'),/\.family-share-chat:disabled\{cursor:default;/);
  // The wiki says the rule where families are explained.
- assert.match(read('public/wiki-content.js'),/The leader or a co-leader can share the family in the global chat, once an hour, with Share in chat under Members\./);
+ assert.match(read('public/wiki-content.js'),/The leader or a co-leader can share the family in the global chat, once a day, with Share in chat under Members\./);
+ assert.doesNotMatch(read('public/wiki-content.js'),/share the family[^.]*once an hour/);
 });
 
 test('every new text is in all 15 languages',()=>{
- const texts=['Share in chat','Post your family in the global chat, with a button to join.','Your family is in the global chat.','You can share again in {0}.','Your leader or a co-leader can share the family in chat.','Shared by {0}','View','{0} / {1} farmers','Your family was shared in the chat less than an hour ago.','Sharing in chat is not open yet. Please try again later.'];
+ const texts=['Share in chat','Post your family in the global chat, with a button to join.','Your family is in the global chat.','You can share again in {0}.','Your leader or a co-leader can share the family in chat.','Shared by {0}','View','{0} / {1} farmers','Your family was shared in the chat less than an hour ago.','Sharing in chat is not open yet. Please try again later.',
+  'Your family was shared in the chat less than a day ago.','The leader or a co-leader can share the family in the global chat, once a day, with Share in chat under Members. Its card shows the emblem, the family level and the farmers, with a button to join the family or look at it.','This family is no longer around.'];
  const catalog=JSON.parse(read('i18n/catalog.json'));
  for(const code of ['cs','de','es','fr','id','hu','nl','pt','tr','ru','uk','hi','ja','ar','zh']){
   const t=JSON.parse(read(`public/i18n/${code}.json`));

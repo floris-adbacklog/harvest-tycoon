@@ -4372,10 +4372,11 @@ export function familyRejoinOffer(c,player,now,config=FAMILY_CONFIG){
 }
 // Share in chat (20 Oct 2026, a farmer via the owner: "Ik wil kunnen linken naar mijn family in de chat, dat ziet er cool uit"; option 1):
 // the leader or a co-leader posts the family's card in the global chat, with its emblem, name, family level and farmers, and a View or
-// Join button. Only they, as only they invite farmers and choose who can join; once an hour per family, whoever shared it. farm-api
-// (family-service.js handleFamilyShare) and supabase/family-share.sql (harvest_family_share, families.shared_at) keep the same rule;
-// the database builds the card from the family itself, never from what the page sends.
-export const FAMILY_SHARE_GAP_MS=3600000;
+// Join button. Only they, as only they invite farmers and choose who can join; once a day per family, whoever shared it (the owner,
+// 20 Oct 2026: once every 24 hours; it was once an hour). farm-api (family-service.js handleFamilyShare) and supabase/family-share.sql
+// with supabase/family-share-24h.sql (harvest_family_share, families.shared_at) keep the same rule; the database builds the card from
+// the family itself, never from what the page sends. The wait reads "You can share again in 18h 12m." (formatDuration).
+export const FAMILY_SHARE_GAP_MS=86400000;
 export const familyShareWait=(sharedAt,now)=>Math.max(0,(Number(sharedAt)||0)+FAMILY_SHARE_GAP_MS-now);
 // family: the Family window's own family ({manager, sharedAt}). can, or why not in one plain sentence.
 export function familyShareState(family,now){
@@ -4383,6 +4384,21 @@ export function familyShareState(family,now){
  if(!family.manager)return {can:false,reason:'Your leader or a co-leader can share the family in chat.'};
  const wait=familyShareWait(family.sharedAt,now);
  return wait>0?{can:false,wait,reason:`You can share again in ${formatDuration(wait)}.`}:{can:true,wait:0,reason:''};
+}
+// The family cards in the chat, live (20 Oct 2026, the owner: "als je iemand verwijdert moet dit wel realtime updaten 10 / 10 boeren",
+// "ook na bericht plaatsen"): what each shared family is now, for farm-api's family_cards (family-service.js handleFamilyCards), so a
+// card shows 9 / 10 farmers a moment after a farmer was removed. Only what the family list shows to anyone (its name, emblem, level,
+// farmers, who can join and from which level), in the card's own keys (supabase/family-share.sql writes them so); a family that is
+// gone, or never was, is {family, gone:true}. viewer: the farmer asking, for the card's Join or View (familyShareButton): their own
+// family now, and the family that removed them while it is closed to them. Nothing of anyone else.
+export const FAMILY_CARDS_MAX=20;
+export function familyCards(c,ids,player,now,config=FAMILY_CONFIG){
+ const cards=[...new Set((Array.isArray(ids)?ids:[]).filter(id=>typeof id==='string'&&id))].slice(0,FAMILY_CARDS_MAX).map(id=>{
+  const f=c.families.find(x=>x.id===id&&!x.deleted_at);if(!f)return {family:id,gone:true};
+  return {family:f.id,name:f.name,emblem:f.emblem,level:familyStanding(c,f.id).level,members:familyMembers(c,f.id).length,max:config.MAX_MEMBERS,mode:familyJoinMode(f),minLevel:familyMinLevel(f)};
+ });
+ const me=familyMember(c,player);
+ return {cards,viewer:{familyId:familyCurrent(c,player)?.id??null,blocked:me?.blocked_family&&(me.cooldown_until??0)>now?{family:me.blocked_family,until:me.cooldown_until}:null}};
 }
 // A request ends when it runs out, when the family goes or stops taking requests, or when the farmer has found a family.
 function refreshFamilyRequests(c,now){

@@ -17,7 +17,7 @@
 // Run: node scripts/family-share-sql.mjs. Never edit the file by hand. Safe to run twice: the second run changes nothing.
 import {writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {FAMILY_SHARE_GAP_MS,FAMILY_CONFIG,FAMILY_MIN_LEVEL,FAMILY_LEVEL_STEPS} from '../game/farm-state.js';
+import {FAMILY_CONFIG,FAMILY_MIN_LEVEL,FAMILY_LEVEL_STEPS} from '../game/farm-state.js';
 
 const md5=text=>createHash('md5').update(text).digest('hex');
 
@@ -32,6 +32,9 @@ export const LIVE_MD5=Object.freeze({
 });
 export const KINDS=Object.freeze(['message','request','rank','top','join','kick','chest','family_share']);
 const MAX=FAMILY_CONFIG.MAX_MEMBERS,TOP_LEVEL=FAMILY_LEVEL_STEPS.length;
+// The hour this file was run with (live since 20 Oct 2026). The owner made it a day the same evening: scripts/family-share-24h-sql.mjs
+// replaces the function with this body's day version (supabase/family-share-24h.sql), so this file stays as it was run.
+export const FIRST_GAP_MS=3600000;
 
 // The body between the $function$ markers: md5(prosrc) in Postgres is the md5 of exactly this text.
 export const SHARE_BODY=`
@@ -54,7 +57,7 @@ begin
  -- Once an hour per family: the family's row is locked, so two taps at once give one card.
  select * into f from public.families where id=p_family and deleted_at is null for update;
  if f.id is null then raise exception 'This family is no longer around.' using errcode='22023'; end if;
- if f.shared_at is not null and f.shared_at>now_ms-${FAMILY_SHARE_GAP_MS} then
+ if f.shared_at is not null and f.shared_at>now_ms-${FIRST_GAP_MS} then
   raise exception 'Your family was shared in the chat less than an hour ago.' using errcode='54000', detail=f.shared_at::text; end if;
  select count(*) into members from public.family_members m where m.family_id=p_family and m.left_at is null;
  update public.families set shared_at=now_ms where id=p_family;

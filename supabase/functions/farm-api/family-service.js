@@ -1,4 +1,4 @@
-import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer,familyStanding,familyManager,familyShareState} from './farm-state.js';
+import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer,familyStanding,familyManager,familyShareState,familyCards,FAMILY_CARDS_MAX} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
 const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
@@ -48,8 +48,8 @@ export async function handleFamilyProfile({admin,body,state,player}){
  return profile?{status:200,data:{familyProfile:profile,profile:{player_id:player},serverNow:now}}:gone;
 }
 // Share in chat (20 Oct 2026, the owner's option 1; farm-state.js familyShareState): the leader or a co-leader posts the family's card in
-// the global chat, once an hour per family. The rule is checked here first, for the plain reason ("You can share again in 42m"), and
-// then by the database itself, which locks the family, checks who, the global chat's own rules and the hour, and writes the card from
+// the global chat, once a day per family. The rule is checked here first, for the plain reason ("You can share again in 18h 12m"), and
+// then by the database itself, which locks the family, checks who, the global chat's own rules and the day, and writes the card from
 // the family's own row (supabase/family-share.sql, harvest_family_share). From here only the family's id and its level go along (the
 // level is the game's own, from the chest tiers of every week); the page sends nothing but the request. The answer is when it was shared.
 const SHARE_REFUSALS=new Set(['22023','42501']);
@@ -70,6 +70,18 @@ export async function handleFamilyShare({admin,player}){
  }
  const sharedAt=Number(saved.data?.sharedAt)||now;
  return {status:200,data:{shared:{familyId:family.id,sharedAt},profile:{player_id:player},serverNow:now}};
+}
+// The family cards in the chat, live (20 Oct 2026, the owner; farm-state.js familyCards): the chat sends the ids of the shared families
+// it shows, at most FAMILY_CARDS_MAX in one request, and gets what each is now (name, emblem, level, farmers, who can join), or gone,
+// with the asking farmer's own family and the family that removed them. Read only, no farm needed: the same read as the family
+// profile (readContext). Ids that are no UUID are no family, without asking the database; nothing to look up, no read at all.
+export async function handleFamilyCards({admin,body,player}){
+ if(!Array.isArray(body.familyIds)||body.familyIds.length>FAMILY_CARDS_MAX)return {status:422,data:{error:'Choose a family.',code:'ACTION_REJECTED'}};
+ const ids=[...new Set(body.familyIds.filter(id=>typeof id==='string'&&UUID.test(id)))];
+ const gone=body.familyIds.filter(id=>!ids.includes(id)).map(id=>({family:String(id).slice(0,64),gone:true}));
+ if(!ids.length)return {status:200,data:{familyCards:{cards:gone,viewer:null},profile:{player_id:player}}};
+ const c=await readContext(admin,player),now=Number(c.now)||Date.now(),live=familyCards(c,ids,player,now);
+ return {status:200,data:{familyCards:{cards:[...live.cards,...gone],viewer:live.viewer},profile:{player_id:player},serverNow:now}};
 }
 // Join again in Welcome back (17 Oct 2026, the owner): on a return (farm-api's load, only when Welcome back shows) one small read of the
 // farmer's own member row, the family they left for being away too long with the farmers in it now, and the family they are in
