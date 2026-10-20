@@ -281,8 +281,8 @@ do $after$ declare fn text; want jsonb:='${afterWant}'; begin
    left join pg_proc p on p.oid=to_regprocedure('public.'||w.fn)
    where p.oid is null or p.prosecdef is distinct from w.secdef or p.provolatile::text is distinct from w.vol or p.proconfig is distinct from array['search_path=""'])
   then raise exception 'a function header changed (security definer, volatility or search_path)'; end if;
- if exists(select 1 from unnest(array['harvest_event_board(uuid)','harvest_event_settle(uuid)','harvest_event_progress()','harvest_event_validate()','harvest_event_pick(bigint)']) fn
-    where (select proacl::text from pg_proc where oid=to_regprocedure('public.'||fn)) is distinct from '{postgres=X/postgres,service_role=X/postgres}')
+ if exists(select 1 from unnest(array['harvest_event_board(uuid)','harvest_event_settle(uuid)','harvest_event_progress()','harvest_event_validate()','harvest_event_pick(bigint)']) as checked(name)
+    where (select proacl::text from pg_proc where oid=to_regprocedure('public.'||checked.name)) is distinct from '{postgres=X/postgres,service_role=X/postgres}')
   or (select proacl::text from pg_proc where oid='public.harvest_event_league(integer)'::regprocedure) is distinct from '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
   or not has_function_privilege('service_role','public.harvest_event_league_for(integer,jsonb,smallint)','execute')
   then raise exception 'the grants of a harvest_event function changed'; end if;
