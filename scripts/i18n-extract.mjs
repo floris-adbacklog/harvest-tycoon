@@ -12,8 +12,9 @@ const ROOT=new URL('../',import.meta.url);
 const read=path=>readFileSync(new URL(path,ROOT),'utf8');
 const list=(dir,test)=>readdirSync(new URL(dir,ROOT)).filter(test).sort().map(file=>`${dir}${file}`);
 // Admin screens stay English (only staff see them), and so does the partner programme's page (src/partners.js, like the privacy
-// policy); the other skipped files hold no text for players.
-const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|model-atlas|render-resources|languages|i18n|i18n-boot|partners)\.js$/;
+// policy); the other skipped files hold no text for players. The farmer's parts (farmer-parts.js, 20 Oct 2026) carry working names
+// that no screen shows yet (My farmer shows pictures): when a screen shows them, take it out of here and translate them.
+const SKIP=/(^|\/)(admin-[^/]*|lucide-icons|analytics|sound-worker|sw|sound-kit|model-atlas|render-resources|languages|i18n|i18n-boot|partners|farmer-parts)\.js$/;
 export const SOURCES=[
  ...list('public/',f=>f.endsWith('.js')),
  ...list('src/',f=>f.endsWith('.js')),
