@@ -48,15 +48,17 @@ export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
   coins:settled?r.coins:r.done?(prize.coins+place(i).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?place(i).diamonds:0,podium:r.done&&i<prize.podium.length}));
 }
-// The standings the farmer sees are their own league's: the league they finished in, or the one their level puts them in now.
-// Only the leagues the event was made with (20 Oct 2026): an event from before the village leagues keeps 100+ in the Valley Legends.
-// A farmer with a row gets the board's league, which already caps a farmer who first counted below level 100 (the row's world);
-// without a row there is no world yet, so the level alone decides.
+// The standings the farmer sees are their own league's: the one stored when they joined the event (20 Oct 2026, the owner: you
+// finish an event in the league you joined it in, also when you level up), or for a row from before, the one the board gives (the
+// level's, which already caps a farmer who first counted below level 100 by the row's world). Only the leagues the event was made
+// with (20 Oct 2026): an event from before the village leagues keeps 100+ in the Valley Legends. Without a row there is no league or
+// world yet, so the level alone decides. The farmer's own row (event.player, withPlayerRows) comes first, so a stored league counts
+// even before the board is the new one; the board returns the stored league too (coalesce), so both always agree.
 async function standings(admin,event,user,now){
  const rows=await admin.rpc('harvest_event_board',{p_event:event.id});
  if(rows.error)throw rows.error;
- const mine=rows.data.find(r=>r.player_id===user.id);
- let league=mine&&Number.isInteger(mine.league)?eventLeagueIn(event,mine.league):null;
+ const mine=rows.data.find(r=>r.player_id===user.id),own=[event.player,mine].find(r=>Number.isInteger(r?.league));
+ let league=own?eventLeagueIn(event,own.league):null;
  if(!league){const me=await admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle();if(me.error)throw me.error;league=eventLeagueFor(event,me.data?.level??0);}
  const all=eventStandings(event,rows.data.filter(r=>eventLeagueIn(event,r.league??0).index===league.index),now,league),top=all.slice(0,TOP),you=all.find(r=>r.playerId===user.id)??null;
  const ids=[...new Set([...top.map(r=>r.playerId),...(you?[you.playerId]:[])])];

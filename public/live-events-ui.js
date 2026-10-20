@@ -4,7 +4,7 @@ import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {farmNow} from './farm-client.js';
 import {placeLabel} from './place-label.js';
 import {skeleton} from './skeleton.js';
-import {formatDuration,levelOf,EVENT_LEAGUES,eventLeague,eventLeagueFor,eventPrizes,HOUR_EVENT_REWARDS,WORLD_TWO_LEVEL} from './farm-state.js';
+import {formatDuration,levelOf,EVENT_LEAGUES,eventLeague,eventLeagueOf,eventPrizes,HOUR_EVENT_REWARDS,WORLD_TWO_LEVEL} from './farm-state.js';
 import {keepFolds} from './keep-folds.js';
 import {ownWords,ownText} from './i18n.js';
 // Farm events: a new event every hour, 55 minutes of play, then 5 minutes for the prizes (20 Oct 2026; 5 hours and a 1-hour
@@ -84,10 +84,12 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  let data=null,busy=false,error='',reloadTimer=0,clock=0,background=0,turn=0;
 
  const countdown=at=>`<span data-countdown="${at}">${formatDuration(at-now())}</span>`;
- // Your league (1 Oct 2026, farm-state.js EVENT_LEAGUES): the server's for the event it shows standings for, otherwise your level's,
- // within the leagues the event was made with and at most the Valley Legends when you first counted in it below level 100 (20 Oct 2026).
- // So a new site against an event from before the village leagues shows the Valley Legends, never the Sprout League's goals.
- const leagueOf=e=>{const s=e?.standings?.league,own=eventLeagueFor(e,levelOf(state),e?.player?.world);return s?EVENT_LEAGUES.find(l=>l.id===s.id)??own:own;};
+ // Your league (1 Oct 2026, farm-state.js EVENT_LEAGUES): the server's for the event it shows standings for, otherwise the one stored
+ // on your row when you joined the event (20 Oct 2026, the owner: you finish it in that league, also when you level up), otherwise
+ // your level's (eventLeagueOf), within the leagues the event was made with and at most the Valley Legends when you first counted in it
+ // below level 100. So a new site against an event from before the village leagues shows the Valley Legends, never the Sprout
+ // League's goals, and an older farm-api (no league on a running event's row) still gives your level's, as before.
+ const leagueOf=e=>{const s=e?.standings?.league,own=eventLeagueOf(e,e?.player,levelOf(state));return s?EVENT_LEAGUES.find(l=>l.id===s.id)??own:own;};
  // The title of your own league's goals (20 Oct 2026): rewards to collect, recent events and final standings name it, not the Sprout League's.
  const ownTitle=e=>e.leagues?.[Number.isInteger(e.player?.league)?e.player.league:leagueOf(e).index]?.title??e.title;
  const leagueRange=l=>l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`;
@@ -158,13 +160,13 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  // The leagues of the world of the league card on screen (20 Oct 2026), so the window never contradicts itself: below level 100 the six
  // farm leagues; from 100 the six village leagues, unless the event keeps you in the Valley Legends (an event from before the village
- // leagues, or you first counted in it below 100).
+ // leagues, or you joined it below 100: your league is set when you join, 20 Oct 2026).
  // The rules of the hourly events (20 Oct 2026), with the prizes of the event on screen, or the hourly ones: with coins when it pays
  // them (the first hourly events paid diamonds only).
  const rules=()=>{
   const view=eventView(data.events,now()),shown=view.live??view.next,world=(shown?leagueOf(shown):eventLeague(levelOf(state))).world;
   const own=shown&&eventPrizes(shown.rewards),prize=own?.hour?own:eventPrizes(HOUR_EVENT_REWARDS),[first,second,third]=prize.podium.map(p=>num(p.diamonds));
-  return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li>${prize.paysCoins?'<li>Everyone who finishes wins coins too; the sooner you finish, the more.</li>':''}<li>You race in your league, against farmers of about your level. Your level when the event ends decides your league.${levelOf(state)>=EVENT_LEAGUES[5].from?` <span>Reach level ${WORLD_TWO_LEVEL} during an event and you finish that event in the Valley Legends.</span>`:''}<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>${prize.paysCoins?'Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.':'Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.'}</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
+  return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li>${prize.paysCoins?'<li>Everyone who finishes wins coins too; the sooner you finish, the more.</li>':''}<li>You race in your league, against farmers of about your level. Your league is set when you join an event (your first action that counts), and you finish that event in that league, even if you level up.<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>${prize.paysCoins?'Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.':'Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.'}</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  };
  function render(){
   const heading='<div class="dialog-heading">'+art('live-events','dialog-badge')+'<div class="dialog-titles"><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';

@@ -139,7 +139,8 @@ test('standings: a village league pays its own coins, the diamonds of every leag
  assert.deepEqual(eventStandings(event,rows,now,EVENT_LEAGUES[6]).map(r=>[r.coins,r.diamonds]),[[22000,25],[12000,15]]);
  assert.deepEqual(eventStandings(event,rows,now,EVENT_LEAGUES[11]).map(r=>[r.coins,r.diamonds]),[[44000,25],[24000,15]]);
  const service=read('supabase/functions/farm-api/event-service.js');
- assert.match(service,/eventLeagueIn\(event,mine\.league\)/);assert.match(service,/league=eventLeagueFor\(event,me\.data\?\.level\?\?0\)/);
+ // The row's stored league first (20 Oct 2026, the owner: the league is set when you join; tests/league-at-join.test.mjs).
+ assert.match(service,/own=\[event\.player,mine\]\.find\(r=>Number\.isInteger\(r\?\.league\)\);\n let league=own\?eventLeagueIn\(event,own\.league\):null;/);assert.match(service,/league=eventLeagueFor\(event,me\.data\?\.level\?\?0\)/);
  assert.match(service,/rows\.data\.filter\(r=>eventLeagueIn\(event,r\.league\?\?0\)\.index===league\.index\)/);
  assert.match(service,/title=found\.data\?\.leagues\?\.\[row\.data\?\.league\]\?\.title\?\?found\.data\?\.title\?\?null;/,'the farm journal names the league\'s own title');
 });
@@ -151,10 +152,12 @@ test('a fish at the village lake counts for village events: farm-api saves it as
 
 test('the event screen: the league card\'s world in the rules, the village line, the league\'s own titles',()=>{
  const ui=read('public/live-events-ui.js');
- assert.match(ui,/const leagueOf=e=>\{const s=e\?\.standings\?\.league,own=eventLeagueFor\(e,levelOf\(state\),e\?\.player\?\.world\);return s\?EVENT_LEAGUES\.find\(l=>l\.id===s\.id\)\?\?own:own;\};/);
+ assert.match(ui,/const leagueOf=e=>\{const s=e\?\.standings\?\.league,own=eventLeagueOf\(e,e\?\.player,levelOf\(state\)\);return s\?EVENT_LEAGUES\.find\(l=>l\.id===s\.id\)\?\?own:own;\};/);
  assert.match(ui,/EVENT_LEAGUES\.filter\(l=>l\.world===world\)\.map\(/);
  assert.match(ui,/Just play: digging, sawing, packing lunches, helping villagers and fishing on the lake count automatically\./);
- assert.match(ui,/Reach level \$\{WORLD_TWO_LEVEL\} during an event and you finish that event in the Valley Legends\./);
+ // Since 20 Oct 2026 (the owner) the league is set when you join, so reaching 100 mid-event is one case of the plain rule.
+ assert.match(ui,/Your league is set when you join an event \(your first action that counts\), and you finish that event in that league, even if you level up\./);
+ assert.doesNotMatch(ui,/during an event and you finish that event in the Valley Legends/);
  assert.match(ui,/From level \$\{WORLD_TWO_LEVEL\} your league is a village league, with goals in the village\. Each village event you finish counts in Village events and in Events finished\./);
  for(const where of ['Final standings · ${esc(ownTitle(e))}','<h3>${esc(ownTitle(e))}</h3>','<strong>${esc(ownTitle(e))}</strong>'])assert.ok(ui.includes(where),where);
 });

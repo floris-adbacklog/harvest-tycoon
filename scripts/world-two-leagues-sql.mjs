@@ -81,7 +81,7 @@ begin
   where s.player_id in (select player_id from public.live_event_players where event_id=p_event and qualified);
 end `;
 // 3. Progress: the live body (supabase/live-events-league-change.sql) with the league per event, the row's world and the village goals.
-const PROGRESS_BODY=String.raw`
+export const PROGRESS_BODY=String.raw`
 declare e public.live_events; p public.live_event_players; o jsonb; receipt jsonb; action text; stat text;
  before_v integer; after_v integer; value integer; changed boolean; moved boolean; fresh boolean; mapped boolean; base jsonb;
  lg smallint; objs jsonb; extended boolean; lv integer;
@@ -156,7 +156,7 @@ begin
  return new;
 end `;
 // 4. Board: the league of a row without one (still running) by harvest_event_league_for, with the event's leagues and the row's world.
-const BOARD_BODY=String.raw`
+export const BOARD_BODY=String.raw`
  select lp.player_id,lp.progress,lp.actions,lp.joined_at,lp.last_at,lp.qualified,lp.coins,lp.diamonds,coalesce(lp.league,public.harvest_event_league_for(s.level,e.leagues,lp.world))
  from public.live_event_players lp join public.live_events e on e.id=lp.event_id left join public.player_stats s on s.player_id=lp.player_id
  where lp.event_id=p_event

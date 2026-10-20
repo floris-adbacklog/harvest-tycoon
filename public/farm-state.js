@@ -4087,9 +4087,10 @@ export const FAMILY_EVENT_BONUS=Object.freeze({finishers:HOUR_EVENT_REWARDS.fami
 // Event leagues (1 Oct 2026; World 2 leagues 20 Oct 2026, the owner): every farmer races against farmers of about their level, with
 // a top 10 and a podium of its own per league. Diamonds are the same in every league (eventPrizes); coins are × the league's number:
 // 1 to 5 on the farm, 8 for the Valley Legends (90-99), and 10 to 20 for the six village leagues from level 100, whose goals are in the
-// village (public/event-goals.js VILLAGE_KINDS); the first hourly events of 20 Oct 2026 paid no coins. The
-// level when the event ends decides the league (harvest_event_settle, supabase/world-two-leagues-b.sql). Indices 0-5 never change:
-// settled rows keep them.
+// village (public/event-goals.js VILLAGE_KINDS); the first hourly events of 20 Oct 2026 paid no coins. Your league is set when you
+// join an event, your first action that counts, and you finish that event in that league, also when you level up during it
+// (20 Oct 2026, the owner; live_event_players.league, supabase/league-at-join.sql). A row from before has none and gets the league of
+// the level when the event ends (harvest_event_settle). Indices 0-5 never change: settled rows keep them.
 export const EVENT_LEAGUES=Object.freeze([
  {id:'sprout',name:'Sprout League',from:15},{id:'meadow',name:'Meadow League',from:30},{id:'orchard',name:'Orchard League',from:45},
  {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8},
@@ -4107,6 +4108,10 @@ const LAST_FARM_LEAGUE=EVENT_LEAGUES.filter(l=>l.world===1).length-1;
 export const eventLeagueCount=event=>Array.isArray(event?.leagues)&&event.leagues.length?Math.min(event.leagues.length,EVENT_LEAGUES.length):LAST_FARM_LEAGUE+1;
 export const eventLeagueIn=(event,index)=>EVENT_LEAGUES[Math.max(0,Math.min(Math.floor(Number(index))||0,eventLeagueCount(event)-1))];
 export const eventLeagueFor=(event,level,world=null)=>eventLeagueIn(event,Number(world)===1?Math.min(eventLeague(level).index,LAST_FARM_LEAGUE):eventLeague(level).index);
+// A farmer's league in an event (20 Oct 2026, the owner): the one stored on their row when they joined (live_event_players.league),
+// kept to the end; without one (not joined yet, or a row from before) the league of their level now, as eventLeagueFor. Joining below
+// level 100 stores a farm league, so a farmer who reaches 100 during the event still finishes it in the Valley Legends.
+export const eventLeagueOf=(event,row,level)=>Number.isInteger(row?.league)?eventLeagueIn(event,row.league):eventLeagueFor(event,level,row?.world);
 // A farmer counts as active in a family list when they did something on their farm in the last three days.
 const FAMILY_ACTIVE_MS=3*DAY_MS;
 // The weekly Family Order is the same for every family: four crops or goods drawn at random from everything in the game
