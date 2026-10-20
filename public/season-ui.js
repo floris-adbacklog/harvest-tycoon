@@ -167,7 +167,7 @@ export function createSeasonUI({state,runAction,notify,onChange=()=>{},bridge=()
   const waiting=view.waiting?`<p class="season-waiting">${view.waiting} reward${view.waiting===1?' is':'s are'} waiting</p>`:'';
   const lockedHead=level<SEASON_BUY_LEVEL&&!view.premium?`${art('lock')}Paid<small>For sale from level ${SEASON_BUY_LEVEL}</small>`:view.premium?'Paid':`${art('lock')}Paid`;
   content.innerHTML=`<nav class="season-tabs" aria-label="Passes" hidden><button type="button" aria-pressed="true">${art(s.art)}<span>${esc(s.name)}</span></button></nav>`
-   +`<section class="season-top"><img class="season-banner" src="${pictureFile(s.banner)}" alt="" width="1536" height="512" decoding="async" draggable="false"><div class="season-top-copy"><p class="season-phase" data-season-phase>${seasonPhaseLine(view,t)}</p><p class="season-rule"><span>${seasonRule(view)}</span> <span>Leaves only count this season.</span></p></div></section>`
+   +`<section class="season-top"><img class="season-banner" src="${pictureFile(s.banner)}" alt="" width="1536" height="512" decoding="async" draggable="false"><div class="season-top-copy"><p class="season-phase" data-season-phase>${seasonPhaseLine(view,t)}</p><p class="season-rule"><span>${seasonRule(view)}</span> <span>Leaves only count this season.</span> <span>You earn leaves just by playing.</span></p></div></section>`
    +prev+bars+week+waiting+skip+buyBox(view,level)
    +`<div class="season-heads${paidColumn?'':' is-free-only'}" aria-hidden="true"><span></span><b>Free</b>${paidColumn?`<b>${lockedHead}</b>`:''}</div>`
    +(open&&view.tier>0?`<button type="button" class="small-button season-to-tier">Go to my tier</button>`:'')

@@ -5765,6 +5765,7 @@
 "You do not have enough in stock.":"public/farm-state.js",
 "You don’t have to switch tools all the time. A tap plants an empty field and harvests a ripe one. On a growing crop it gives water or care when the crop can use it.":"public/wiki-content.js",
 "You earn coins by selling at the Market, and from quests, the daily gift and new levels. You spend them on seeds, buildings, more fields and upgrades.":"public/wiki-content.js",
+"You earn leaves just by playing.":"public/season-ui.js",
 "You earned {0} diamonds from {1}’s invite":"public/invite-ui.js",
 "You finished! Collect your reward here when the event ends.":"public/live-events-ui.js",
 "You finished. Your reward is ready.":"public/live-events-ui.js",
