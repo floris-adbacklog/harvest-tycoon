@@ -178,3 +178,9 @@ test('the build is written down: the Blender step, the cut, the pictures; the pa
  assert.ok(!existsSync(file('public/assets/farmer/Creative_Characters.blend')));
  for(const f of readdirSync(file('public/assets/farmer')))assert.ok(['farmer-rig.glb','farmer.webp','parts','thumbs','portrait'].includes(f),f);
 });
+
+test('a tap on your own farmer: a hop, then your own profile (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat")',()=>{
+ const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.match(game,/else if\(target\.type==='farmer'\)tapOwnFarmer\(\);/);
+ assert.match(game,/function tapOwnFarmer\(\)\{walker\?\.react\(\);const me=window\.parent\?\.harvestBridge\?\.playerId;if\(me&&window\.harvestProfiles\)setTimeout\(\(\)=>window\.harvestProfiles\.open\(me,\{back:null\}\),\d+\);\}/);
+});
