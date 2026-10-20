@@ -6252,7 +6252,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} est ravi ! +{1} pièces, +{2} diamants. {3} d'affilée.",
 "{0} is growing again.":"{0} repousse.",
 "{0} is muted.":"{0} est muet.",
-"{0} is napping. Pat again in {1} min.":"{0} fait la sieste. Une nouvelle caresse dans {1} min.",
+"Pat {0} again in {1} min.":"Caresse {0} à nouveau dans {1} min.",
 "{0} is now a co-leader.":"{0} est maintenant co-chef.",
 "{0} is now a member.":"{0} est maintenant membre.",
 "{0} is now an honorary member.":"{0} est maintenant membre d'honneur.",

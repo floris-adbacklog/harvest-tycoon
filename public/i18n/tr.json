@@ -6249,7 +6249,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} çok memnun! +{1} altın, +{2} elmas. Art arda {3}.",
 "{0} is growing again.":"{0} yeniden büyüyor.",
 "{0} is muted.":"{0} susturuldu.",
-"{0} is napping. Pat again in {1} min.":"{0} kestiriyor. {1} dk sonra yine sev.",
+"Pat {0} again in {1} min.":"{0} {1} dk sonra yine sevilebilir.",
 "{0} is now a co-leader.":"{0} artık yardımcı lider.",
 "{0} is now a member.":"{0} artık üye.",
 "{0} is now an honorary member.":"{0} artık onursal üye.",

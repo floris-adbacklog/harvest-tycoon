@@ -6249,7 +6249,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} el van ragadtatva! +{1} érme, +{2} gyémánt. {3} egymás után.",
 "{0} is growing again.":"Újra nő: {0}.",
 "{0} is muted.":"{0} némítva.",
-"{0} is napping. Pat again in {1} min.":"{0} szundikál. Simogasd meg újra {1} perc múlva.",
+"Pat {0} again in {1} min.":"{0} újra simogatható {1} perc múlva.",
 "{0} is now a co-leader.":"{0} mostantól helyettes vezető.",
 "{0} is now a member.":"{0} mostantól tag.",
 "{0} is now an honorary member.":"{0} mostantól tiszteletbeli tag.",

@@ -6249,7 +6249,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0}は大喜び！+{1}コイン、+{2}ダイヤ。{3}回連続。",
 "{0} is growing again.":"{0}がまた育っています。",
 "{0} is muted.":"{0}をミュートしました。",
-"{0} is napping. Pat again in {1} min.":"{0}はお昼寝中です。{1}分後にまたなでてください。",
+"Pat {0} again in {1} min.":"{1}分後にまた{0}をなでてください。",
 "{0} is now a co-leader.":"{0}さんがサブリーダーになりました。",
 "{0} is now a member.":"{0}さんがメンバーになりました。",
 "{0} is now an honorary member.":"{0}さんが名誉メンバーになりました。",

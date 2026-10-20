@@ -43,13 +43,13 @@ test('Mimi only ever brings a crop the farm grows, whatever the roll',()=>{
 
 test('the rest timer: once an hour per pet, on the server\'s clock, with the minutes left in the refusal',()=>{
  const s=farm(20);pat(s,'dog');
- refused(s,{type:'pet_pat',pet:'dog'},'Rex is napping. Pat again in 60 min.',now+1);
- refused(s,{type:'pet_pat',pet:'dog'},'Rex is napping. Pat again in 42 min.',now+18*MIN);
- refused(s,{type:'pet_pat',pet:'dog'},'Rex is napping. Pat again in 1 min.',now+HOUR-1000);
+ refused(s,{type:'pet_pat',pet:'dog'},'Pat Rex again in 60 min.',now+1);
+ refused(s,{type:'pet_pat',pet:'dog'},'Pat Rex again in 42 min.',now+18*MIN);
+ refused(s,{type:'pet_pat',pet:'dog'},'Pat Rex again in 1 min.',now+HOUR-1000);
  assert.equal(petRest(s,'dog',now+18*MIN),42*MIN);assert.equal(petRest(s,'cat',now),0,'each pet rests on its own');
  pat(s,'cat',now+MIN);assert.deepEqual(s.pets,{dog:now,cat:now+MIN});
  assert.equal(pat(s,'dog',now+HOUR).coins,200,'an hour later Rex finds coins again');assert.equal(s.pets.dog,now+HOUR);
- assert.equal(petRestText('deer',90000),'Fawn is napping. Pat again in 2 min.');
+ assert.equal(petRestText('deer',90000),'Pat Fawn again in 2 min.');
  // The client's own clock never decides: the server's time (applyFarmAction's now) is the one that counts.
  assert.match(read('supabase/functions/farm-api/index.ts'),/result=applyFarmAction\(state,body\.action,now,random\)/);
 });

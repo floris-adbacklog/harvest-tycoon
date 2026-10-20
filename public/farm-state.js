@@ -3677,9 +3677,9 @@ export function landmarkSupplies(state,id,expectedCost,expectedGoods){
 export const PET_REST_MS=3600000,PET_XP=5,PET_DOG_COINS_PER_LEVEL=10,PET_CAT_CROPS=3,PET_DEER_PLANKS=2;
 export const PETS=Object.freeze({dog:Object.freeze({name:'Rex',world:1}),cat:Object.freeze({name:'Mimi',world:1}),deer:Object.freeze({name:'Fawn',world:2})});
 export const petOpen=(state,pet)=>Object.hasOwn(PETS,pet)&&(PETS[pet].world!==2||worldTwoOpen(state));
-// How long a pet still naps (0: it can be patted).
+// How long until a pet can be patted again (0: it can be patted).
 export function petRest(state,pet,now=Date.now()){const at=state.pets?.[pet];return Number.isSafeInteger(at)&&at>0?Math.max(0,at+PET_REST_MS-now):0;}
-export const petRestText=(pet,ms)=>`${PETS[pet].name} is napping. Pat again in ${Math.max(1,Math.ceil(ms/60000))} min.`;
+export const petRestText=(pet,ms)=>`Pat ${PETS[pet].name} again in ${Math.max(1,Math.ceil(ms/60000))} min.`;
 export const petDogCoins=state=>PET_DOG_COINS_PER_LEVEL*levelOf(state);
 function patPet(state,pet,now,random){
  if(!Object.hasOwn(PETS,pet))throw new Error('Choose a pet.');

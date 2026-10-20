@@ -769,7 +769,7 @@ async function tapBuilding(key){
 }
 // A tap on a pet (20 Oct 2026): it hops and a heart pops over it at once. Once an hour it also has a small find (farm-state.js patPet), which
 // floats up over it like a harvest's, once the heart has had its moment (PET_FIND_AFTER: a quick answer would put the two on top of each
-// other); while it naps the line at the top says for how long, and nothing is sent. The admin view only pets.
+// other); until then the line at the top says how long to wait, and nothing is sent. The admin view only pets.
 const patting=new Set(),PET_FIND_AFTER=550;
 async function patPet(id){
  if(!pets?.react(id)||adminView||patting.has(id))return;

@@ -6249,7 +6249,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} senang sekali! +{1} koin, +{2} berlian. {3} beruntun.",
 "{0} is growing again.":"{0} tumbuh lagi.",
 "{0} is muted.":"{0} dibisukan.",
-"{0} is napping. Pat again in {1} min.":"{0} sedang tidur siang. Elus lagi dalam {1} mnt.",
+"Pat {0} again in {1} min.":"Elus {0} lagi dalam {1} mnt.",
 "{0} is now a co-leader.":"{0} sekarang wakil ketua.",
 "{0} is now a member.":"{0} sekarang anggota.",
 "{0} is now an honorary member.":"{0} sekarang anggota kehormatan.",

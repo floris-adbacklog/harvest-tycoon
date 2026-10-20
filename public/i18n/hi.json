@@ -6250,7 +6250,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} बहुत ख़ुश है! +{1} सिक्के, +{2} हीरे। लगातार {3}।",
 "{0} is growing again.":"{0} फिर से उग रहा है।",
 "{0} is muted.":"{0} म्यूट है।",
-"{0} is napping. Pat again in {1} min.":"{0} झपकी ले रहा है। {1} मिनट में फिर से सहलाएँ।",
+"Pat {0} again in {1} min.":"{0} को {1} मिनट में फिर से सहलाएँ।",
 "{0} is now a co-leader.":"{0} अब सह-मुखिया हैं।",
 "{0} is now a member.":"{0} अब सदस्य हैं।",
 "{0} is now an honorary member.":"{0} अब मानद सदस्य हैं।",

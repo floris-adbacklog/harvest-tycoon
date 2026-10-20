@@ -6445,7 +6445,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} مسرور جدًا! +{1} عملة، +{2} ألماسة. {3} على التوالي.",
 "{0} is growing again.":"{0} ينمو من جديد.",
 "{0} is muted.":"تم كتم {0}.",
-"{0} is napping. Pat again in {1} min.":"{0} يأخذ قيلولة. داعبه مجددًا بعد {1} دقيقة.",
+"Pat {0} again in {1} min.":"داعب {0} مجددًا بعد {1} دقيقة.",
 "{0} is now a co-leader.":"{0} الآن نائب القائد.",
 "{0} is now a member.":"{0} الآن عضو.",
 "{0} is now an honorary member.":"{0} الآن عضو شرفي.",

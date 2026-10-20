@@ -6250,7 +6250,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"public/estate-ui.js",
 "{0} is growing again.":"public/estate-ui.js",
 "{0} is muted.":"src/chat-ui.js",
-"{0} is napping. Pat again in {1} min.":"public/farm-state.js",
+"Pat {0} again in {1} min.":"public/farm-state.js",
 "{0} is now a co-leader.":"src/chat-ui.js",
 "{0} is now a member.":"src/chat-ui.js",
 "{0} is now an honorary member.":"src/chat-ui.js",

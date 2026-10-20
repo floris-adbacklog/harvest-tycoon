@@ -6250,7 +6250,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} ist begeistert! +{1} Münzen, +{2} Diamanten. {3} hintereinander.",
 "{0} is growing again.":"{0} wächst wieder.",
 "{0} is muted.":"{0} ist stummgeschaltet.",
-"{0} is napping. Pat again in {1} min.":"{0} macht ein Nickerchen. Wieder streicheln in {1} Min.",
+"Pat {0} again in {1} min.":"{0} wieder streicheln in {1} Min.",
 "{0} is now a co-leader.":"{0} ist jetzt Co-Anführer.",
 "{0} is now a member.":"{0} ist jetzt Mitglied.",
 "{0} is now an honorary member.":"{0} ist jetzt Ehrenmitglied.",

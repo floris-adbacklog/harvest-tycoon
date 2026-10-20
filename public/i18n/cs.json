@@ -6426,7 +6426,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0} je nadšený! +{1} mincí, +{2} diamantů. {3} v řadě.",
 "{0} is growing again.":"{0} zase roste.",
 "{0} is muted.":"{0} je ztlumen.",
-"{0} is napping. Pat again in {1} min.":"{0} si dává šlofíka. Pohlaď znovu za {1} min.",
+"Pat {0} again in {1} min.":"Pohlaď {0} znovu za {1} min.",
 "{0} is now a co-leader.":"{0} je teď zástupce.",
 "{0} is now a member.":"{0} je teď člen.",
 "{0} is now an honorary member.":"{0} je teď čestný člen.",

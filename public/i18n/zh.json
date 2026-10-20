@@ -6249,7 +6249,7 @@
 "{0} is delighted! +{1} coins, +{2} diamonds. {3} in a row.":"{0}很满意！+{1} 金币，+{2} 钻石。连续 {3} 位。",
 "{0} is growing again.":"{0}又开始生长了。",
 "{0} is muted.":"{0} 已被禁言。",
-"{0} is napping. Pat again in {1} min.":"{0}正在打盹。{1}分钟后再摸摸它。",
+"Pat {0} again in {1} min.":"{1}分钟后再摸摸{0}。",
 "{0} is now a co-leader.":"{0} 现在是副族长。",
 "{0} is now a member.":"{0} 现在是成员。",
 "{0} is now an honorary member.":"{0} 现在是荣誉成员。",
