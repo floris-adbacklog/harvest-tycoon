@@ -161,7 +161,7 @@ test('the building window, the seed shop and the Buildings list: their fold-outs
  assert.match(ui,/^import \{keepFolds\} from '\.\/keep-folds\.js';$/m);
  assert.match(ui,/<details class="build-recipes" data-fold="recipes"><summary>/);
  // The innerHTML and the locked fold it adds after it are inside one keepFolds, so that fold is kept too.
- assert.match(ui,/keepFolds\(\$\('crop-catalog'\),\(\)=>\{\$\('crop-catalog'\)\.innerHTML=[^]*?foldLocked\(\$\('crop-catalog'\),'\[data-choose-crop\]',[^\n]*,'Seeds to unlock','seeds-locked'\);\}\);/);
+ assert.match(ui,/keepFolds\(\$\('crop-catalog'\),\(\)=>\{\$\('crop-catalog'\)\.innerHTML=[^]*?foldLocked\(\$\('crop-catalog'\),'\[data-choose-crop\]:not\(\.is-season\)',[^\n]*,'Seeds to unlock','seeds-locked'\);\}\);/);
  assert.match(ui,/keepFolds\(\$\('building-catalog'\),\(\)=>\{\$\('building-catalog'\)\.innerHTML=[^]*?'Buildings to unlock','buildings-locked'\);[^]*?foldLocked\(\$\('building-catalog'\),'\[data-open-place\]',[^\n]*,'Places to unlock','places-locked'\);\}\);/);
  assert.match(ui,/keepFolds\(\$\('building-content'\),\(\)=>\{\$\('building-content'\)\.innerHTML=content;[^\n]*\n[^\n]*foldLocked\(recipeList,'\[data-recipe-card\]',[^\n]*,'Coming later','recipes-locked'\);\}\);/);
  assert.doesNotMatch(ui,/^ *\$\('(?:crop-catalog|building-catalog|building-content)'\)\.innerHTML=/m,'no list is written past keepFolds');

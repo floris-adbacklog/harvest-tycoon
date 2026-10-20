@@ -288,7 +288,7 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
   return focus.clone().lerp(target,k);
  }
  function position(camera,width,height){
-  const open=unlocked(),c=open?casts().casts:0;pond3d.show(open);shortcut.hidden=!open;if(lake)tile.hidden=!open;
+  const open=unlocked(),c=open?casts().casts:0;pond3d.show(open);pond3d.paint?.(state.lookFarm);shortcut.hidden=!open;if(lake)tile.hidden=!open;
   if(!open||isOpen){pin.hidden=true;return;}
   const p=pond3d.labelAt().project(camera),{bars,sides}=blocks(),spot=pinSpot((p.x*.5+.5)*width,(-p.y*.5+.5)*height,p.x,p.y,height,bars,sides);
   pin.hidden=!spot;if(!spot)return;pin.style.left=`${spot.x}px`;pin.style.top=`${spot.y}px`;pin.classList.toggle('edge',spot.edge);

@@ -2,6 +2,7 @@ import {handleEvents} from './event-service.js';
 import {handleSocial} from './social-service.js';
 import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
+import {saveLook} from './look-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare,handleFamilyCards} from './family-service.js';
 import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
@@ -70,7 +71,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -119,6 +120,12 @@ Deno.serve(async(req)=>{
   if(body.operation==='admin_invites'){
    const invites=await handleAdminInvites({admin,user});return reply(invites.data,invites.status);
   }
+  // The Season Pass's looks on the farmer's card (Oct 2026, look-service.js): frame, badge, title, name colour and background.
+  if(body.operation==='look'){
+   const saved=await saveLook({admin,player:user.id,look:body.look});
+   if(saved.status===200)later(writeLog(admin,user.id,accountLog('look','Changed their look')));
+   return reply(saved.data,saved.status);
+  }
   if(body.operation==='avatar'){
    const saved=await savePlayerAvatar({admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin(user)});
    if(saved.status===200)later(writeLog(admin,user.id,accountLog('avatar','Picked a new face')));
@@ -141,7 +148,7 @@ Deno.serve(async(req)=>{
   if(body.operation==='apple_token'){
    const kept=await handleAppleToken({admin,body,user,...appleKey()});return reply(kept.data,kept.status);
   }
-  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished').eq('player_id',user.id).maybeSingle();
+  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished,look').eq('player_id',user.id).maybeSingle();
   if(profileResponse.error)throw profileResponse.error;
   let profile=profileResponse.data;
   // A farmer who signed in with Facebook or Google brings no name: they get a friendly one ("Sunny Acres 4821"), as an email
@@ -226,7 +233,8 @@ Deno.serve(async(req)=>{
    const state=showcase?createShowcaseFarm(now,{family:row.state?.family&&typeof row.state.family==='object'?row.state.family:null}):normalizeFarm(row.state,now);
    // Whether this account can still confirm its email for the bonus: only email sign-ups, until the bonus is paid.
    const emailCheck=(farm:{emailBonus?:number})=>({needed:(user.app_metadata?.provider??'email')==='email'&&!farm.emailBonus,email:user.email??'',canChange:(user.app_metadata?.provider??'email')==='email'});
-   profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default'};
+   // look: what the farmer wears on their card (the Season Pass, look-service.js), so Settings › Profile shows it.
+   profile={player_id:user.id,username,currency:state.coins,level:levelOf(state),avatar_id:profile?.avatar_id??'default',look:profile?.look&&typeof profile.look==='object'?profile.look:{}};
    // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
    if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});
    if(body.operation==='family_profile'){const shown=await handleFamilyProfile({admin,body,state,player:user.id});return reply(shown.data,shown.status);}

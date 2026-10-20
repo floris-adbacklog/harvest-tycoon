@@ -37,7 +37,7 @@ test('Every family gets the same weekly order: four random crops or goods from t
    assert.ok(hours<=72,`${key}: ${hours} hours`);
   }
  }
- assert.equal(seen.size,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&ITEMS[k].world!==2).length,'over time every crop and good turns up (never an heirloom or a World II good)');
+ assert.equal(seen.size,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&ITEMS[k].world!==2&&!ITEMS[k].season).length,'over time every crop and good turns up (never an heirloom, a World II good or a season crop)');
 });
 test('Create and join enforce names, emblems, member limit and code privacy',()=>{
  let c=create();assert.equal(c.families[0].is_open,true,'a new family is open (27 Sep 2026)');assert.match(c.families[0].invite_code,/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
@@ -181,7 +181,7 @@ test('Public view exposes no player IDs, activity timestamps, balances, emails, 
  let c=join(create());c.players=c.members.map(m=>({player_id:m.player_id,username:m.player_id,level:10,online:true,last_active_at:'secret-time',email:'secret-email',diamonds:900,currency:800}));c.families.push({id:'secret-family',name:'Private',emblem:'1',invite_code:'SECRET',is_open:false,deleted_at:null});
  const v=familyPublicView(c,'alice',farm(),now),json=JSON.stringify(v);for(const secret of ['player_id','last_active','secret-time','secret-email','currency','SECRET'])assert.ok(!json.includes(secret),secret);
  // playerId is the same public id the leaderboard and player search already use to open a profile (tap a member to see theirs).
- assert.deepEqual(Object.keys(v.members[0]).sort(),['avatarId','chestPoints','daysAway','extraPoints','id','isSelf','level','online','orderPoints','playerId','points','role','top','username','vipExpiresAt'].sort(),'Oct 2026: the Stats tab adds chest, order and goods points; 17 Oct 2026: whole days away, never the time itself');assert.equal(v.members[0].daysAway,0,'an unreadable time is no days away');assert.equal(v.members[0].online,true);
+ assert.deepEqual(Object.keys(v.members[0]).sort(),['avatarId','chestPoints','daysAway','extraPoints','id','isSelf','level','look','online','orderPoints','playerId','points','role','top','username','vipExpiresAt'].sort(),'Oct 2026: the Stats tab adds chest, order and goods points; 17 Oct 2026: whole days away, never the time itself');assert.equal(v.members[0].daysAway,0,'an unreadable time is no days away');assert.equal(v.members[0].online,true);
 });
 test('Old saves normalize safely and shared copies and existing presence rule match',()=>{
  const s=farm();delete s.family;const b=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s.family,{familyId:null,unclaimedCount:0});assert.equal(s.coins,b.coins);assert.equal(s.diamonds,b.diamonds);
@@ -221,14 +221,14 @@ test('The four Family pages each use their own generated PNG; on phones Farm Fam
 
 test('new emblems preserve existing IDs and only leaders may change them',()=>{
  const old=['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy'];
- assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,100);
+ assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,101,'100, and the Season Pass emblem (id 100, only with a member who has it)');
  assert.deepEqual(FAMILY_EMBLEMS.slice(21,25).map(e=>[e.id,e.icon]),[['21','family-fox'],['22','family-owl'],['23','family-windmill'],['24','family-horseshoe']],'four new emblems, appended after the old ones');
  assert.deepEqual(FAMILY_EMBLEMS.slice(25,27).map(e=>[e.id,e.icon]),[['25','lettuce'],['26','barley']],'27 Sep 2026: 35 more, appended again');
  assert.deepEqual(FAMILY_EMBLEMS.slice(59,61).map(e=>[e.id,e.icon]),[['59','berrysmoothie'],['60','family-rooster']],'7 Oct 2026: 33 real family emblems, appended again');
  assert.deepEqual(FAMILY_EMBLEMS.slice(91,93).map(e=>[e.id,e.icon]),[['91','family-sun'],['92','family-raincloud']],'ids 60-92');
  assert.deepEqual(FAMILY_EMBLEMS.slice(92,94).map(e=>[e.id,e.icon]),[['92','family-raincloud'],['93','salad']],'7 Oct 2026: 7 more game icons, appended again (ids 93-99)');
  let c=join(create());const oldInvite=c.families[0].invite_code;
- for(const e of FAMILY_EMBLEMS.slice(12)){
+ for(const e of FAMILY_EMBLEMS.slice(12,100)){
   const result=run(c,farm(),'alice',{type:'family_emblem',emblem:e.id});assert.equal(result.failed,false);c=result.context;assert.equal(c.families[0].emblem,e.id);assert.equal(c.families[0].invite_code,oldInvite);
  }
  assert.throws(()=>run(c,farm(),'bob',{type:'family_emblem',emblem:'0'}),/leader/);

@@ -1,4 +1,4 @@
-import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer,familyStanding,familyManager,familyShareState,familyCards,FAMILY_CARDS_MAX} from './farm-state.js';
+import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer,familyStanding,familyManager,familyShareState,familyCards,FAMILY_CARDS_MAX,SEASON_EMBLEMS,SEASON_LOOKS} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
 const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
@@ -30,6 +30,22 @@ async function requestNotice(admin,action,result,context,player,username,now){
 // calls. The rules and every answer are the same (tests/family-read.test.mjs). Actions still read everything: harvest_family_context.
 // Until family-read.sql has run (no such function yet), a read takes the whole context as before.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// The Season Pass (Oct 2026): what the farmer's own family members wear (a frame, a badge and a title beside their name in the member
+// list) and which season emblems one of them collected ("If someone in your family has this emblem, your leader can pick it"). One
+// extra read of the members' rows, both at once, only for the farmer's own family; a problem here only leaves the looks out.
+async function addMemberLooks(admin,context,player){
+ const me=(context.members??[]).find(m=>m.player_id===player&&!m.left_at&&m.family_id);if(!me)return context;
+ const ids=[...new Set(context.members.filter(m=>m.family_id===me.family_id&&!m.left_at).map(m=>m.player_id))].slice(0,20);
+ try{
+  const [stats,farms]=await Promise.all([admin.from('player_stats').select('player_id,look').in('player_id',ids),admin.from('player_farms').select('player_id,looks:state->looks').in('player_id',ids)]);
+  if(stats.error||farms.error)return context;
+  const looks=new Map((stats.data??[]).map(r=>[r.player_id,r.look]));
+  context.players=(context.players??[]).map(p=>looks.has(p.player_id)?{...p,look:looks.get(p.player_id)}:p);
+  const emblems=Object.entries(SEASON_EMBLEMS).filter(([,look])=>(farms.data??[]).some(f=>Array.isArray(f.looks)&&f.looks.includes(look)&&SEASON_LOOKS[look])).map(([id])=>id);
+  context.seasonEmblems=emblems;
+ }catch{}
+ return context;
+}
 async function readContext(admin,player,family=null){
  let fetched=await admin.rpc('harvest_family_read',{p_player:player,p_family:family});
  if(fetched.error?.code==='PGRST202')fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:null});
@@ -98,8 +114,9 @@ export async function handleFamily({admin,body,row,state,player,username}){
  const reading=body.operation==='family';
  if(!reading&&body.action.type==='family_read')return {status:422,data:{error:'Use the Family view to refresh.',code:'ACTION_REJECTED'}};
  let before;
- if(reading)before=await readContext(admin,player);
- else{const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:body.requestId});if(fetched.error)throw fetched.error;before=fetched.data;}
+ if(reading)before=await addMemberLooks(admin,await readContext(admin,player),player);
+ else{const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:body.requestId});if(fetched.error)throw fetched.error;before=fetched.data;
+  if(body.action.type==='family_emblem'&&Object.hasOwn(SEASON_EMBLEMS,String(body.action.emblem)))before=await addMemberLooks(admin,before,player);}
  const now=before.now;
  const response=(context,result,failed,written=false)=>({status:failed?422:200,data:failed?{error:result.error,code:'ACTION_REJECTED'}:reading?{profile:{player_id:player},family:publicView(context,player,state,now),serverNow:now}:{state,profile:{player_id:player,username,currency:state.coins,level:levelOf(state)},result:{...result,family:publicView(context,player,state,now)},revision:row.revision+(written?1:0),serverNow:now}});
  if(before.receipt)return response(before,before.receipt.result,before.receipt.failed);
@@ -111,7 +128,7 @@ export async function handleFamily({admin,body,row,state,player,username}){
   if(found.data){before.players=before.players.filter(p=>p.player_id!==target);before.players.push(found.data);}
  }
  let changed;
- try{changed=familyMutate(before,state,player,reading?{type:'family_read'}:body.action,now);}
+ try{changed=familyMutate(before,state,player,reading?{type:'family_read'}:body.action,now,{seasonEmblems:before.seasonEmblems??[]});}
  catch(error){return {status:422,data:{error:error.message,code:'ACTION_REJECTED'}};}
  const {context,result,settled,failed}=changed,changes=familyChanges(before,context),writeFarm=!reading&&!failed;
  if(reading&&!Object.keys(changes).length)return response(context,result,false);

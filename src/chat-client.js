@@ -62,8 +62,11 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
    const ids=[...new Set(list.map(m=>m.sender))];
    if(ids.length){
     try{
-     const {data,error}=await supabase.from('player_stats').select('player_id,vip_expires_at').in('player_id',ids);
-     if(!error){const now=Date.now(),vip=new Set((data??[]).filter(r=>Date.parse(r.vip_expires_at)>now).map(r=>r.player_id));for(const m of list)m.sender_vip=vip.has(m.sender);}
+     // The Season Pass's look too (Oct 2026: the name's colour and the badge, as the farmer wears them now); before the look column
+     // exists (supabase/season-pass-engine.sql) the VIP mark alone, as before.
+     let {data,error}=await supabase.from('player_stats').select('player_id,vip_expires_at,look').in('player_id',ids);
+     if(error?.code==='42703')({data,error}=await supabase.from('player_stats').select('player_id,vip_expires_at').in('player_id',ids));
+     if(!error){const now=Date.now(),vip=new Set((data??[]).filter(r=>Date.parse(r.vip_expires_at)>now).map(r=>r.player_id)),looks=new Map((data??[]).map(r=>[r.player_id,r.look??{}]));for(const m of list){m.sender_vip=vip.has(m.sender);m.sender_look=looks.get(m.sender)??{};}}
     }catch{}
    }
    return list;

@@ -20,11 +20,11 @@ const google=(over={})=>({kind:'androidpublisher#productPurchase',purchaseState:
  obfuscatedExternalAccountId:FARMER,obfuscatedExternalProfileId:ROW,...over});
 
 test('every pack the website sells is a Google Play product of its own, with Play Console\'s id rules',()=>{
- const sold=[...Object.keys(payments.PAYMENT_PACKS),'offer','pass'];
+ const sold=[...Object.keys(payments.PAYMENT_PACKS),'offer','pass','season'];
  assert.deepEqual(Object.keys(payments.PLAY_PRODUCTS).sort(),sold.sort());
  for(const id of Object.values(payments.PLAY_PRODUCTS))assert.match(id,payments.PLAY_PRODUCT);
  assert.equal(new Set(Object.values(payments.PLAY_PRODUCTS)).size,sold.length,'one product per pack');
- assert.equal(payments.PLAY_PRODUCTS.pass,'halloween_pass_2026');assert.equal(payments.PASS.id,'halloween-2026','a new pass needs a product of its own');
+ assert.equal(payments.PLAY_PRODUCTS.pass,'halloween_pass_2026');assert.equal(payments.PLAY_PRODUCTS.season,'season_pass','one product for every season (Oct 2026)');assert.equal(payments.PASS.id,'halloween-2026','a new pass needs a product of its own');
  assert.equal(payments.playProduct('nope'),null);assert.equal(payments.playProduct('__proto__'),null);
 });
 

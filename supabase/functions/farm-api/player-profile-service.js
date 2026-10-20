@@ -1,13 +1,13 @@
 import {playerAvatar} from './player-avatars.js';
 import {isRecentlyActive} from './presence.js';
-import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem} from './farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem,wornLook,seasonBadges} from './farm-state.js';
 
 const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key));   // the farm's goods, not World II's
 // The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
 // board already shows them). Diamonds and the rest of the account stay private.
 // 20 Oct 2026: the village page ("In the village") reads Villagers helped and Village events (supabase/world-two-leagues-a.sql).
 const metrics=['harvested_crops','goods_produced','items_sold','deliveries','badges','farm_fields','building_upgrades','best_streak','events_finished','chores_done','helping_rounds','estate_projects','quests_done','currency','villagers_helped','village_events_finished'];
-export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id',...metrics,'goods_made',...cropKeys.map(key=>`harvested_${key}`)].join(',');
+export const PLAYER_PUBLIC_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id','look',...metrics,'goods_made',...cropKeys.map(key=>`harvested_${key}`)].join(',');
 const number=value=>Number.isFinite(Number(value))?Math.max(0,Math.floor(Number(value))):0;
 export const escapePlayerSearch=value=>value.replace(/[\\%_]/g,'\\$&');
 async function read(query){const result=await query;if(result.error)throw result.error;return result.data;}
@@ -23,7 +23,7 @@ async function familiesFor(admin,ids){
 async function memberSince(admin,playerId){
  try{const {data}=await admin.auth.admin.getUserById(playerId);const time=Date.parse(data?.user?.created_at);return Number.isFinite(time)?time:null;}catch{return null;}
 }
-function summary(row,families,now){return {playerId:row.player_id,username:row.username,avatarId:playerAvatar(row.avatar_id).id,level:number(row.level),vipExpiresAt:Date.parse(row.vip_expires_at)||0,online:isRecentlyActive(row.last_active_at,now),family:families.get(row.player_id)??null};}
+function summary(row,families,now){return {playerId:row.player_id,username:row.username,avatarId:playerAvatar(row.avatar_id).id,level:number(row.level),vipExpiresAt:Date.parse(row.vip_expires_at)||0,online:isRecentlyActive(row.last_active_at,now),family:families.get(row.player_id)??null,look:wornLook(row.look)};}
 // Auth/session validation happens in index.ts before this read-only directory is reached.
 // Never load or return a complete farm, account record, membership or family record. The one account fact a profile
 // shows is the sign-up date ("member since"); the rest of the account is not read out. Last online (28 Sep 2026) is the day
@@ -32,7 +32,7 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:player},serverNow:now}});
  if(body.operation==='player_search'){
   if(typeof body.query!=='string'||body.query.trim().length<2||body.query.trim().length>20)return respond({error:'Enter 2–20 characters to find a farmer.'},400);
-  const rows=await read(admin.from('player_stats').select('player_id,username,level,last_active_at,vip_expires_at,avatar_id').ilike('username',`%${escapePlayerSearch(body.query.trim())}%`).order('username',{ascending:true}).order('player_id',{ascending:true}).limit(21));
+  const rows=await read(admin.from('player_stats').select('player_id,username,level,last_active_at,vip_expires_at,avatar_id,look').ilike('username',`%${escapePlayerSearch(body.query.trim())}%`).order('username',{ascending:true}).order('player_id',{ascending:true}).limit(21));
   const visible=(rows??[]).slice(0,20),families=await familiesFor(admin,visible.map(row=>row.player_id));
   return respond({players:visible.map(row=>summary(row,families,now)),hasMore:(rows??[]).length>20});
  }
@@ -40,12 +40,14 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
  const row=await read(admin.from('player_stats').select(PLAYER_PUBLIC_FIELDS).eq('player_id',body.playerId).maybeSingle());
  if(!row)return respond({error:'This farmer could not be found.',code:'PLAYER_NOT_FOUND'},404);
  const families=await familiesFor(admin,[row.player_id]);
- const mastery=await read(admin.from('player_farms').select('claimed:state->mastery->claimed').eq('player_id',row.player_id).maybeSingle());
+ const mastery=await read(admin.from('player_farms').select('claimed:state->mastery->claimed,looks:state->looks').eq('player_id',row.player_id).maybeSingle());
  const badges=[...new Set(Array.isArray(mastery?.claimed)?mastery.claimed:[])].flatMap(id=>{
   if(typeof id!=='string')return [];const [crop,tier,...extra]=id.split(':');
   return !extra.length&&cropKeys.includes(crop)&&/^[0-3]$/.test(tier)&&MASTERY_TIERS[Number(tier)]?[{crop,tier:Number(tier)}]:[];
  });
  return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),lastOnline:Date.parse(row.last_active_at)||null,stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length,
   // Village goods made (20 Oct 2026): every World II good in goods_made, packed lunches included; the client never gets goods_made.
-  village_goods:Object.entries(row.goods_made??{}).filter(([k])=>worldTwoItem(k)).reduce((n,[,v])=>n+number(v),0)},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges}});
+  village_goods:Object.entries(row.goods_made??{}).filter(([k])=>worldTwoItem(k)).reduce((n,[,v])=>n+number(v),0)},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges,
+  // The Season Pass (Oct 2026): every season badge this farmer collected, the "Seasons" row.
+  seasons:seasonBadges(mastery?.looks)}});
 }

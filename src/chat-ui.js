@@ -1,4 +1,5 @@
 // The chat window. Its button sits next to Farm Family in the header; on a phone it takes the Family button's place (Family moves
+import {lookBadge,lookColor} from '../public/look-marks.js';
 import {linkify,inLanguage} from './popup-ui.js';
 import {skeleton} from '../public/skeleton.js';
 import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
@@ -180,12 +181,16 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  // at once when you save a new one in Settings.
  const faces=new Map();let facesAt=0;
  const faceOf=m=>faces.get(m.sender)??m.sender_avatar;
+ // The Season Pass's look of a sender (Oct 2026): from the last read of their messages, so a new message of theirs shows it too.
+ const nameInColour=(name,look)=>{const colour=lookColor(look);return colour?`<span class="look-name" style="color:${colour}">${esc(name)}</span>`:esc(name);};
+ const looks=new Map(),lookOf=m=>{if(m.sender_look&&typeof m.sender_look==='object')looks.set(m.sender,m.sender_look);return looks.get(m.sender)??{};};
  async function freshFaces(ids,all=false){
   const wanted=[...new Set(ids)].filter(id=>id&&(all||!faces.has(id)));if(!wanted.length)return;if(all)facesAt=Date.now();
   let found;try{found=await chat.faces(wanted);}catch{return;}
   let changed=false;for(const [id,avatar] of found){if(avatar&&faces.get(id)!==avatar){faces.set(id,avatar);changed=true;}}
   if(changed&&dialog.open&&!disposed)paint();
  }
+ win.addEventListener?.('harvest-look-changed',event=>{if(event.detail&&typeof event.detail==='object'&&bridge?.playerId){looks.set(bridge.playerId,event.detail);if(dialog.open&&!disposed)paint();}});
  win.addEventListener?.('harvest-avatar-changed',event=>{const {playerId,avatarId}=event.detail??{};if(!playerId||!avatarId)return;faces.set(playerId,avatarId);if(dialog.open&&!disposed)paint();});
  const unread=()=>overview?.unread??{notices:0,global:0,family:0,dm:0,mentions:0};
  const role=()=>overview?.role??null;
@@ -313,7 +318,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const text=`${bodyHtml(m)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=`${translate?' has-translate':''}${mentionsMe(m,me)?' is-mention':''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${ownWords(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
-  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar',m.sender_name)}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,esc(m.sender_name),'chat-name',m.sender_name)}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar',m.sender_name)}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,nameInColour(m.sender_name,lookOf(m)),'chat-name',m.sender_name)}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}${lookBadge(lookOf(m))}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${ownWords(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;

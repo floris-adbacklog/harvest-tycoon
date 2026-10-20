@@ -219,6 +219,15 @@ export const PLAYER_AVATARS=Object.freeze([
     "src": "/assets/avatars/lantern-keeper.webp"
   }
 ].map(Object.freeze));
+// Season avatars (the Season Pass, Oct 2026 on; game/farm-state.js SEASON_LOOKS): three a season, earned only in its pass (one free,
+// two paid). Not in the 41 above: the picker shows a season's avatars while its season runs and the ones a farmer owns afterwards.
+// player_stats.avatar_id takes any 'season-…' id (supabase/season-pass-engine.sql), so a new season needs no SQL for them.
+export const SEASON_AVATARS=Object.freeze([
+ {id:'season-autumn-2026-harvest-chef',name:'Harvest chef',src:'/assets/avatars/avatar-harvest-chef.webp',season:'autumn-2026',paid:true,purchase:true},
+ {id:'season-autumn-2026-autumn-harvester',name:'Autumn harvester',src:'/assets/avatars/avatar-autumn-harvester.webp',season:'autumn-2026'},
+ {id:'season-autumn-2026-pumpkin-royal',name:'Pumpkin royal',src:'/assets/avatars/avatar-pumpkin-royal.webp',season:'autumn-2026',paid:true}
+].map(Object.freeze));
+export const seasonAvatar=id=>SEASON_AVATARS.find(a=>a.id===id)??null;
 export const DEFAULT_AVATAR='default';
 // The admin's own face (Tony, the maker of the game, 27 Sep 2026): everyone sees it beside the admin's name, but it is never offered
 // to other farmers (their picker lists only PLAYER_AVATARS, still 40) and avatar-service.js lets only the admin account save it.
@@ -228,8 +237,8 @@ export const OWNER_AVATAR=Object.freeze({id:'owner',name:'Tony, the maker',src:'
 export const GERARD_AVATAR=Object.freeze({id:'gerard',name:'Gerard, the owner',src:'/assets/avatars/gerard.webp'});
 export const OWNER_AVATARS=Object.freeze([OWNER_AVATAR,GERARD_AVATAR]);
 export const isOwnerAvatar=id=>OWNER_AVATARS.some(avatar=>avatar.id===id);
-const byId=new Map([...PLAYER_AVATARS,...OWNER_AVATARS].map(avatar=>[avatar.id,avatar]));
-const publicIds=new Set(PLAYER_AVATARS.map(avatar=>avatar.id));
+const byId=new Map([...PLAYER_AVATARS,...SEASON_AVATARS,...OWNER_AVATARS].map(avatar=>[avatar.id,avatar]));
+const publicIds=new Set([...PLAYER_AVATARS,...SEASON_AVATARS].map(avatar=>avatar.id));
 export const isPlayerAvatar=id=>typeof id==='string'&&publicIds.has(id);
 export const playerAvatar=id=>byId.get(id)??byId.get(DEFAULT_AVATAR);
 // The level an avatar opens at: 1 for the 20 everyone has.
@@ -253,7 +262,11 @@ export const AVATAR_GOALS=Object.freeze({
  'valley-regular':{text:'Play on 100 days',target:100,count:f=>f.state?.login?.visits},
  // The paid Halloween Pass (4 Oct 2026): the Lantern keeper is yours the moment the pass is bought, also before the season starts. The
  // farm keeps the passes it bought (state.passPremium, game/farm-state.js SEASON_PASS.id 'halloween-2026'; a test keeps the two equal).
- 'lantern-keeper':{text:'Get the Halloween Pass',target:1,pass:'halloween-2026',count:f=>Array.isArray(f.state?.passPremium)&&f.state.passPremium.includes('halloween-2026')?1:0}
+ 'lantern-keeper':{text:'Get the Halloween Pass',target:1,pass:'halloween-2026',count:f=>Array.isArray(f.state?.passPremium)&&f.state.passPremium.includes('halloween-2026')?1:0},
+ // The Season Pass's avatars: collected in the pass (state.looks); the paid tier 1 one is yours the moment the season is bought
+ // (state.passPremium holds the season's id). season: which season; pass: only for sale where payments are (a paid one).
+ ...Object.fromEntries(SEASON_AVATARS.map(a=>[a.id,{text:'Collect it in the Season Pass',target:1,season:a.season,...(a.paid?{pass:a.season}:{}),
+  count:f=>(Array.isArray(f.state?.looks)&&f.state.looks.includes(a.id))||(a.purchase&&Array.isArray(f.state?.passPremium)&&f.state.passPremium.includes(a.season))?1:0}]))
 });
 export const avatarGoal=id=>Object.hasOwn(AVATAR_GOALS,id)?AVATAR_GOALS[id]:null;
 export const goalCount=(id,farm)=>{const goal=avatarGoal(id);return goal?Math.max(0,Math.floor(Number(goal.count(farm??{}))||0)):0;};

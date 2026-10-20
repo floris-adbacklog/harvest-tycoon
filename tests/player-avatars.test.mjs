@@ -201,7 +201,7 @@ test('the Lantern keeper comes with the paid Halloween Pass, checked by the serv
  assert.equal(avatarGoal('lantern-keeper').pass,SEASON_PASS.id,'the same pass as the game');
  assert.equal(avatarOpen('lantern-keeper',{state:{passPremium:[SEASON_PASS.id]}}),true);assert.equal(avatarOpen('lantern-keeper',{state:{}}),false);
  const service=readFileSync(new URL('../supabase/functions/farm-api/avatar-service.js',import.meta.url),'utf8');
- assert.match(service,/invites:state->inviteRewards,passes:state->passPremium'\)/);assert.match(service,/passPremium:Array\.isArray\(f\.passes\)\?f\.passes:\[\]\};/);
+ assert.match(service,/invites:state->inviteRewards,passes:state->passPremium,looks:state->looks'\)/);assert.match(service,/passPremium:Array\.isArray\(f\.passes\)\?f\.passes:\[\],looks:Array\.isArray\(f\.looks\)\?f\.looks:\[\]\};/);
  const picker=readFileSync(new URL('../public/avatar-settings.js',import.meta.url),'utf8');
  assert.match(picker,/const offered=PLAYER_AVATARS\.filter\(a=>!avatarGoal\(a\.id\)\?\.pass\|\|!portalOff\('payments'\)\|\|!locked\(a\.id,known\)\);/,'not offered in the apps or on CrazyGames unless owned');
  assert.match(readFileSync(new URL('../public/pass-ui.js',import.meta.url),'utf8'),/With the Lantern keeper avatar, yours at once\./,'the buy box says so');

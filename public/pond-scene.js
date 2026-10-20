@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {POND,placeIn} from './farm-layout.js';
+import {seasonLook} from './farm-state.js';
 // The Fishing pond in the farm (11 Oct 2026, part C): a rod in a rest at the end of the pier, a float, the line, a fish's shadow under
 // the water during the fight, splashes, and the fish that leaps out when it is landed. All made here from plain shapes (there is no fish,
 // rod or float in the model packs), in the colours of the owner's fish pictures; the float is the game's red and cream. The rod lies in
@@ -139,7 +140,16 @@ export function createPondScene({scene,reducedMotion=false,cue=()=>false,place=n
    if(k>=1){group.remove(e.obj);e.obj.traverse(n=>{n.geometry?.dispose();n.material?.dispose?.();});effects.splice(i,1);}
   }
  }
+ // The Season Pass's float and rod (Oct 2026, state.lookFarm): the same shapes in their colours; none, the game's own again.
+ const GEAR={pole:[pole,0x8a5a2b],grip:[grip,0x5e3a1c],reel:[reelWheel,0xb9b2a0],top:[top,0xc9503c],bottom:[bottom,0xfffdf5],antenna:[antenna,0xfffdf5]};
+ let painted='';
+ function paint(lookFarm){
+  const rod=seasonLook(lookFarm?.rod),bobber=seasonLook(lookFarm?.bobber),key=`${lookFarm?.rod??''}|${lookFarm?.bobber??''}`;if(key===painted)return;painted=key;
+  const colours={...(bobber?.kind==='bobber'?bobber.colors:{}),...(rod?.kind==='rod'?rod.colors:{})};
+  for(const [part,[mesh,plain]] of Object.entries(GEAR))mesh.material.color.setHex(colours[part]??plain);
+ }
  return {
+  paint,
   stand,rest,dir,
   // The spot between the farmer and the float: what the fishing view frames. At the lake that spot is 6.7 high, moved down along the
   // camera's line (36, 40, 36) to the ground, where the village's camera looks (the same spot on the screen).

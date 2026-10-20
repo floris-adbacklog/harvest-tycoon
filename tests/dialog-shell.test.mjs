@@ -158,8 +158,8 @@ test('the phone\'s event rail: Today, Events and the pass only while their badge
  const rail=read('public/event-rail.js');
  globalThis.matchMedia??=()=>({matches:true,addEventListener(){}});
  const {RAIL_IDS,WAIT_DOTS,markWaiting}=await import('../public/event-rail.js');
- assert.deepEqual([...RAIL_IDS],['offer-button','today-button','events-button','pass-button']);
- assert.deepEqual({...WAIT_DOTS},{'today-button':'today-dot','events-button':'events-dot','pass-button':'pass-dot'},'the same signal as their badges');
+ assert.deepEqual([...RAIL_IDS],['offer-button','today-button','events-button','pass-button','season-button'],'the Season Pass too (Oct 2026)');
+ assert.deepEqual({...WAIT_DOTS},{'today-button':'today-dot','events-button':'events-dot','pass-button':'pass-dot','season-button':'season-dot'},'the same signal as their badges');
  // is-waiting follows the badge, whatever the button itself is (a hidden button stays hidden through its own [hidden]).
  const page=Object.fromEntries([['today-button',false],['today-dot',false],['events-button',false],['events-dot',true],['pass-button',true],['pass-dot',false]].map(([id,hidden])=>{const on=new Set();return [id,{hidden,on,classList:{toggle:(n,v)=>v?on.add(n):on.delete(n)}}];}));
  markWaiting({getElementById:id=>page[id]??null});

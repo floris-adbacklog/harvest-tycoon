@@ -6,10 +6,10 @@
 // All three stay in More as well. On a phone (mobileLayout) the buttons themselves move into #event-rail, on a computer back to where they
 // were (nothing changes there), so every selector and handler that knows them keeps working. Nothing here ever throws.
 import {mobileLayout} from './mobile-ui.js';
-export const RAIL_IDS=Object.freeze(['offer-button','today-button','events-button','pass-button']);
+export const RAIL_IDS=Object.freeze(['offer-button','today-button','events-button','pass-button','season-button']);
 // The buttons that show in the rail only while their badge shows (a button the page hides itself, Events before its level or the pass
 // out of season, stays hidden).
-export const WAIT_DOTS=Object.freeze({'today-button':'today-dot','events-button':'events-dot','pass-button':'pass-dot'});
+export const WAIT_DOTS=Object.freeze({'today-button':'today-dot','events-button':'events-dot','pass-button':'pass-dot','season-button':'season-dot'});
 const homes=new Map();
 // is-waiting on a button while its badge shows (hud.css shows it in the rail only then).
 export function markWaiting(doc=globalThis.document){

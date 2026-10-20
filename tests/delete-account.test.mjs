@@ -74,7 +74,7 @@ test('farm-api delete_account: the database\'s own refusals, a sign-in without a
 
 test('farm-api wiring: the operation is known, runs before the farm is read, and the admin lock line is untouched',()=>{
  const index=read('supabase/functions/farm-api/index.ts');
- assert.match(index,/'rename','avatar','delete_account','family',/);
+ assert.match(index,/'rename','avatar','look','delete_account','family',/);
  assert.match(index,/import \{handleDeleteAccount\} from '\.\/account-delete-service\.js';/);
  assert.match(index,/if\(body\.operation==='delete_account'\)\{\n\s+const removed=await handleDeleteAccount\(\{admin,body,user,oneSignalKey:Deno\.env\.get\('ONESIGNAL_REST_API_KEY'\)\?\?'',apple:appleKey\(\)\}\);return reply\(removed\.data,removed\.status\);\n\s+\}\n/);
  assert.ok(index.includes("  if(body.operation==='action'&&isAdminAccount(user))return reply({error:'This is your admin account, so playing is locked here. Play on your own farmer account.',code:'ACTION_REJECTED'},422);\n"));

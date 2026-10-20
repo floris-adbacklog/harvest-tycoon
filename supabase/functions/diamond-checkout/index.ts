@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT} from './payments.js';
 import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 import {verifyAppleJws} from './app-store.js';
 import {kongId,kongToken,KongregateRefused,REFUSED_TEXT,verifyKongregate,kongUserItems,kongUseItem,kongItemPrices} from './kongregate-api.js';
@@ -25,6 +25,8 @@ const purchaseReply=(p:any)=>({id:p.id,pack:p.pack,coins:p.coins,diamonds:p.diam
 // The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (10 or higher since 13 Oct
 // 2026, supabase/offer-level-10.sql). A problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
 async function currentOffer(player:string){
+ // The first week of a season has no offer (game/payments.js offerPausedForSeason): no look-up at all then.
+ if(offerPausedForSeason())return null;
  const now=new Date().toISOString();
  // The three look-ups at once (30 Sep 2026: one after the other they made the catalogue ~150 ms slower).
  const [found,stats,bought]=await Promise.all([
@@ -44,10 +46,10 @@ async function currentOffer(player:string){
 async function appCreate(store:'google_play'|'app_store'|'kongregate',player:string,pack:any,requestId:string,starter:any){
  const product=(store==='app_store'?appleProduct:store==='kongregate'?kongProduct:playProduct)(pack.id);if(!product)throw new Error('No product in this store.');
  const insert=await admin.from('harvest_purchases').insert({id:requestId,player_id:player,pack:pack.id,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:product,livemode:true,store,
-  starter_expires_at:pack.id==='starter'?new Date(starter.expiresAt).toISOString():null,...(pack.id==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(pack.id==='pass'?{pass_id:pack.passId}:{})});
+  starter_expires_at:pack.id==='starter'?new Date(starter.expiresAt).toISOString():null,...(pack.id==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(pack.id==='pass'||pack.id==='season'?{pass_id:pack.passId}:{})});
  if(insert.error&&insert.error.code!=='23505')throw insert.error;
  let query=admin.from('harvest_purchases').select('*').eq('player_id',player);
- query=pack.id==='starter'?query.eq('pack','starter').eq('livemode',true).neq('status','expired'):pack.id==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):pack.id==='pass'?query.eq('pack','pass').eq('pass_id',pack.passId).neq('status','expired'):query.eq('id',requestId);
+ query=pack.id==='starter'?query.eq('pack','starter').eq('livemode',true).neq('status','expired'):pack.id==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):pack.id==='pass'||pack.id==='season'?query.eq('pack',pack.id).eq('pass_id',pack.passId).neq('status','expired'):query.eq('id',requestId);
  const found=await query.single();if(found.error)throw found.error;
  let p=found.data;
  if(p.status!=='pending')return {error:'This purchase has already been processed.'};
@@ -64,7 +66,7 @@ async function appCreate(store:'google_play'|'app_store'|'kongregate',player:str
   }
   const moved=await admin.from('harvest_purchases').update({store,price_id:product}).eq('id',p.id).eq('status','pending').select('*').single();if(moved.error)throw moved.error;p=moved.data;
  }
- if(p.pack!==pack.id||p.price_id!==product||pack.id==='offer'&&p.offer_id!==pack.offerId||pack.id==='pass'&&p.pass_id!==pack.passId)return {error:'Start a new purchase request.'};
+ if(p.pack!==pack.id||p.price_id!==product||pack.id==='offer'&&p.offer_id!==pack.offerId||(pack.id==='pass'||pack.id==='season')&&p.pass_id!==pack.passId)return {error:'Start a new purchase request.'};
  return {purchaseId:p.id,product,account:player,store};
 }
 // An App Store purchase (Oct 2026, the iPhone app 1.1): the app hands over the transaction exactly as Apple signed it (StoreKit's
@@ -204,7 +206,11 @@ Deno.serve(async req=>{
   // The Halloween Pass (Oct 2026): its dates and price from the catalogue itself, no look-up (whether this farm bought it is in the farm,
   // state.passPremium); ready: for sale now, with a Stripe price, from the preview (the pre-sale) until the season ends.
   const pass={id:PASS.id,cents:PASS.cents,startsAt:PASS.startsAt,endsAt:PASS.endsAt,level:PASS.level,ready:Boolean(PASS.price)&&passOnSale()};
-  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':apple?'app_store':kong?'kongregate':'stripe',serverNow:Date.now(),starter,offer:special,pass,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
+  // The Season Pass (Oct 2026): the season on sale now, from the catalogue itself (whether this farm has it is in the farm,
+  // state.passPremium). ready: open and priced; never in the iPhone app while Apple does not sell it (APPLE_SELLS_SEASON_PASS).
+  const onSale=seasonOnSale();
+  const season=onSale?{id:onSale.id,cents:SEASON_SALE.cents,level:SEASON_SALE.level,endsAt:onSale.endsAt,ready:Boolean(SEASON_SALE.price)&&!seasonStoreProblem(apple?'app_store':'other')}:null;
+  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':apple?'app_store':kong?'kongregate':'stripe',serverNow:Date.now(),starter,offer:special,pass,season,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
    const r=await admin.from('harvest_purchases').select('*').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);
@@ -278,6 +284,21 @@ Deno.serve(async req=>{
    const problem=passCheckoutProblem({level:level.data?.level??1,owned:Boolean(owned.data?.length)});
    if(problem)return reply({error:problem.error},problem.status);
    pack={id:'pass',cents:PASS.cents,price:PASS.price,product:PASS.product,diamonds:0,coins:0,passId:PASS.id};
+  }else if(body.pack==='season'){
+   // The Season Pass (Oct 2026): the season open now, from level 20, once per farmer per season (a unique index too,
+   // supabase/season-pass-engine.sql): game/payments.js seasonCheckoutProblem, which the tests run. Owned: a paid row for this season,
+   // or the season already in the farm's passPremium. Not in the iPhone app (APPLE_SELLS_SEASON_PASS).
+   const notHere=seasonStoreProblem(apple?'app_store':play?'google_play':kong?'kongregate':'stripe');if(notHere)return reply({error:notHere.error},notHere.status);
+   const open=seasonOnSale();
+   if(!open)return reply({error:'The Season Pass is not on sale right now.'},409);
+   const [level,owned,farmPasses]=await Promise.all([admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle(),
+    admin.from('harvest_purchases').select('id').eq('player_id',user.id).eq('pack','season').eq('pass_id',open.id).in('status',['credited','test_paid']).limit(1),
+    admin.from('player_farms').select('passes:state->passPremium').eq('player_id',user.id).maybeSingle()]);
+   if(level.error)throw level.error;if(owned.error)throw owned.error;if(farmPasses.error)throw farmPasses.error;
+   const inFarm=Array.isArray(farmPasses.data?.passes)&&farmPasses.data.passes.includes(open.id);
+   const problem=seasonCheckoutProblem({level:level.data?.level??1,owned:Boolean(owned.data?.length)||inFarm});
+   if(problem)return reply({error:problem.error},problem.status);
+   pack={id:'season',cents:SEASON_SALE.cents,price:SEASON_SALE.price,product:SEASON_SALE.product,diamonds:0,coins:0,passId:open.id};
   }else{try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}}
   const packId=pack.id;
   if(!UUID.test(body.requestId??''))return reply({error:'Invalid purchase request.'},400);
@@ -289,12 +310,12 @@ Deno.serve(async req=>{
   if(!priceId)return reply({error:'This pack has not been configured.'},503);
   const price=await stripe.prices.retrieve(priceId);
   if(!price.active||price.livemode!==live||price.currency!=='eur'||price.unit_amount!==pack.cents||price.type!=='one_time'||(live&&pack.product&&price.product!==pack.product))return reply({error:'This pack needs a pricing configuration update.'},503);
-  const newRow=(id:string)=>({id,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null,...(packId==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(packId==='pass'?{pass_id:pack.passId}:{})});
+  const newRow=(id:string)=>({id,player_id:user.id,pack:packId,diamonds:pack.diamonds,coins:pack.coins??0,amount_cents:pack.cents,price_id:priceId,livemode:live,starter_expires_at:packId==='starter'?new Date(starter.expiresAt).toISOString():null,...(packId==='offer'?{offer_id:pack.offerId,vip_days:pack.vipDays}:{}),...(packId==='pass'||packId==='season'?{pass_id:pack.passId}:{})});
   const insert=await admin.from('harvest_purchases').insert(newRow(body.requestId));
   if(insert.error&&insert.error.code!=='23505')throw insert.error;
   let query=admin.from('harvest_purchases').select('*').eq('player_id',user.id);
   // The Starter Pack, a special offer and a pass: one checkout per farmer (a unique index each), so a second tab or tap reuses it.
-  query=packId==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):packId==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):packId==='pass'?query.eq('pack','pass').eq('pass_id',pack.passId).neq('status','expired'):query.eq('id',body.requestId);
+  query=packId==='starter'?query.eq('pack','starter').eq('livemode',live).neq('status','expired'):packId==='offer'?query.eq('pack','offer').eq('offer_id',pack.offerId).neq('status','expired'):packId==='pass'||packId==='season'?query.eq('pack',packId).eq('pass_id',pack.passId).neq('status','expired'):query.eq('id',body.requestId);
   const found=await query.single();if(found.error)throw found.error;
   let p=found.data;
   // The same Starter Pack, offer or pass started in the Android or iPhone app and never paid there: the website takes the row back for Stripe.
@@ -305,7 +326,7 @@ Deno.serve(async req=>{
    const back=await admin.from('harvest_purchases').update({store:'stripe',price_id:priceId}).eq('id',p.id).eq('status','pending').select('*').single();if(back.error)throw back.error;p=back.data;
    movedBack=true;
   }
-  if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live||packId==='offer'&&p.offer_id!==pack.offerId||packId==='pass'&&p.pass_id!==pack.passId)return reply({error:'Start a new purchase request.'},409);
+  if(p.pack!==packId||p.price_id!==priceId||p.livemode!==live||packId==='offer'&&p.offer_id!==pack.offerId||(packId==='pass'||packId==='season')&&p.pass_id!==pack.passId)return reply({error:'Start a new purchase request.'},409);
   if(p.pack==='starter'&&Date.parse(p.created_at)>=starter.expiresAt)return reply({error:'The Starter Pack offer has ended.'},409);
   if(p.status!=='pending')return reply({error:'This purchase has already been processed.'},409);
   if(Date.now()-Date.parse(p.created_at)>23*3600000&&!p.stripe_session_id)return reply({error:'This checkout request needs review. Please contact support before retrying.'},409);

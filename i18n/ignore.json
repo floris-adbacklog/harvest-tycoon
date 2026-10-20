@@ -116,5 +116,18 @@
  "family-share.sql: the kind check",
  "Rex",
  "Mimi",
- "Fawn"
+ "Fawn",
+ "avatar check",
+ "event claim not patched",
+ "grant not patched",
+ "look column",
+ "refund trigger",
+ "season target",
+ "texts not patched",
+ "{0} is not the body read on 20 Oct 2026 (md5 {1} instead of {2}): read it again and regenerate",
+ "{0}: no body to replace",
+ "{0}: part {1} is not there exactly once",
+ "{0}: unexpected quote",
+ "Unknown season.",
+ "Aa"
 ]

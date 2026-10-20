@@ -210,8 +210,8 @@ test('checkout: for sale already before the season (the pre-sale) until it ends,
  assert.match(fn,/\(live&&pack\.product&&price\.product!==pack\.product\)/);
  assert.match(fn,/const purchaseReply=\(p:any\)=>\(\{id:p\.id,pack:p\.pack,coins:p\.coins,diamonds:p\.diamonds,status:p\.status,livemode:p\.livemode,vipDays:p\.vip_days\?\?0,serverNow:Date\.now\(\)\}\);/,'the purchase status carries the server clock (the return text)');
  assert.match(fn,/if\(body\.operation==='status'\)\{[^]*?return reply\(purchaseReply\(r\.data\)\);\n  \}/);
- assert.match(fn,/\.\.\.\(packId==='pass'\?\{pass_id:pack\.passId\}:\{\}\)/,'the purchase row names the pass');
- assert.match(fn,/packId==='pass'\?query\.eq\('pack','pass'\)\.eq\('pass_id',pack\.passId\)\.neq\('status','expired'\)/,'a second tap reuses the checkout');
+ assert.match(fn,/\.\.\.\(packId==='pass'\|\|packId==='season'\?\{pass_id:pack\.passId\}:\{\}\)/,'the purchase row names the pass (or the season, Oct 2026)');
+ assert.match(fn,/packId==='pass'\|\|packId==='season'\?query\.eq\('pack',packId\)\.eq\('pass_id',pack\.passId\)\.neq\('status','expired'\)/,'a second tap reuses the checkout (a Season Pass too, Oct 2026)');
  assert.match(fn,/const pass=\{id:PASS\.id,cents:PASS\.cents,startsAt:PASS\.startsAt,endsAt:PASS\.endsAt,level:PASS\.level,ready:Boolean\(PASS\.price\)&&passOnSale\(\)\};/,'the catalogue says it is for sale during the preview too, with no extra look-up');
 });
 
@@ -235,7 +235,7 @@ test('the database: a pass row, one per farmer per pass, crediting adds it to pa
 
 test('screens: a button and a More tile from level 10, a window that opens only when tapped, the rule where lanterns are earned',()=>{
  const html=read('public/farm.html'),ui=read('public/pass-ui.js'),game=read('public/game.js');
- assert.match(html,/<button class="icon-button" id="pass-button" aria-label="Open the Halloween Pass" aria-haspopup="dialog" title="Halloween Pass" hidden><i data-game-art="giant-small"><\/i><span id="pass-dot" aria-hidden="true" hidden>!<\/span><\/button><button class="icon-button" id="family-button"/);
+ assert.match(html,/<button class="icon-button" id="pass-button" aria-label="Open the Halloween Pass" aria-haspopup="dialog" title="Halloween Pass" hidden><i data-game-art="giant-small"><\/i><span id="pass-dot" aria-hidden="true" hidden>!<\/span><\/button>(<button class="icon-button" id="season-button"[^]*?<\/button>)?<button class="icon-button" id="family-button"/);
  assert.match(html,/<button data-menu-action="events-button">[^\n]*\n    <button data-menu-action="pass-button" id="pass-menu-entry" hidden>/,'under Every day, after Events');
  assert.match(html,/<dialog id="pass-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="pass-title">/);   // the window shell (18 Oct 2026)
  assert.match(read('public/pass.css'),/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{#pass-button\{display:none\}\}/,'a clean header on phones, like Farm family');
@@ -286,7 +286,7 @@ test('texts: the wiki, a loading tip, the purchase screens and the privacy polic
  assert.match(read('public/game.js'),/passPhase\(Date\.now\(\)\)==='open'\?\[PASS_LOADING_TIP,\.\.\.LOADING_TIPS\]:LOADING_TIPS/,'the tip only while it is open');
  assert.match(read('src/payment-ui.js'),/if\(result\.pack==='pass'\)\{const wait=PASS\.startsAt-\(Number\(result\.serverNow\)\|\|Date\.now\(\)\);display\('credited','Your Halloween Pass is here!',wait>0\?`It starts in \$\{formatDuration\(wait\)\}\./,'bought in the pre-sale, it says when it starts (tests/payment-return.test.mjs runs it)');
  assert.match(read('public/privacy.html'),/When you buy diamonds, a pack, a special offer or a season pass such as the Halloween Pass on our website, you pay on a checkout page run by <strong>Stripe<\/strong>\./);
- assert.match(read('src/analytics.js'),/'starter','offer','pass'\]\)/);
+ assert.match(read('src/analytics.js'),/'starter','offer','pass','season'\]\)/);
 });
 
 // A stand-in for the farm page, enough for public/pass-ui.js: the pass button, its window, the More tile's line and the Diamond shop.

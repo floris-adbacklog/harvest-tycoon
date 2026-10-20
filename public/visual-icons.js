@@ -108,12 +108,19 @@ for(const {icon} of FAMILY_EMBLEMS)if(icon.startsWith('family-')){pictures[icon]
 // A flag for every language in Settings (29 Sep 2026, painted, WebP): flag-en, flag-es, ...
 for(const {code} of LANGUAGES){pictures[`flag-${code}`]=`flag-${code}`;webpPictures.add(`flag-${code}`);}
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).
-export const pictureFile=name=>`/assets/icons/${name}.${webpPictures.has(name)?'webp':'png'}`;
+// The Season Pass (Oct 2026): its pictures, painted by the owner, WebP. Icons (256 px) in /assets/icons/; the badge, the frame (512 px,
+// see-through in the middle), the profile background (1024 × 640) and the window's banner (1536 × 512) in /assets/season/.
+const pictureFolder=Object.create(null);
+// tractor-paint-autumn: the tractor's own icon with its body in the Pumpkin paint (rendered from the game's tractor picture, no new art).
+for(const key of ['season-pass-autumn','season-point-autumn','cranberries','cranberries-seeds','golden-pumpkin','emblem-autumn','tractor-paint-autumn']){pictures[key]=key;webpPictures.add(key);}
+for(const key of ['season-badge-autumn-2026','frame-autumn','profile-bg-autumn','season-pass-banner-autumn']){pictures[key]=key;webpPictures.add(key);pictureFolder[key]='season';}
+const folder=key=>pictureFolder[key]??'icons';
+export const pictureFile=name=>`/assets/${folder(name)}/${name}.${webpPictures.has(name)?'webp':'png'}`;
 // Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.
 export function artSource(key){
  const e=spriteEntries[key];
  if(e)return {src:`/assets/icons/${e.file}`,columns:e.columns,index:e.index};
- if(pictures[key])return {src:`/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}`,columns:1,index:0};
+ if(pictures[key])return {src:`/assets/${folder(key)}/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}`,columns:1,index:0};
  return null;
 }
 export function art(key,extra=''){
@@ -124,7 +131,7 @@ export function art(key,extra=''){
  }
  // loading="lazy" (6 Oct 2026): a picture loads once it is shown, not before. The game's windows are built at the start, so about 80
  // pictures (2.5 MB) of closed windows used to load before the farm could be played.
- if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/icons/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}" alt="" draggable="false" loading="lazy" decoding="async">`;
+ if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/${folder(key)}/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}" alt="" draggable="false" loading="lazy" decoding="async">`;
  return '';
 }
 export function refreshArt(){

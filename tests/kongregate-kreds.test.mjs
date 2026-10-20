@@ -89,7 +89,7 @@ const row=(over={})=>({id:ROW,player_id:FARMER,pack:'500',diamonds:500,coins:0,a
  kong_item_id:null,kong_usage_id:null,created_at:new Date(Date.now()-60000).toISOString(),...over});
 test('kongPlan: credited once, the row in the data first, else the oldest; a new row only for a diamond pack; never another farmer\'s',()=>{
  assert.deepEqual(payments.KONG_PRODUCTS,payments.PLAY_PRODUCTS,'the identifiers in Manage Items are the Google Play product ids');
- assert.deepEqual(Object.values(payments.KONG_PRODUCTS),['diamonds_150','diamonds_500','diamonds_1250','diamonds_3500','starter_pack','special_offer','halloween_pass_2026']);
+ assert.deepEqual(Object.values(payments.KONG_PRODUCTS),['diamonds_150','diamonds_500','diamonds_1250','diamonds_3500','starter_pack','special_offer','halloween_pass_2026','season_pass']);
  assert.equal(payments.kongPack('starter_pack'),'starter');assert.equal(payments.kongPack('sword'),null);assert.equal(payments.kongProduct('500'),'diamonds_500');
  const kinds=plan=>plan.map(s=>[s.instance.id,s.kind,s.row?.id??s.pack]);
  const older=row({id:ROW2,created_at:new Date(Date.now()-120000).toISOString()});

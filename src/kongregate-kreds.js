@@ -28,7 +28,7 @@ export function kredsPrices(found){
 export function kredsCatalog(data,prices){
  return {...data,enabled:Boolean(data?.enabled)&&Object.keys(prices).length>0,prices,
   starter:prices.starter||!data?.starter?data?.starter:{...data.starter,eligible:false},offer:prices.offer?data?.offer??null:null,
-  pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass};
+  pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass,season:data?.season&&!prices.season?{...data.season,ready:false}:data?.season??null};
 }
 
 // The shop of this page: link (src/kongregate-link.js), pay (diamond-checkout, src/supabase.js paymentRequest), current: the Kongregate

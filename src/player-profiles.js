@@ -5,7 +5,8 @@ import {confirmAction} from '../public/confirm-dialog.js';
 import {ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
 import {skeleton} from '../public/skeleton.js';
-import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS} from '../game/farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook} from '../game/farm-state.js';
+import {framed,lookBadge,lookTitle,lookBackground} from '../public/look-marks.js';
 
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const esc=escapeProfileText;
@@ -41,12 +42,20 @@ function familyCard(family,emblem){
 export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false,village=false}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
- return `<div class="farmer-identity"><div class="farmer-avatar" aria-hidden="true"><img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false"></div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}</h3><div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
+ // The Season Pass's looks (Oct 2026, public/look-marks.js): a background behind the face and name, a frame around the face, a badge
+ // beside the name and a title under it; the badges of every season collected in their own row.
+ const bg=lookBackground(player.look);
+ return `<div class="farmer-identity${bg?' has-look-bg':''}"${bg?` style="--look-bg:url('${bg}')"`:''}><div class="farmer-avatar" aria-hidden="true">${framed(player.look,`<img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false">`)}</div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}${lookBadge(player.look)}</h3>${lookTitle(player.look)}<div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
  ${self?'<div class="farmer-share" data-farmer-share hidden></div>':''}
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage,{village})}
- <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Medals</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</section>`;
+ <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Medals</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</section>${seasonRow(player.seasons)}`;
+}
+// The badges of the seasons this farmer collected (the Season Pass), oldest first.
+function seasonRow(ids){
+ const badges=(Array.isArray(ids)?ids:[]).map(seasonLook).filter(look=>look?.kind==='badge');if(!badges.length)return '';
+ return `<section class="farmer-seasons"><div class="farmer-section-heading"><h3 class="farmer-section-title">Seasons</h3><span>${badges.length}</span></div><div class="farmer-season-badges">${badges.map(b=>`<span class="farmer-season-badge">${art(b.art)}<small>${esc(b.name)}</small></span>`).join('')}</div></section>`;
 }
 export function renderPlayerSearch(players,now=Date.now()){
  return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${ownWords(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${ownLine(`${p.family?p.family.name:'No family yet'} · Level ${fmt(p.level)}`,[p.family?.name])}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');

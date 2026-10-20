@@ -21,10 +21,10 @@ test('the farm counts every diamond spent and every VIP day bought, from today',
  assert.match(rules,/export function spendDiamonds\(state,amount\)\{state\.diamonds-=amount;state\.stats\.diamonds_spent=/);
 });
 test('ten goals and the Halloween Pass, each read from the farm itself, and the numbers match the rules',()=>{
- assert.deepEqual(Object.keys(AVATAR_GOALS),['gem-collector','velvet-farmer','crop-master','early-riser','event-champion','grand-champion','good-neighbor','seed-keeper','coin-baron','valley-regular','lantern-keeper']);
+ assert.deepEqual(Object.keys(AVATAR_GOALS),['gem-collector','velvet-farmer','crop-master','early-riser','event-champion','grand-champion','good-neighbor','seed-keeper','coin-baron','valley-regular','lantern-keeper','season-autumn-2026-harvest-chef','season-autumn-2026-autumn-harvester','season-autumn-2026-pumpkin-royal'],'and the Season Pass avatars (Oct 2026)');
  assert.equal(AVATAR_GOALS['seed-keeper'].target,Object.keys(CROPS).length*MASTERY_TIERS.length,'all crop medals');
  assert.equal(MASTERY_TIERS[3].name,'Platinum','tier 3 is the highest medal');
- const farm={events:25,state:{stats:{diamonds_spent:1000,vip_days:90,fair_champion:1,mastery_medals:64,earned:5000000},login:{best:30,visits:100},mastery:{claimed:['corn:0','wheat:3']},inviteRewards:['a','b','c'],passPremium:['halloween-2026']}};
+ const farm={events:25,state:{stats:{diamonds_spent:1000,vip_days:90,fair_champion:1,mastery_medals:64,earned:5000000},login:{best:30,visits:100},mastery:{claimed:['corn:0','wheat:3']},inviteRewards:['a','b','c'],passPremium:['halloween-2026','autumn-2026'],looks:['season-autumn-2026-autumn-harvester','season-autumn-2026-pumpkin-royal']}};
  for(const id of Object.keys(AVATAR_GOALS))assert.equal(avatarOpen(id,farm),true,id);
  const short={events:24,state:{stats:{diamonds_spent:999,vip_days:89,fair_champion:0,mastery_medals:63,earned:4999999},login:{best:29,visits:99},mastery:{claimed:['corn:2']},inviteRewards:['a','b'],passPremium:['halloween-2025']}};
  for(const id of Object.keys(AVATAR_GOALS))assert.equal(avatarOpen(id,short),false,id);
@@ -39,7 +39,7 @@ test('in the picker an achievement avatar carries a trophy: grey with a lock unt
  const picker=read('public/avatar-settings.js');
  assert.match(picker,/`\$\{goal\.text\} to use this avatar\.\$\{goal\.target>1\?` You are at \$\{number\(Math\.min\(goalCount\(id,farm\),goal\.target\)\)\} of \$\{number\(goal\.target\)\}\.`:''\}`/);
  assert.match(read('src/game-cloud.js'),/state:window\.harvestInitialFarm\.state/);
- assert.match(read('supabase/functions/farm-api/index.ts'),/select\('player_id,username,currency,level,avatar_id,events_finished'\)/,'the picker knows the farm events finished');
+ assert.match(read('supabase/functions/farm-api/index.ts'),/select\('player_id,username,currency,level,avatar_id,events_finished,look'\)/,'the picker knows the farm events finished');
  const ui=read('public/progression-ui.js');
  assert.match(ui,/if\(earned\.length\)announce\(\{leveled:false,level,entries:\[\],reward:null,avatars:earned\}\);/,'an avatar earned while playing is announced');
  assert.match(ui,/const earned=toldGoals\?goals\.filter/,'not the ones the farm already had when the game opened');

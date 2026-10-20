@@ -71,8 +71,36 @@ export function passCheckoutProblem({level=1,owned=false,now=Date.now(),price=PA
  if(owned)return {error:`You already have the ${PASS.name}.`,status:409};
  return null;
 }
+// The Season Pass (Oct 2026 on; plan-farmpas/plan.md §8): the paid row of the season that runs, €19.99 once per season, never a
+// subscription. One product in every store, made once by the owner (Stripe 'Season Pass', Google Play and Kongregate 'season_pass'); the
+// server ties each purchase to the season running at checkout (pack 'season', pass_id the season's id: 'autumn-2026'), so nothing changes
+// in a store from one season to the next. On sale while the season is open (not in its preview or collecting week), from level 20 (the
+// free row opens at 10). A second purchase in the same season is refused before checkout (seasonCheckoutProblem, the catalogue says
+// owned) and by a unique index (supabase/season-pass-engine.sql). Crediting adds the season's id to state.passPremium; the rewards are
+// collected in the game (game/farm-state.js claimSeasonTier). The dates are the game's (SEASONS in farm-state.js; a test keeps them equal):
+// startsAt null until the owner says go. CrazyGames and Discord sell nothing (only the free row); the iPhone app does not sell it either
+// (APPLE_SELLS_SEASON_PASS, below): the owner made no App Store product (20 Oct 2026).
+export const SEASON_SALE=Object.freeze({name:'Season Pass',cents:1999,level:20,product:'prod_VTg71Dn0njkTPI',price:'price_1USilO04FdNTUSp4FI12JA9l',
+ seasons:Object.freeze([Object.freeze({id:'autumn-2026',name:'Autumn 2026',startsAt:null,endsAt:Date.UTC(2026,11,22),claimUntil:Date.UTC(2026,11,29)})])});
+export const seasonSale=id=>SEASON_SALE.seasons.find(s=>s.id===id)??null;
+// The season on sale now (open: its start reached, its end not), or null.
+export const seasonOnSale=(now=Date.now(),seasons=SEASON_SALE.seasons)=>seasons.find(s=>s.startsAt!=null&&now>=s.startsAt&&now<s.endsAt)??null;
+// Why a farmer cannot start a Season Pass checkout, or null (diamond-checkout).
+export function seasonCheckoutProblem({level=1,owned=false,now=Date.now(),price=SEASON_SALE.price,seasons=SEASON_SALE.seasons}={}){
+ if(!seasonOnSale(now,seasons))return {error:'The Season Pass is not on sale right now.',status:409};
+ if(!price)return {error:'The Season Pass is not available yet.',status:503};
+ if(!(level>=SEASON_SALE.level))return {error:`The Season Pass is for sale from level ${SEASON_SALE.level}.`,status:409};
+ if(owned)return {error:'You already have the Season Pass for this season.',status:409};
+ return null;
+}
+// No special offer in the first 7 days of a season (plan §6.4): the pass sells on its own first; the Starter Pack runs as always.
+export const SEASON_OFFER_PAUSE=7*24*60*60*1000;
+export const offerPausedForSeason=(now=Date.now(),seasons=SEASON_SALE.seasons)=>seasons.some(s=>s.startsAt!=null&&now>=s.startsAt&&now<s.startsAt+SEASON_OFFER_PAUSE);
+// A season purchase holds no diamonds or coins of its own, only a season the game knows.
+const seasonMismatch=purchase=>!seasonSale(purchase.pass_id)||purchase.diamonds!==0||(purchase.coins??0)!==0;
 const RECEIPT_PACKS=Object.freeze({...LEGACY_PAYMENT_PACKS,...PAYMENT_PACKS,offer:Object.freeze({cents:OFFER.cents,price:OFFER.price,offer:true}),
- pass:Object.freeze({cents:PASS.cents,price:PASS.price,diamonds:0,pass:true})});
+ pass:Object.freeze({cents:PASS.cents,price:PASS.price,diamonds:0,pass:true}),
+ season:Object.freeze({cents:SEASON_SALE.cents,price:SEASON_SALE.price,diamonds:0,season:true})});
 const CHECKOUT_PACK_ALIASES=Object.freeze({'50':'150','100':'150','300':'1250','600':'1250','1000':'3500','2000':'3500'});
 // A Starter Pack checkout opened before 27 Sep 2026 held 300 diamonds; paid later, it still counts, and credits the 300 it showed.
 export const STARTER_DIAMONDS_BEFORE=300;
@@ -102,6 +130,7 @@ export function validatePaidSession(session,purchase,items){
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  // A pass carries no diamonds or coins of its own, only the pass it opens.
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
  if(session.mode!=='payment'||session.livemode!==purchase.livemode)throw new Error('Payment mode mismatch.');
  // A purchase of a deleted account (3 Oct 2026, supabase/delete-account.sql) has no farmer left to compare: the checkout and purchase id
@@ -120,7 +149,7 @@ export function validatePaidSession(session,purchase,items){
 // The server checks every purchase with Google (diamond-checkout play_confirm, game/google-play.js) before crediting it, then consumes it.
 export const PLAY_PACKAGE='com.harvesttycoon.app';
 export const PLAY_PRODUCTS=Object.freeze({'150':'diamonds_150','500':'diamonds_500','1250':'diamonds_1250','3500':'diamonds_3500',
- starter:'starter_pack',offer:'special_offer',pass:'halloween_pass_2026'});
+ starter:'starter_pack',offer:'special_offer',pass:'halloween_pass_2026',season:'season_pass'});
 export const PLAY_PRODUCT=/^[a-z0-9][a-z0-9_.]{0,39}$/;
 export const PLAY_TOKEN=/^[A-Za-z0-9._-]{20,1024}$/;
 export const playProduct=pack=>typeof pack==='string'&&Object.hasOwn(PLAY_PRODUCTS,pack)?PLAY_PRODUCTS[pack]:null;
@@ -131,6 +160,15 @@ export const playProduct=pack=>typeof pack==='string'&&Object.hasOwn(PLAY_PRODUC
 // signed transaction (game/app-store.js, no key needed) before crediting it, and only then does the app finish it.
 export const APPLE_BUNDLE='com.harvesttycoon.app';
 export const APPLE_PRODUCTS=PLAY_PRODUCTS;
+// The Season Pass in the iPhone app (20 Oct 2026, the owner): built, switched off. While APPLE_SELLS_SEASON_PASS is false the app shows
+// the free row only (no buy button: src/main.js asks the App Store for no season_pass price), appleProduct gives no product for it, so
+// checkApplePurchase never credits one, and diamond-checkout refuses an App Store checkout for it (seasonStoreProblem). Set it to true
+// (site and diamond-checkout) once season_pass is an approved consumable in App Store Connect: then StoreKit sells it like the Halloween
+// Pass, apple_confirm checks Apple's signed transaction, the purchase is credited to the season it was bought in
+// (supabase/season-pass-engine.sql) and a refund comes back through app-store-notify.
+export const APPLE_SELLS_SEASON_PASS=false;
+// Why a Season Pass checkout cannot start in this store, or null.
+export const seasonStoreProblem=(store,sellsSeason=APPLE_SELLS_SEASON_PASS)=>store==='app_store'&&!sellsSeason?{error:'The Season Pass is not sold in the iPhone app.',status:409}:null;
 // The special offer in the iPhone app (13 Oct 2026): not yet. The app 1.1 went to App Review with the diamond packs and the Halloween
 // Pass; starter_pack and special_offer follow as in-app purchases once it is approved. App Review buys in Apple's sandbox, which also
 // prices an in-app purchase that is only Ready to Submit, so the App Store's price is no proof that Apple sells it. While this is false
@@ -178,7 +216,7 @@ export function kongPlan(instances,{player,claimed=[],rows=[]}){
   const data=typeof instance.data==='string'?instance.data.trim().toLowerCase():'';
   // No row named: a diamond pack's oldest; a special offer's or pass's newest (15 Oct 2026 review: an older one may be an offer that has
   // ended, the newest is the one most likely on sale now), so paid Kreds always find a row of theirs.
-  const row=(UUID.test(data)?rows.find(r=>r?.id===data&&fits(r)):null)??(pack==='offer'||pack==='pass'?rows.findLast(fits):rows.find(fits));
+  const row=(UUID.test(data)?rows.find(r=>r?.id===data&&fits(r)):null)??(pack==='offer'||pack==='pass'||pack==='season'?rows.findLast(fits):rows.find(fits));
   if(row){taken.add(row.id);plan.push({kind:'credit',instance,pack,row});}
   else plan.push({kind:/^\d+$/.test(pack)?'new':'leave',instance,pack});
  }
@@ -192,13 +230,15 @@ export function checkKongPurchase(purchase,{product,player}){
  const pack=paymentPack(purchase.pack);
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {product};
 }
 export const APPLE_TRANSACTION=/^[0-9]{1,20}$/;
 export const APPLE_JWS=/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 export const APPLE_JWS_MAX=16000;
-export const appleProduct=pack=>playProduct(pack);
+// What the App Store sells for a pack (the same ids as Google Play), or null: the Season Pass only once APPLE_SELLS_SEASON_PASS is on.
+export const appleProduct=(pack,sellsSeason=APPLE_SELLS_SEASON_PASS)=>pack==='season'&&!sellsSeason?null:playProduct(pack);
 // What Google says about a purchase (purchases.products.get) against its row: state 'purchased' (credit it), 'pending' (a payment still
 // on its way, such as cash at a shop) or 'cancelled'; test: a licence tester's test purchase, a promo code or a reward, no money, so it is
 // recorded as test_paid and credits nothing (as a Stripe test payment). Anything that does not belong to this row and farmer throws.
@@ -211,6 +251,7 @@ export function checkPlayPurchase(google,purchase,{product,player}){
  const pack=paymentPack(purchase.pack);
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  const state=google.purchaseState===0?'purchased':google.purchaseState===2?'pending':'cancelled';
  return {state,test:google.purchaseType!=null,order:typeof google.orderId==='string'&&google.orderId?google.orderId.slice(0,100):null};
@@ -235,6 +276,7 @@ export function checkApplePurchase(apple,purchase,{product,player}){
  const pack=paymentPack(purchase.pack);
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
+ if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {state:apple.revocationDate!=null?'revoked':'purchased',test:apple.environment==='Sandbox',transaction:apple.transactionId,original:apple.originalTransactionId??apple.transactionId};
 }

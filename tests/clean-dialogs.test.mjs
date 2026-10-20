@@ -59,7 +59,7 @@ test('no text below 12 px inside the windows (the map labels and the top bar kee
 test('the leaderboard shows the top 100, ten a page, and keeps the window quiet',async()=>{
  const board=read('src/leaderboard.js'),cloud=read('src/game-cloud.js'),ui=read('src/ui.js');
  const {BOARD_SIZE,BOARD_PAGE}=await import('../src/leaderboard.js');assert.equal(BOARD_SIZE,100);assert.equal(BOARD_PAGE,10);
- assert.match(board,/const BOARD_FIELDS=\['player_id','username','level','last_active_at','vip_expires_at','avatar_id'\];/,'only what the board shows');
+ assert.match(board,/const BOARD_FIELDS=\['player_id','username','level','last_active_at','vip_expires_at','avatar_id','look'\];/,'only what the board shows (and the Season Pass look, Oct 2026)');
  assert.match(board,/\.limit\(BOARD_SIZE\)/);assert.match(board,/slice\(shown\*BOARD_PAGE,\(shown\+1\)\*BOARD_PAGE\)/);
  assert.match(board,/`Page \$\{shown\+1\} of \$\{pages\}`/);assert.match(board,/step\('‹ Previous',shown-1,'previous'\),where,step\('Next ›',shown\+1,'next'\)/);
  assert.match(board,/jump\.textContent='Show';jump\.onclick=\(\)=>onPage\(mine\);/,'your own page, when you are in the top 100');

@@ -9,6 +9,8 @@ import {createEmailCheck} from './email-check-ui.js';
 import {createFeedback} from './feedback-ui.js';
 import {createFamilyUI} from './family-ui.js';
 import {createPassUI} from './pass-ui.js';
+import {createSeasonUI} from './season-ui.js';
+import {createLookSettings} from './look-settings.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
@@ -65,6 +67,7 @@ import { computerWindow,timerKey,timerGroups,createFullScreenOffer } from './sma
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
+import { seasonLook, seasonCrop } from './farm-state.js';
 import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
@@ -101,9 +104,14 @@ const initialWelcome=window.harvestInitialFarm.welcome;
 const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 // The admin view (3 Oct 2026, src/admin-view.js): an admin account's showcase farm, marked on the page by src/game-cloud.js before the
 // game starts. Nothing is played or counted there: no actions (farm-client.js), no sweeps, no pacing events, no Welcome back.
+// What the farmer wears (the Season Pass's looks, Oct 2026) and their face, for the pass window and Settings › Profile (season-ui.js).
+window.harvestLook=window.harvestInitialFarm.profile?.look&&typeof window.harvestInitialFarm.profile.look==='object'?window.harvestInitialFarm.profile.look:{};
+window.harvestAvatarId=window.harvestInitialFarm.profile?.avatar_id??'default';
 const adminView=document.documentElement.hasAttribute('data-admin-view');
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
+// The tractor and the night shift plant with coins, never with a season crop's seed packets: they keep the last ordinary crop chosen.
+let tractorCrop='wheat';
 // Whether the farmer chose the tool themselves (the tool bar, a key, Show me) or it only lit up for what the last tap did (showTool).
 let toolPicked=false;
 let emailAccount={needed:false,email:''},emailCheckUI=null;
@@ -136,7 +144,7 @@ const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],s
 const coach=createCoach();
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
 guardWheel();
-let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
+let liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
@@ -393,6 +401,30 @@ function groundPatch(name,x,z,width,depth,color){
  const p=cloneModel(name,x,z,{width,depth,height:.16,y:.006});
  p.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});
  return p;
+}
+// The tractor's paint (the Season Pass's Pumpkin paint, Oct 2026: state.lookFarm.tractor), only on the farmer's own farm: the model's own
+// material with a tint, no new model. Put back as it was with none. setLocked keeps the greyed look of a locked tractor working.
+// A model's palette colours made another colour: its green and blue texels take the colour at their own lightness, the rest (wood,
+// yellow, the darkest parts) stays as it was. A multiply tint (tint() below) can only darken a texture, so a blue tractor or a green
+// bush would turn nearly black. Used by the Season Pass's tractor paint and its season crop (cranberries: the berry bush in red).
+function recolored(material,hex,key){
+ const m=material.clone(),c=new THREE.Color(hex);
+ m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+  {vec3 c=diffuseColor.rgb;float hi=max(c.r,max(c.g,c.b)),lo=min(c.r,min(c.g,c.b));
+   if(hi-lo>.08&&max(c.g,c.b)>c.r+.04){float l=dot(c,vec3(.299,.587,.114));diffuseColor.rgb=vec3(${c.r.toFixed(3)},${c.g.toFixed(3)},${c.b.toFixed(3)})*clamp(.45+l*1.4,.35,1.15);}}`);};
+ m.customProgramCacheKey=()=>`recolor-${key}-${hex}`;return m;
+}
+let tractorPaint=null;
+function paintTractor(){
+ const v=utilityViews.get('tractor'),id=adminView?null:state.lookFarm?.tractor??null;if(!v||id===tractorPaint)return;tractorPaint=id;
+ const look=seasonLook(id),locked=v.object.userData.locked===true;setLocked(v.object,false);
+ v.object.traverse(mesh=>{
+  if(!mesh.isMesh)return;mesh.userData.plain??=mesh.userData.original??mesh.material;
+  const plain=mesh.userData.plain,painted=look?.kind==='tractor'?recolored(plain,look.tint,'tractor'):plain;
+  if(mesh.material!==plain&&mesh.material?.userData?.seasonPaint)mesh.material.dispose?.();
+  if(painted!==plain)painted.userData.seasonPaint=true;mesh.material=painted;mesh.userData.original=painted;
+ });
+ v.object.userData.locked=undefined;setLocked(v.object,locked);
 }
 // Multiplicative tint: only ever makes a texture darker/warmer, never lighter than its source pixels.
 function tint(obj,color){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(color);}});return obj;}
@@ -715,7 +747,7 @@ function drawCrop(i,cut=0){
    }else{
     const offsets=['wheat','barley'].includes(p.crop)?[-.65,0,.65].flatMap(x=>[-.65,0,.65].map(z=>[x,z])):[[-.55,-.55],[.55,-.55],[-.55,.55],[.55,.55]];
     for(const [dx,dz] of offsets){
-     const o=cloneModel(c.model,0,0,{height:c.height,rotation:p.crop==='sunflower'?-.55:.5+i*.22});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);if(p.crop==='greenbeans'){for(let j=0;j<3;j++){const pod=new THREE.Mesh(beanPodGeometry,beanPodMaterial);pod.scale.set(.065,.23,.065);pod.position.set(dx+Math.cos(j*2)*.16,.45+j*.19,dz+Math.sin(j*2)*.16);pod.rotation.z=.25-j*.2;v.cropGroup.add(pod);}}if(c.tint)o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.userData.farmCropOwned=true;n.material.color.setHex(c.tint);}});
+     const o=cloneModel(c.model,0,0,{height:c.height,rotation:p.crop==='sunflower'?-.55:.5+i*.22});scene.remove(o);v.cropGroup.add(o);o.position.set(dx,0,dz);if(p.crop==='greenbeans'){for(let j=0;j<3;j++){const pod=new THREE.Mesh(beanPodGeometry,beanPodMaterial);pod.scale.set(.065,.23,.065);pod.position.set(dx+Math.cos(j*2)*.16,.45+j*.19,dz+Math.sin(j*2)*.16);pod.rotation.z=.25-j*.2;v.cropGroup.add(pod);}}if(c.tint&&c.season)o.traverse(n=>{if(n.isMesh){n.material=recolored(n.material,c.tint,`crop-${p.crop}`);n.material.userData.farmCropOwned=true;}});else if(c.tint)o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.userData.farmCropOwned=true;n.material.color.setHex(c.tint);}});
     }
    }
   }
@@ -937,7 +969,7 @@ function showTool(tool){if(tool!==selectedTool)setTool(tool,false);const button=
 function setTool(tool,picked=true){selectedTool=tool;toolPicked=picked;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
 // The seed you chose last is still chosen after a reload on this device (privacy.html lists the key).
 const CROP_KEY='harvest-tycoon:seed';
-function setCrop(crop){selectedCrop=crop;try{localStorage.setItem(CROP_KEY,crop);}catch{}setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
+function setCrop(crop){selectedCrop=crop;try{localStorage.setItem(CROP_KEY,crop);}catch{}if(!seasonCrop(crop))tractorCrop=crop;setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
 function updateHint(){
  // A drag from a ripe crop or an empty field sweeps (Oct 2026): the computer hints say so, and that the grass moves the view.
  let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water a crop soon after planting for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ripe crop, or hold the mouse button and sweep over your crops to harvest them all. Drag the grass to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold the mouse button and sweep over empty fields to plant them all. Drag the grass to move the view.`;
@@ -991,7 +1023,7 @@ function updateUI(){
  {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0)+readyDailies(state,farmNow()).length;$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
  // The medals of the first basket, a moment after the first sale (A11).
  if(heldMedals.length&&!guideAt('sell')){const medals=heldMedals;heldMedals=[];clearTimeout(heldTimer);heldTimer=0;setTimeout(()=>medalToast(medals),2600);}
- familyUI?.refresh();passUI?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();boat?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
+ familyUI?.refresh();passUI?.refresh();seasonUI?.refresh();lookSettings?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();boat?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
@@ -1527,6 +1559,7 @@ function positionBuildingLabels(){
  if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
  const width=world.clientWidth,height=world.clientHeight;
  farmLife?.position(camera,width,height,farmNow());pond?.position(camera,width,height);pets?.position(camera,width,height);
+ paintTractor();
  for(const [key,v] of utilityViews){
   // The after-90 places (seed lab, visitors, valley projects) are hidden, models and pins, until the farm reaches level 90.
   if(ENDGAME_PLACES.includes(key)){const shown=endgameInSight(state);v.object.visible=shown;for(const d of yardDecor[key]??[])d.visible=shown;if(!shown){v.label.hidden=true;continue;}}
@@ -1618,6 +1651,8 @@ function bindUI(){
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  // The Halloween Pass (Oct 2026, public/pass-ui.js): its button sits next to Farm family's; it opens only when tapped.
  passUI=createPassUI({state,runAction,notify:toast,onChange:updateUI});
+ seasonUI=createSeasonUI({state,runAction,notify:toast,onChange:updateUI});
+ lookSettings=createLookSettings(document.getElementById('look-settings'),{state,runAction,clock:farmNow});
  // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
  window.harvestStock=key=>Number(state.inventory?.[key])||0;
  economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),village:villageWorld});
@@ -1625,7 +1660,7 @@ function bindUI(){
  if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);
  // Every seventh day of a streak (7, 14 ...) is celebrated with the gift popup, after a level-up if one is showing.
  const weekCelebration=r=>{const weeks=r.streak/7;afterCelebration(()=>{giftPopup({coins:r.coins,diamonds:r.diamonds},{eyebrow:'A FULL STREAK WEEK',title:`${r.streak}-day streak!`,icon:'streak',text:`${weeks===1?'Seven days':`${weeks} weeks`} in a row!${r.boost?` Plus ${r.boostMinutes>=60?`${r.boostMinutes/60} hour`:`${r.boostMinutes} minutes`} of double earnings.`:''} Every day your streak holds pays the day-7 gift.`});});};
- retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>selectedCrop,itemList:economy.itemList,celebrate:weekCelebration});
+ retention=createRetentionUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,getCrop:()=>seasonCrop(selectedCrop)?tractorCrop:selectedCrop,itemList:economy.itemList,celebrate:weekCelebration});
  growth=createGrowthUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},onNotice:()=>mobileUI?.refresh(),notify:toast,itemList:economy.itemList,onPlant:key=>economy.chooseCrop(key)});
  valley=createValleyUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
  // World II's market square (Oct 2026): opened by the Village market's pin; Show me turns the village's camera to a place.

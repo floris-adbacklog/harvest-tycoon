@@ -26,7 +26,7 @@ import {forgetAppPushLink} from './app-push.js';
 import {createPlayStore,PLAY_ERRORS} from './play-store.js';
 import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
 import {signInOf,passwordMail,passwordSession} from './account-sign-in.js';
-import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER} from '../game/payments.js';
+import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER,appleProduct} from '../game/payments.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
@@ -45,7 +45,7 @@ const inAppStore=appStore??(inApp&&playBilling()?createPlayStore(window):null);
 // The Galaxy Store app (Oct 2026, " WebBilling/1"): no store of its own, it sells through Stripe like the website. The checkout opens in
 // the phone's browser (the app opens every other site there) and the farm waits for the payment in its purchase window.
 const webPay=inApp&&!inAppStore&&webBilling();
-const storeName=appStore?'app_store':'google_play',storeErrors=appStore?APP_STORE_ERRORS:PLAY_ERRORS,storeProducts=appStore?APPLE_PRODUCTS:PLAY_PRODUCTS;
+const storeName=appStore?'app_store':'google_play',storeErrors=appStore?APP_STORE_ERRORS:PLAY_ERRORS,storeProducts=appStore?Object.fromEntries(Object.keys(APPLE_PRODUCTS).filter(pack=>appleProduct(pack)).map(pack=>[pack,appleProduct(pack)])):PLAY_PRODUCTS;
 inAppStore?.onPurchase(message=>{void window.harvestBridge?.playSettle?.(message).catch(()=>{});});
 let storePrices=null;
 // Another language than English: translate the page's texts as they appear (public/i18n.js).
@@ -303,7 +303,10 @@ async function openFarm(){
    // sandbox, where App Review buys, also prices one that is only Ready to Submit, and an offer may now open at level 10.
    return {...data,enabled:Boolean(data?.enabled)&&Object.keys(prices).length>0,prices,
     starter:prices.starter||!data?.starter?data?.starter:{...data.starter,eligible:false},offer:prices.offer&&(!appStore||APPLE_SELLS_OFFER)?data?.offer??null:null,
-    pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass};
+    pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass,
+    // The Season Pass (Oct 2026): not for sale where the store gives no price, and never in the iPhone app while Apple does not sell it
+    // (game/payments.js APPLE_SELLS_SEASON_PASS: appleProduct gives none, so the App Store is not even asked).
+    season:data?.season&&!prices.season?{...data.season,ready:false}:data?.season??null};
   };
   // The App Store's purchase goes as Apple's signed transaction (up to 16 KB); a refusal (not Apple's, another farmer's: a 403) is not
   // asked again.

@@ -1,5 +1,5 @@
 import {foldLocked} from './progression-ui.js';
-import {villageGood,recipeLevel,lakeOpen,lakeCasts,POND_MAX_CASTS,labCanCross,doubleBatchChance,worldTwoBuilding,builderCrates,BUILDER_CRATE_COINS,VILLAGE_TILES_FROM,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,villagePremium,buildingRecipes,marketItems,villageBrief,villagePlaceBefore,VALLEY_PROJECTS,valleyProjectLevel,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketPay,firstSaleDouble,vipActive,buildingCost,constructionNeeds,recipeUnlocked,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,batchDuration,quickFirstBatch,FIRST_BATCH_MS,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,buildingSlots,farmhandActive,farmhandWorks,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
+import {seasonCrop,seasonCropOpen,seasonSeedsOf,SEASON_CROPS,villageGood,recipeLevel,lakeOpen,lakeCasts,POND_MAX_CASTS,labCanCross,doubleBatchChance,worldTwoBuilding,builderCrates,BUILDER_CRATE_COINS,VILLAGE_TILES_FROM,VILLAGE_PREMIUM,VILLAGE_HALL_PREMIUM,villagePremium,buildingRecipes,marketItems,villageBrief,villagePlaceBefore,VALLEY_PROJECTS,valleyProjectLevel,ENDGAME_PLACES,endgameInSight,sellableStock,keptStock,rookieLeft,marketPay,firstSaleDouble,vipActive,buildingCost,constructionNeeds,recipeUnlocked,recipeUnlockHint,guidedFarm,buildingEligible,buildingUnlockHint,BUILDING_LEVELS,cropUnlockHint,featureUnlocked,CROPS,ITEMS,BUILDINGS,RECIPES,MAX_PLOTS,recipeAvailability,upgradeCost,expansionCost,expansionLevel,seedCost,formatDuration,cropDuration,batchDuration,quickFirstBatch,FIRST_BATCH_MS,productionSpeed,MAX_BUILDING_LEVEL,upgradeRequirements,expansionMaterials,productionSlots,buildingSlots,farmhandActive,farmhandWorks,productionJobs,recipeValue,recipeFor,jobName,marketQuote,marketHighlights,utcDay,levelOf,cropUnlocked,buildingUnlocked,FEATURE_LEVELS,FEATURE_NAMES,RANCH_HERDS,ranchSpeedup,IMPROVEMENTS,hasImprovement,normalizeFarm} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
@@ -74,10 +74,20 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const next=Math.min(...jobs.map(j=>j.readyAt))-now;
   return {text:`${jobs.length} / ${slots} working · ${seconds(next)}`,kind:'working',...counts,next};
  }
- function chooseCrop(key){if(!cropUnlocked(state,key)){notify(cropUnlockHint(state,key));return;}selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').textContent=`${seedCost(state,key)} · ${seconds(cropDuration(state,key,false,farmNow()))}`;onCrop(key);}
+ // A season crop (the Season Pass's cranberries, Oct 2026) is planted with its seed packets, never coins: its row says how many are left.
+ const cropPrice=key=>seasonCrop(key)?`${seasonSeedsOf(state,key)} packets · ${seconds(cropDuration(state,key,false,farmNow()))}`:`${seedCost(state,key)} · ${seconds(cropDuration(state,key,false,farmNow()))}`;
+ function chooseCrop(key){if(seasonCrop(key)?seasonSeedsOf(state,key)<1||!seasonCropOpen(key,farmNow()):!cropUnlocked(state,key)){notify(cropUnlockHint(state,key));return;}selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').textContent=cropPrice(key);onCrop(key);}
+ // The season crop's row on top of the seeds while its season runs or a farm still has packets: the packets instead of a price.
+ function seasonSeedRows(){
+  return Object.keys(SEASON_CROPS).filter(key=>seasonSeedsOf(state,key)>0||seasonCropOpen(key,farmNow())&&levelOf(state)>=10).map(key=>{
+   const c=CROPS[key],n=seasonSeedsOf(state,key),open=seasonCropOpen(key,farmNow()),usable=open&&n>0;
+   const line=!open?'This crop only grows in its season. Your seed packets keep until then.':n?`${seconds(cropDuration(state,key,false,farmNow()))} · sells for ${marketQuote(key,farmNow()).price}`:'Seed packets come from the Season Pass.';
+   return `<button class="seed-row crop-${key} is-season ${selectedCrop===key?'selected':''} ${usable?'':'is-locked'}" data-choose-crop="${key}" ${usable?'':'disabled'} aria-pressed="${selectedCrop===key}"><span class="seed-row-art">${art(key)}</span><span class="seed-row-copy"><strong>${c.name}</strong><small>${line}</small></span><span class="seed-row-price">${art(`${key}-seeds`)}${n}</span></button>`;
+  }).join('');
+ }
  function renderSeeds(){
   document.querySelectorAll('[data-seed-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.seedFilter===seedFilter);b.setAttribute('aria-pressed',String(b.dataset.seedFilter===seedFilter));});
-  keepFolds($('crop-catalog'),()=>{$('crop-catalog').innerHTML=Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||seedTab(c.duration)===seedFilter).map(([key,c])=>{
+  keepFolds($('crop-catalog'),()=>{$('crop-catalog').innerHTML=seasonSeedRows()+Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||seedTab(c.duration)===seedFilter).map(([key,c])=>{
    const paceTitle=c.perennial?`Plant once · First harvest ${seconds(cropDuration(state,key,false,farmNow()))}\nThen ${seconds(cropDuration(state,key,true))} after each collection.\nOne harvest waits; no offline stockpiling.`:'';
    // One compact row per crop, like the market: picture, name (plus "Regrows" for orchard crops), time and today's price,
    // the seed price on the right. The filter tabs already say how quick a crop is.
@@ -85,7 +95,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    return `<button class="seed-row crop-${key} ${selectedCrop===key?'selected':''} ${locked?'is-locked':''}" data-choose-crop="${key}" ${locked?'disabled':''} aria-pressed="${selectedCrop===key}"${paceTitle?` title="${paceTitle}"`:''}><span class="seed-row-art">${art(key)}</span><span class="seed-row-copy"><strong>${c.name}${c.perennial?'<em class="seed-pace is-regrow">Regrows</em>':''}</strong><small>${locked?`${art('lock','unlock-lock')} ${cropUnlockHint(state,key)}`:`${seconds(cropDuration(state,key,false,farmNow()))} · sells for ${marketQuote(key,farmNow()).price}`}</small></span><span class="seed-row-price">${art('coins')}${seedCost(state,key)}</span>${selectedCrop===key?'<span class="seed-row-check" aria-hidden="true">✓</span>':''}</button>`;
   }).join('');
   // What is still locked goes to the bottom, folded, on every farm (older farms too), so what you can use comes first.
-  foldLocked($('crop-catalog'),'[data-choose-crop]',b=>!cropUnlocked(state,b.dataset.chooseCrop),'Seeds to unlock','seeds-locked');});
+  foldLocked($('crop-catalog'),'[data-choose-crop]:not(.is-season)',b=>!cropUnlocked(state,b.dataset.chooseCrop),'Seeds to unlock','seeds-locked');});
   // Up to level 8 a crop that is not quick says how long it takes and names the quick one for playing on (16 Oct 2026, wait-tip.js).
   // Opened from the tractor (17 Oct 2026, data-from): nothing, as the tractor opens again and shows the crop on its Plant tile.
   $('crop-catalog').querySelectorAll('[data-choose-crop]').forEach(b=>b.addEventListener('click',()=>{chooseCrop(b.dataset.chooseCrop);const fromTractor=$('seed-dialog').dataset.from==='tractor';$('seed-dialog').close();if(!fromTractor)notify(cropChoiceText(state,b.dataset.chooseCrop,farmNow()));}));icons();
@@ -440,7 +450,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   flyHarvest({from:{x:from.left+from.width/2,y:from.top+from.height/2},to:{x:to.left+to.width/2,y:to.top+to.height/2},html:art('coins'),count:5,onArrive:()=>bump(counter)});
  }
  function refresh(){
-  $('selected-crop-price').textContent=`${seedCost(state,selectedCrop)} · ${seconds(cropDuration(state,selectedCrop))}`;
+  $('selected-crop-price').textContent=cropPrice(selectedCrop);
   if($('building-dialog').open)renderBuilding();
   if($('seed-dialog').open)renderSeeds();
   const count=Object.keys(BUILDINGS).filter(key=>inWorld(key)&&status(key).kind==='ready').length;$('production-count').hidden=!count;$('production-count').textContent=count;

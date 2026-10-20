@@ -1,4 +1,5 @@
-import {PLAYER_AVATARS,OWNER_AVATARS,isOwnerAvatar,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
+import {PLAYER_AVATARS,SEASON_AVATARS,OWNER_AVATARS,isOwnerAvatar,playerAvatar,avatarLevel,avatarGoal,goalCount,avatarOpen} from './player-avatars.js';
+import {currentSeason,seasonPhase,seasonById,SEASON_LOOK_SOURCE,APPLE_SELLS_SEASON_PASS} from './farm-state.js';
 import {portalOff} from './portal.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 
@@ -24,6 +25,7 @@ function labelOf(a,farm){
 // What still stands between the farmer and a locked face, under the Save button.
 function lockedText(id,farm){
  const goal=avatarGoal(id);if(!goal)return `Reach level ${avatarLevel(id)} to use this avatar.`;
+ const source=goal.season&&SEASON_LOOK_SOURCE[id];if(source)return `Season Pass ${seasonById(source.season)?.title??''}, tier ${source.tier}.`;
  return `${goal.text} to use this avatar.${goal.target>1?` You are at ${number(Math.min(goalCount(id,farm),goal.target))} of ${number(goal.target)}.`:''}`;
 }
 const tile=farm=>id=>`<span class="avatar-tile${locked(id,farm)?' is-locked':''}"><img src="${playerAvatar(id).src}" alt="" width="96" height="96" loading="lazy" decoding="async" draggable="false">${avatarBadge(id,farm)}</span>`;
@@ -35,6 +37,10 @@ export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
  // A face that comes with a purchase (the Halloween Pass) is shown only where it can be bought, or once it is yours: our apps and
  // CrazyGames sell nothing of our own (public/portal.js), so there it would only point at a shop that is not there (4 Oct 2026).
  const offered=PLAYER_AVATARS.filter(a=>!avatarGoal(a.id)?.pass||!portalOff('payments')||!locked(a.id,known));
+ // The Season Pass's faces (Oct 2026): the ones you have, and the running season's (its paid ones only where the pass is sold: not in
+ // the iPhone app while Apple does not sell it). A past season's face you do not have is not shown.
+ const running=currentSeason(Date.now()),noApple=globalThis.document?.documentElement?.getAttribute?.('data-app-os')==='ios'&&!APPLE_SELLS_SEASON_PASS;
+ offered.push(...SEASON_AVATARS.filter(a=>!locked(a.id,known)||(running?.id===a.season&&['soon','open','claim'].includes(seasonPhase(running,Date.now()))&&(!a.paid||!portalOff('payments')&&!noApple))));
  const picker=emblemPickerMarkup({emblems:owner?[...OWNER_AVATARS,...offered]:offered,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
  return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }

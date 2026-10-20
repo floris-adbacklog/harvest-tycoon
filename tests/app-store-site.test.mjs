@@ -47,7 +47,7 @@ test('the App Store\'s answers are read strictly: Apple\'s signed transaction, i
 test('the addresses to the app: the same products as Google Play, every part encoded, finish with Apple\'s transaction id',()=>{
  assert.deepEqual({...APP_STORE_LINKS},{prices:'appstoreprices://prices',buy:'appstorebuy://buy',pending:'appstorepending://pending',finish:'appstorefinish://finish'});
  assert.ok(Object.isFrozen(APP_STORE_LINKS));
- assert.equal(appStorePricesLink([...new Set(Object.values(APPLE_PRODUCTS))]),'appstoreprices://prices?ids=diamonds_150,diamonds_500,diamonds_1250,diamonds_3500,starter_pack,special_offer,halloween_pass_2026');
+ assert.equal(appStorePricesLink([...new Set(Object.values(APPLE_PRODUCTS))].filter(id=>id!=='season_pass')),'appstoreprices://prices?ids=diamonds_150,diamonds_500,diamonds_1250,diamonds_3500,starter_pack,special_offer,halloween_pass_2026','the iPhone app asks for no season_pass price while Apple does not sell it (APPLE_SELLS_SEASON_PASS)');
  assert.equal(appStoreBuyLink({product:'diamonds_500',account:FARMER,purchase:ROW}),`appstorebuy://buy?product=diamonds_500&account=${FARMER}&purchase=${ROW}`);
  assert.equal(appStoreBuyLink({product:'a&b',account:'c=d',purchase:'e f'}),'appstorebuy://buy?product=a%26b&account=c%3Dd&purchase=e%20f');
  assert.equal(appStoreFinishLink(ORDER),`appstorefinish://finish?transaction=${ORDER}`);assert.equal(appStoreFinishLink('1&x'),'appstorefinish://finish?transaction=1%26x');

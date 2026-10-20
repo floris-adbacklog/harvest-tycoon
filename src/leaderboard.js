@@ -1,4 +1,5 @@
 import {avatarImage} from '../public/player-avatars.js';
+import {framed,lookBadge} from '../public/look-marks.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {staffRole,staffBadge} from './staff-badge.js';
 import {rankArt} from '../public/rank-art.js';
@@ -54,7 +55,7 @@ const columnOf=category=>{const config=categoryFor(category);return config.good?
 export const scoreOf=(row,category)=>{const config=categoryFor(category);return Number((config.good?row?.goods_made?.[config.good]:row?.[category])??0);};
 // The top 100 in one read, shown ten a page (30 Sep 2026); only what the board shows, so a hundred rows stay light: who, their
 // picture and VIP mark, the level, when they last played (the online dot) and the board's own score.
-const BOARD_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id'];
+const BOARD_FIELDS=['player_id','username','level','last_active_at','vip_expires_at','avatar_id','look'];
 export const BOARD_SIZE=100,BOARD_PAGE=10;
 // The admins are on no board (3 Oct 2026): they make the game and cannot play on their admin accounts, so on a quiet board their
 // zeros would still fill places. Who is admin comes from the database's one staff check (chat_staff_list, supabase/chat-staff-list.sql),
@@ -121,7 +122,7 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
   const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');
   // The farmer's name as typed (17 Oct 2026), in its own kept span: the badges after it are the game's and are translated.
   const typed=document.createElement('span');typed.setAttribute('translate','no');typed.textContent=row.username;strong.append(typed);
-  if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',ownText(`View ${row.username}'s profile`,[row.username]));strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));small.textContent=row.player_id===playerId?'You':'';const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${avatarImage(row.avatar_id)}</span>`;identity.firstElementChild.append(dot);const copy=document.createElement('div');copy.append(strong);if(small.textContent)copy.append(small);identity.append(copy);name.append(identity);
+  if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',ownText(`View ${row.username}'s profile`,[row.username]));strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));const seasonBadge=lookBadge(row.look);if(seasonBadge)strong.insertAdjacentHTML('beforeend',seasonBadge);small.textContent=row.player_id===playerId?'You':'';const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${framed(row.look,avatarImage(row.avatar_id))}</span>`;identity.firstElementChild.append(dot);const copy=document.createElement('div');copy.append(strong);if(small.textContent)copy.append(small);identity.append(copy);name.append(identity);
   const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
  });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
  if(pages>1){

@@ -16,6 +16,7 @@ import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_HOUR_POOLS,EVENT_GOAL_GROUPS} from './event-goals.js';
 import {HOUR_EVENT_REWARDS,eventPrizes} from './farm-state.js';
+import {currentSeason,seasonPhase,seasonTotals,SEASON_POINTS,SEASON_DAY_CAP,SEASON_WEEK_BONUS,SEASON_SKIP_COST,SEASON_CHEST_POINTS,SEASON_CHEST_COINS,SEASON_TIERS,SEASON_LEVEL,SEASON_BUY_LEVEL,SEASON_CROPS,APPLE_SELLS_SEASON_PASS} from './farm-state.js';
 import {portal as portalAround,privacyContact} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
@@ -163,6 +164,20 @@ function passSection(h){
   :`<p>${h.kreds?`Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. With Kreds the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.`
    :`Free: coins that grow with your level, pumpkins, pumpkin pies and ${totals.freeBoostMinutes.join(' and ')}-minute boosts. For ${price} the paid rewards open too: ${number(totals.diamonds)} diamonds, ${totals.vipDays} days of VIP, ${totals.boosts} boosts, pies and more coins. Tiers you already reached open at once.`}</p>`+(passSale(h.now)?`<p>${passSale(h.now)}</p>`:'')
   +table(['Tier','Free','Paid'],rows)));
+}
+
+// The Season Pass (Oct 2026): the rules in the same sentences as its window, while a season shows (from its preview until its collecting
+// week ends). The paid row only where it is sold (h.shop; not in the iPhone app while Apple does not sell it).
+function seasonSection(h){
+ const s=currentSeason(h.now);if(!s||!['soon','open','claim'].includes(seasonPhase(s,h.now)))return '';
+ const p=SEASON_POINTS,t=seasonTotals(s),crop=SEASON_CROPS[s.crop],sold=h.shop&&!(h.appStore&&!APPLE_SELLS_SEASON_PASS);
+ return section('Season Pass',`<p>${h.lvl(SEASON_LEVEL)} ${s.title}, until ${passDay(s.endsAt-DAY)}. Every ${number(s.perTier)} leaves = 1 tier, ${SEASON_TIERS} tiers in all, each with a free reward and a paid one. Collect each reward with its own button, until ${passDay(s.claimUntil-DAY)}. Leaves only count this season.</p>`
+  +`<p>Leaves: a daily gift ${p.gift}, a daily challenge ${p.daily}, a delivery ${p.delivery}, an event reward ${p.event}, a quest ${p.quest}, a fish, a helping hand or a chore ${p.fish}. Up to ${SEASON_DAY_CAP} leaves a day. Weekly goal: +${SEASON_WEEK_BONUS} leaves, on top of the daily limit. Double week: everything counts double, the daily limit too (${SEASON_DAY_CAP*2}).</p>`
+  +`<p>Skip a tier: ${SEASON_SKIP_COST} diamonds per tier. After tier ${SEASON_TIERS}, every ${number(SEASON_CHEST_POINTS)} leaves open a bonus chest with ${SEASON_CHEST_COINS} × your level coins.</p>`
+  +(sold?`<p>From level ${SEASON_BUY_LEVEL} the paid rewards can be bought once this season: ${number(t.diamonds)} diamonds, ${t.vipDays} days of VIP, ${t.farmhandDays} days of farmhand, ${t.boosts} boosts, ${t.avatars} avatars and ${t.otherLooks} other season looks. Tiers you already reached open at once.</p>`:'')
+  +`<p>Your look: avatars, an avatar frame, badges, titles, name colours, a profile background, a float, a fishing rod, a family emblem and tractor paint. What you collect stays yours. Choose what you wear in Settings, under Profile.</p>`
+  // The season's crop in its own words (Autumn: cranberries).
+  +(s.crop==='cranberries'?`<p>Cranberries: one seed packet = one field of cranberries. Cranberries only grow in the autumn: plant them until ${passDay(s.endsAt-DAY)}. They grow in ${wikiTime(crop.duration)}; water and extra care give more, like any crop. Sell them at the market for ${number(Math.round(crop.sell*0.8))} coins each. They do not count for medals.</p>`:''));
 }
 
 // A building's section: its recipes as a table (cards on a phone). The Buildings topic and The Village share it.
@@ -391,6 +406,7 @@ const BODIES={
   +section('Daily challenges',`<p>${h.lvl(FEATURE_LEVELS.challenges)} Three small goals every day. Each pays coins, 10 XP and diamonds: ${DAILY_CHALLENGE_DIAMONDS.join(', ')}. Finish all three for a bonus of ${art('coins')}${DAILY_BONUS.coins} and ${DAILY_BONUS.xp} XP. VIP doubles these rewards.</p><p>They are in Today (on a phone: More → Today). Claim each one there when it is done; the number on Quests counts it too. A challenge for a helping hand stop that is resting says when that stop is ready again.</p>`)
   +section('Delivery orders',`<p>${h.lvl(FEATURE_LEVELS.cart)} Customers ask for crops and goods and pay more than the market, with new orders every day. Tap the cart on your farm, or open Delivery orders in Today. Don’t like an order? Replace it for ${REPLACE_ORDER_COST} diamonds.</p>`+table(['Order','Opens','Pays'],tiers))
   +passSection(h)
+  +seasonSection(h)
   +section('A new day','<p>Gifts, challenges, orders and market prices refresh at 00:00 UTC.</p>');
  },
  family(h){

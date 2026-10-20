@@ -19,7 +19,7 @@ test('player profile whitelists public data and mastery without reading the comp
  assert.equal(response.data.profile.player_id,self);assert.equal(p.playerId,id);assert.equal(p.online,true);assert.equal(p.family,null);
  assert.equal(p.stats.harvested_crops,500);assert.equal(p.harvests.wheat,42);assert.deepEqual(p.badges,[{crop:'wheat',tier:0},{crop:'berries',tier:3}]);
  const json=JSON.stringify(response);for(const privateValue of ['4321','private@example.com','last_active_at','receipts','invite_code'])assert.ok(!json.includes(privateValue));
- assert.equal(admin.calls.find(c=>c.table==='player_farms').select,'claimed:state->mastery->claimed');assert.ok(!PLAYER_PUBLIC_FIELDS.includes('diamonds'));
+ assert.equal(admin.calls.find(c=>c.table==='player_farms').select,'claimed:state->mastery->claimed,looks:state->looks','the medals, and the season badges (Oct 2026)');assert.ok(!PLAYER_PUBLIC_FIELDS.includes('diamonds'));
  assert.equal(p.stats.currency,9999,'coins are public, like the Most coins board');assert.equal(p.stats.quests_done,47);assert.equal(p.stats.goods_kinds,1,'only real goods made at least once');assert.equal(p.stats.helping_rounds,0);assert.ok(admin.calls.every(c=>c.select!=='*'));
 });
 test('profile includes only current, non-deleted family membership',async()=>{
