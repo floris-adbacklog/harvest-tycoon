@@ -216,12 +216,15 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  if(!/^[0-9a-f-]{36}$/i.test(String(playerId??'')))return respond(user,{error:'Unknown farmer.'},400);
  const owner=isSuperadmin(user),id=String(playerId);
  const quiet=promise=>Promise.resolve(promise).then(found=>found?.error?null:found).catch(()=>null);
- const [account,stat,farm,purchases,events,messages,reports,sanction,invitedBy,invited,inviteCode,membership,authUser]=await Promise.all([
+ const [account,stat,farm,purchases,eventsJoined,eventsFinished,messages,reports,sanction,invitedBy,invited,inviteCode,membership,authUser]=await Promise.all([
   admin.rpc('admin_player_accounts',{p_player:id}),
   admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id,events_finished').eq('player_id',id).maybeSingle(),
   admin.from('player_farms').select('state').eq('player_id',id).maybeSingle(),
   quiet(admin.from('harvest_purchases').select('pack,status,amount_cents,diamonds,livemode,created_at').eq('player_id',id).order('created_at',{ascending:false}).limit(20)),
-  quiet(admin.from('live_event_players').select('qualified,diamonds,joined_at').eq('player_id',id).limit(500)),
+  // Events joined as a count, and the diamonds of the finished ones (20 Oct 2026: with an event every hour a daily farmer passed the
+  // old 500-row limit in about 3 weeks, and the card undercounted).
+  quiet(admin.from('live_event_players').select('event_id',{count:'exact',head:true}).eq('player_id',id)),
+  quiet(admin.from('live_event_players').select('diamonds').eq('player_id',id).eq('qualified',true).limit(20000)),
   quiet(admin.from('chat_messages').select('id',{count:'exact',head:true}).eq('sender',id)),
   quiet(admin.from('chat_reports').select('id',{count:'exact',head:true}).eq('sender',id)),
   quiet(admin.from('chat_sanctions').select('muted_until,banned').eq('player_id',id).maybeSingle()),
@@ -241,7 +244,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   a.ip?quiet(admin.rpc('admin_player_accounts',{p_ip:a.ip}).range(0,20)):null
  ]);
  const shared=(network?.data??[]).filter(row=>row.player_id!==id).slice(0,20);
- const joined=events?.data??[],friends=invited?.data??[],muted=Date.parse(sanction?.data?.muted_until)>now;
+ const finishedEvents=eventsFinished?.data??[],friends=invited?.data??[],muted=Date.parse(sanction?.data?.muted_until)>now;
  const player={playerId:id,username:s?.username??null,level:s?.level??null,avatarId:s?.avatar_id??null,coins:s?.currency??null,diamonds:state?num(state.diamonds):null,xp:state?num(state.xp):null,
   createdAt:a.created_at,lastActiveAt:s?.last_active_at??null,lastSignInAt:a.last_sign_in_at??null,provider:a.provider??'email',online:s?isRecentlyActive(s.last_active_at,now):false,everPlayed:Boolean(s),
   vipUntil:Date.parse(s?.vip_expires_at)>now?s.vip_expires_at:null,
@@ -252,7 +255,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   emailBonus:Boolean(state?.emailBonus),
   activity:ACTIVITY.map(([key,label])=>({key,label,count:num(stats[key])})).concat([{key:'events',label:'Farm events finished',count:num(s?.events_finished)}]),
   earned:{coins:num(stats.earned),diamonds:num(stats.diamonds_earned)},
-  events:{joined:joined.length,finished:joined.filter(e=>e.qualified).length,diamonds:joined.reduce((sum,e)=>sum+num(e.diamonds),0)},
+  events:{joined:num(eventsJoined?.count),finished:finishedEvents.length,diamonds:finishedEvents.reduce((sum,e)=>sum+num(e.diamonds),0)},
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
   invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length,closed:inviteCode?.data?.closed_at!=null},
   language:a.language??null,

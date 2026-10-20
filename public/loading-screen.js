@@ -8,7 +8,7 @@ export const LOADING_TIPS=Object.freeze([
  ['apples','From level 20 apple trees grow back after you pick them, and from level 23 berry bushes too.'],
  ['collect-all','Turn crops into goods in your buildings: they sell for more.'],
  ['instant-harvest','Hold the mouse button on a ripe crop and sweep across your fields to harvest them all. On a phone, hold a field for a moment first.'],
- ['live-events','From level 15 a new event starts every six hours: finish its goals for coins and diamonds.'],
+ ['live-events','From level 15 a new event starts every hour: finish its goal for diamonds.'],
  ['guide','How to play has a wiki with every crop and recipe.'],
  // More tips (1 Oct 2026); the old Farm family tip (weekly orders) gave way to the Family Chest and the top ten.
  ['double-coins','The Market shows tomorrow’s best price: make it today, sell it tomorrow.'],
@@ -24,7 +24,7 @@ export const LOADING_TIPS=Object.freeze([
  // 5 Oct 2026: what the order and events pay a family (tests/wiki.test.mjs keeps them equal to the rules in farm-state.js).
  // 5 Oct 2026, later: an unfinished order pays for its full lines too, so the tip no longer says only a finished one pays.
  ['family-weekly-order','The Family Order pays for every full line, finished or not. A whole order pays a quarter more than the Market’s normal price, plus XP and diamonds.'],
- ['family-members','Finish an event with two or more members of your Farm family: you each get 200 coins and 3 diamonds extra.'],   // 5 until 7 Oct 2026
+ ['family-members','Finish an event with two or more members of your Farm family: you each get 3 diamonds extra.'],   // 5 until 7 Oct 2026, and 200 coins until 20 Oct 2026
  ['invite-friends','Invite a friend: when they reach level 10 within 30 days, you both get 150 diamonds.'],
  ['farmapp','Add Harvest Tycoon to your home screen: one tap away, with a reminder when your crops are ready.'],
  ['valley-market','From level 62 the Valley Market pays 1.5× for a full basket of goods.'],

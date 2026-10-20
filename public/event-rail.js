@@ -2,7 +2,7 @@
 // at the right-hand edge of the farm, under the top bar, for what is on for a while. The Special offer's tile (src/offer-ui.js makes it)
 // is there while the offer runs; Today, Events and the Halloween Pass are there as round buttons only while something waits for the farmer
 // there, by the same signal as their own badge: #today-dot (today's gift, a challenge to claim or an order to deliver, retention-ui.js),
-// #events-dot (a reward to collect or a running event not opened yet, live-events-ui.js) and #pass-dot (a reward to claim, pass-ui.js).
+// #events-dot (a reward to collect or a running event you have not joined or opened yet, live-events-ui.js) and #pass-dot (a reward to claim, pass-ui.js).
 // All three stay in More as well. On a phone (mobileLayout) the buttons themselves move into #event-rail, on a computer back to where they
 // were (nothing changes there), so every selector and handler that knows them keeps working. Nothing here ever throws.
 import {mobileLayout} from './mobile-ui.js';

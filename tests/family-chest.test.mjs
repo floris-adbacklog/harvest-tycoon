@@ -93,7 +93,7 @@ test('the family list puts families you can join first, the busiest on top',()=>
 });
 
 test('three or more finishers from one family share a family bonus at the end of a farm event',async()=>{
- assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:3});   // 5 diamonds until 7 Oct 2026
+ assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,diamonds:3});   // 5 diamonds until 7 Oct 2026, and 200 coins until 20 Oct 2026
  const sql=(await import('node:fs')).readFileSync(new URL('../supabase/diamonds-2026-10-07.sql',import.meta.url),'utf8');   // the newest settlement
  assert.match(sql,/having count\(\*\)>=3/);assert.match(sql,/coins=p\.coins\+200,diamonds=p\.diamonds\+3/);
 });

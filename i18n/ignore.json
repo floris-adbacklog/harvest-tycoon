@@ -96,5 +96,14 @@
  "an automatic event that has not started still has 6 leagues",
  "pick {0}",
  "public.{0} did not come out as generated",
- "public.{0} is not the one this file expects (md5 {1}); read the live definition first"
+ "public.{0} is not the one this file expects (md5 {1}); read the live definition first",
+ "An event is running. Run this file while no event runs.",
+ "Run World 2 leagues Part B (supabase/world-two-leagues-b.sql) first.",
+ "Give a time in the future, or null to end the pause.",
+ "Podium diamonds must be 3 whole numbers from 0 to 25.",
+ "a 6-hour automatic event is left",
+ "an automatic event made ahead is not an hourly event",
+ "fewer than 2 hourly events made ahead",
+ "public.{0} changed",
+ "the cron job does not run every 5 minutes"
 ]

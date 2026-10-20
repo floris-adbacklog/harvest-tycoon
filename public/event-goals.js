@@ -173,3 +173,26 @@ const nice=x=>x<20?Math.max(1,Math.round(x)):x<100?Math.round(x/5)*5:x<1000?Math
 export const EVENT_GOAL_POOLS=Object.freeze(EVENT_LEAGUES.map(({index:league,world})=>Object.freeze([0,1,2,3,4].map(group=>Object.freeze(
  WORLD_KINDS[world].filter(k=>k[1]===group&&k[2]<=league).map(([stat,,from,targets,grow])=>Object.freeze({stat,targets:Object.freeze(league===from?targets:targets.map(t=>nice(t*grow**(league-from))).map((t,i,all)=>Math.max(t,i?all[i-1]:0)))}))
 )))));
+// Hourly events (20 Oct 2026, the owner): one goal an hour, a fifth of the league's medium 5-hour goal, rounded as above, at most 3
+// lake fish (a cast rests 15 minutes). harvest_event_pick (scripts/hourly-events-sql.mjs) draws from these. Left out: what takes an
+// hour or more (a crop or the fastest non-Factory batch at the league's first level), what the owner never wants (Valley Market
+// baskets, boat trips, diamonds spent), single-product sales most farmers had at 0, and three goods whose input needs a step of an
+// hour or more that fewer than half of the league's farmers hold (orchard salad, pickaxe, linen; spec-uur-events.md §2.5.1).
+export const HOUR_SHARE=5,LAKE_FISH_PER_HOUR=3;
+export const HOUR_LEFT_OUT=Object.freeze(Object.fromEntries([
+ // A crop of an hour or more.
+ 'harvest_greenbeans','harvest_cabbage','harvest_cauliflower',
+ // The fastest non-Factory batch at the league's first level takes an hour or more.
+ 'glasshouse_batches','made_vegetables','made_pickles','made_oil','made_beangratin','made_applepie','made_pie','made_stew','made_applejuice',
+ 'made_orchardjuice','made_berrypreserves','made_berrysmoothie','made_applecompote','made_pickledbeans','made_truffleomelette','made_berrycheesecake',
+ 'made_truffles','made_honey','made_wool','made_yarn','made_cloth','made_squashsoup','made_goatcheese','made_candles','made_cider','made_cherryjam',
+ 'made_flax','made_lavender','made_ironbar','made_builderscrate','made_lavendersoap','made_scentedsachet','made_silvercandlestick','made_rubyring',
+ // The owner: never.
+ 'valley_baskets','boat_trips','diamonds_spent',
+ // Single-product sales most farmers had at 0.
+ 'sold_wheat','sold_cheese','sold_eggs',
+ // An input needs a step of an hour or more, and fewer than half of the league's farmers hold it.
+ 'made_orchardsalad','made_pickaxe','made_linen'
+].map(stat=>[stat,true])));
+export const EVENT_HOUR_POOLS=Object.freeze(EVENT_GOAL_POOLS.map(league=>Object.freeze(league.map(group=>Object.freeze(
+ group.filter(g=>!HOUR_LEFT_OUT[g.stat]).map(({stat,targets})=>Object.freeze({stat,target:Math.min(stat==='lake_fish'?LAKE_FISH_PER_HOUR:Infinity,nice(targets[1]/HOUR_SHARE))})))))));

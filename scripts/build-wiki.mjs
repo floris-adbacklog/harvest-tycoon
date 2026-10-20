@@ -109,7 +109,7 @@ export function llmsText(topics,{appStoreUrl=APP_STORE_URL}={}){
 - What you do: plant and harvest crops, bake and craft goods in your own buildings, sell them at the Market, fill orders, and grow a small farm into a big estate.
 - Platforms: any modern browser on a phone, tablet or computer (no download); Android app on Google Play: ${PLAY_URL}${ios?`; iPhone app on the App Store: ${ios}`:'; an iPhone app is coming soon'}. One account: the same farm on every device.
 - Price: ${priceLine()}
-- Playing together: from level ${FAMILY_MIN_LEVEL}, a Farm Family of up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers, with a Family Chest and a family tournament every week; chat with farmers from all over the world; events every six hours.
+- Playing together: from level ${FAMILY_MIN_LEVEL}, a Farm Family of up to ${FAMILY_CONFIG.MAX_MEMBERS} farmers, with a Family Chest and a family tournament every week; chat with farmers from all over the world; a new event every hour.
 - Languages (${languages.length}): ${languages.map(l=>`${l.name} (${l.code})`).join(', ')}.
 - Age: for players aged 16 and over.
 - Opened: 16 September 2026.

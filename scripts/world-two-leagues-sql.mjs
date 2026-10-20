@@ -43,7 +43,7 @@ const LEAGUE_FOR_BODY=`
 `;
 // 2. Settle: the live body (supabase/event-podium-2026-10-08.sql) with the league from harvest_event_league_for, the coins of all
 // twelve leagues and the Village events counter.
-const SETTLE_BODY=String.raw`
+export const SETTLE_BODY=String.raw`
 declare e public.live_events; n integer; per_player integer; budget integer;
 begin
  select * into e from public.live_events where id=p_event for update;

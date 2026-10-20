@@ -4052,16 +4052,34 @@ export function familyStanding(c,familyId){
  const tiers=(c.chests??[]).filter(r=>r.family_id===familyId).reduce((n,r)=>n+familyChestTiers(Number(r.points)||0),0),level=familyLevelFrom(tiers);
  return {tiers,level,next:FAMILY_LEVEL_STEPS[level]??null,bonus:(level-1)*FAMILY_LEVEL_BONUS};
 }
-// A family event bonus (harvest_event_settle, family-chest.sql): when this many members of one family finish the same farm event,
-// each of them gets this on top of their own prize (3 diamonds since 7 Oct 2026, 5 before; supabase/diamonds-2026-10-07.sql).
-export const FAMILY_EVENT_BONUS=Object.freeze({finishers:3,coins:200,diamonds:3});
+// Hourly events (20 Oct 2026, the owner): a new event every hour, 55 minutes of play and 5 minutes to hand out the prizes, one goal,
+// diamonds only: 8 / 5 / 3 for the first three to finish in a league, 1 for every other finisher (the owner changed the first place
+// from 10 to 8 the same day), and 3 more each when 3 or more of one Farm family finish. Every hourly event carries these in its own
+// rewards (harvest_event_schedule, supabase/hourly-events.sql, written from here by scripts/hourly-events-sql.mjs), so settle,
+// farm-api and the screens read an event's prizes from the event.
+// The old keys stay for the checks and the diamond_pool statistic; coins is 0.
+export const HOUR_EVENT_REWARDS=Object.freeze({coins:0,diamondMin:1,diamondMax:1,participantStep:25,poolCap:50,podium:Object.freeze([8,5,3]),finisher:1,familyFinishers:3,familyDiamonds:3});
+// The prizes of one event. An event with podium is an hourly one (diamonds only); one without (every 6-hour event, until 20 Oct 2026)
+// keeps the rules it was made with: the event's coins plus 2000 / 1000 / 500 / 100 podium coins (× the league in farm-api), 25 / 15 /
+// 10 / 3 diamonds, and +200 coins and +3 diamonds for the family bonus (supabase/event-podium-2026-10-08.sql, world-two-leagues-b.sql).
+export function eventPrizes(rewards){
+ const r=rewards&&typeof rewards==='object'?rewards:{};
+ if(Array.isArray(r.podium)){
+  const whole=(v,fallback)=>Number.isFinite(Number(v))?Math.max(0,Math.floor(Number(v))):fallback;
+  return {hour:true,coins:0,podium:[0,1,2].map(i=>({coins:0,diamonds:whole(r.podium[i],HOUR_EVENT_REWARDS.podium[i])})),finisher:{coins:0,diamonds:whole(r.finisher,HOUR_EVENT_REWARDS.finisher)},
+   family:{finishers:whole(r.familyFinishers,HOUR_EVENT_REWARDS.familyFinishers),coins:0,diamonds:whole(r.familyDiamonds,HOUR_EVENT_REWARDS.familyDiamonds)}};
+ }
+ return {hour:false,coins:Number(r.coins)||0,podium:[{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}],finisher:{coins:100,diamonds:3},family:{finishers:3,coins:200,diamonds:3}};
+}
+// A family event bonus (harvest_event_settle): when this many members of one family finish the same event, each of them gets this on
+// top of their own prize: 3 diamonds (5 before 7 Oct 2026; and 200 coins too before the hourly events of 20 Oct 2026).
+export const FAMILY_EVENT_BONUS=Object.freeze({finishers:HOUR_EVENT_REWARDS.familyFinishers,diamonds:HOUR_EVENT_REWARDS.familyDiamonds});
 // Event leagues (1 Oct 2026; World 2 leagues 20 Oct 2026, the owner): every farmer races against farmers of about their level, with
-// a top 10 and a podium of its own per league. Diamonds per place are the same in every league; coins are × the league's number:
-// 1 to 5 on the farm, 8 for the Valley Legends (90-99), and 10 to 20 for the six village leagues from level 100, whose goals are in
-// the village (public/event-goals.js VILLAGE_KINDS). The level when the event ends decides the league (harvest_event_settle,
-// supabase/world-two-leagues-b.sql). Indices 0-5 never change: settled rows keep them.
-// A league's podium pays 25 / 15 / 10 diamonds however many finished in it (8 Oct 2026, supabase/event-podium-2026-10-08.sql; on
-// 7 Oct only with 4 finishers or more).
+// a top 10 and a podium of its own per league. The prizes are the same in every league (eventPrizes). coins is only for the 6-hour
+// events made before 20 Oct 2026, whose coins were × the league's number: 1 to 5 on the farm, 8 for the Valley Legends (90-99), and
+// 10 to 20 for the six village leagues from level 100, whose goals are in the village (public/event-goals.js VILLAGE_KINDS). The
+// level when the event ends decides the league (harvest_event_settle, supabase/world-two-leagues-b.sql). Indices 0-5 never change:
+// settled rows keep them.
 export const EVENT_LEAGUES=Object.freeze([
  {id:'sprout',name:'Sprout League',from:15},{id:'meadow',name:'Meadow League',from:30},{id:'orchard',name:'Orchard League',from:45},
  {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8},

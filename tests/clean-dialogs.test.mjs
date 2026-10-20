@@ -108,7 +108,8 @@ test('the Family dot is for what waits for you; a running event you have not see
  const family=read('public/family-ui.js'),events=read('public/live-events-ui.js');
  assert.match(family,/dot\.hidden=!\(view\?\.invitation\|\|view\?\.rewards\.length\|\|view\?\.joinRequests\?\.length\);/);
  assert.match(family,/const waiting=\{week:Boolean\([^\n]*state\.inventory\[k\]\?\?0\)>0\)\)/,'deliverable goods still light This week inside the window');
- assert.match(events,/const unseen=live=>Boolean\(live\)&&!hasQualified\(leagueGoals\(live\)\)&&!eligibilityNote\(data\?\.eligibility,now\(\)\)&&seenId\(\)!==String\(live\.id\);/);
+ // 20 Oct 2026 (hourly events): joining the event (a row of your own) hides it too.
+ assert.match(events,/const unseen=live=>Boolean\(live\)&&!live\.player&&!hasQualified\(leagueGoals\(live\)\)&&!eligibilityNote\(data\?\.eligibility,now\(\)\)&&seenId\(\)!==String\(live\.id\);/);
  assert.match(events,/if\(dot\)dot\.hidden=!owed\.length&&!fresh;/);
  assert.match(events,/render\(\);if\(!dialog\.open\)dialog\.showModal\(\);seeLive\(\);badge\(\);/,'opening the screen marks the event seen');
  assert.match(events,/try\{return globalThis\.localStorage\?\.getItem\(SEEN_KEY\)\?\?null;\}catch\{return null;\}/,'storage may be missing');

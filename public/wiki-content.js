@@ -11,8 +11,9 @@ import {VILLAGE_SHOP,LANDMARK_COINS_PER_DIAMOND,landmarkFullCost} from './farm-s
 import {villageLine} from './village-shop-ui.js';
 import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
-import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
-import {EVENT_GOAL_POOLS,EVENT_GOAL_GROUPS} from './event-goals.js';
+import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';
+import {EVENT_HOUR_POOLS,EVENT_GOAL_GROUPS} from './event-goals.js';
+import {HOUR_EVENT_REWARDS,eventPrizes} from './farm-state.js';
 import {portal as portalAround,privacyContact} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
@@ -30,7 +31,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'quests',title:'Quests and levels',art:'quests',blurb:'Goals, XP, levels and what opens when.',keywords:'xp level unlock journal quest claim'},
  {id:'daily',title:'Daily rewards and orders',art:'gift',blurb:'The daily gift, challenges and delivery orders.',keywords:'streak gift challenges deliveries orders cart commission comeback chest away return'},
  {id:'family',title:'Farm family',art:'family-members',blurb:'Playing together: the Family Chest, weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite chest level flag join order points stats goods'},
- {id:'events',title:'Events',art:'live-events',blurb:'Short shared goals every six hours.',keywords:'event goals qualify podium league'},
+ {id:'events',title:'Events',art:'live-events',blurb:'A short shared goal every hour.',keywords:'event goals qualify podium league'},
  {id:'helpers',title:'Farm helpers',art:'tractor',blurb:'Tractor, silo research, farm stall, chores and a helping hand.',keywords:'tractor silo stall chores helping hand greenhouse apiary paddock workshop'},
  {id:'village',title:'The Village',art:'village-badge',blurb:'World II from level 100: villagers’ requests, the mine, the forest, the smithy and master tools for your farm.',keywords:'village world ii second world mine lumber camp smithy windmill iron silver ruby pickaxe master tools packed lunch stone log plank level 15 double batch travel requests villagers brief golden market square fields potatoes canteen pasty market week crate clay roof tile kiln potter flax linen loft weaver builder crate lavender soap sachet jeweller candlestick pier boat cargo landmark landmarks wind pump longhouse quay lookout tower great hall'},
  {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
@@ -428,7 +429,7 @@ const BODIES={
   ]))
   +section('Collecting rewards',`<p>Chest, order and tournament rewards wait on the Family screen until you collect them, for ${C.REWARD_WEEKS} weeks after their week ends. They stay yours if you change family.</p>`)
   +section('Family chat',`<p>Your family has its own chat. See ${h.link('chat')}.</p>`)
-  +section('Events together',`<p>When ${FAMILY_EVENT_BONUS.finishers} or more members of your family finish the same event, each of them gets ${art('coins')}${number(FAMILY_EVENT_BONUS.coins)} and ${art('diamonds')}${FAMILY_EVENT_BONUS.diamonds} on top of their own prize. See ${h.link('events')}.</p>`)
+  +section('Events together',`<p>When ${FAMILY_EVENT_BONUS.finishers} or more members of your family finish the same event, each of them gets ${art('diamonds')}${FAMILY_EVENT_BONUS.diamonds} on top of their own prize. See ${h.link('events')}.</p>`)
   +section('Changing family',`<p>Left a family, or did a family remove you? You can join another family straight away. Only the family that removed you stays closed to you for ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours. Delivered to your old family this week? Then you deliver to your new one from Monday.</p>`)
   // 17 Oct 2026, the owner: members who don't play leave by themselves (farm-state.js FAMILY_IDLE_DAYS, supabase/family-idle-leave.sql).
   +section('Away too long',`<p>A member who doesn't play for ${FAMILY_IDLE_DEFAULT} days leaves the family automatically, so the seat is free for a farmer who plays. The leader or a co-leader can choose ${FAMILY_IDLE_DAYS.slice(0,-1).join(', ')} or ${FAMILY_IDLE_DAYS.at(-1)} days in Family settings. The leader never leaves this way. The family keeps that week's points, as when a member leaves. When you come back, Welcome back offers to join that family again straight away, while it has room.</p>`);
@@ -438,26 +439,28 @@ const BODIES={
   // in every language. Since 8 Oct 2026 in every league however many finished (on 7 Oct only with 4 finishers or more).
   // 20 Oct 2026: the six village leagues from level 100 (farm-state.js EVENT_LEAGUES, world 2). Like everything of World II they show
   // only on the website and in How to play from level WORLD_TWO_LEVEL: below it the article has the six farm leagues and no village.
+  // 20 Oct 2026, the owner: an event every hour with one goal, diamonds only (farm-state.js HOUR_EVENT_REWARDS, eventPrizes).
+  const prize=eventPrizes(HOUR_EVENT_REWARDS),[first,second,third]=prize.podium.map(p=>p.diamonds);
   const village=h.level==null||h.level>=WORLD_TWO_LEVEL,shown=EVENT_LEAGUES.filter(l=>l.world===1||village);
-  const v=EVENT_LEAGUES.find(l=>l.world===2),last=EVENT_LEAGUES.at(-1);
-  return section('Short shared goals',`<p>${h.lvl(EVENTS_LEVEL)} An event runs for 5 hours, then there is a 1-hour break before the next one. Everyone in your league plays toward the same goals. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)
+  const v=EVENT_LEAGUES.find(l=>l.world===2);
+  return section('A new event every hour',`<p>${h.lvl(EVENTS_LEVEL)} A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out. Everyone in your league plays toward the same goal. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)
   +section('How it works',facts([
-   ['live-events','Goals',`Every event has 3 goals from 3 different kinds of play: the fields, crops, buildings, the market or helping out, each in an easy, medium or hard size, and never three hard goals. Each league gets its own goals, made for its levels: the Sprout League grows wheat and collects eggs, higher leagues weave cloth, make goat cheese and fill Valley Market baskets, with bigger numbers.${village?` <span>From level ${v.from} your league is a village league: its goals are in the village, from stone and planks to linen and ruby rings.</span>`:''} <span>Your progress shows in the event window.</span>`],
-   ['trophy','Rewards',`Complete every goal and you have finished. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three in each league win ${PODIUM_PRIZES[0].diamonds}, ${PODIUM_PRIZES[1].diamonds} and ${PODIUM_PRIZES[2].diamonds} diamonds, every other finisher ${FINISHER_PRIZE.diamonds}.`],
-   ['rank-gold','Leagues','You race in your league, against farmers of about your level, with its own top 10 and podium. Your level when the event ends decides your league. Diamonds are the same in every league; higher leagues win more coins.'],
-   ...(village?[['village-badge','Village leagues',`From level ${v.from} you race in a village league, with goals in the village and coins ×${v.coins} to ×${last.coins}. Each one you finish counts in Village events and in Events finished.`]]:[]),
-   ['family-members','Family bonus',`When ${FAMILY_EVENT_BONUS.finishers} or more members of one Farm family finish the same event, each of them gets ${number(FAMILY_EVENT_BONUS.coins)} coins and ${FAMILY_EVENT_BONUS.diamonds} diamonds more.`],
+   ['live-events','Goals',`Every event has one goal, one you can finish within the hour. The kind of play changes every hour: the fields, crops, buildings, the market or helping out. Each league gets its own goal, made for its levels: the Sprout League harvests wheat and collects eggs, higher leagues milk goats and drive the tractor, with bigger numbers.${village?` <span>From level ${v.from} your league is a village league: its goal is in the village, from stone and planks to roof tiles and lake fish.</span>`:''} <span>Your progress shows in the event window.</span>`],
+   ['trophy','Rewards',`Reach the goal and you have finished. The first three to finish in each league win ${first}, ${second} and ${third} diamonds, every other finisher ${prize.finisher.diamonds}.`],
+   ['rank-gold','Leagues','You race in your league, against farmers of about your level, with its own top 10 and podium. Your level when the event ends decides your league. The prizes are the same in every league.'],
+   ...(village?[['village-badge','Village leagues',`From level ${v.from} you race in a village league, with goals in the village. Each one you finish counts in Village events and in Events finished.`]]:[]),
+   ['family-members','Family bonus',`When ${FAMILY_EVENT_BONUS.finishers} or more members of one Farm family finish the same event, each of them gets ${FAMILY_EVENT_BONUS.diamonds} diamonds more.`],
    ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
   ]))
-  // The leagues (1 Oct 2026, farm-state.js EVENT_LEAGUES) with what first place wins in coins there, and then each league with the
-  // goals its events can draw, per kind of play (public/event-goals.js), so a farmer knows what to get ready for. A higher league of
+  // The leagues (1 Oct 2026, farm-state.js EVENT_LEAGUES) and their levels, and then each league with the goals its hourly events can
+  // draw, per kind of play (public/event-goals.js EVENT_HOUR_POOLS), so a farmer knows what to get ready for. A higher league of
   // the same world keeps every goal of the league below, so it lists only the goals it adds; the first village league lists all of its own.
-  +section('Leagues',`<p>Your level when an event ends decides your league.${village?` <span>Up to level ${v.from-1} your goals are on the farm; from level ${v.from} they are in the village. Reach level ${v.from} during an event and you finish that event in the Valley Legends.</span>`:''} <span>Every league has the same diamonds; coins grow with the league. The family bonus counts family members from every league.</span></p>`+table(['League','Levels','First place'],shown.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td><td>${number((200+PODIUM_PRIZES[0].coins)*l.coins)} coins and ${PODIUM_PRIZES[0].diamonds} diamonds</td></tr>`)))
+  +section('Leagues',`<p>Your level when an event ends decides your league.${village?` <span>Up to level ${v.from-1} your goals are on the farm; from level ${v.from} they are in the village. Reach level ${v.from} during an event and you finish that event in the Valley Legends.</span>`:''} <span>Every league has the same prizes. The family bonus counts family members from every league.</span></p>`+table(['League','Levels'],shown.map(l=>`<tr><td>${l.name}</td><td>${l.to?`${l.from}–${l.to}`:`${l.from}+`}</td></tr>`)))
   +shown.map(l=>{
-   const i=l.index,prev=EVENT_LEAGUES[i-1],below=new Set(prev?.world===l.world?EVENT_GOAL_POOLS[i-1].flat().map(g=>g.stat):[]);
-   const added=EVENT_GOAL_POOLS[i].map((group,k)=>[k,group.filter(g=>!below.has(g.stat))]).filter(([,group])=>group.length);
-   const intro=!i?'Goals you can expect, three per event:':prev.world!==l.world?'Village goals you can expect, three per event:':added.length?'Every goal from the league below, with bigger numbers, plus:':'Every goal from the league below, with bigger numbers.';
-   return section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span class="wiki-league-facts"><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span><span>Coins ×${l.coins}</span></span></p><p>${intro}</p>${added.length?`<ul class="wiki-list">${added.map(([k,group])=>`<li><strong>${EVENT_GOAL_GROUPS[l.world][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`:''}`);
+   const i=l.index,prev=EVENT_LEAGUES[i-1],below=new Set(prev?.world===l.world?EVENT_HOUR_POOLS[i-1].flat().map(g=>g.stat):[]);
+   const added=EVENT_HOUR_POOLS[i].map((group,k)=>[k,group.filter(g=>!below.has(g.stat))]).filter(([,group])=>group.length);
+   const intro=!i?'Goals you can expect, one per event:':prev.world!==l.world?'Village goals you can expect, one per event:':added.length?'Every goal from the league below, with bigger numbers, plus:':'Every goal from the league below, with bigger numbers.';
+   return section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span class="wiki-league-facts"><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span></span></p><p>${intro}</p>${added.length?`<ul class="wiki-list">${added.map(([k,group])=>`<li><strong>${EVENT_GOAL_GROUPS[l.world][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`:''}`);
   }).join('');
  },
  helpers(h){

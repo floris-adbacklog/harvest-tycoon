@@ -292,7 +292,9 @@ test('the wiki below level 20 is the pond section of 01ff2cd, word for word; pag
  for(const html of [wikiArticle('helpers',{}).html,wikiArticle('helpers',{level:30}).html])assert.ok(html.includes('id="sec-fish-book-page-2"'));
  const old=show('01ff2cd','public/wiki-content.js');if(!old||!OLD_URL){t.skip('no git history here');return;}
  const here=file=>new URL(`../public/${file}`,import.meta.url).href;
- const O=await import(asModule(old.replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`)));
+ // The old article took the 6-hour prizes from the event screen, which reads them from each event since 20 Oct 2026 (hourly events).
+ const oldPrizes="import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';\nconst PODIUM_PRIZES=[{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}],FINISHER_PRIZE={coins:100,diamonds:3};";
+ const O=await import(asModule(old.replace("import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';",oldPrizes).replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`)));
  // One sentence more since 17 Oct 2026: the pond has its own quests.
  const quests=html=>html.replace('<li>Fishing counts for no events, challenges or Family Chest.</li>','<li>The pond has its own quests, from your first fish to a thousand. Fishing counts for no events, challenges or Family Chest.</li>');
  for(const level of [1,4,10,19])assert.equal(pond(wikiArticle('helpers',{level}).html),quests(pond(O.wikiArticle('helpers',{level}).html)),`level ${level}`);

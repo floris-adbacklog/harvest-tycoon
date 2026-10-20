@@ -59,6 +59,7 @@ test('the farm counts the coins it spends (for "Spend coins"), and not the coins
 });
 
 test('the wiki and the event screen explain the mix, the leagues and the level',()=>{
- assert.match(read('public/wiki-content.js'),/Every event has 3 goals from 3 different kinds of play: the fields, crops, buildings, the market or helping out, each in an easy, medium or hard size, and never three hard goals\. Each league gets its own goals, made for its levels/);
+ // 20 Oct 2026 (hourly events): one goal an event, the kind of play changes every hour.
+ assert.match(read('public/wiki-content.js'),/Every event has one goal, one you can finish within the hour\. The kind of play changes every hour: the fields, crops, buildings, the market or helping out\. Each league gets its own goal, made for its levels/);
  assert.match(read('public/live-events-ui.js'),/<li>Open from level \$\{EVENTS_LEVEL\}\.<\/li>/);
 });

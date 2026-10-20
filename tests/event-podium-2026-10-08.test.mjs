@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import * as service from '../supabase/functions/farm-api/event-service.js';
-import {EVENT_LEAGUES,FAMILY_EVENT_BONUS} from '../game/farm-state.js';
+import {EVENT_LEAGUES,FAMILY_EVENT_BONUS,eventPrizes} from '../game/farm-state.js';
 
 // 8 Oct 2026, the owner's choice ("option 3"): the event podium always pays 25 / 15 / 10 diamonds, in every league and however many
 // farmers finished there; every other finisher 3. On 7 Oct 2026 the podium's diamonds needed 4 finishers in the league, and only 2 of
@@ -42,7 +42,8 @@ test('every league pays the same diamonds; only the coins grow with the league, 
   assert.deepEqual(eventStandings(event,rows,now,league).map(r=>[r.coins,r.diamonds]),[[(200+2000)*league.coins,25],[(200+1000)*league.coins,15]],league.name);
  }
  assert.deepEqual(EVENT_LEAGUES.map(l=>l.coins),[1,2,3,4,5,8,10,12,14,16,18,20]);
- assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,coins:200,diamonds:3},'the family bonus stays');
+ // 20 Oct 2026 (hourly events): the family bonus is diamonds only now; an event from before keeps its 200 coins too.
+ assert.deepEqual(FAMILY_EVENT_BONUS,{finishers:3,diamonds:3});assert.deepEqual(eventPrizes(event.rewards).family,{finishers:3,coins:200,diamonds:3},'the family bonus of an older event stays');
 });
 
 test('the SQL changes only the diamonds of the live (7 Oct) harvest_event_settle, runs as-is in the SQL editor and can run twice',()=>{
@@ -71,32 +72,36 @@ test('the SQL, farm-api and the event screen pay and show the same numbers',()=>
  assert.deepEqual(sqlDiamonds,[...PODIUM.map(p=>p.diamonds),FINISHER_PRIZE.diamonds]);
  const coins=fresh.match(/coins=\(\(e\.rewards->>'coins'\)::integer\+\(case r\.rank when 1 then (\d+) when 2 then (\d+) when 3 then (\d+) else (\d+) end\)\)\*\(case r\.league when 5 then 8 else r\.league\+1 end\)/);
  assert.deepEqual(coins.slice(1).map(Number),[...PODIUM.map(p=>p.coins),FINISHER_PRIZE.coins],'the coins as before');
- assert.match(fresh,new RegExp(`having count\\(\\*\\)>=${FAMILY_EVENT_BONUS.finishers}\\)\\n update public\\.live_event_players p set coins=p\\.coins\\+${FAMILY_EVENT_BONUS.coins},diamonds=p\\.diamonds\\+${FAMILY_EVENT_BONUS.diamonds}\\n`),'the family bonus');
+ const legacy=eventPrizes(event.rewards).family;
+ assert.match(fresh,new RegExp(`having count\\(\\*\\)>=${legacy.finishers}\\)\\n update public\\.live_event_players p set coins=p\\.coins\\+${legacy.coins},diamonds=p\\.diamonds\\+${legacy.diamonds}\\n`),'the family bonus');
  // Settlement and the "if it ended now" standings agree for every number of finishers.
  for(let n=1;n<=8;n++)assert.deepEqual(diamonds(finishers(n)),sqlPays(n),`${n} finishers`);
- assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE],[PODIUM,FINISHER_PRIZE],'the screen shows what the server pays');
+ // 20 Oct 2026: the screen reads the prizes from the event (eventPrizes); for an event like this one, what the server paid.
+ const shown=eventPrizes(event.rewards);assert.deepEqual([shown.podium,shown.finisher],[PODIUM,FINISHER_PRIZE],'the screen shows what the server pays');
 });
 
 test('the event screen and the wiki: 25 / 15 / 10 for the top three and 3 for everyone else, no finisher rule',()=>{
  assert.equal(screen.PODIUM_RULE,undefined);assert.equal(screen.PODIUM_MIN_FINISHERS,undefined);
  const ui=read('public/live-events-ui.js');
  assert.doesNotMatch(ui,/PODIUM_RULE|PODIUM_MIN_FINISHERS|event-podium-note|rivals/);
- assert.match(ui,/\$\{PODIUM_PRIZES\.map\(\(p,i\)=>row\(p,art\(MEDALS\[i\]\),placeLabel\(i\+1\)\)\)\.join\(''\)\}\$\{row\(FINISHER_PRIZE,'<i aria-hidden="true"><\/i>','Everyone else'\)\}<\/ol><p class="event-family-bonus">/,'the prize list, then the family bonus');
- assert.match(ui,/'Rewards if the event ended now\. The first three to finish in your league win extra coins and diamonds\.'/,'the standings caption');
- assert.match(ui,/The list above shows what each place wins in total\.<\/li><li>You race in your league/,'How events work');
+ // 20 Oct 2026 (hourly events): the prize list comes from the event's own prizes, then the family bonus.
+ assert.match(ui,/\$\{prize\.podium\.map\(\(p,i\)=>row\(p,art\(MEDALS\[i\]\),placeLabel\(i\+1\)\)\)\.join\(''\)\}\$\{row\(prize\.finisher,'<i aria-hidden="true"><\/i>','Everyone else'\)\}<\/ol><p class="event-family-bonus">/,'the prize list, then the family bonus');
+ assert.match(ui,/'Prizes if the event ended now\. The first three to finish in your league win the most diamonds\.'/,'the standings caption');
+ assert.match(ui,/Everyone else who finishes wins \$\{num\(prize\.finisher\.diamonds\)\} diamond\$\{prize\.finisher\.diamonds===1\?'':'s'\}\.<\/li><li>You race in your league/,'How events work');
  assert.doesNotMatch(read('public/retention.css'),/event-podium-note/);
  const events=wikiArticle('events').html;
- assert.match(events,/The first three in each league win 25, 15 and 10 diamonds, every other finisher 3\.<\/p>/);
- assert.match(events,/When 3 or more members of one Farm family finish the same event, each of them gets 200 coins and 3 diamonds more\./);
+ assert.match(events,/The first three to finish in each league win 8, 5 and 3 diamonds, every other finisher 1\.<\/p>/);
+ assert.match(events,/When 3 or more members of one Farm family finish the same event, each of them gets 3 diamonds more\./);
  assert.doesNotMatch(events,/Podium diamonds need|finishers in your league|With fewer|rivals/i);
  for(const path of ['game/farm-state.js','public/farm-state.js','supabase/functions/farm-api/farm-state.js','supabase/functions/farm-api/event-service.js','public/live-events-ui.js','public/wiki-content.js'])
   assert.doesNotMatch(read(path),/PODIUM_MIN_FINISHERS|PODIUM_RULE|need at least 4 finishers|podium only with rivals/,path);
 });
 
+// 20 Oct 2026: the caption of the hourly events.
 test('no text in any language still names the finisher rule, and the new caption is translated in all 15',()=>{
  const catalog=JSON.parse(read('i18n/catalog.json'));
  const gone=['Podium diamonds need at least {0} finishers in your league. With fewer, every finisher gets {1} diamonds.','Rewards if the event ended now. The first three to finish in your league win extra coins, and extra diamonds once {0} or more have finished.'];
- const caption='Rewards if the event ended now. The first three to finish in your league win extra coins and diamonds.';
+ const caption='Prizes if the event ended now. The first three to finish in your league win the most diamonds.';
  assert.ok(caption in catalog);assert.doesNotMatch(caption,/ · /);
  assert.ok(!Object.keys(catalog).some(k=>/finishers in your league|or more have finished/.test(k)),'the catalog');
  const files=readdirSync(new URL('../public/i18n/',import.meta.url)).filter(n=>n.endsWith('.json'));

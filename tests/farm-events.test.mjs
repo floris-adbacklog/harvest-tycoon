@@ -75,7 +75,8 @@ test('automatic events: 5 hours on, 1 hour off, four times a day, created ahead 
 });
 test('the player list is limited to what the screen shows and says why a farm is not taking part',()=>{
  const js=read('supabase/functions/farm-api/event-service.js');
- assert.match(js,/gt\('ends_at',new Date\(now-DAY_MS\)\.toISOString\(\)\)/,'running, upcoming and the last day');
+ // 20 Oct 2026 (hourly events): the last 3 hours, at most 8 events (the screen shows 3 past ones).
+ assert.match(js,/gt\('ends_at',new Date\(now-3\*HOUR_MS\)\.toISOString\(\)\)\.order\('starts_at',\{ascending:false\}\)\.limit\(8\)/,'running, upcoming and the last 3 hours');
  assert.match(js,/eq\('qualified',true\)\.is\('claimed_at',null\)/,'plus any reward still waiting');
  assert.match(js,/const scheduled=await admin\.rpc\('harvest_event_schedule'\);\n  if\(!scheduled\.error\)/,'the fallback schedule is best effort');
  assert.match(js,/eligibility:await eligibility\(admin,user\)/);
@@ -141,7 +142,9 @@ test('the first three finishers win a podium prize on top and every later finish
  // 7 Oct 2026: 25 / 15 / 10 and 3 (were 50 / 30 / 20 and 5); since 8 Oct 2026 the podium pays them however many finished.
  assert.deepEqual(server.PODIUM,[{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}]);
  assert.deepEqual(server.FINISHER_PRIZE,{coins:100,diamonds:3});assert.equal(server.PODIUM_MIN_FINISHERS,undefined);
- assert.deepEqual([screen.PODIUM_PRIZES,screen.FINISHER_PRIZE],[server.PODIUM,server.FINISHER_PRIZE],'the screen shows exactly what the server pays');
+ // 20 Oct 2026: the screen and farm-api read each event's prizes from eventPrizes; an event like this one gets what the server paid.
+ const {eventPrizes}=await import('../game/farm-state.js'),legacy=eventPrizes({coins:200});
+ assert.equal(screen.PODIUM_PRIZES,undefined);assert.deepEqual([legacy.podium,legacy.finisher],[server.PODIUM,server.FINISHER_PRIZE],'the screen shows exactly what the server pays');
  const e=event('e',now-H,now+H),rows=['a','b','c','d'].map((id,i)=>({player_id:id,progress:{harvested:10},actions:5,joined_at:iso(now-H),last_at:iso(now-H+(20+i)*M)}));
  assert.deepEqual(eventStandings(e,rows,now).map(r=>[r.coins,r.diamonds,r.podium]),[[2200,25,true],[1200,15,true],[700,10,true],[300,3,false]],'fixed diamonds per place');
  assert.deepEqual(eventStandings({...e,participants:40},rows,now).map(r=>r.diamonds),[25,15,10,3]);
@@ -168,8 +171,8 @@ test('event progress counts every action: a per-player baseline, the 10 seconds 
 test('automatic events pay a fixed base, so the event screen shows one list with exact totals per place',async()=>{
  const sql=read('supabase/live-events-fixed-base.sql'),rewards=JSON.parse(sql.match(/rewards constant jsonb:='(\{[^']*\})';/)[1]);
  assert.deepEqual([rewards.coins,rewards.diamondMin,rewards.diamondMax],[200,1,1]);
- const {PODIUM_PRIZES,FINISHER_PRIZE}=await import('../public/live-events-ui.js');
- assert.deepEqual([...PODIUM_PRIZES,FINISHER_PRIZE].map(p=>[rewards.coins+p.coins,p.diamonds]),[[2200,25],[1200,15],[700,10],[300,3]]);   // 50/30/20/5 until 7 Oct 2026
+ const {eventPrizes}=await import('../game/farm-state.js'),{podium,finisher}=eventPrizes(rewards);   // 20 Oct 2026: from the event
+ assert.deepEqual([...podium,finisher].map(p=>[rewards.coins+p.coins,p.diamonds]),[[2200,25],[1200,15],[700,10],[300,3]]);   // 50/30/20/5 until 7 Oct 2026
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/What you win when you finish/);assert.doesNotMatch(ui,/Reward for finishing|Extra for finishing/,'no second block to add up');
 });
@@ -207,8 +210,8 @@ test('"Sell wheat" replaces "Use a boost" in the pool: a boost costs more diamon
  assert.match(sql,/'boosts_used','activity_rounds','sold_wheat'\)/,'allowed by harvest_event_validate');
  assert.match(sql,/or stat in \('sold','sold_wheat','earned','coins_spent','diamonds_spent'\)/,'counted like any sale');
  assert.match(sql,/raise exception 'harvest_event_pick: the boost goal was not found'/);
- const {EVENT_STATS}=await import('../supabase/functions/farm-api/event-service.js'),{EVENT_GOALS,FINISHER_PRIZE}=await import('../public/live-events-ui.js'),{BOOSTS}=await import('../game/farm-state.js');
+ const {EVENT_STATS}=await import('../supabase/functions/farm-api/event-service.js'),{EVENT_GOALS}=await import('../public/live-events-ui.js'),{BOOSTS,HOUR_EVENT_REWARDS}=await import('../game/farm-state.js');
  assert.ok(EVENT_STATS.includes('sold_wheat')&&EVENT_STATS.includes('boosts_used'),'an event that already has the boost goal still counts');
  assert.deepEqual(EVENT_GOALS.sold_wheat,{label:'Sell wheat',art:'wheat'});
- assert.ok(Math.min(...Object.values(BOOSTS).map(b=>b.cost))>FINISHER_PRIZE.diamonds,'why the boost goal left the pool');
+ assert.ok(Math.min(...Object.values(BOOSTS).map(b=>b.cost))>HOUR_EVENT_REWARDS.finisher,'why the boost goal left the pool (hourly events: 1 diamond a finisher)');
 });

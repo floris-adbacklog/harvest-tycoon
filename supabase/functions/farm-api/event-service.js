@@ -2,24 +2,26 @@ import {writeLog,eventRewardLog,accountLog} from './player-log.js';
 import {isSuperadmin,isAdminAccount,isAdminAddress} from './admin-service.js';
 import {validEmail} from './account-form.js';
 import {codeTexts,playerLanguage,RTL_MAIL} from './mail-text.js';
-import {EVENT_LEAGUES,eventLeagueIn,eventLeagueFor} from './farm-state.js';
+import {EVENT_LEAGUES,eventLeagueIn,eventLeagueFor,eventPrizes,HOUR_EVENT_REWARDS} from './farm-state.js';
 import {portalOf} from './portal.js';
 // The goals an event may use: the 24 Sep list (farm-wide counters, crops unlocked by level 9, eggs) and the 30 kinds of the mixed
 // events (supabase/live-events-mixed.sql), all open to every farm at level 15, when events open. Since 26 Sep 2026 the pool has
 // "Sell wheat" instead of "Use a boost" (supabase/live-events-sell-wheat.sql); boosts_used stays valid for events made by hand.
 export const EVENT_STATS=['harvested','produced','watered','tended','chores','deliveries','harvest_wheat','harvest_corn','harvest_lettuce','harvest_barley','harvest_greenbeans','harvest_cabbage','made_eggs',
  'planted','sold','earned','coins_spent','diamonds_spent','activities','upgrades','made_feed','made_milk','made_cheese','made_flour','fertilized','harvest_cauliflower','made_grainmeal','made_bread','parallel_batches','boosts_used','activity_rounds','sold_wheat'];
+// An event made by hand pays like an hourly event since 20 Oct 2026 (the owner: diamonds only): its rewards are always
+// HOUR_EVENT_REWARDS, whatever the request sends. Its length stays 1–12 hours.
 export function validateEvent(config,now=Date.now()){
  if(!config||typeof config.title!=='string'||config.title.trim().length<3||config.title.length>80||typeof config.description!=='string'||config.description.length>500)throw Error('Enter a title (3–80 characters) and description (up to 500).');
  const start=Date.parse(config.starts_at),end=Date.parse(config.ends_at);
  if(!Number.isFinite(start)||!Number.isFinite(end)||start<now||end-start<3600000||end-start>12*3600000)throw Error('Schedule a future event lasting 1–12 hours.');
  const objectives=config.objectives;
  if(!Array.isArray(objectives)||objectives.length<1||objectives.length>4||new Set(objectives.map(o=>o.stat)).size!==objectives.length||objectives.some(o=>!EVENT_STATS.includes(o.stat)||!Number.isInteger(o.target)||o.target<1||o.target>10000))throw Error('Choose 1–4 unique objectives with whole targets from 1 to 10,000.');
- const rewards=config.rewards;
- for(const [key,min,max] of [['coins',0,300],['diamondMin',0,1],['diamondMax',1,3],['participantStep',10,1000],['poolCap',0,200]])if(!Number.isInteger(rewards?.[key])||rewards[key]<min||rewards[key]>max)throw Error(`Set ${key} between ${min} and ${max}.`);
- return {title:config.title.trim(),description:config.description,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),active:config.active===true,objectives:objectives.map(({stat,target})=>({stat,target})),rewards:Object.fromEntries(['coins','diamondMin','diamondMax','participantStep','poolCap'].map(k=>[k,rewards[k]]))};
+ return {title:config.title.trim(),description:config.description,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),active:config.active===true,objectives:objectives.map(({stat,target})=>({stat,target})),rewards:JSON.parse(JSON.stringify(HOUR_EVENT_REWARDS))};
 }
-const DAY_MS=86400000,TOP=10;
+const DAY_MS=86400000,HOUR_MS=3600000,TOP=10;
+// LEGACY: the prizes of the 6-hour events made before 20 Oct 2026 (older tests and rewards still owed use them). An event's prizes
+// come from eventPrizes(event.rewards) in farm-state.js: an hourly event pays 8 / 5 / 3 and 1 diamonds and no coins.
 // The first three farmers to finish win a podium prize on top of the usual reward, and every later finisher a small extra
 // (same numbers as harvest_event_settle, live-events-bigger-prizes.sql). Diamonds are a fixed prize per place, nothing else; coins
 // come on top of the event's own coins. Every event diamond is paid out: no daily limit since 28 Sep 2026.
@@ -39,9 +41,10 @@ export function eventStandings(event,rows,now=Date.now(),league=EVENT_LEAGUES[0]
  const finished=r=>settled?r.qualified:goals.every(o=>(r.progress?.[o.stat]??0)>=o.target);
  const at=r=>Date.parse(r.last_at);
  const ranked=rows.map(r=>({...r,done:finished(r),share:share(r)})).sort((a,b)=>Number(b.done)-Number(a.done)||(a.done?at(a)-at(b)||String(a.player_id).localeCompare(String(b.player_id)):b.share-a.share||at(a)-at(b)));
- const {coins}=event.rewards;
+ // The event's own prizes (20 Oct 2026): an hourly event pays diamonds only; an older one coins × the league as well.
+ const prize=eventPrizes(event.rewards),place=i=>prize.podium[i]??prize.finisher;
  return ranked.map((r,i)=>({rank:i+1,playerId:r.player_id,finished:r.done,progress:Math.round(r.share*100),
-  coins:settled?r.coins:r.done?(coins+(PODIUM[i]??FINISHER_PRIZE).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?(PODIUM[i]??FINISHER_PRIZE).diamonds:0,podium:r.done&&i<PODIUM.length}));
+  coins:settled?r.coins:r.done&&!prize.hour?(prize.coins+place(i).coins)*league.coins:0,diamonds:settled?r.diamonds:r.done?place(i).diamonds:0,podium:r.done&&i<prize.podium.length}));
 }
 // The standings the farmer sees are their own league's: the league they finished in, or the one their level puts them in now.
 // Only the leagues the event was made with (20 Oct 2026): an event from before the village leagues keeps 100+ in the Valley Legends.
@@ -62,10 +65,11 @@ async function standings(admin,event,user,now){
  const dress=r=>({...r,username:byId.get(r.playerId)?.username??'Farmer',level:byId.get(r.playerId)?.level??null,avatarId:byId.get(r.playerId)?.avatar_id??null,vipExpiresAt:Date.parse(byId.get(r.playerId)?.vip_expires_at)||0,isYou:r.playerId===user.id});
  return {league:{id:league.id,name:league.name,from:league.from,to:league.to,coins:league.coins},top:top.map(dress),you:you&&you.rank>TOP?dress(you):null,total:all.length,everyone:rows.data.length};
 }
-// A player sees the running and upcoming events, the last day's results and any reward still waiting to be
-// collected (up to 30 days back) — not every automatic event of the month.
-async function playerEvents(admin,user,now){
- const recent=()=>admin.from('live_events').select('*').gt('ends_at',new Date(now-DAY_MS).toISOString()).order('starts_at',{ascending:false}).limit(12);
+// A player sees the running and upcoming events, the last 3 hours' results and any reward still waiting to be
+// collected (up to 30 days back) — not every automatic event of the month. With an event every hour (20 Oct 2026) the last
+// day would be 24 events; the screen shows at most 3 past ones, and rewards owed come through owed.
+export async function playerEvents(admin,user,now){
+ const recent=()=>admin.from('live_events').select('*').gt('ends_at',new Date(now-3*HOUR_MS).toISOString()).order('starts_at',{ascending:false}).limit(8);
  let listed=await recent();if(listed.error)return listed;
  // The pg_cron job normally creates events ahead of time; if it ever lags, fill the schedule here. Best effort:
  // a failure only means no new event yet, never a broken event screen.
@@ -80,6 +84,25 @@ async function playerEvents(admin,user,now){
  const older=await admin.from('live_events').select('*').in('id',missing).gt('ends_at',new Date(now-30*DAY_MS).toISOString());
  if(older.error)return older;
  return {data:[...listed.data,...older.data]};
+}
+// The farmer's own row and the number of farmers for each listed event, in one round trip (20 Oct 2026; it was 2 queries per
+// event, 24 a window with an event every hour). A settled event has its count from harvest_event_settle; one that has not started
+// has nobody yet; only a running one is counted. An event that ended and is not settled yet is settled first (normally the cron
+// job did that at :55).
+export async function withPlayerRows(admin,user,list,now){
+ const events=[];
+ for(let e of list){
+  if(Date.parse(e.ends_at)<=now&&!e.settled_at){const r=await admin.rpc('harvest_event_settle',{p_event:e.id});if(r.error)throw r.error;const fresh=await admin.from('live_events').select('*').eq('id',e.id).single();if(fresh.error)throw fresh.error;e=fresh.data;}
+  events.push(e);
+ }
+ const counted=events.filter(e=>!e.settled_at&&Date.parse(e.starts_at)<=now);
+ const [mine,...counts]=await Promise.all([
+  events.length?admin.from('live_event_players').select('*').in('event_id',events.map(e=>e.id)).eq('player_id',user.id):{data:[]},
+  ...counted.map(e=>admin.from('live_event_players').select('*',{count:'exact',head:true}).eq('event_id',e.id))
+ ]);
+ for(const r of [mine,...counts])if(r.error)throw r.error;
+ const rows=new Map((mine.data??[]).map(r=>[r.event_id,r])),count=new Map(counted.map((e,i)=>[e.id,counts[i].count]));
+ return events.map(e=>({...e,participants:count.get(e.id)??(e.settled_at?Number(e.participants)||0:0),player:rows.get(e.id)??null}));
 }
 // The same gate as the progress trigger (live-events-mixed.sql): level 15, so the event screen can say why a farm is not
 // taking part yet.
@@ -242,14 +265,7 @@ export async function handleEvents({admin,body,user,passwordOk}){
   const now=Date.now();
   const listed=managing?await admin.from('live_events').select('*').order('starts_at',{ascending:false}).limit(50):await playerEvents(admin,user,now);
   if(listed.error)throw listed.error;
-  const events=[];
-  for(let e of listed.data){
-   if(!managing&&!e.active&&Date.parse(e.ends_at)>now)continue;
-   if(Date.parse(e.ends_at)<=now&&!e.settled_at){const r=await admin.rpc('harvest_event_settle',{p_event:e.id});if(r.error)throw r.error;const fresh=await admin.from('live_events').select('*').eq('id',e.id).single();if(fresh.error)throw fresh.error;e=fresh.data;}
-   const [player,count]=await Promise.all([admin.from('live_event_players').select('*').eq('event_id',e.id).eq('player_id',user.id).maybeSingle(),admin.from('live_event_players').select('*',{count:'exact',head:true}).eq('event_id',e.id)]);
-   if(player.error)throw player.error;if(count.error)throw count.error;
-   events.push({...e,participants:count.count,player:player.data});
-  }
+  const events=await withPlayerRows(admin,user,listed.data.filter(e=>managing||e.active||Date.parse(e.ends_at)<=now),now);
   // Standings only for the event the screen puts first: the running one, otherwise the one that ended last.
   if(!managing){
    const running=events.find(e=>e.active&&Date.parse(e.starts_at)<=now&&Date.parse(e.ends_at)>now);
