@@ -97,7 +97,7 @@ test('from the first harvest to the first sale: the badge says what the basket i
  // The same number as "This basket is worth" on the Crops tab Market opens on (the corn and the starter wheat), and as Sell all crops.
  assert.match(game,/const worth=guideAt\('sell'\)\?marketWorth\(state,'crops',farmNow\(\)\):0/);
  assert.match(game,/market\.setAttribute\('aria-label',`Market: your basket is worth \$\{text\} coins`\);/);
- assert.match(ui,/export function marketWorth\(state,tab,now=Date\.now\(\)\)\{return marketSaleValue\(state,marketItems\(state,tab\)\.reduce\(\(v,k\)=>v\+sellableStock\(state,k,now\)\*marketQuote\(k,now\)\.price,0\),now\);\}/);
+ assert.match(ui,/export function marketWorth\(state,tab,now=Date\.now\(\)\)\{return marketPay\(state,marketItems\(state,tab\)\.reduce\(\(v,k\)=>v\+sellableStock\(state,k,now\)\*marketQuote\(k,now\)\.price,0\),now\);\}/);
  assert.match(ui,/function categoryTotal\(now=farmNow\(\)\)\{return marketWorth\(state,marketTab,now\);\}/,'the Market\'s own total is the same sum');
  // Every time Market opens then, the pointer shows Sell all corn (step 7: Sell all eggs once they are in), also when the pointer to
  // Market went with an earlier tap.
@@ -106,7 +106,7 @@ test('from the first harvest to the first sale: the badge says what the basket i
  assert.match(game,/if\(guideAt\('sell'\)\)\{heldMedals\.push\(\.\.\.medals\);heldTimer\|\|=setTimeout\(/,'the medal waits until after the sale');
  assert.match(game,/const MEDAL_HOLD_MS=20000;/,'and at most 20 s for a farmer who does not sell yet');
  assert.match(game,/if\(heldMedals\.length&&!guideAt\('sell'\)\)\{const medals=heldMedals;heldMedals=\[\];clearTimeout\(heldTimer\);heldTimer=0;setTimeout\(\(\)=>medalToast\(medals\),2600\);\}/);
- assert.match(rules,/\{id:'sell',title:'Your first market sale',description:'Open Market and sell your corn\.',guide:'market',icon:'store'\}/);
+ assert.match(rules,/\{id:'sell',title:'Your first market sale',description:'Open Market and sell your corn\. Your first sale pays double\.',guide:'market',icon:'store'\}/);
  // The harvest's worth at today's prices, on the field, beside what it brought in.
  assert.match(game,/return worth>0\?floatChip\('coins',`worth \$\{worth\.toLocaleString\('en-US'\)\}`,'is-worth'\):'';/);
  assert.match(game,/\+Object\.entries\(crops\)\.map\(\(\[crop,n\]\)=>floatChip\(crop,`\+\$\{n\}`\)\)\.join\(''\)\+worthChip\(crops\)\+/);
@@ -191,5 +191,5 @@ test('short frames: every side tool on screen, the guide as a banner under 500 p
 });
 
 test('the guide steps of a guided farm still number ten, and step 2 asks one thing',()=>{
- assert.equal(BEGINNER_QUESTS.length,10);assert.equal(BEGINNER_QUESTS[1].description,'Open Market and sell your corn.');
+ assert.equal(BEGINNER_QUESTS.length,10);assert.equal(BEGINNER_QUESTS[1].description,'Open Market and sell your corn. Your first sale pays double.');
 });

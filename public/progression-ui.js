@@ -74,8 +74,9 @@ export function createProgressionUI({state,isReady,share=null,notify=null,phone=
   // Market): a short toast instead, and the guide points the way to the Market (beginner-ui.js). The window from level 3.
   // 7 Oct 2026: the toast names what level 2 opens (the Feed Mill and field 9 were never announced).
   // 11 Oct 2026 (Part A, A11): with the first basket it is the one line that speaks, and it says the next step (it named the Feed Mill at the
-  // exact second the guide asked to sell; the guide's own "✓ Your first basket" line steps aside for it, beginner-ui.js).
-  if(notify&&p.leveled&&!p.catchUp&&p.level===2&&!p.avatars?.length){notify(beginnerProgress(state).find(q=>q.current)?.id==='sell'?'Level 2! Next: sell your corn in Market.':p.entries.some(e=>e.id==='building:mill')?'Level 2! You can now build the Feed Mill and buy a new field.':`Level ${p.level}! One harvest at a time, your farm is growing.`);return;}
+  // exact second the guide asked to sell; the guide's own "✓ Your first basket" line steps aside for it, beginner-ui.js). 20 Oct 2026: and that
+  // the first sale pays double (farm-state.js firstSaleDouble).
+  if(notify&&p.leveled&&!p.catchUp&&p.level===2&&!p.avatars?.length){notify(beginnerProgress(state).find(q=>q.current)?.id==='sell'?'Level 2! Next: sell your corn in Market. Your first sale pays double.':p.entries.some(e=>e.id==='building:mill')?'Level 2! You can now build the Feed Mill and buy a new field.':`Level ${p.level}! One harvest at a time, your farm is growing.`);return;}
   // A new level gets its card; what opens because of something the farmer just did (a building built opens its recipes, a field bought)
   // is named in one line at the top instead (11 Oct 2026, Part A A6: about 2 to 3 cards fewer in the first 15 minutes, some of them for a
   // building just built). An avatar earned keeps its card. Each name is a part of its own, so it is translated as a name.

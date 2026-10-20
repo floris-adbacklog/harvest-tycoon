@@ -226,7 +226,7 @@ const BODIES={
   const coop=BUILDINGS.coop.name,steps=beginnerProgress({});
   const stepHelp={
    harvest:'Your corn is ripe. Tap a ripe field to harvest it, or sweep across all of them.',
-   sell:'Tap Market and sell the corn you just harvested.',
+   sell:'Tap Market and sell the corn you just harvested. Your first sale pays double.',
    plant:`Pick Wheat with the seed button at the bottom, then tap an empty field. Wheat seeds cost ${CROPS.wheat.cost} coins.`,
    water:`Plant wheat, choose Water and tap the new crop within ${wikiTime(WATER_MIN_MS)}. Water makes it grow faster and gives one more crop.`,
    produce:`Tap the ${coop} on your farm, or open Buildings. Choose ${RECIPES.eggs.name} and tap Start batch. Your starting feed is for this.`,
@@ -354,6 +354,8 @@ const BODIES={
   return section('Selling',facts([
    ['market','Prices change every day','At 00:00 UTC the market sets new prices. Most days a price stays close to normal; now and then it is much higher or lower. Today’s market pick is the item whose price rose most today, and the outlook shows tomorrow’s.'],
    ['coins','Sell some or sell all','Choose how many to sell (on a phone: tap Pick amount), or sell all of one crop. The basket at the bottom shows what all your crops are worth.'],
+   // 20 Oct 2026 (farm-state.js firstSaleDouble): a new farm's first sale pays double.
+   ['coins','Your first sale pays double','On a new farm the Market pays twice for your first sale. Until then it shows the doubled prices.'],
    ['buildings','Goods pay more',`Crops made into goods sell for more than the crops that went in. See ${h.link('buildings')}.`],
    ['quests','Keep what you need',`Orders and your family ask for crops and goods, and often pay more than the market. See ${h.link('daily',TOPIC.daily.title,'sec-delivery-orders')} and ${h.link('family',TOPIC.family.title,'sec-the-family-order')}.`]
   ]))+section('How far prices move',table(['What','Lowest','Highest'],[['Crops',MARKET_RANGES.crops],['Goods',MARKET_RANGES.goods]].map(([what,[lo,hi]])=>`<tr><td>${what}</td><td>${Math.round(lo*100)}% of normal</td><td>${Math.round(hi*100)}% of normal</td></tr>`))+'<p>Every crop and good has its own price each day. The Market shows today’s price next to the normal one.</p>')

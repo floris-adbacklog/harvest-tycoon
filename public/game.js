@@ -11,7 +11,7 @@ import {createFamilyUI} from './family-ui.js';
 import {createPassUI} from './pass-ui.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
-import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketSaleValue} from './farm-state.js';
+import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP} from './loading-screen.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
@@ -750,10 +750,11 @@ async function tapBuilding(key){
 // What an action gave, floating up from the field as small chips with their own picture (markup built here, never from input).
 const floatChip=(key,text,cls='')=>`<span class="float-chip ${cls}">${art(key)}${text}</span>`;
 // What a harvest is worth at today's prices (11 Oct 2026, Part A A11, a player's idea on Reddit): one coin chip beside what it brought in,
-// on the field itself, never a pop-up; the coins come when it is sold. Not in the village, whose crops sell at its own market.
+// on the field itself, never a pop-up; the coins come when it is sold (doubled before the first sale, marketPay). Not in the village, whose
+// crops sell at its own market.
 function worthChip(crops){
  if(villageWorld)return '';const now=farmNow();
- const base=Object.entries(crops).reduce((sum,[item,n])=>sum+(Object.hasOwn(ITEMS,item)?n*marketQuote(item,now).price:0),0),worth=base>0?marketSaleValue(state,base,now):0;
+ const base=Object.entries(crops).reduce((sum,[item,n])=>sum+(Object.hasOwn(ITEMS,item)?n*marketQuote(item,now).price:0),0),worth=base>0?marketPay(state,base,now):0;
  return worth>0?floatChip('coins',`worth ${worth.toLocaleString('en-US')}`,'is-worth'):'';
 }
 function floatReward(id,html){const v=plots[id];floatAt(v.x,2.4,v.z,html);}

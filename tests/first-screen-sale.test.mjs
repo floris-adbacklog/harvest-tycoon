@@ -52,7 +52,7 @@ test('after the guide\'s first sale the Market closes and the coins fly to the c
  assert.match(ui,/^import \{flyHarvest,bump\} from '\.\/harvest-fly\.js';$/m,'the harvest\'s own flight');
  assert.match(ui,/const tapped=\[\.\.\.document\.querySelectorAll\(key==='category'\?'#sell-all':/,'from the button that was tapped');
  assert.ok(ui.indexOf('const tapped=')<ui.indexOf("marketSelling=true;renderMarket();\n  try{"),'read before the list is drawn again');
- assert.match(ui,/onChange\(\);notify\(`Sold! \+\$\{number\(r\.coins\)\} coins for your next harvest\.`\);\n   if\(r\.guide\?\.some\(step=>step\.step==='sell'\)\)firstSale\(tapped\);/,'only the sale that finishes the guide step');
+ assert.match(ui,/onChange\(\);notify\(r\.firstSale\?`Double coins for your first sale! \+\$\{number\(r\.coins\)\} coins\.`:`Sold! \+\$\{number\(r\.coins\)\} coins for your next harvest\.`\);\n   if\(r\.guide\?\.some\(step=>step\.step==='sell'\)\)firstSale\(tapped\);/,'only the sale that finishes the guide step');
  assert.match(ui,/function firstSale\(from\)\{\n  \$\('market-dialog'\)\.close\(\);/,'the window closes even when motion is reduced');
  assert.match(ui,/if\(!counter\|\|!from\|\|matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\)return;/);
  assert.match(ui,/flyHarvest\(\{from:\{x:from\.left\+from\.width\/2,y:from\.top\+from\.height\/2\},to:\{x:to\.left\+to\.width\/2,y:to\.top\+to\.height\/2\},html:art\('coins'\),count:5,onArrive:\(\)=>bump\(counter\)\}\);/);

@@ -354,8 +354,8 @@ export const BEGINNER_QUESTS=Object.freeze([
  // Step 1 says the sweep first (Oct 2026): sweeping over the ripe corn harvests every field it passes; a tap still harvests one.
  {id:'harvest',title:'Your first basket',description:'Sweep across your ripe corn to harvest it, or tap one.',guide:'harvest',icon:'shopping-basket'},
  // 11 Oct 2026 (Part A A11): one thing to do. The feed sentence went: starter feed and corn cannot be sold in the first 30 minutes anyway
- // (STARTER_KEEP).
- {id:'sell',title:'Your first market sale',description:'Open Market and sell your corn.',guide:'market',icon:'store'},
+ // (STARTER_KEEP). 20 Oct 2026: it says the first sale pays double (firstSaleDouble).
+ {id:'sell',title:'Your first market sale',description:'Open Market and sell your corn. Your first sale pays double.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  // 7 Oct 2026: water works only in a crop's first minute, and the starter wheat is past it (9 of 38 new farmers who planted never watered).
  {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
@@ -1381,13 +1381,13 @@ export function sellCrops(state,item='all',now=Date.now(),day,category,quantity)
  if(quantity!==undefined&&(item==='all'||(category!==undefined&&!village)||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
  if(quantity!==undefined&&quantity>sellableStock(state,item,now))throw new Error(`Keep your first ${keptStock(state,item,now)} ${ITEMS[item].name.toLowerCase()} for now: you need them for your first steps. Sell what you grow or make on top of them; the rest is free to sell after your first 30 minutes.`);
  const amounts=Object.fromEntries(keys.map(k=>[k,quantity??sellableStock(state,k,now)]));
- const total=marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
+ const first=!village&&firstSaleDouble(state),total=(first?2:1)*marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
  if(total===0){const kept=keys.filter(k=>keptStock(state,k,now)>0);throw new Error(kept.length?`Your starting ${kept.map(k=>ITEMS[k].name.toLowerCase()).join(' and ')} ${kept.length>1?'are':'is'} kept for your first steps. Harvest or make more to sell, or wait until your first 30 minutes are up.`:'Your basket is empty. Harvest or produce something first.');}
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
  // Sold at the Village market: the village's own count, not the farm Market's (quests, challenges and the Items sold board).
  state.coins+=total;state.stats.earned+=total;if(village){state.stats.village_sold=(state.stats.village_sold??0)+units;state.stats.village_earned=(state.stats.village_earned??0)+total;}else state.stats.sold+=units;
- return {coins:total,day:utcDay(now)};
+ return {coins:total,day:utcDay(now),...(first?{firstSale:true}:{})};
 }
 export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&(!r.base||recipeUnlocked(state,r.base))&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
 export function recipeUnlockHint(state,id){
@@ -1666,6 +1666,13 @@ export const VIP_PLANS=Object.freeze({week:{name:'VIP · 7 days',cost:500,durati
 export function vipActive(state,now=Date.now()){return Number.isSafeInteger(state.vipExpiresAt)&&state.vipExpiresAt>now;}
 export function dailyRewardMultiplier(state,now=Date.now()){return vipActive(state,now)?2:1;}
 export function marketSaleValue(state,base,now=Date.now()){return Math.floor(base*(vipActive(state,now)?1.05:1)*(state.boosts?.coinsUntil>now?2:1)*(hasImprovement(state,'ledger')?1.1:1)*(1+masterBonus(state,'market')+valleyProjectBonus(state,'barn')));}
+// The first sale pays double (the owner, 20 Oct 2026, option 4 of the step 2 study: 21% of new farmers who harvested never sold, and 83% of
+// them still had their 500 starting coins, so selling had no reason). A guided farm's first sale at the farm Market, made in guide step 1 or
+// 2, pays twice what the Market pays then: once, with no cap (first sales from 1 Oct 2026: median 160 coins, 99% under 940, the most 4,499).
+// The guide's step 2 says it and the Market shows the doubled prices with a line of its own; the village market never doubles.
+export function firstSaleDouble(state){const guide=state.onboarding;return guidedFarm(state)&&Boolean(guide)&&!guide.rewardClaimed&&guide.completed<=1&&!guide.milestones?.sell;}
+// What the farm Market pays for goods worth base at today's prices: marketSaleValue, doubled for the first sale.
+export const marketPay=(state,base,now=Date.now())=>(firstSaleDouble(state)?2:1)*marketSaleValue(state,base,now);
 export function buyVip(state,plan,expectedCost,expectedExpiresAt,now=Date.now()){
  if(typeof plan!=='string'||!Object.hasOwn(VIP_PLANS,plan))throw new Error('Choose a VIP plan.');
  const offer=VIP_PLANS[plan],previous=state.vipExpiresAt??0;
