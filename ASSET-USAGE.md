@@ -146,3 +146,28 @@ Each keeps its walk and its idle (the run is left out), paints from the farm's p
 cell nearest to the colour it read in the pack's own palette, which has a watermark over it, so none of that picture is shipped),
 carries the farm's baked shade (bake-ao.py, the farm's strength and floor) and is meshopt-compressed and quantized (the village's
 decoder). About 150 KB for all three as the site sends them.
+
+## Farm animals that move (20 Oct 2026)
+
+The farm's chickens, cows, goats, pigs, sheep and horses move (public/farm-animals.js): they graze, stand, take a few calm steps in
+their own pen, and the cows and pigs lie down now and then. No animal was added or moved: each still model (below) keeps its place,
+size and turn, still loads with the farm and stays as the tap target, and an animated twin takes its place once the farm is on screen.
+The twins come from ithappy Studios' **Animals** pack, bought by the owner on 20 Oct 2026 (https://ithappystudios.com/). Licence: the
+paid asset licence (https://ithappystudios.com/type-of-licenses/): use inside a finished game is allowed, commercial too, and the
+pack has no watermark; the assets may not be shared or sold on their own, not as they are. So the download stays out of the
+repository, and the game ships only copies rebuilt for it by scripts/build-farm-animals.mjs (see its header for the three steps): one
+file a kind, with the kind's colours as separate meshes on one skeleton and its clips once (idle, walk, eat, lie for the cow and the
+pig, the goat's and the chick's gesture; no run), painted from the farm's palette.png, with the farm's baked shade, meshopt-compressed and quantized.
+
+| Model (source) | Takes the place of | Size as it came → in the game |
+| --- | --- | --- |
+| chicken_101: hen_brown (Chicken_01, its orange painted brown), hen_white (Chicken_02) | chicken_001; chicken_003 | 921,880 → 69,116 bytes |
+| chick_101: chick_yellow (Chick_01) | chicken_002 (the scenery's two chicks) | 400,152 → 51,436 bytes |
+| cow_101: cow_black (Cow_01), cow_brown (Cow_02) | cow_001; cow_003 | 1,420,524 → 118,320 bytes |
+| goat_101: goat_white (Goat_01), goat_grey (Goat_01 painted grey) | goat_001; goat_002 | 585,648 → 103,052 bytes |
+| pig_101: pig_pink (Pig_03), pig_peach (Pig_02) | pig_003; pig_002, pig_005 | 1,252,032 → 114,844 bytes |
+| sheep_101: sheep_white (Sheep_01), sheep_grey (Sheep_02), sheep_cream (Sheep_01, white face and legs) | sheep_001; sheep_002; sheep_003 | 1,292,168 → 103,248 bytes |
+| horse_101: horse_bay (Horse_01), horse_black (Horse_02), horse_chestnut (Horse_05, its mane dark) | horse_002, horse_005; horse_004; horse_003 | 1,805,676 → 127,924 bytes |
+
+687 KB for all seven files (about 253 KB as the site sends them, brotli-packed). They are not among the models the loading bar waits for,
+not loaded with reduced motion or when the browser asks to save data, and a kind that cannot load keeps its still models.

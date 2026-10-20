@@ -140,6 +140,7 @@ let liveEvents,familyUI,passUI,progression,economy,retention,growth,valley,villa
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
+let herd=null;   // the farm's moving animals (farm-animals.js, 20 Oct 2026), once they have come
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
 Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
@@ -306,6 +307,22 @@ async function addScenery(){
   await loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4);
   buildScenery({scene,models,mobile:mobileLayout.matches});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
+ void addAnimals();
+}
+// The farm's animals move (20 Oct 2026, public/farm-animals.js): after the extra scenery (its white hen moves too) and a quiet moment,
+// each kind's animated twin takes the place of its still models; until then, and for good if it cannot load, the still ones stand as
+// before. Not with reduced motion (the farm does not move then) or when the browser asks to save data. Site only: no rules or save.
+async function addAnimals(){
+ try{
+  const connection=navigator.connection;if(reducedMotion||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
+  await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:5000}):setTimeout(done,2000));
+  const {createHerd,ANIMATED}=await import('./farm-animals.js');
+  // The still animals: the pens' (animalAt), the Ranch's horses, the Animal paddock's horse (a stop with a pin: it stays on its spot)
+  // and the scenery's white hen by the coop (stays on its spot too).
+  const list=[];scene.traverse(o=>{const name=o.userData.model??o.userData.scenery;if(name&&ANIMATED[name]&&!o.userData.animal){o.userData.animal=true;list.push({obj:o,still:Boolean(o.userData.activity||o.userData.scenery)});}});
+  herd=createHerd({list,relock:o=>{if(o.userData.locked){o.userData.locked=false;setLocked(o,true);}},lite:handheld||mobileLayout.matches,onKind:()=>{renderer.shadowMap.needsUpdate=true;}});
+  await herd.ready;
+ }catch(error){console.warn('The animals were left standing.',error);}
 }
 // The farm's dog and cat by the Farmhouse, or the deer in the village (20 Oct 2026, public/farm-pets.js): once the farm or the village is on
 // screen and the page has a quiet moment (the extra scenery and the village's extras start first), so the first picture never waits for
@@ -1657,7 +1674,7 @@ function frame(now){
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
