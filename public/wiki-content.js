@@ -5,6 +5,8 @@ import {FAMILY_IDLE_DAYS,FAMILY_IDLE_DEFAULT} from './farm-state.js';
 import {FEATURE_NAMES,POND_OPEN,POND_LEVEL,POND_START_CASTS,POND_MAX_CASTS,POND_REFILL_MS,POND_PERFECT,POND_NEW_FISH_XP,POND_NEW_FISH_COINS,POND_BOOK_DIAMONDS,POND_LEGEND_BY,FISH,FISH_PAGES,POND_PAGE_TWO_LEVEL,POND_BOOK2_DIAMONDS,POND_STURGEON_BY} from './farm-state.js';
 // The village lake (12 Oct 2026, plan D): its section in The Village only, once the lake is open (LAKE_OPEN).
 import {LAKE_OPEN,LAKE_LEVEL,LAKE_FISH,LAKE_FISH_PAGES,LAKE_PAGE_TWO_LEVEL,LAKE_BOOK_DIAMONDS,LAKE_BOOK2_DIAMONDS,LAKE_LEGEND_BY,LAKE_GHOST_BY} from './farm-state.js';
+// Getting started, longer and clearer (20 Oct 2026): the Beginner guide's own steps and the head start a new farm gets.
+import {beginnerProgress,BEGINNER_STEP_XP,STARTER_COINS,ROOKIE_MS,FIRST_HARVEST_BONUS,RETURN_BOOST_MS,WATER_MIN_MS} from './farm-state.js';
 import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
 import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';
@@ -19,7 +21,7 @@ export {wikiLink,parseWikiLink,wikiLinksIn};
 // Every number and table comes from the game rules, so a balance change never leaves the wiki behind. In the game, things
 // above your level say "From level X"; on the website every level is just shown.
 export const WIKI_TOPICS=Object.freeze([
- {id:'getting-started',title:'Getting started',art:'farm',blurb:'Your first minutes on the farm, and how to move around.',keywords:'start beginner guide rookie controls swipe sweep zoom tutorial new'},
+ {id:'getting-started',title:'Getting started',art:'farm',blurb:'The Beginner guide step by step, where to find things, and help when you are stuck.',keywords:'start beginner guide rookie controls swipe sweep zoom tutorial new first steps stuck help buttons phone computer sell money'},
  {id:'crops',title:'Fields and crops',art:'wheat',blurb:'Planting, watering, more fields and every crop in the game.',keywords:'plant water care harvest field seeds grow medals mastery silo trees'},
  {id:'buildings',title:'Buildings and goods',art:'buildings',blurb:'What each building makes, from what, and how long it takes.',keywords:'production recipe goods upgrade factory batch collect'},
  {id:'market',title:'Market',art:'market',blurb:'Selling crops and goods, and prices that change every day.',keywords:'sell price demand coins stall'},
@@ -211,20 +213,102 @@ function familyHallBlock(h){
  return closedRow('building-familyhall',art('familyhall-model')+b.name,h.lvl(FAMILY_MIN_LEVEL),'',`<p>${b.tagline}</p><p>Tap it on your farm to open your Farm family: start or join one, fill the Family Chest, deliver the weekly order and share with your family. <span class="wiki-see">See ${h.link('family')}.</span></p>`);
 }
 const BODIES={
+ // 20 Oct 2026, the owner: "Maak de wiki aan de slag langer en duidelijker". In the order a new farmer meets things: the loop, the
+ // buttons (the guide's steps name them), the Beginner guide step by step (most new farms stop at its first sale, then its first
+ // harvest), the fields, the head start, coins and levels, the first levels, what to do next, coming back, and answers to what new farmers ask most. Every number
+ // from the rules; a step the guide gets later without help text here shows the game's own line.
  'getting-started'(h){
   const loop=[['seeds','Plant'],['harvest','Harvest'],['buildings','Make'],['market','Sell']].map(([p,l],i)=>`${i?'<i class="wiki-arrow" aria-hidden="true">›</i>':''}<li>${art(p)}<span>${l}</span></li>`).join('');
-  return section('The whole game in four steps',`<ol class="wiki-loop">${loop}</ol><p>Plant crops, harvest them, turn them into goods in your buildings and sell them at the ${h.link('market')}. Everything else helps your farm grow.</p>`)
-  +section('Your first minutes',facts([
-   // 11 Oct 2026 (Part A): the guide shows the way to every step by itself (A12), and the next goal comes after it (A13).
-   ['quests','Beginner guide',`Ten small steps that show you the farm. After each step the guide shows you the way to the next one. After all ten you get ${BEGINNER_REWARD} diamonds, and the Next goal card takes the guide's place.`],
-   ['boost','Beginner boost',`When you create your account, waiting times are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller evenly, hour by hour, and stops after your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours.`],
-   ['gift','A gift every day',`Come back every day for coins and diamonds. See ${h.link('daily',TOPIC.daily.title,'sec-a-gift-every-day')}.`]
-  ]))
-  +section('Moving around',facts([
+  // "See X." as a text of its own, so the sentence before it keeps its translation.
+  const see=(id,anchor='',text=TOPIC[id].title)=>` <span class="wiki-see">See ${h.link(id,text,anchor)}.</span>`;
+  const coop=BUILDINGS.coop.name,steps=beginnerProgress({});
+  const stepHelp={
+   harvest:'Your corn is ripe. Tap a ripe field to harvest it, or sweep across all of them.',
+   sell:'Tap Market and sell the corn you just harvested.',
+   plant:`Pick Wheat with the seed button at the bottom, then tap an empty field. Wheat seeds cost ${CROPS.wheat.cost} coins.`,
+   water:`Plant wheat, choose Water and tap the new crop within ${wikiTime(WATER_MIN_MS)}. Water makes it grow faster and gives one more crop.`,
+   produce:`Tap the ${coop} on your farm, or open Buildings. Choose ${RECIPES.eggs.name} and tap Start batch. Your starting feed is for this.`,
+   gift:'Open Today and tap Collect. On a phone, Today is in More. Come back tomorrow for the next gift.',
+   sell_egg:`When the label over the ${coop} turns yellow, tap it to collect your eggs. Then open Market, tap Farm goods and sell an egg.`,
+   tend:'When the label on a growing crop glows gold, choose Care and tap the crop. Care gives one more crop too.',
+   hand:`Tap the ${ACTIVE_STATIONS.greenhouse.name} on your farm and water the dry seedlings.`,
+   collect:`Collect a finished batch from any building, then tap Claim ${BEGINNER_REWARD} diamonds.`
+  };
+  // Levels 1 to 20 as What opens when shows them (opensByLevel), plus what a level-1 farm has and the fields that cost only coins.
+  const FIRST_LEVELS=20,opens=opensByLevel(h.app||h.portal&&!h.kreds,1),at=n=>opens.get(n)??opens.set(n,[]).get(n);
+  at(1).push({picture:'quests',name:'Quests',to:['quests','sec-quests']},{picture:'gift',name:'A gift every day',to:['daily','sec-a-gift-every-day']});
+  EARLY_FIELDS.forEach((f,i)=>at(f.level).push({picture:'seeds',name:`Field ${STARTER_FIELDS+i+1}`,to:['buildings','building-farmhouse']}));
+  const levelRows=[...opens].filter(([n])=>n<=FIRST_LEVELS).sort((a,b)=>a[0]-b[0]).map(([n,list])=>h.row(n,[h.lvl(n),`<span class="wiki-opens">${list.map(e=>openChip(h,e)).join('')}</span>`]));
+  const firstField=STARTER_FIELDS+1,lastEarly=STARTER_FIELDS+EARLY_FIELDS.length;
+  // Reminders only where Settings has them: not on the portals, and in our apps once they offer their own notifications.
+  const reminders=!h.portal&&(!h.app||h.appPush);
+  return section('The whole game in four steps',`<ol class="wiki-loop">${loop}</ol><p>Plant crops, harvest them, turn them into goods in your buildings and sell them at the ${h.link('market')}.</p>`)
+  +section('Where to find things',facts([
    ['farm','Look around','Drag the grass to move the farm. With a mouse, a drag with the right button moves it from anywhere; before your first harvest only that one does. Pinch, or scroll with a mouse, to zoom in and out.'],
+   // public/mobile.css (the bottom bar), public/event-rail.js (Today and Events at the side while something waits there).
+   ['farmhouse','On a phone','The bar at the bottom has My farm, Buildings, Market, Quests and More. Today and Events are in More; when something waits there, a round button shows it at the side of your farm. At the top you see your level, coins and diamonds.'],
+   ['market','On a computer','The buttons at the side of the screen open Today, My farm, Buildings, Market, Quests and More. At the top you see a map of your farm, your level, coins and diamonds. Click a spot on the map to look there.'],
+   ['guide','More','More holds everything else, like How to play, Settings and Feedback. What opens at a higher level waits under Coming later, with the level it needs. A ! on a button means something waits there.']
+  ]))
+  // 11 Oct 2026 (Part A): the guide shows the way to every step by itself (A12), and the next goal comes after it (A13).
+  +section('Beginner guide',`<p>The Beginner guide shows you the farm in ${steps.length} small steps. Each step gives ${BEGINNER_STEP_XP} XP. You never have to do a step twice. Not sure what to do? Tap Show me and the guide shows you where to tap.</p>`
+   +'<p>On a computer the guide is a card on the screen. On a phone it is the line at the top: tap it to see every step.</p>'
+   +`<ol class="wiki-list">${steps.map(q=>`<li><strong>${q.title}</strong><br>${stepHelp[q.id]??q.description}</li>`).join('')}</ol>`
+   +`<p>After the last step you get ${BEGINNER_REWARD} diamonds. Then the Next goal card takes the guide’s place and shows one thing to do next.${see('quests','sec-quests')}</p>`)
+  +section('Working your fields',facts([
+   ['corn','Ripe or growing?','A ripe field shows only a picture of its crop. A growing field shows a label with a ring and the time left. When that label glows gold, the crop is ready for care.'],
+   ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields. The seed button beside them picks the crop you plant. On a computer, keys 1 to 4 pick the tools.'],
+   ['seeds','What a tap does','You don’t have to switch tools all the time. A tap plants an empty field and harvests a ripe one. On a growing crop it gives water or care when the crop can use it.'],
    // Mouse first, then touch (Oct 2026): every field is worked the moment you pass it, and the whole sweep is saved at once.
    ['harvest','Swipe across fields',`With a mouse, hold the button on a ripe crop and sweep across your fields: every ripe crop you pass is harvested on the spot, up to ${SWIPE_MAX_FIELDS} in one sweep. From an empty field a sweep plants your seed, and from a growing crop it waters or gives extra care. Before your first harvest, a mouse sweep harvests the ripe crops it crosses, wherever it starts. On a touchscreen, hold a field for a moment until it lights up, then swipe across your fields. A quick swipe moves the farm instead.`],
-   ['care','Tools at the bottom','Pick Plant, Water, Care or Harvest at the bottom of the screen, then tap or swipe your fields.']
+   ['water','Water and care',`A harvest gives 1 crop. Water a field for 2 crops, water and care for 3. Both also make the crop grow faster, and doing both gives double XP. Water right after planting; care comes later, when the label glows gold.${see('crops','sec-water-and-care')}`]
+  ]))
+  +section('Help at the start',facts([
+   ['coins','What you start with',`${number(STARTER_COINS)} coins and ${STARTER_FIELDS} fields, some already planted. Your barn holds some crops and animal feed to begin with.`],
+   ['double-harvest','A big first harvest',`Your very first harvest gives ${FIRST_HARVEST_BONUS} times the crop.`],
+   // The three goods of STARTER_KEEP (farm-state.js), named here in words.
+   ['market','Kept for your first buildings',`The corn, feed and barley you start with are kept for your first buildings during your first ${ROOKIE_MS/60000} minutes. What you harvest or make sells right away.`],
+   ['boost','Beginner boost',`When you start your farm, waiting times for crops and batches are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller evenly, hour by hour, and stops after your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours. On a computer, the hourglass at the top shows how much is left.`],
+   // The same fact as in Buildings and goods (farm-state.js batchDuration).
+   ['eggs','A quick first batch',`The first batch in each new building is ready in ${FIRST_BATCH_MS/1000} seconds. After that every batch takes its usual time.`]
+  ]))
+  +section('Coins, XP and diamonds',facts([
+   ['coins','Coins','You earn coins by selling at the Market, and from quests, the daily gift and new levels. You spend them on seeds, buildings, more fields and upgrades.'],
+   ['xp','XP','Harvests, finished batches, guide steps, most quests and the daily gift give XP. Selling at the Market gives no XP.'],
+   ['trophy','New levels',`Enough XP brings a new level. Every level gives coins and diamonds, and opens new crops, buildings or things to do. A message tells you what opened and where to find it.${see('quests','sec-level-rewards')}`],
+   ['log','Farm journal','Tap your level at the top to open the Farm journal. It shows how much XP you still need, your next level reward and what opens next.'],
+   ['diamonds','Diamonds',`You get ${BEGINNER_REWARD} for the Beginner guide, and more from the daily gift, daily challenges and new levels.${see('diamonds','sec-earning-diamonds')}`],
+   ['boost','What diamonds do',`From level ${FEATURE_LEVELS.cart}, diamonds can replace a delivery order. From level ${FEATURE_LEVELS.boosts}, they also buy boosts and finish a crop or a batch at once.${see('diamonds','sec-boosts')}`]
+  ]))
+  +section(`Your first ${FIRST_LEVELS} levels`,`<p>Every level opens something new. Tap a name to read more.${see('quests','sec-what-opens-when','What opens when')}</p>`+table(['Level','What opens'],levelRows,'wiki-opens-table'))
+  +section('What to do next',facts([
+   ['quests','Quests',`Small goals that pay coins and XP. When one is done, open Quests and claim it. You claim them one at a time.${see('quests','sec-quests')}`],
+   ['trophy','Next goal','After the Beginner guide, the Next goal card shows one thing to do, like a quest to claim, something to build, a field to buy or your next level. On a phone it is the line at the top.'],
+   ['xp',`Daily challenges ${h.lvl(FEATURE_LEVELS.challenges)}`,`${DAILY_CHALLENGE_DIAMONDS.length} small goals every day, in Today. Each pays coins, XP and diamonds.${see('daily','sec-daily-challenges')}`],
+   ['helping-hand',`A helping hand ${h.lvl(FEATURE_LEVELS.activities)}`,`${Object.keys(ACTIVE_STATIONS).length} stops on your farm each have a small job. Help at a stop for goods and XP, then it rests for a while. Help at all of them for a bonus in coins.${see('helpers','sec-a-helping-hand')}`],
+   ['cart',`Delivery orders ${h.lvl(FEATURE_LEVELS.cart)}`,`Customers ask for crops and goods and pay more than the Market. Tap the cart on your farm, or open Delivery orders in Today.${see('daily','sec-delivery-orders')}`]
+  ]))
+  +section('Coming back',facts([
+   ['instant-harvest','Your farm keeps growing','Crops and batches keep growing while the game is closed. Nothing spoils: a ripe crop waits on its field until you harvest it.'],
+   ['corn','Before you go',`Wheat grows in ${wikiTime(CROPS.wheat.duration)}, corn in ${wikiTime(CROPS.corn.duration)}. Plant quick crops while you play and longer ones before you go, and start a batch in every building.`],
+   ['gift','A gift every day',`Collect your gift in Today every day: coins, diamonds and XP. Each day in a row makes it bigger, up to day ${DAILY_REWARDS.length}. Your second gift also brings ${RETURN_BOOST_MS/60000} minutes of double harvest.${see('daily','sec-a-gift-every-day')}`],
+   ['farmhouse','Welcome back','Back after a while? Welcome back shows what is ready, and today’s gift if you have not collected it yet. Its button takes you straight to what waits.'],
+   ['family-chest-wood','Back after a few days',`Away for ${COMEBACK_MIN_DAYS} days or more? A comeback chest waits for you in Welcome back, at most once every ${COMEBACK_EVERY_DAYS} days.${see('daily','sec-back-after-a-while')}`],
+   ...(reminders?[['bell','Reminders',`Switch on reminders in Settings, and the game tells you when your crops and goods are ready and when your daily gift waits.${see('account','sec-your-account')}`]]:[])
+  ]))
+  // What new farmers ask most (20 Oct 2026: the farms that stopped in the guide, and new players' questions in chat and Feedback).
+  +section('Need help?',facts([
+   ['market','I can’t sell my corn',`The corn you start with is kept for your first buildings during your first ${ROOKIE_MS/60000} minutes. Harvest some corn and sell that: it sells right away.${see('market','sec-selling')}`],
+   ['corn','A tap does not harvest','Only a ripe field can be harvested: it shows only a picture of its crop, with no ring or time. A field with a ring and a time is still growing.'],
+   ['water','Water does nothing',`A crop takes water only while it is young. Plant a new crop and water it right away.${see('crops','sec-water-and-care')}`],
+   ['buildings','Where do I make goods?',`Tap a building on your farm, or open Buildings. Choose what to make and tap Start batch. When its label turns yellow, tap it to collect.${see('buildings','sec-how-buildings-work')}`],
+   ['eggs','Where do I sell eggs?',`Open Market and tap Farm goods. Eggs, milk and everything else your buildings make are sold there.${see('market','sec-selling')}`],
+   ['seeds','How do I get more fields?',`Fields ${firstField} to ${lastEarly} cost only coins and open at levels ${EARLY_FIELDS[0].level} to ${EARLY_FIELDS.at(-1).level}. Open Buildings, then the Farmhouse, and tap Unlock 1 field. From field ${FIRST_COUNTED_FIELD} a field also asks for crops and goods.${see('buildings','building-farmhouse','Farmhouse')}`],
+   ['coins','Can I earn real money?','No. Coins and diamonds are only for the game. You cannot change them into real money.'],
+   ['diamonds','What are diamonds for?',`From level ${FEATURE_LEVELS.boosts}: boosts, and finishing a crop or a batch at once. From level ${FEATURE_LEVELS.cart} you can also replace a delivery order.${see('diamonds')}`],
+   ['settings','How do I change my name or avatar?',`Open Settings in More. There you change your farmer name and your avatar.${see('account','sec-settings')}`],
+   // Support, 20 Oct 2026: farmers who signed in another way landed on a new level-1 farm. Not on the portals, which sign in for you.
+   ...(h.portal?[]:[['farm','My farm is gone',`Sign out and sign in again the way you did before. Signing in another way can start a new farm. At the top of Settings, Your account shows how you are signed in.${see('account','sec-settings')}`]])
   ]))
   +section('Saved for you',h.signedIn?h.signedIn.saved:h.portal?PORTAL_SAVED:'<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
   +(!h.install?'':section('Play it as an app',facts([
@@ -277,7 +361,7 @@ const BODIES={
   // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app
   // or on CrazyGames and Kongregate (nothing is sold there, except Kreds on Kongregate once switched on, 15 Oct 2026): How to play there
   // leaves it out, and on the website's wiki data-shop-only lets public/wiki.css hide it in the app.
-  const chip=e=>{const tag=e.to?'a':'span';return `<${tag} class="wiki-open"${e.mark??''}${e.to?` href="${h.to(...e.to)}" data-wiki-topic="${e.to[0]}"${e.to[1]?` data-wiki-anchor="${e.to[1]}"`:''}`:''}>${art(e.picture)||art('gift')}<span>${e.name}</span>${e.kind?`<small>${e.kind}</small>`:''}</${tag}>`;};
+  const chip=e=>openChip(h,e);
   const opens=opensByLevel(h.app||h.portal&&!h.kreds);
   return section('Quests',facts([
    // Plan F (13 Oct 2026): a field to buy on the Next goal card (proposal 3), and the phone's line that says when everything is ready (2).
@@ -612,11 +696,14 @@ function lakeSection(h){
   +`<ul class="wiki-list"><li>Catch all ${one.length+two.length} kinds, on both pages, for ${LAKE_BOOK2_DIAMONDS} diamonds more, once: ${LAKE_BOOK_DIAMONDS+LAKE_BOOK2_DIAMONDS} diamonds in all.</li><li>The Glacier Ghost, the lake’s giant, is very rare too, but one of your first ${LAKE_GHOST_BY} lake fish from level ${from} is always a Glacier Ghost.</li></ul>`
   +dual(table(['Fish','Chance','Weight',`Coins at level ${twoAt}`,'XP'],rows2),cards2)));
 }
+// One thing a level opens, as a chip (What opens when, and Getting started's first levels): one explained elsewhere leads there.
+const openChip=(h,e)=>{const tag=e.to?'a':'span';return `<${tag} class="wiki-open"${e.mark??''}${e.to?` href="${h.to(...e.to)}" data-wiki-topic="${e.to[0]}"${e.to[1]?` data-wiki-anchor="${e.to[1]}"`:''}`:''}>${art(e.picture)||art('gift')}<span>${e.name}</span>${e.kind?`<small>${e.kind}</small>`:''}</${tag}>`;};
 // Everything a level opens, not only the features: buildings, crops and the recipes that come later than their building (26 Sep 2026;
 // between level 27 and 62 only buildings, crops and recipes open, and a features-only list looked empty there). to (Oct 2026): the
 // [topic, spot] where it is explained.
-function opensByLevel(app=false){
- const opens=new Map(),add=(n,entry)=>{if(n>1)(opens.get(n)??opens.set(n,[]).get(n)).push(entry);};
+// from: the first level listed (Getting started lists level 1 too, 20 Oct 2026).
+function opensByLevel(app=false,from=2){
+ const opens=new Map(),add=(n,entry)=>{if(n>=from)(opens.get(n)??opens.set(n,[]).get(n)).push(entry);};
  const featureArt={fishing:'fishingpond',challenges:'quests',mastery:'trophy',activities:'helping-hand',family:'familyhall',boosts:'boost',projects:'estate'};
  for(const [key,n] of Object.entries(FEATURE_LEVELS))add(n,{picture:featureArt[key]??key,name:featureTitle(key),to:FEATURE_SPOTS[key]});
  // Plan F (13 Oct 2026): village orders and special commissions, as on their level's card (farm-state.js unlockEntries).
