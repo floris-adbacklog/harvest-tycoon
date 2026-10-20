@@ -167,8 +167,13 @@ export function codeTranslator(dict,code='en'){
   return String(out).replace(/\{(\d+)\}/g,(all,i)=>parts[i]??'');
  };
 }
-let codeText=codeTranslator(null);
-export const t=(english,...values)=>codeText(english,...values);
+// The farm page's own code is loaded twice (20 Oct 2026, found with Share in chat): public/game.js imports this file, and the cloud script
+// (src/game-cloud.js and the chat, built by scripts/build-cloud.mjs) has its own copy, which never starts the translation itself. That
+// copy uses the page's translations once they are there (globalThis.harvestCodeText and harvestPageText, set by startTranslation), so a
+// chat line with a farmer's name in it ("Shared by Sam", "Message Rosa…") is in the farmer's language too, not English.
+const englishText=codeTranslator(null);
+let codeText=null;
+export const t=(english,...values)=>(codeText??globalThis.harvestCodeText??englishText)(english,...values);
 // The page's translation for code that has to translate a whole message before it cuts it into pieces (the chips in a toast,
 // public/toast-ui.js, 6 Oct 2026): the text in the farmer's language, its numbers written their way, or null (English, or a text
 // the translations do not know).
@@ -177,14 +182,15 @@ let pageText=null;
 // from Unicode's private use area (HELD) is no word and no number, so the changing part it fills is never translated. Only a whole
 // name counts, never one inside a longer word ("Ann" in "Anna"), the longest first.
 export const translateText=(text,names=[])=>{
- if(!pageText)return null;
+ const lookup=pageText??globalThis.harvestPageText;
+ if(typeof lookup!=='function')return null;
  let key=String(text??'');const held=[];
  for(const name of [...new Set((names??[]).map(n=>String(n??'')).filter(n=>n.trim()))].sort((a,b)=>b.length-a.length)){
   const whole=new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(name)}(?![\\p{L}\\p{N}])`,'gu');
   if(!whole.test(key))continue;
   const mark=String.fromCharCode(0xE000+held.length);held.push([mark,name]);key=key.replace(whole,mark);
  }
- const out=pageText(key);
+ const out=lookup(key);
  return out==null?null:held.reduce((done,[mark,name])=>done.split(mark).join(name),out);
 };
 // Players' own words on screen (17 Oct 2026: a farmer called "Sunny Acres" showed as "Zonnige Akkers", the name of a music track in
@@ -278,6 +284,7 @@ export async function startTranslation(doc=globalThis.document){
   const translator=createTranslator(dict,code);codeText=codeTranslator(dict,code);
   const numbers=localNumbers(code),rtl=RTL_LANGUAGES.includes(code);
   pageText=text=>{const key=normalize(text);let out=key?translator.translate(key):null;if(out==null)return null;if(numbers&&/\d/.test(out))out=numbers(out);return rtl&&/\d/.test(out)?isolateNumbers(out):out;};
+  globalThis.harvestCodeText=codeText;globalThis.harvestPageText=pageText;
   root.lang=code;root.dir=RTL_LANGUAGES.includes(code)?'rtl':'ltr';
   // A language page (scripts/build-languages.mjs) is written in the translations already: those texts stay as they are.
   const page=root.getAttribute?.('data-page-lang')===code;

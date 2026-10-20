@@ -1,4 +1,4 @@
-import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer} from './farm-state.js';
+import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer,familyStanding,familyManager,familyShareState} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
 const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
@@ -46,6 +46,30 @@ export async function handleFamilyProfile({admin,body,state,player}){
  context.players=context.players.map(p=>({...p,online:isRecentlyActive(p.last_active_at,now)}));
  const profile=familyProfile(context,body.familyId,player,state,now);
  return profile?{status:200,data:{familyProfile:profile,profile:{player_id:player},serverNow:now}}:gone;
+}
+// Share in chat (20 Oct 2026, the owner's option 1; farm-state.js familyShareState): the leader or a co-leader posts the family's card in
+// the global chat, once an hour per family. The rule is checked here first, for the plain reason ("You can share again in 42m"), and
+// then by the database itself, which locks the family, checks who, the global chat's own rules and the hour, and writes the card from
+// the family's own row (supabase/family-share.sql, harvest_family_share). From here only the family's id and its level go along (the
+// level is the game's own, from the chest tiers of every week); the page sends nothing but the request. The answer is when it was shared.
+const SHARE_REFUSALS=new Set(['22023','42501']);
+export async function handleFamilyShare({admin,player}){
+ const refuse=error=>({status:422,data:{error,code:'ACTION_REJECTED'}});
+ const c=await readContext(admin,player),now=Number(c.now)||Date.now();
+ const me=(c.members??[]).find(m=>m.player_id===player&&!m.left_at&&m.family_id),family=me?(c.families??[]).find(f=>f.id===me.family_id&&!f.deleted_at):null;
+ const rule=familyShareState(family?{manager:familyManager(me.role),sharedAt:family.shared_at}:null,now);
+ if(!rule.can)return refuse(rule.reason);
+ const saved=await admin.rpc('harvest_family_share',{p_player:player,p_family:family.id,p_level:familyStanding(c,family.id).level});
+ if(saved.error){
+  // Before supabase/family-share.sql has run there is no such function: nothing is shared.
+  if(saved.error.code==='PGRST202')return refuse('Sharing in chat is not open yet. Please try again later.');
+  // Shared by another leader a moment ago: the same sentence, from the time the database has.
+  if(saved.error.code==='54000')return refuse(familyShareState({manager:true,sharedAt:Number(saved.error.details)||now},now).reason);
+  if(SHARE_REFUSALS.has(saved.error.code))return refuse(saved.error.message);
+  throw saved.error;
+ }
+ const sharedAt=Number(saved.data?.sharedAt)||now;
+ return {status:200,data:{shared:{familyId:family.id,sharedAt},profile:{player_id:player},serverNow:now}};
 }
 // Join again in Welcome back (17 Oct 2026, the owner): on a return (farm-api's load, only when Welcome back shows) one small read of the
 // farmer's own member row, the family they left for being away too long with the farmers in it now, and the family they are in

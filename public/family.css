@@ -532,3 +532,11 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-dialog .family-heading-actions .icon-button .game-art{width:26px;height:26px}
 /* A tab's red badge sits on the tab's corner, clear of its name. */
 #family-tabs button .family-tab-dot{top:-6px;inset-inline-end:-4px}
+/* Share in chat (20 Oct 2026, public/family-ui.js): the same row as Invite a friend; while it cannot be shared (not the leader or a
+   co-leader, or shared less than an hour ago) it stays in view, quieter, with the reason on its second line. */
+.family-share-chat{margin:16px 0 0}
+.family-share-chat>.game-art{width:48px;height:48px}
+.family-share-chat:disabled{cursor:default;border-color:#e2dccb;background:#f4f1e8;box-shadow:none}
+.family-share-chat:disabled>.game-art{filter:saturate(.45);opacity:.8}
+.family-share-chat:disabled strong{color:#6b6450}
+.family-share-chat:disabled>svg,.family-share-chat:disabled>[data-line-icon]{visibility:hidden}

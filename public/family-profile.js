@@ -39,6 +39,19 @@ export function familyProfileAction(p){
  return {note:p.mode==='closed'?'This family is not taking new farmers.':'Invite only: the leader or a co-leader invites farmers by name.'};
 }
 
+// A family's card in the chat (20 Oct 2026, Share in chat; src/chat-ui.js familyShareCard): Join when the farmer looking can join it
+// straight away, by the same rules as Join on its profile and in the list (familyProfileAction), otherwise View. card: the card's meta
+// as the database wrote it (mode, minLevel, members, max, family). viewer: {familyId (their own family, or null), level, blocked
+// ({family, until}: the family that removed them), now}. The family itself may have changed since: Join asks the server, which
+// checks everything again.
+export function familyShareButton(card,viewer={}){
+ const level=Number(viewer.level)||0,now=viewer.now??Date.now();
+ const p={mode:card?.mode,minLevel:Number(card?.minLevel)||FAMILY_MIN_LEVEL,full:(Number(card?.members)||0)>=(Number(card?.max)||0),
+  viewer:{member:!!viewer.familyId&&viewer.familyId===card?.family,inFamily:!!viewer.familyId,unlocked:level>=FAMILY_MIN_LEVEL,level,
+   cooldown:!!viewer.blocked&&viewer.blocked.family===card?.family&&(viewer.blocked.until??0)>now}};
+ return familyProfileAction(p).button==='family_join'?'join':'view';
+}
+
 // 30 Sep 2026, cleaner: Join, Ask to join or Open your family right under the family's name; this week (chest points, tournament
 // place) on the level card and the four all-time numbers as compact tiles; Recent tournaments only once there is one.
 export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){

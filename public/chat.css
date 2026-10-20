@@ -339,6 +339,18 @@ span.chat-avatar{cursor:default}
 .chat-request.chat-chest .chat-request-art{border-color:#ead9ad}
 .chat-request.chat-chest .chat-request-art>.game-art{width:44px;height:44px}
 .chat-chest-open{width:100%;margin-top:10px}
+/* A family shared in the global chat (20 Oct 2026, src/chat-ui.js familyShareCard): the chest card's warm card, the family's own emblem
+   with its level badge as in Farm Family (family.css), its name as typed, the facts as small pills (no dots between them) and one
+   button across the card: Join in green, View plain. */
+.chat-request.chat-family-share{border-color:#ead9ad;background:linear-gradient(160deg,#fff6dc,#fffaf0 60%)}
+.chat-request.chat-family-share .chat-request-label{color:#a17a26}
+.chat-share-emblem{position:relative;border:0;background:none}
+.chat-share-emblem>.family-emblem{width:52px;height:52px;border-radius:14px}
+.chat-share-emblem>.family-emblem .game-art{width:36px;height:36px}
+.chat-request .chat-share-name{font:700 16px/1.25 'Outfit',sans-serif;color:#453e28;overflow-wrap:anywhere}
+.chat-share-facts{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:4px}
+.chat-share-facts>span{padding:2px 8px;border-radius:99px;background:#f3e6c4;color:#6b5626;font-size:12px;font-weight:700;line-height:1.5}
+.chat-share-button{width:100%;margin-top:10px}
 /* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99). */
 .admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:700 14px 'DM Sans',sans-serif}
 .admin-offer-kinds label{display:inline-flex;align-items:center;gap:6px}

@@ -3,7 +3,7 @@ import {handleSocial} from './social-service.js';
 import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {handlePlayerDirectory} from './player-profile-service.js';
-import {handleFamily,handleFamilyProfile,familyRejoinRead} from './family-service.js';
+import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare} from './family-service.js';
 import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
@@ -70,7 +70,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','delete_account','family','family_profile','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','delete_account','family','family_profile','family_share','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -157,6 +157,9 @@ Deno.serve(async(req)=>{
    const saved=admin.auth.admin.updateUserById(user.id,{user_metadata:{language:body.language}}).then(()=>{}).catch(()=>{});
    (globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(saved);
   }
+  // Share in chat (20 Oct 2026, family-service.js handleFamilyShare): the family's card in the global chat. It needs no farm: who may,
+  // and how often, are the family's and the chat's rules, which the database checks again as it writes the card.
+  if(body.operation==='family_share'){const shared=await handleFamilyShare({admin,player:user.id});return reply(shared.data,shared.status);}
   // Sends each friend an invitation to this farmer's family, as this farmer's own family action; true when one was sent.
   async function inviteFriendsToFamily(friends:{playerId:string,invitedToFamily?:boolean}[]){
    let sent=false;

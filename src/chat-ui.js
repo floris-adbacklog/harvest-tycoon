@@ -7,7 +7,8 @@ import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
-import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,familyWeek} from '../public/farm-state.js';
+import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EMBLEMS,FAMILY_MIN_LEVEL,familyWeek} from '../public/farm-state.js';
+import {familyShareButton} from '../public/family-profile.js';
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
@@ -63,6 +64,19 @@ export function chestCard(m,now=Date.now()){
  return `<li class="chat-request chat-chest" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Family Chest</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div><div class="chat-request-body"><span class="chat-request-art">${art(tier?`family-chest-${tier.id}`:'family-chest-open')}</span><div><p class="chat-text">${esc(CHEST_OPENED[tier?.id]??m.body)}</p><small class="chat-request-status">${esc(who)}</small></div></div><button type="button" class="small-button chat-chest-open" data-open-family>Open Farm Family</button></li>`;
 }
 export const hiddenAsBlocked=(m,blocked)=>m.kind!=='chest'&&blocked.has(m.sender);
+// A family shared in the global chat (20 Oct 2026, Share in chat; supabase/family-share.sql): the family's emblem with its level, its
+// name as typed, its level and farmers, who shared it, and one button: Join when this farmer can join it straight away (the rules of Join
+// on its profile, public/family-profile.js familyShareButton), otherwise View, which opens its profile. Everything comes from the card's
+// meta, which the database wrote from the family itself; an emblem it does not know is the first one. A game from before this card shows
+// its body as an ordinary message ("Tony shared the family Meadow Friends"). Like any message it hides when you blocked who shared it.
+export function familyShareCard(m,viewer={},now=Date.now()){
+ const c=m.meta??{},e=FAMILY_EMBLEMS.find(x=>x.id===String(c.emblem))??FAMILY_EMBLEMS[0],id=String(c.family??'');
+ const level=Math.max(1,Math.floor(Number(c.level))||1),members=Math.max(0,Math.floor(Number(c.members))||0),max=Math.max(1,Math.floor(Number(c.max))||10),minLevel=Math.floor(Number(c.minLevel))||FAMILY_MIN_LEVEL;
+ const from=minLevel>FAMILY_MIN_LEVEL&&(c.mode==='open'||c.mode==='request')?`<span>From level ${minLevel}</span>`:'';
+ const join=familyShareButton(c,{...viewer,now})==='join';
+ const button=join?`<button type="button" class="primary-button chat-share-button" data-family-join="${esc(id)}">Join</button>`:`<button type="button" class="small-button chat-share-button" data-family-view="${esc(id)}">View</button>`;
+ return `<li class="chat-request chat-family-share" data-id="${esc(m.id)}"><div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Farm Family</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div><div class="chat-request-body"><span class="chat-request-art chat-share-emblem"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span><b class="family-level-badge" title="Family level ${level}">${level}</b></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-share-facts"><span>Level ${level}</span><span>${members} / ${max} farmers</span>${from}</small><small class="chat-request-status">${ownLine(`Shared by ${m.sender_name}`,[m.sender_name])}</small></div></div>${button}</li>`;
+}
 // A group message from the admin (8 Oct 2026, supabase/chat-group-filters.sql): every copy carries who it was sent to (meta.group.filters,
 // as the database checked them), so the farmer reads an honest line above it: one pill per filter, in the game's own words (translated
 // like the rest), never the admin's text. A language by its own name, as Settings lists it. No filter: "Every farmer". A filter this
@@ -169,6 +183,9 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  const unread=()=>overview?.unread??{notices:0,global:0,family:0,dm:0,mentions:0};
  const role=()=>overview?.role??null;
  const blocked=()=>new Set(overview?.blocked??[]);
+ // Who is looking at a family card: their own family (from the chat's own overview), their level, and the family that removed them, if
+ // any (the Family window's last read, public/family-ui.js).
+ const shareViewer=()=>({familyId:/^family:(.+)$/.exec(overview?.family?.channel??'')?.[1]??null,level:overview?.level??0,blocked:win.harvestFamilyBlocked?.()??null});
  const channelOf=()=>tab==='global'?'global':tab==='family'?overview?.family?.channel??null:tab==='private'?thread?.channel??null:null;
  const showing=channel=>dialog.open&&channelOf()===channel;
  // names: farmers' own words in the note, shown as typed (public/i18n.js setOwnText).
@@ -273,6 +290,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(m.kind==='join')return joinRow(m);
   if(m.kind==='kick')return kickRow(m);
   if(m.kind==='chest')return chestCard(m);
+  if(m.kind==='family_share')return familyShareCard(m,shareViewer());
   const mine=m.sender===me,staff=role()!==null,menu=!mine||staff;
   // Every message keeps the room of the "•••" (an empty spot on your own), so all the times line up.
   const more=menu?`<button type="button" class="chat-more" data-more="${esc(m.id)}" aria-label="More options for this message" aria-haspopup="menu">${ICON.more}</button>`:'<span class="chat-more-space" aria-hidden="true"></span>';
@@ -501,6 +519,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    await win.harvestRefresh?.();
   }catch(error){button.disabled=false;showCenterNotice(dialog,error?.message??'That did not work. Please try again.',{refused:true});}
  }
+ async function joinFamily(button){
+  if(button.disabled)return;button.disabled=true;
+  const done=await win.harvestFamilyJoin?.(button.dataset.familyJoin).catch(error=>({ok:false,error:error?.message}));
+  if(done?.ok)return;
+  button.disabled=false;showCenterNotice(dialog,done?.error||'That did not work. Please try again.',{refused:true});
+ }
  list.addEventListener('click',event=>{
   if(pressed){pressed=false;return;}   // the tap that ends a long press opened the menu already
   if(event.target.closest('[data-chat-more]')){void loadMore();return;}
@@ -515,6 +539,12 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const part=event.target.closest('[data-settings-link]');
   if(part){openSettings(part.dataset.settingsLink);return;}
   if(event.target.closest('[data-feedback-link]')){dialog.close();doc.getElementById('feedback-button')?.click();return;}
+  // A family card: View opens the family's profile (it closes the chat itself), Join joins it as Join in the list does and then opens
+  // Farm Family; a refusal (full by now, a minimum level) shows here.
+  const view=event.target.closest('[data-family-view]');
+  if(view){if(win.harvestFamilyProfile)win.harvestFamilyProfile.open(view.dataset.familyView);else{dialog.close();doc.getElementById('family-button')?.click();}return;}
+  const join=event.target.closest('[data-family-join]');
+  if(join){void joinFamily(join);return;}
   if(profile){profiles?.open(profile.dataset.profile,{back:null});return;}
   const start=event.target.closest('[data-start]');
   if(start){const p=found?.players?.find(x=>x.playerId===start.dataset.start);if(!p)return;thread={channel:chat.dmChannel(p.playerId),otherId:p.playerId,otherName:p.username,otherAvatar:p.avatarId};show('private',{keepThread:true});return;}

@@ -9,7 +9,7 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
@@ -163,7 +163,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   // and the dot and the crown say what they mean when you point at them, so there is no heading or footnote to repeat it.
   const manager=view.family.manager,closed=view.family.mode==='closed';
   const invite=manager?(closed?`<p class="family-notice">Your family is closed to new farmers. To invite someone, change who can join in Family settings.</p>`:`${inviteSearch.html()}${renderSentInvitations(view,farmNow(),actionButton)}`):'';
-  return `${manager&&!closed?joinRequests():''}<div class="family-member-list">${[...view.members].sort((a,b)=>Number(b.online)-Number(a.online)||b.points-a.points||a.username.localeCompare(b.username)).map(row).join('')}</div>${view.family.idleDays?`<p class="family-footnote family-idle-rule">${idleRule(view.family.idleDays)}</p>`:''}${invite}${friendEntry}`;
+  return `${manager&&!closed?joinRequests():''}<div class="family-member-list">${[...view.members].sort((a,b)=>Number(b.online)-Number(a.online)||b.points-a.points||a.username.localeCompare(b.username)).map(row).join('')}</div>${view.family.idleDays?`<p class="family-footnote family-idle-rule">${idleRule(view.family.idleDays)}</p>`:''}${shareEntry()}${invite}${friendEntry}`;
  }
  // Farmers asking to join (a leader of a family that takes requests): accept or decline each; oldest first.
  function joinRequests(){
@@ -176,6 +176,12 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function tournament(){return renderFamilyTournament({view,now:farmNow(),emblem,rewards:rewardCards(),preview:prizePreview(),extra:extraGoods()});}
  // This week in numbers and your family's last weeks (5 Oct 2026, public/family-stats.js).
  function stats(){return renderFamilyStats({view});}
+ // Share in chat (20 Oct 2026, the owner's option 1): the family's card in the global chat, with a Join or View button for whoever reads
+ // it. The leader and the co-leaders, as they invite farmers and choose who can join; once an hour per family (farm-state.js
+ // familyShareState, checked again by farm-api and the database). When it cannot be shared now, the line under it says why, and the
+ // time left counts down with the window's clock. Not where the farm has no chat (a game portal that turned it off).
+ const shareLine=()=>{const r=familyShareState(view?.family,farmNow());return r.can?'Post your family in the global chat, with a button to join.':r.reason;};
+ const shareEntry=()=>window.harvestChat&&view?.family?`<button type="button" class="family-share-entry family-share-chat" data-family-share ${disabled(!familyShareState(view.family,farmNow()).can)}>${art('chat')}<span><strong>Share in chat</strong><small data-family-share-note data-line="${esc(shareLine())}">${esc(shareLine())}</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`:'';
  // Anyone can bring a friend who is new to Harvest Tycoon (public/invite-ui.js), leader or not (bottom of Members).
  const friendEntry=`<button type="button" class="family-share-entry family-invite-friend" data-invite-friend>${art('invite-friends')}<span><strong>Invite a friend to Harvest Tycoon</strong><small>At level 10 you both get 150 diamonds</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`;
  // The gear in the header (settings): look and name, who can join, and leaving (quietly at the bottom).
@@ -227,6 +233,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   });
   content.querySelectorAll('form[data-family-form]').forEach(form=>form.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(form));const kind=form.dataset.familyForm;act(kind==='extra'?{type:'family_tournament_goods',week:view.week,item:d.item,count:Number(d.count)}:{type:'family_'+kind,...d});});
   content.querySelector('[data-invite-friend]')?.addEventListener('click',()=>window.harvestInvite?.open());
+  content.querySelector('[data-family-share]')?.addEventListener('click',()=>void share());
   const sharingRoot=content.querySelector('[data-sharing-root]');if(sharingRoot)void social.mount(sharingRoot);
   content.querySelectorAll('[data-family-goto]').forEach(b=>b.addEventListener('click',event=>{tab=event.currentTarget.dataset.familyGoto;render();content.scrollTop=0;dialog.scrollTop=0;}));
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{if(b.dataset.playerProfile)window.harvestProfiles?.open(b.dataset.playerProfile,{back:'Back to your family'});});
@@ -272,6 +279,22 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   finally{busy=false;render();refresh();}
   return done;
  }
+ // Posts the card (farm-api family_share). The answer is when it was shared, so the line under the button says when it can be again.
+ async function share(){
+  if(busy||!familyShareState(view?.family,farmNow()).can)return;busy=true;error='';content.querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{const data=await window.parent.harvestBridge.request({operation:'family_share'});if(view?.family&&data?.shared?.familyId===view.family.id)view.family.sharedAt=Number(data.shared.sharedAt)||farmNow();notify('Your family is in the global chat.');}
+  catch(e){error=e.message;notify(error);}
+  finally{busy=false;render();refresh();}
+ }
+ // Join from a family's card in the chat (src/chat-ui.js): the list's own Join (family_join), then this window on your new family. A
+ // refusal goes back to the chat, which shows it on the card's window.
+ async function joinFromChat(familyId){
+  if(busy)return {ok:false,error:'That did not work. Please try again.'};
+  busy=true;generation++;error='';
+  try{const result=await runAction({type:'family_join',familyId});view=result.family;lastRead=Date.now();open();notify(result.message,{names:namesIn(view)});return {ok:true};}
+  catch(e){return {ok:false,error:e.message};}
+  finally{busy=false;render();refresh();}
+ }
  async function load(force=false){
   if(busy||reading||!familyUnlocked(state)||!isReady()||!force&&Date.now()-lastRead<30000)return;
   reading=true;const ticket=generation;
@@ -292,6 +315,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   // "!" on This week inside the window, not the button (30 Sep 2026: with a full storage that was always true, so it never went away).
   dot.hidden=!(view?.invitation||view?.rewards.length||view?.joinRequests?.length);
   const countdown=dialog.querySelector('[data-family-countdown]');if(countdown&&view)countdown.textContent=formatDuration(Math.max(0,view.endsAt-farmNow()));
+  const shareNote=dialog.querySelector('[data-family-share-note]');if(shareNote&&view?.family){const r=familyShareState(view.family,farmNow()),line=shareLine();if(shareNote.dataset.line!==line){shareNote.dataset.line=line;shareNote.textContent=line;}const b=shareNote.closest('[data-family-share]');if(b&&!busy)b.disabled=!r.can;}
   if(!busy&&!reading&&isReady()&&!document.hidden&&Date.now()-lastRead>=30000)void load();
  }
  function open(){if(!familyUnlocked(state))return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());browseShown=FAMILY_BROWSE_PAGE;dialog.showModal();render();void load(true);}
@@ -302,6 +326,9 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   offer(player){if(!view?.family?.manager||view.family.mode==='closed'||!player?.playerId||player.family||player.playerId===window.parent.harvestBridge.playerId)return null;return {familyName:view.family.name,reason:inviteBlocker(view,player,window.parent.harvestBridge.playerId)};},
   invite:playerId=>act({type:'family_invite',playerId})
  };
+ // The chat's family cards (src/chat-ui.js): Join from a card, and the family that removed this farmer (Join is not offered for it).
+ window.harvestFamilyJoin=joinFromChat;
+ window.harvestFamilyBlocked=()=>view?.blocked&&view.blocked.until>farmNow()?view.blocked:null;
  document.addEventListener('pointerdown',event=>{if(!event.target.closest?.('.family-member-menu'))content.querySelectorAll('.family-member-menu[open]').forEach(menu=>menu.open=false);});
  dialog.addEventListener('keydown',event=>{const open=content.querySelector('.family-member-menu[open]');if(event.key==='Escape'&&open){event.preventDefault();event.stopPropagation();open.open=false;open.querySelector('summary').focus();}});
  button.onclick=open;document.querySelectorAll('[data-family-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.familyTab;error='';render();});

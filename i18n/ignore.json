@@ -110,5 +110,8 @@
  "Run this between hh:05 and hh:50 UTC.",
  "an hourly event made ahead has no coins",
  "the rewards of an event that had started changed",
- "This ran into the hand-out; run it again between hh:05 and hh:50."
+ "This ran into the hand-out; run it again between hh:05 and hh:50.",
+ "family-share.sql: public.{0} changed",
+ "family-share.sql: public.{0} is not the one this file expects (md5 {1}); read the live definition first",
+ "family-share.sql: the kind check"
 ]

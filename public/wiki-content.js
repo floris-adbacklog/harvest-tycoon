@@ -428,7 +428,8 @@ const BODIES={
    ['family-rank-top','Stats','The week in numbers: your family’s place, what every farmer put in and your last weeks.']
   ]))
   +section('Collecting rewards',`<p>Chest, order and tournament rewards wait on the Family screen until you collect them, for ${C.REWARD_WEEKS} weeks after their week ends. They stay yours if you change family.</p>`)
-  +section('Family chat',`<p>Your family has its own chat. See ${h.link('chat')}.</p>`)
+  // Share in chat (20 Oct 2026, the owner's option 1; farm-state.js familyShareState): the rule on the page that explains families.
+  +section('Family chat',`<p>Your family has its own chat. See ${h.link('chat')}.</p><p>The leader or a co-leader can share the family in the global chat, once an hour, with Share in chat under Members. Its card shows the emblem, the family level and the farmers, with a button to join the family or look at it.</p>`)
   +section('Events together',`<p>When ${FAMILY_EVENT_BONUS.finishers} or more members of your family finish the same event, each of them gets ${art('coins')}${number(FAMILY_EVENT_BONUS.coins)} and ${art('diamonds')}${FAMILY_EVENT_BONUS.diamonds} on top of their own prize. See ${h.link('events')}.</p>`)
   +section('Changing family',`<p>Left a family, or did a family remove you? You can join another family straight away. Only the family that removed you stays closed to you for ${Math.round(FAMILY_CONFIG.JOIN_COOLDOWN_MS/3600000)} hours. Delivered to your old family this week? Then you deliver to your new one from Monday.</p>`)
   // 17 Oct 2026, the owner: members who don't play leave by themselves (farm-state.js FAMILY_IDLE_DAYS, supabase/family-idle-leave.sql).

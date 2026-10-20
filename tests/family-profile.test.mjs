@@ -50,7 +50,7 @@ test('what the farmer looking can do, in the same words as the list of families'
 
 test('one read-only request, and every way in: farmer profile, family list, your own family, the tournament',()=>{
  const api=read('supabase/functions/farm-api/index.ts'),service=read('supabase/functions/farm-api/family-service.js');
- assert.match(api,/'family','family_profile','player_search'/,'on the list of requests farm-api accepts');
+ assert.match(api,/'family','family_profile','family_share','player_search'/,'on the list of requests farm-api accepts (with Share in chat, 20 Oct 2026)');
  assert.match(api,/if\(body\.operation==='family_profile'\)\{const shown=await handleFamilyProfile\(\{admin,body,state,player:user\.id\}\);return reply\(shown\.data,shown\.status\);\}/);
  assert.match(service,/export async function handleFamilyProfile/);assert.doesNotMatch(service.slice(service.indexOf('export async function handleFamilyProfile'),service.indexOf('// null tells')),/harvest_family_commit/,'it never writes');
  assert.match(service,/profile:\{player_id:player\}/,'the answer names whose farm asked, as every answer does');
