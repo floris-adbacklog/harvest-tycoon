@@ -19,7 +19,7 @@ export const FARM_WALK=Object.freeze({height:1.9,walk:1.05,spots:Object.freeze([
 export const VILLAGE_WALK=Object.freeze({height:.95,walk:.5,spots:Object.freeze([[17,-7.6],[16.4,-9.2],[17.6,-9.4],[18.6,-8.2],[18,-8.3]])});
 // How long they stand at a spot (seconds), and what they do there: breathe, look around or rest on one leg.
 const REST=[4,10],STILL={idle:.45,look:.35,relaxed:.2};
-const TURN=3,FADE=.4,HOP_FADE=.15;
+const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14;
 const turnOf=(from,to)=>((to-from+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 const turnTowards=(from,to,step)=>{const d=turnOf(from,to);return Math.abs(d)<=step?from+d:from+Math.sign(d)*step;};
 const choose=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,0);for(const [k,w] of Object.entries(odds)){r-=w;if(r<=0)return k;}return 'idle';};
@@ -57,7 +57,12 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  function rest(){me.target=null;me.rest=REST[0]+random()*(REST[1]-REST[0]);me.face=Math.PI/4+(random()-.5)*1.2;play(choose(STILL,random));}
  function step(dt){
   const at=root.position;
-  if(me.hopping>0){me.hopping-=dt;if(me.hopping<=0)rest();}
+  if(me.hopping>0){
+   // The hop (21 Oct 2026, the owner: the pack's jump, made small, sank into the ground: its legs still tucked a full jump's worth):
+   // the whole farmer goes up and down once, standing as they are; the ground is never crossed.
+   me.hopping=Math.max(0,me.hopping-dt);at.y=ground(at.x,at.z)+Math.sin(Math.PI*(1-me.hopping/HOP_TIME))*HOP_UP*walk.height;
+   if(me.hopping<=0){at.y=ground(at.x,at.z);rest();}
+  }
   else if(me.target){
    const dx=me.target[0]-at.x,dz=me.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
    if(d<.05)rest();
@@ -86,11 +91,10 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  }
  // A tap that found nothing else (game.js pointerTarget): true when it was the farmer.
  const pick=raycaster=>raycaster.intersectObject(hit,false).length>0;
- // A tap: they stop, turn to you and hop (the pack's jump, small), then stand a while before walking on.
+ // A tap: they stop, turn to you and hop once, then stand a while before walking on.
  function react(){
-  if(!actions.hop)return false;
   me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;
-  play('hop',HOP_FADE);me.hopping=actions.hop.getClip().duration-.1;
+  play('idle');me.hopping=HOP_TIME;
   return true;
  }
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
