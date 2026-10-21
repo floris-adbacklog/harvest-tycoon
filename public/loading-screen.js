@@ -247,6 +247,18 @@ export function errorLine(reason,event){
   return cut160(`${name}: ${text}${file?` @ ${file}`:''}`)||null;
  }catch{return null;}
 }
+// The farm's start that failed in public/game.js init (21 Oct 2026, public/farm-start.js): the error card's own failure, as one line for
+// the note (errorLine, at most 160 characters) that starts with what it was: '[webgl]' no WebGL 2 context could be made, '[init]' anything
+// else (its UI code, the account, a model step). farm-api keeps it in error as it is, so both fit the table's kinds and stages as they are.
+export const START_FAILURES=Object.freeze(['webgl','init']);
+export function startFailure(error){
+ try{const kind=error?.webgl===true||error?.name==='WebGL2Unavailable'?'webgl':'init';return cut160(`[${kind}] ${errorLine(error)??'Error'}`);}catch{return '[init] Error';}
+}
+// The same note kept on this device too (21 Oct 2026): sessionStorage lives as long as the tab, and a phone's app that is closed on the
+// error card takes it away, so the farm's start that failed is also kept here (localStorage) until the next farm load takes it
+// (src/supabase.js takeStall: the tab's own note first, this one when there is none; one id, so farm-api counts it once).
+export const LOAD_FAILED_KEY='harvest-tycoon:load-failed';
+const deviceStorage=win=>{try{return win.localStorage;}catch{return null;}};
 // Every file the farm page's HTML asked for has come (18 Oct 2026, option 3): true only when the page could be read and nothing is
 // missing; a page that cannot be read is not known to have everything, so it keeps the 30 seconds.
 function allFilesIn(doc,win){try{const base=doc.baseURI||win.location.href,origin=new URL(base).origin,path=address=>{try{const url=new URL(address,base);return url.origin===origin?url.pathname:null;}catch{return null;}};
@@ -259,9 +271,9 @@ const navProtocol=win=>{try{return String(win.performance.getEntriesByType('navi
 const stallId=()=>{try{return globalThis.crypto.randomUUID();}catch{return null;}};
 // 18 Oct 2026 (option 1): how far the farm page's start came and the first thing that broke there (win.harvestStartup, src/game-cloud.js).
 const startupOf=win=>{try{const s=win?.harvestStartup;return s?{stage:STARTUP_STAGES.includes(s.stage)?s.stage:null,error:typeof s.error==='string'?cut160(s.error):null}:{};}catch{return {};}};
-function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,page=win,at}){
+function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,page=win,at,error}){
  try{
-  const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),...startupOf(win),at};
+  const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),...startupOf(win),...(typeof error==='string'?{error:cut160(error)}:{}),at};
   storage.setItem(LOAD_STALL_KEY,JSON.stringify(note));return note;
  }catch{return null;}
 }
@@ -272,14 +284,14 @@ function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,p
 function noteLeft(storage,win,write){try{const stored=JSON.parse(storage.getItem(LOAD_STALL_KEY)),began=win.performance?.timeOrigin;if(stored?.kind&&stored.kind!=='left'&&typeof began==='number'&&stored.at>=began)return null;}catch{}return write();}
 // A page back from the back/forward cache did not go after all: its own 'left' note goes (a newer note of another stays).
 function forgetLeft(storage,left){try{const stored=JSON.parse(storage.getItem(LOAD_STALL_KEY));if(stored?.kind==='left'&&stored.at===left.at)storage.removeItem(LOAD_STALL_KEY);}catch{}}
-export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=pageStorage(win),now=()=>Date.now()}={}){
+export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=window,storage=pageStorage(win),device=deviceStorage(win),now=()=>Date.now()}={}){
  const reload=()=>{if(portal)portal.reopen();else win.parent.location.reload();};
  // Try again's only handler: farm.html has no onclick of its own since Oct 2026 (Discord runs no handler written in the page).
  const retry=doc.querySelector('#error .primary-button');if(retry)retry.onclick=reload;
  let last=null,still=0,over=false,inView=0,away=false,left=null;const since=now();
  const stop=()=>{over=true;win.clearInterval(timer);};
  // The note for the next farm load (15 Oct 2026, option 5, LOAD_STALL_KEY): never in the way of the load itself.
- const note=kind=>{try{const at=win.harvestLoading;return noteStall(storage,{kind,step:loadStep(at),percent:doc.getElementById('load-progress')?.value,models:at?.models??0,view:inView,total:Math.floor((now()-since)/1000),hidden:away,doc,win,at:now()});}catch{return null;}};
+ const note=(kind,error)=>{try{const at=win.harvestLoading;return noteStall(storage,{kind,step:loadStep(at),percent:doc.getElementById('load-progress')?.value,models:at?.models??0,view:inView,total:Math.floor((now()-since)/1000),hidden:away,doc,win,at:now(),error});}catch{return null;}};
  function recover(reason){
   if(over)return;stop();
   const again=retriedLately(storage,now);
@@ -320,5 +332,8 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
  // done: the farm opened (ready) or showed its own error card. brokenPart (18 Oct 2026, review of the 12% fix): one of the farm page's own
  // parts broke on the way (src/game-cloud.js part) while the farm still opened: a note of kind 'part', with the stage and that error, so
  // farm-api still learns which part broke.
- return {failed:()=>recover('failed'),done(ready,{brokenPart=false}={}){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}if(brokenPart)note('part');}};
+ // failure (21 Oct 2026, public/farm-start.js): the farm did not open and showed its own error card with Try again (no WebGL 2, or its
+ // start broke): a note of kind 'card' with that failure's line (startFailure) as its error, in this tab and on this device.
+ return {failed:()=>recover('failed'),done(ready,{brokenPart=false,failure=null}={}){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}if(brokenPart)note('part');
+  if(!ready&&typeof failure==='string'){const written=note('card',failure);if(written)try{device?.setItem(LOAD_FAILED_KEY,JSON.stringify(written));}catch{}}}};
 }

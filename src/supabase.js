@@ -2,7 +2,7 @@ import {createClient} from '@supabase/supabase-js';
 import {describeFailure,connectionMessage,safeToRepeat,withRetry} from './connection.js';
 import {enabledProviders} from './social-login.js';
 import {chosenLanguage} from '../public/i18n.js';
-import {LOAD_STALL_KEY} from '../public/loading-screen.js';
+import {LOAD_STALL_KEY,LOAD_FAILED_KEY} from '../public/loading-screen.js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
@@ -78,10 +78,18 @@ const takeOpened=()=>{const source=openedFrom;openedFrom=null;return source?{ope
 // left in this tab goes along with the next farm load, once, for farm-api's count of stalls (load-stall-service.js); one older than 6
 // hours is dropped. A page that went while still loading ('left'), with this page opened by a reload: the player refreshed by hand
 // ('refresh'). Not a note written after this page started (its farm frame, taken away while it loaded): that one stays 'left'.
-const STALL_MAX_AGE=6*3600000,pageStarted=Date.now();
+// 21 Oct 2026: a farm start that failed on its error card is kept on the device too (LOAD_FAILED_KEY, public/loading-screen.js watchLoading
+// done): an app closed on that card loses the tab's note. With no note in this tab, that one goes along instead (up to 20 hours: farm-api
+// takes a day at most); one that is the tab's own note (the same id), stale or unreadable, is cleared.
+const STALL_MAX_AGE=6*3600000,FAILED_MAX_AGE=20*3600000,pageStarted=Date.now();
 const takeStall=()=>{
- let note=null;try{const store=globalThis.sessionStorage,raw=store?.getItem(LOAD_STALL_KEY);if(raw==null)return {};store.removeItem(LOAD_STALL_KEY);note=JSON.parse(raw);}catch{return {};}
- const now=Date.now();if(!note||typeof note!=='object'||Array.isArray(note)||typeof note.at!=='number'||!(now-note.at>=0&&now-note.at<=STALL_MAX_AGE))return {};
+ const now=Date.now(),fresh=(note,max)=>Boolean(note)&&typeof note==='object'&&!Array.isArray(note)&&typeof note.at==='number'&&now-note.at>=0&&now-note.at<=max;
+ let kept=null,keptRaw=null;try{keptRaw=globalThis.localStorage?.getItem(LOAD_FAILED_KEY)??null;kept=keptRaw==null?null:JSON.parse(keptRaw);}catch{kept=null;}
+ const dropKept=()=>{try{globalThis.localStorage?.removeItem(LOAD_FAILED_KEY);}catch{}};
+ let note=null,raw=null;try{const store=globalThis.sessionStorage;raw=store?.getItem(LOAD_STALL_KEY)??null;if(raw!=null){store.removeItem(LOAD_STALL_KEY);note=JSON.parse(raw);}}catch{note=null;}
+ if(raw==null){if(keptRaw==null)return {};dropKept();return fresh(kept,FAILED_MAX_AGE)?{loadStall:kept}:{};}
+ if(keptRaw!=null&&(!fresh(kept,FAILED_MAX_AGE)||kept.id===note?.id))dropKept();
+ if(!fresh(note,STALL_MAX_AGE))return {};
  let arrival='';try{arrival=globalThis.performance.getEntriesByType('navigation')[0]?.type??'';}catch{}
  return {loadStall:note.kind==='left'&&arrival==='reload'&&note.at<=pageStarted?{...note,kind:'refresh'}:note};
 };

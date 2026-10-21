@@ -70,7 +70,7 @@ test('a part that breaks is noted and skipped: the rest of the page runs and the
  for(const call of ['createCloudUI(','createPlayerProfiles(','createChatUI(','createAdminDashboard(','startAdminView(','createPortalUI(','createDiscordSwitch(','createSignInLine(','createAccountDelete(','createDiscordUnlink(','createAvatarSettings(','bridge.presence?.subscribe('])
   assert.match(parts,new RegExp(`part\\(\\(\\)=>(\\{[^\\n]*)?${call.replace(/[.?()]/g,'\\$&')}`),call);
  assert.ok(!/\bui\.(open|setProfile|showBoard)\b/.test(parts.replace(/if\(ui\)part\(\(\)=>\{ui\.setProfile[^\n]*/,'')),'ui may be missing: ui?.');
- assert.match(cloud,/if\(!game\)watch\.failed\(\);else watch\.done\(ready,\{brokenPart\}\);/);
+ assert.match(cloud,/if\(!game\)watch\.failed\(\);else watch\.done\(ready,\{brokenPart,failure:ready\?null:game\.farmFailure\?\?null\}\);/);
  assert.match(cloud,/if\(ui\)setTimeout\(\(\)=>\{const category=ui\.category;/);assert.match(cloud,/void chat\?\.open\(intent\.channel/);
 });
 test('the farm opened with a broken part: one note of kind part with the stage and the error, never a later left',()=>{

@@ -14,7 +14,8 @@ import {createLookSettings} from './look-settings.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
-import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP} from './loading-screen.js';
+import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure} from './loading-screen.js';
+import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -1984,7 +1985,9 @@ async function init(){
  const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)],level:()=>levelProgress(state).level});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open   // the tips about later features from level 10 (13 Oct 2026)
  try{
   bindUI();updateUI();
-  renderer=new THREE.WebGLRenderer({antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'});
+  // The 3D view on its own (21 Oct 2026, public/farm-start.js): a second try with the safest options, and "needs WebGL 2" only when even
+  // a plain WebGL 2 context cannot be made. A fault in bindUI or updateUI above is the farm that could not load, never WebGL.
+  renderer=createFarmRenderer(options=>new THREE.WebGLRenderer(options),{antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'}).renderer;
   renderer.setClearColor(0xdeede6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.32;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
@@ -2098,8 +2101,18 @@ async function init(){
  // 17 Oct 2026: Join again, for a farmer who left their family for being away too long (the family action, as in the Family window).
  if(!villageWorld)showWelcomeBack(initialWelcome,{gift:{offer:retention.giftOffer(),chips:retention.giftChips,collect:retention.collectGift},chest:{offer:retention.chestOffer(),chips:retention.chestChips,collect:retention.collectChest},current:()=>({gift:retention.giftOffer(),chest:retention.chestOffer()}),fields:focusFields,production:()=>economy.openBuilding(Object.keys(state.buildings).find(k=>productionJobs(state.buildings[k]).some(j=>j.readyAt<=farmNow()))??'coop'),stall:()=>growth.open('stall'),today:()=>retention.openToday(),family:{rejoin:familyId=>runAction({type:'family_rejoin',familyId})}});
   return ready;
- }catch(error){if(error?.reopen)throw error;console.error('Farm initialization failed',error);if(renderer)$('error-message').textContent=error.message||'Your saved farm could not load. Please try again.';$('loading').hidden=true;$('error').hidden=false;if(!renderer)$('error-message').textContent='This game needs WebGL 2. Try a current browser with hardware acceleration enabled.';return false;}
+ }catch(error){
+  if(error?.reopen)throw error;console.error('Farm initialization failed',error);
+  // The card says what it was (public/farm-start.js startErrorText) and the failure is noted for the next farm load (farmFailure,
+  // src/game-cloud.js hands it to the loading watch): '[webgl]' or '[init]' with the error's first line.
+  farmFailure=startFailure(error);
+  try{$('error-message').textContent=startErrorText(error,{androidApp:androidPhoneApp(window)});}catch{}
+  $('loading').hidden=true;$('error').hidden=false;return false;
+ }
 }
+// Why the farm did not open, when init showed its error card (21 Oct 2026): one line for the load-stall note (public/loading-screen.js
+// startFailure). Read by src/game-cloud.js once farmReady is false.
+export let farmFailure=null;
 // A new farm's first look (7 Oct 2026, farm-state.js recordFirstLook): when it could be played and how long that took from the start of
 // the page around it, with what src/game-cloud.js noted: that start, the frame's size and, once the page was drawn, shownAt and loadMs
 // (a tab in the background has drawn nothing yet). Without its note the start and the frame's size come from here. Sent at once, so a

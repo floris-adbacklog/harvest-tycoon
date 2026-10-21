@@ -299,7 +299,7 @@ test('one list of steps: the analytics event, the loading screen\'s words and th
 test('the farm page keeps room for every file\'s timing, before it waits for anything',()=>{
  const cloud=read('src/game-cloud.js'),line='try{performance.setResourceTimingBufferSize?.(1000);}catch{}';
  assert.ok(cloud.includes(line));assert.ok(cloud.indexOf(line)<cloud.indexOf('await '),'before the first await');assert.ok(cloud.indexOf(line)<cloud.indexOf('watchLoading(bridge'));
- assert.match(read('src/supabase.js'),/import \{LOAD_STALL_KEY\} from '\.\.\/public\/loading-screen\.js';/);
+ assert.match(read('src/supabase.js'),/import \{LOAD_STALL_KEY,LOAD_FAILED_KEY\} from '\.\.\/public\/loading-screen\.js';/);
 });
 test('the privacy policy says what the report holds, that it is not linked to the account, and lists its storage key',()=>{
  const policy=read('public/privacy.html'),game=policy.slice(policy.indexOf('<h3>Your game</h3>'),policy.indexOf('</ul>',policy.indexOf('<h3>Your game</h3>')));

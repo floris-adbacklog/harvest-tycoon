@@ -128,7 +128,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // the bar stood still until the 30 seconds were up.
   const ready=game?await game.farmReady.catch(error=>{firstError(error);console.error('The game could not load',error);game=null;return false;}):false;
   if(ready)startup.stage='ready';
-  if(!game)watch.failed();else watch.done(ready,{brokenPart});
+  // A farm whose start failed on its own error card (21 Oct 2026, public/farm-start.js): that failure ('[webgl]' or '[init]' and its error)
+  // goes into the note for the next farm load (public/loading-screen.js watchLoading done).
+  if(!game)watch.failed();else watch.done(ready,{brokenPart,failure:ready?null:game.farmFailure??null});
   if(ready){
    // CrazyGames' SDK (src/crazygames.js): the farm is loaded and can be played.
    if(portal){portal.event('loadingStop');portal.event('gameplayStart');}

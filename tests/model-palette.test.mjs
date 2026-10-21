@@ -202,5 +202,5 @@ test('every model a stand-in (the palette refused) is counted, and more than hal
  assert.equal(farm.done,true);assert.equal(farm.standIns(),FARM.length);assert.equal(farm.missing(),FARM.length,'each farm model that fell back to its stand-in');
  const game=read('public/game.js');
  assert.match(game,/loadInBatches\(modelNames,[^\n]*\n(?:  \/\/[^\n]*\n)+  if\(missingModels\*2>modelNames\.length\)throw Object\.assign\(new Error\('missing-models'\),\{reopen:true\}\);/,'right after the farm\'s models');
- assert.match(game,/\}catch\(error\)\{if\(error\?\.reopen\)throw error;console\.error\('Farm initialization failed',error\);/,'not the game\'s own error card: farmReady fails, and the load is opened again');
+ assert.match(game,/\}catch\(error\)\{\n  if\(error\?\.reopen\)throw error;console\.error\('Farm initialization failed',error\);/,'not the game\'s own error card: farmReady fails, and the load is opened again');
 });
