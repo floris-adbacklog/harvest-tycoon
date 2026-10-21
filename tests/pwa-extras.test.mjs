@@ -70,7 +70,8 @@ test('the install window: a description, a phone and a computer screenshot, thre
 test('the iPhone launch screen: one picture per screen size, each exactly that size',()=>{
  const html=read('public/play.html'),tags=[...html.matchAll(/<link rel="apple-touch-startup-image" media="\(device-width: (\d+)px\) and \(device-height: (\d+)px\) and \(-webkit-device-pixel-ratio: (\d)\) and \(orientation: portrait\)" href="([^"]+)">/g)];
  assert.equal(tags.length,12);
- for(const [,w,h,r,href] of tags){assert.ok(exists(`public${href}`),href);assert.ok(href.endsWith(`launch-${w*r}x${h*r}.png`),href);}
+ // ?v= since the designer's logo (21 Oct 2026): a phone that adds the app again gets the new launch screen, not a cached one.
+ for(const [,w,h,r,href] of tags){const [path,query]=href.split('?');assert.equal(query,'v=20261021',href);assert.ok(exists(`public${path}`),href);assert.ok(path.endsWith(`launch-${w*r}x${h*r}.png`),href);}
 });
 test('the number on the app icon: unread private and family messages and mentions, and one more for a chat message while the game is closed',async()=>{
  const ui=read('src/chat-ui.js');
