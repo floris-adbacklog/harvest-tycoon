@@ -14,5 +14,7 @@ export async function saveLook({admin,player,look,now=Date.now()}){
  catch(error){return {status:403,data:{error:error.message}};}
  const {data,error}=await admin.from('player_stats').update({look:worn,last_active_at:new Date(now).toISOString()}).eq('player_id',player).select('player_id,look').maybeSingle();
  if(error)throw error;if(!data)return {status:409,data:{error:'Open your farm before choosing a look.'}};
- return {status:200,data:{look:data.look,serverNow:now}};
+ // The profile row comes back too (21 Oct 2026, the owner: "Use" on the first free reward showed "Reconnecting…"): the page's bridge
+ // takes an answer without the farmer's own profile.player_id for a session that has ended (src/main.js), as for the avatar.
+ return {status:200,data:{look:data.look,profile:{player_id:data.player_id,look:data.look},serverNow:now}};
 }

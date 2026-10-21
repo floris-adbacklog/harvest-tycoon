@@ -282,6 +282,7 @@ test('farm-api look: only looks the farm owns, in their own slot, written as one
  const farm={looks:['autumn-2026-frame','autumn-2026-title-leaf-collector'],passes:[]};
  let r=await saveLook({admin:admin(farm),player:'p',look:{frame:'autumn-2026-frame',title:'autumn-2026-title-leaf-collector',color:null}});
  assert.equal(r.status,200);assert.deepEqual(writes.at(-1).row.look,{frame:'autumn-2026-frame',title:'autumn-2026-title-leaf-collector'});
+ assert.equal(r.data.profile.player_id,'p','the bridge (src/main.js) takes an answer without the farmer\'s own profile for an ended session: "Reconnecting…" (21 Oct 2026)');
  r=await saveLook({admin:admin(farm),player:'p',look:{badge:'autumn-2026-golden-pumpkin'}});assert.equal(r.status,403,'not collected');
  r=await saveLook({admin:admin(farm),player:'p',look:{frame:'autumn-2026-title-leaf-collector'}});assert.equal(r.status,403,'wrong slot');
  r=await saveLook({admin:admin(null),player:'p',look:{}});assert.equal(r.status,409,'no farm yet');
