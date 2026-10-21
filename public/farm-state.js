@@ -1,6 +1,6 @@
 // Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
 // copied beside each farm-state.js by scripts/sync-game.mjs).
-import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS} from './farmer-parts.js';
+import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS,farmerPassParts} from './farmer-parts.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -3158,6 +3158,8 @@ export const SEASON_EMBLEMS=Object.freeze(Object.fromEntries(Object.entries(SEAS
 // length (a timed boost), vipDays, farmhand (days of the farmhand), cart (coin carts: 1,000 × level coins each, as in Power-ups),
 // discount (the Buildings discount voucher), crops (Instant harvest), production (Finish production), seeds ({crop: packets}) and looks.
 // purchase: comes with the purchase itself (the paid tier 1 avatar): owned at once, nothing to collect.
+// farmer: parts for your own 3D farmer (21 Oct 2026, item 8; game/farmer-parts.js FARMER_PASS_PARTS): kept in state.farmerParts, a
+// list that only grows (a refund takes the paid ones back), owned through the pass in My farmer. No tier of Autumn 2026 has one.
 const utc=(month,day,year=2026)=>Date.UTC(year,month-1,day);
 // Autumn 2026 (plan §7): its start is the first 00:00 UTC after the owner's go (startsAt null: not scheduled, nothing shows). It ends
 // with Monday 21 December (endsAt, 22 Dec 00:00 UTC) and its rewards can be collected until 28 December. The weeks keep their dates; a
@@ -3339,7 +3341,7 @@ export function seasonChestsReached(season,entry){
 // One tier's reward for a farm at this level: coins in fives (as the Halloween Pass's passReward), a cart as its coins.
 export function seasonReward(reward,level){
  const r={...reward},lv=Math.max(1,level);if(r.coins)r.coins=Math.round(reward.coins*lv/5)*5;
- if(r.items)r.items={...reward.items};if(r.seeds)r.seeds={...reward.seeds};if(r.looks)r.looks=[...reward.looks];
+ if(r.items)r.items={...reward.items};if(r.seeds)r.seeds={...reward.seeds};if(r.looks)r.looks=[...reward.looks];if(r.farmer)r.farmer=[...reward.farmer];
  if(r.cart)r.cartCoins=r.cart*COIN_PACK.perLevel*lv;
  return r;
 }
@@ -3365,14 +3367,20 @@ function cleanEntry(entry,season){
 // diamonds a farmer spent on skips came from elsewhere and stay spent), the paid looks go, and the paid row is closed again.
 function seasonRefund(state,season,entry){
  if(!entry||!entry.paid.length||seasonPremium(state,season.id))return;
- let diamonds=0;const gone=new Set(season.tiers[0].paid.looks??[]);
- for(const t of entry.paid){const r=season.tiers[t-1].paid;diamonds+=r.diamonds??0;for(const id of r.looks??[])gone.add(id);}
+ let diamonds=0;const gone=new Set(season.tiers[0].paid.looks??[]),parts=new Set();
+ for(const t of entry.paid){const r=season.tiers[t-1].paid;diamonds+=r.diamonds??0;for(const id of r.looks??[])gone.add(id);for(const id of r.farmer??[])parts.add(id);}
+ takeFarmerParts(state,parts);
  state.diamonds=Math.max(0,state.diamonds-diamonds);
  if(Array.isArray(state.looks))state.looks=state.looks.filter(id=>!gone.has(id));
  if(state.lookFarm)for(const slot of LOOK_FARM_SLOTS)if(gone.has(state.lookFarm[slot]))delete state.lookFarm[slot];
  entry.paid=[];entry.refunded=true;
 }
+// Farmer parts from a pass (item 8): given (a list that only grows, each once) and, on a refund, taken back; worn ones come off then
+// (farmerOf leaves out what the farm no longer owns, and farmer_wear checks it).
+export function giveFarmerParts(state,ids){state.farmerParts=[...new Set([...farmerPassParts(state),...ids.filter(id=>typeof id==='string')])];}
+export function takeFarmerParts(state,ids){if(!ids.size||!Array.isArray(state.farmerParts))return;state.farmerParts=state.farmerParts.filter(id=>!ids.has(id));}
 function refreshSeason(state,now){
+ if(state.farmerParts!==undefined)state.farmerParts=farmerPassParts(state);
  // The looks a farm owns (only grows), what it wears on its own farm (only what it owns), and its seed packets.
  if(state.looks!==undefined)state.looks=Array.isArray(state.looks)?[...new Set(state.looks.filter(seasonLook))]:[];
  if(state.seasonSeeds!==undefined)state.seasonSeeds=Object.fromEntries(Object.entries(state.seasonSeeds&&typeof state.seasonSeeds==='object'?state.seasonSeeds:{}).filter(([k,v])=>Object.hasOwn(SEASON_CROPS,k)&&Number.isSafeInteger(v)&&v>0));
@@ -3456,6 +3464,7 @@ export function claimSeasonTier(state,track,tier,now=Date.now(),id){
  if(r.production)for(const [key,b] of Object.entries(state.buildings))if(key!=='factory')for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
  if(r.seeds){state.seasonSeeds=state.seasonSeeds&&typeof state.seasonSeeds==='object'?state.seasonSeeds:{};for(const [crop,n] of Object.entries(r.seeds))state.seasonSeeds[crop]=(state.seasonSeeds[crop]??0)+n;}
  if(r.looks){state.looks=Array.isArray(state.looks)?state.looks:[];for(const look of r.looks)if(!state.looks.includes(look))state.looks.push(look);}
+ if(r.farmer)giveFarmerParts(state,r.farmer);
  entry[track].push(tier);
  return {season:season.id,track,tier,...r,...(affected?{affected}:{})};
 }

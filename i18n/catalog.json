@@ -2672,6 +2672,7 @@
 "In a Farm family you help each other every day with coins, crops and goods.":"public/loading-screen.js",
 "In a family":"src/chat-ui.js",
 "In a jar":"public/event-goals.js",
+"In the Season Pass.":"public/farmer-creator.js",
 "In the browser (phone or computer)":"src/popup-ui.js",
 "In the game":"public/wiki-content.js",
 "In the game, open Settings, go to Privacy and tap Delete account. Your account and the data linked to it are deleted at once.":"public/support.html",

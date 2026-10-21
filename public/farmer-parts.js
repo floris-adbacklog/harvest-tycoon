@@ -586,9 +586,18 @@ const REWARD_TABLE=Object.freeze({
  // Costumes: the long run.
  costume_7:['honey',100],costume_11:['harvested',5000]
 });
+// Parts a Season Pass gives (21 Oct 2026, the owner: "Doe alles behalve 9", item 8): a tier's reward {farmer:[part id, ...]} (farm-state.js
+// claimSeasonTier) puts them in state.farmerParts, and farmerOwned counts them as earned; a refunded pass takes its paid ones back.
+// Each one is listed here with its pass, so My farmer offers it (locked until collected: "In the Season Pass") and farmer_wear knows
+// it. Empty for now: the Autumn 2026 pass is running and its tiers stay as they are.
+// The Winter pass will use it like this: a winter hat, a scarf and a coat, e.g. FARMER_PASS_PARTS={hat_006:'winter-2026',
+// outwear_042:'winter-2026', ...} and in its tiers tierPair({farmer:['hat_006']},{...}). The pack has no scarf: that needs a new
+// part (scripts/farmer-export.py and build-farmer.mjs), and every part listed here needs its cell in My farmer's picture sheets
+// (scripts/build-farmer-pictures.mjs). No Christmas outfit here: that is kept for a Christmas Pass.
+export const FARMER_PASS_PARTS=Object.freeze({});
 export const FARMER_PARTS=Object.freeze(Object.fromEntries(MEASURED.map(([id,group,style,files,bytes,colour,materials])=>{
  const [name,fit,flags='']=group==='face'?faceName(id):group==='body'?[BODY_NAMES[id],Number(id.slice(-3))>=9&&Number(id.slice(-3))<=13?'p':'u']:(NAMES[id]??`${id}|p`).split('|');
- return [id,Object.freeze({id,group,slot:FARMER_GROUPS[group].slot,name,fit:FIT[fit],earned:FARMER_GROUPS[group].earned||Object.hasOwn(REWARD_TABLE,id),coversFace:flags.includes('c'),
+ return [id,Object.freeze({id,group,slot:FARMER_GROUPS[group].slot,name,fit:FIT[fit],earned:FARMER_GROUPS[group].earned||Object.hasOwn(REWARD_TABLE,id)||Object.hasOwn(FARMER_PASS_PARTS,id),coversFace:flags.includes('c'),
   files:Object.freeze(files.split('+')),bytes,colour,style:style||id,glass:materials.includes('farmer-glass'),glow:materials.includes('farmer-glow')})];
 })));
 // The family shirt (21 Oct 2026, the owner: "Doe alles behalve 9", item 6): one plain top in the family's colour (its emblem's colour,
@@ -667,7 +676,7 @@ export const FARMER_FREE=Object.freeze(new Set([
 // (FARMER_GOALS): ladders from the first hour to the long run, so there is always a next one close by. No two share a goal. The numbers
 // were checked against the live farms on 21 Oct 2026 (percentiles per level band, see the commits).
 export const FARMER_REWARDS=Object.freeze(Object.fromEntries(Object.entries(REWARD_TABLE).map(([id,[goal,target]])=>[id,Object.freeze({goal,target})])));
-export const FARMER_OFFER=Object.freeze(new Set([...FARMER_FREE,...Object.keys(REWARD_TABLE)]));
+export const FARMER_OFFER=Object.freeze(new Set([...FARMER_FREE,...Object.keys(REWARD_TABLE),...Object.keys(FARMER_PASS_PARTS)]));
 // The farm's counters a goal reads (farm: {level}, the farm's level, from farm-state.js levelOf, the same on the page and the server).
 const whole=v=>Math.max(0,Math.floor(Number(v)||0));
 export const FARMER_GOALS=Object.freeze({
@@ -685,8 +694,10 @@ export function rewardProgress(id,state,farm={}){
 }
 export const rewardOpen=(id,state,farm={})=>{const p=rewardProgress(id,state,farm);return Boolean(p)&&p.count>=p.target;};
 // The earned parts a farm has: validFarmerConfig's owned, the same on the farm's page and on the server (farm: {level}).
-// The family shirt: while the farm is in a family (state.family.familyId).
-export const farmerOwned=(state,farm={})=>[...Object.keys(FARMER_REWARDS).filter(id=>rewardOpen(id,state,farm)),...(typeof state?.family?.familyId==='string'&&state.family.familyId?[FAMILY_SHIRT]:[])];
+// The family shirt: while the farm is in a family (state.family.familyId). Owned through a pass: what a Season Pass gave (state.farmerParts,
+// farmerPassParts), counted once.
+export const farmerPassParts=state=>Array.isArray(state?.farmerParts)?[...new Set(state.farmerParts.filter(id=>typeof id==='string'&&Object.hasOwn(FARMER_PARTS,id)&&FARMER_PARTS[id].earned))]:[];
+export const farmerOwned=(state,farm={})=>[...new Set([...Object.keys(FARMER_REWARDS).filter(id=>rewardOpen(id,state,farm)),...farmerPassParts(state),...(typeof state?.family?.familyId==='string'&&state.family.familyId?[FAMILY_SHIRT]:[])])];
 // The parts My farmer offers: the free ones and the rewards.
 export const farmerOffered=p=>Boolean(p)&&(FARMER_OFFER.has(p.id)||p.family===true);
 // The pack's parts My farmer shows (its picture sheets hold these); the family shirt has a tile of its own.

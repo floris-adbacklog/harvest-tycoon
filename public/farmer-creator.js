@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {createFarmer,familyColour} from './farmer.js';
 import {FAMILY_EMBLEMS} from './farm-state.js';
-import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress,FAMILY_SHIRT} from './farmer-parts.js';
+import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress,FAMILY_SHIRT,FARMER_PASS_PARTS} from './farmer-parts.js';
 import {art} from './visual-icons.js';
 
 // My farmer (20 Oct 2026; your own character since 21 Oct 2026, the owner: "Doe alle 3"): put your farmer together from the pack's parts.
@@ -31,7 +31,8 @@ export const GOAL_TEXTS=Object.freeze({
  visits:n=>`Play on ${number(n)} days`,streak:n=>`Play ${number(n)} days in a row`
 });
 // A part's goal in words ('' for a free part), and how far a farm is with it.
-export function rewardText(id){const p=rewardProgress(id,{});return p?GOAL_TEXTS[p.goal](p.target):'';}
+// A part a Season Pass gives (FARMER_PASS_PARTS, item 8) says where it comes from.
+export function rewardText(id){if(Object.hasOwn(FARMER_PASS_PARTS,id))return 'In the Season Pass.';const p=rewardProgress(id,{});return p?GOAL_TEXTS[p.goal](p.target):'';}
 const LOCK='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.2" fill="currentColor"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const DONE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const NONE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M6.5 17.5l11-11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
