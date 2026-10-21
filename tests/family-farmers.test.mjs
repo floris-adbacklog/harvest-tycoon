@@ -54,10 +54,10 @@ test('the village: up to six of your family\'s farmers, each in their own look o
  // Once a visit, kept 10 minutes; online members first; at most six; only in the village, after your own farmer (the same rules).
  assert.match(game,/const data=await bridge\.request\(\{operation:'family',farmers:true\}\);/);
  assert.match(game,/const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=10\*60000;/);
- assert.match(game,/kept\?\.familyId===familyId&&Date\.now\(\)-kept\.at<FAMILY_FARMERS_KEEP/);
- assert.match(game,/\.slice\(0,6\)\.map\(m=>\(\{playerId:m\.playerId,farmer:m\.farmer&&validFarmerConfig\(m\.farmer\)\.ok\?cleanFarmer\(m\.farmer\):null\}\)\);/);
+ assert.match(game,/async function familyFarmers\(keep=FAMILY_FARMERS_KEEP\)\{/);assert.match(game,/kept\?\.familyId===familyId&&Date\.now\(\)-kept\.at<keep&&/);
+ assert.match(game,/\.slice\(0,6\)\.map\(m=>\(\{playerId:m\.playerId,username:typeof m\.username==='string'\?m\.username:'',online:m\.online===true,daysAway:Number\.isFinite\(m\.daysAway\)\?m\.daysAway:null,farmer:m\.farmer&&validFarmerConfig\(m\.farmer\)\.ok\?cleanFarmer\(m\.farmer\):null\}\)\);/);
  assert.match(game,/if\(villageWorld\)void addFamilyFarmers\(createFarmWalker,VILLAGE_FAMILY_WALKS\);/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:member\.farmer\?\?undefined,name:'family-farmer',family\}\);/);
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:member\.farmer\?\?undefined,name:'family-farmer',family,tag:farmerTag\(member\.username\),blockers:tagBlockers\}\);/);
  assert.match(game,/for\(const other of familyWalkers\)other\.animate\(dt,camera\);/);
  // A tap: after your own farmer, the hop, then that member's profile.
  assert.match(game,/for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;/);

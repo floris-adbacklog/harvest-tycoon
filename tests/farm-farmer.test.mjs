@@ -157,7 +157,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/const config=farmerOf\(state,farmerFarm\(\)\),family=/);assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config,trips:/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
  assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n \/\/ Then your family's farmers in the village \(item 5\): their profile\.\n for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;\n\}/,'asked last of all (then the family\'s)');
- assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{if\(me\.trip\)/,'only on screen (on a trip: only where they are)');
+ assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{\n[^\n]*\n   if\(me\.visit\?\.leg==='in'\)arrived\(\);else if\(me\.visit\?\.leg==='out'\)gone\(\);\n   if\(me\.trip\)/,'only on screen (on a trip: only where they are; a visitor comes or goes at once)');
  assert.doesNotMatch(walker,/localStorage|runAction|state\.|client\.|track\(/,'it saves and counts nothing');
  const {FARM_WALK,VILLAGE_WALK}=await import('../public/farm-farmer.js');
  const {FARM_PETS,VILLAGE_DEER}=await import('../public/farm-pets.js');
@@ -240,12 +240,12 @@ test('your farmer joins in: a harvest, a collect or a chore takes them to a chec
  // One trip at a time, a rest after it, only to a spot in the picture; off the picture they keep walking (not their arms and legs).
  assert.match(walker,/if\(me\.trip\)\{if\(me\.trip\.trip===place&&me\.trip\.leg==='stay'\)\{me\.rest=Math\.min\(TRIP_STAY_MAX,me\.rest\+TRIP_MORE\);return true;\}return false;\}/);
  assert.match(walker,/if\(me\.clock-me\.tripDone<TRIP_REST\|\|!inView\(place\.at\)\)return false;/);
- assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{if\(me\.trip\)\{me\.clock\+=t;step\(t\);\}return;\}/);
+ assert.match(walker,/   if\(me\.trip\)\{me\.clock\+=t;step\(t\);\}return;\}/);
  assert.match(walker,/const TRIP_PACE=1\.6,TRIP_STAY=\[7,10\],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;/);
  // game.js: after every farm action and after a sweep; trips on the farm on a computer only (never in lite mode: phones, tablets, apps).
  assert.match(game,/farmerNews\(\);farmerJoins\(action\);/);
  assert.match(game,/if\(action==='harvest'\)\{nudge\?\.harvested\(\);farmerJoins\(\{type:'field',action:'harvest',id:result\.fields\.at\(-1\)\.id\}\);\}/);
- assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches,bench,family\}\);farmerTrip=tripFor;/);
+ assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches,bench,family,tag:farmerTag\(ownName\(\)\),blockers:tagBlockers\}\);farmerTrip=tripFor;/);
  assert.doesNotMatch(walker,/localStorage|runAction|client\.|track\(/,'visual only');
 });
 

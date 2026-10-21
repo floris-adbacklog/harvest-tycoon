@@ -56,18 +56,41 @@ const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
 // ways). x, z: the seat; turn: the way the chair (and the farmer on it) faces: to the right of the screen, so they are seen sitting
 // (facing the camera a seated farmer looks like a standing one, and hides the chair); height: the chair's.
 export const FARM_BENCH=Object.freeze({x:-13.16,z:-.45,turn:Math.PI*3/4,height:.9});
+// A family visit (21 Oct 2026, the owner, option 2; family-visit.js says when and who): one member of your Farm Family comes by the
+// Farmhouse. They come in at the door (the grass beside the lane north of the Farmhouse yard, fading in as they step out), walk the
+// way down to a small loop of their own on the grass between the Farmhouse yard and the lane, south of the cart and east of the
+// chores, and leave the same way, fading out at the door. Every point of it, also on the way between the spots, checked in the
+// harness on a phone and a computer's two views (1440 x 900, 1000 x 620), in the home view and with the camera over it (visit-cover.mjs:
+// they cover nothing that can be tapped: no building, cart, chores, pin or name behind them), and kept clear of your own farmer's
+// loop, the evening chair, the trips' ways and the pets' walks (tests/family-visit.test.mjs). The scenery leaves its bushes off it
+// (inFarmerWay). door: where they appear and go; way: from the door to the loop's first spot (and back the other way round).
+export const FARM_VISIT=Object.freeze({height:FARM_WALK.height,walk:.9,door:Object.freeze([-9.2,-12.9]),way:Object.freeze([Object.freeze([-9.25,-11.2])]),
+ spots:Object.freeze([[-9.5,-10.3],[-9.6,-9.1],[-10.6,-8.9],[-10.7,-10.3]].map(p=>Object.freeze(p)))});
 // Where the farm's scenery leaves room for your farmer (21 Oct 2026, QA): its bushes, sunflowers and tufts come from a seeded list
 // (scenery.js) that knows nothing of the farmer, and on a computer two bushes stood on the loop and a third beside it, so the farmer
 // walked through them. scenery.js asks this of every piece (x, z and how far it reaches round) and leaves out one in the way: of the
-// loop (each spot to the next), of the evening chair and the spot in front of it where they stand up, and of the trips' spots.
+// loop (each spot to the next), of the evening chair and the spot in front of it where they stand up, and of the trips' spots. Since
+// the family visit (21 Oct 2026) also the visitor's door, way and loop: on every farm the farmer walks, family or not, so the scenery
+// stands the same on every visit.
 const FARMER_ROOM=.35,toSegment=(x,z,[ax,az],[bx,bz])=>{const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz,t=l?Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l)):0;return Math.hypot(x-ax-t*dx,z-az-t*dz);};
+// The visitor's whole walk as segments: the door to the loop, the loop, and across it (leaving, they walk straight from where they are
+// to the loop's first spot).
+export const visitWays=()=>{const {door,way,spots}=FARM_VISIT,path=[door,...way,spots[0]];return [...path.slice(1).map((p,i)=>[path[i],p]),...spots.map((p,i)=>[p,spots[(i+1)%spots.length]]),[spots[2],spots[0]]];};
 let farmerWays=null;
 export function inFarmerWay(x,z,r){
  if(!farmerWays){
   const loop=FARM_WALK.spots,front=[FARM_BENCH.x+Math.sin(FARM_BENCH.turn)*.7,FARM_BENCH.z+Math.cos(FARM_BENCH.turn)*.7];
-  farmerWays=[...loop.map((p,i)=>[p,loop[(i+1)%loop.length]]),[[FARM_BENCH.x,FARM_BENCH.z],front],...[...Object.values(FARM_TRIPS),...FIELD_TRIPS].map(t=>[t.at,t.at])];
+  farmerWays=[...loop.map((p,i)=>[p,loop[(i+1)%loop.length]]),[[FARM_BENCH.x,FARM_BENCH.z],front],...[...Object.values(FARM_TRIPS),...FIELD_TRIPS].map(t=>[t.at,t.at]),...visitWays()];
  }
  return farmerWays.some(([a,b])=>toSegment(x,z,a,b)<r+FARMER_ROOM);
+}
+// Your farmer's trips that pass this near the visitor's walk (the Dairy's, up the lane beside the door): no visit starts while they
+// are on one, and they make none while a visitor is there (game.js), so the two never walk through each other.
+export const VISIT_ROOM=2.5;
+export function tripNearVisit(trip){
+ if(!trip?.at)return false;
+ const path=[...(trip.via??[]),trip.at],ways=visitWays();
+ return path.some((a,i)=>{const b=path[i+1]??a;for(let k=0;k<=10;k++){const x=a[0]+(b[0]-a[0])*k/10,z=a[1]+(b[1]-a[1])*k/10;if(ways.some(([p,q])=>toSegment(x,z,p,q)<VISIT_ROOM))return true;}return false;});
 }
 export const EVENING_FROM=20,MORNING_AT=7;
 export const isEvening=(date=new Date())=>{const h=date.getHours();return h>=EVENING_FROM||h<MORNING_AT;};
@@ -102,7 +125,10 @@ export const FARM_WALKERS=new Set();
 // trips: whether they join in (the farm on a computer: game.js addFarmer; never on a phone, in lite mode or in the village). bench: the
 // farm's chair (FARM_BENCH, game.js places the model) for the evening, or null (the village); clock: the time now (the harness's).
 // name: 'your-farmer', or 'family-farmer' for a member's in the village; family: the family shirt's {shirt, emblem} (farmer.js).
-export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date(),name='your-farmer',family=null}){
+// visit: a family visitor on the farm (FARM_VISIT): they fade in at its door, walk its way to the loop, and leave() the same way.
+// tag: on a touch screen the farmer's name over their head (game.js farmerTag: a span in the pins' layer; with a mouse the name is
+// the hover tooltip instead); blockers(): the pins and names it gives way to.
+export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date(),name='your-farmer',family=null,visit=null,tag=null,blockers=()=>[]}){
  const farmer=await createFarmer(config,{height:walk.height,family});
  const root=farmer.root,{actions,mixer}=farmer;root.name=name;
  for(const name of ['walk','idle','look','relaxed','sit'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
@@ -141,6 +167,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  function rest(){
   // On a trip a pause (after a hop) is short, and the stay keeps the time it had left.
   if(me.trip){me.target=null;if(me.trip.leg!=='stay')me.rest=.5;play(me.trip.leg==='stay'?'look':'idle');return;}
+  if(me.visit){me.target=null;me.rest=.5;play('idle');return;}
   me.target=null;me.rest=REST[0]+random()*(REST[1]-REST[0]);me.face=Math.PI/4+(random()-.5)*1.2;play(choose(STILL,random));}
  function step(dt){
   const at=root.position;
@@ -158,16 +185,16 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   }
   else if(me.target){
    const dx=me.target[0]-at.x,dz=me.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
-   if(d<.05){if(me.trip)tripStep();else if(me.away==='going')sitDown();else rest();}
+   if(d<.05){if(me.trip)tripStep();else if(me.visit)visitStep();else if(me.away==='going')sitDown();else rest();}
    else{
     me.yaw=turnTowards(me.yaw,want,TURN*(me.trip?1.6:1)*dt);
     // It turns first, then walks: no sliding sideways. On a trip a brisker step (the walk played faster to match).
     const pace=me.trip?TRIP_PACE:1;if(actions.walk)actions.walk.timeScale=walkPace*pace;
-    if(Math.abs(turnOf(me.yaw,want))<.5){play('walk');const s=Math.min(d,walk.walk*pace*dt);at.x+=dx/d*s;at.z+=dz/d*s;at.y=ground(at.x,at.z);}
+    if(Math.abs(turnOf(me.yaw,want))<.5){play('walk');const s=Math.min(d,walk.walk*pace*dt);at.x+=dx/d*s;at.z+=dz/d*s;at.y=ground(at.x,at.z);if(me.visit)fadeOnTheWay();}
    }
   }else{
    me.yaw=turnTowards(me.yaw,me.face,TURN*.4*dt);
-   if((me.rest-=dt)<=0){if(me.trip)tripStep();else{me.spot=(me.spot+1)%spots.length;me.target=spots[me.spot];}}
+   if((me.rest-=dt)<=0){if(me.trip)tripStep();else if(me.visit)visitStep();else{me.spot=(me.spot+1)%spots.length;me.target=spots[me.spot];}}
   }
   root.rotation.y=me.yaw;
  }
@@ -191,18 +218,23 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  function animate(dt,camera){
   frame++;wait+=dt;seenBy=camera;
   if(lite&&frame%2)return;
+  // The name follows them at the frames they are moved at (a phone: every other one): one point projected, the page only moves it.
+  if(tag)placeTag(camera);
   const t=Math.min(wait,.2);wait=0;
   if(!shown(root))return;
   matrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(matrix);
   sphere.center.copy(root.position);sphere.center.y+=walk.height/2;sphere.radius=walk.height;
   // Off the picture they stand still, unless on a trip: then they keep walking (only where they are, not their arms and legs).
-  if(!frustum.intersectsSphere(sphere)){if(me.trip){me.clock+=t;step(t);}return;}
+  if(!frustum.intersectsSphere(sphere)){
+   // A visitor out of the picture: coming, they are there at once; going, they are gone at once (no one waits to see them walk).
+   if(me.visit?.leg==='in')arrived();else if(me.visit?.leg==='out')gone();
+   if(me.trip){me.clock+=t;step(t);}return;}
   me.clock+=t;me.steppedAt=performance.now();step(t);mixer.update(t);
  }
  // A trip to a place (tripFor's): look, the x and z they face once there (the building or the field). Only on the farm on a computer
  // (trips), while they are walking their loop or resting in it (not hopping), the place's spot in the picture, and TRIP_REST seconds
  // after the last trip ended. A new action at the place they stand at keeps them there a little longer. True when they go (or stay).
- function visit(place,look){
+ function goTo(place,look){
   if(!trips||!place||me.hopping>0||me.away)return false;
   if(me.trip){if(me.trip.trip===place&&me.trip.leg==='stay'){me.rest=Math.min(TRIP_STAY_MAX,me.rest+TRIP_MORE);return true;}return false;}
   if(me.clock-me.tripDone<TRIP_REST||!inView(place.at))return false;
@@ -222,6 +254,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   if(me.away==='going')me.away=null;
   // On their way somewhere: the waypoint they were walking to is taken again after the hop.
   if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
+  if(me.visit)me.visit.i=Math.max(0,me.visit.i-1);
   me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');me.gesture=0;
   me.landed?.();me.landed=null;me.hops=1;me.hopUp=HOP_UP;
   if(!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY)){at0();return Promise.resolve();}
@@ -259,8 +292,60 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   return ()=>{root.position.set(was.x,was.y,was.z);root.rotation.y=was.yaw;mixer.stopAllAction();me.current=null;play(was.state in actions?was.state:'idle',0);mixer.update(0);};
  }
  const at0=()=>{me.hopping=0;root.position.y=ground(root.position.x,root.position.z);};
+ // A visit: in at the door (fading in over the first FADE_WAY of the way), the way to the loop's first spot, the loop as anyone's;
+ // leave(): back to the loop's first spot, the way back, fading out over the last FADE_WAY, gone at the door. me.visit: {leg, path, i}.
+ // The fade: the visitor's own copies of the farmer's materials (shared by every farmer otherwise), drawn see-through all visit long,
+ // so their look never needs another shader; at full strength they look as anyone's.
+ const FADE_WAY=1.2,faded=[];let leaving=null,leaveDone=null;
+ function setAlpha(a){
+  const alpha=Math.max(0,Math.min(1,a));
+  if(!faded.length)root.traverse(n=>{if(!n.isMesh||n===hit||Array.isArray(n.material))return;const m=n.material.clone();m.transparent=true;m.userData.full=n.material.opacity??1;n.material=m;faded.push(m);});
+  for(const m of faded)m.opacity=m.userData.full*alpha;
+  if(tag)tag.style.opacity=alpha<1?String(alpha):'';
+ }
+ function fadeOnTheWay(){
+  const v=me.visit,p=root.position,d=Math.hypot(p.x-visit.door[0],p.z-visit.door[1]);
+  if(v.leg==='in'||v.i>=v.path.length)setAlpha(d/FADE_WAY);
+ }
+ function visitStep(){
+  const v=me.visit;
+  if(v.i<v.path.length){me.target=v.path[v.i++];return;}
+  if(v.leg==='in')arrived();else gone();
+ }
+ function arrived(){me.visit=null;me.spot=0;root.position.set(spots[0][0],ground(spots[0][0],spots[0][1]),spots[0][1]);setAlpha(1);rest();}
+ function gone(){me.visit=null;me.target=null;setAlpha(0);root.visible=false;if(tag)tag.hidden=true;const done=leaving;leaving=null;done?.();}
+ if(visit){
+  root.position.set(visit.door[0],ground(visit.door[0],visit.door[1]),visit.door[1]);setAlpha(0);
+  me.visit={leg:'in',path:[...visit.way,spots[0]],i:0};me.rest=0;me.target=null;
+ }
+ // Off they go (a visitor only); at once (now: the page ends the visit, or they are not being moved): gone without the walk.
+ function leave(now=false){
+  if(!visit)return Promise.resolve();
+  if(leaving)return leaveDone;
+  if(!root.visible)return Promise.resolve();
+  leaveDone=new Promise(done=>{leaving=done;});
+  if(now||!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY))gone();
+  else{me.visit={leg:'out',path:[spots[0],...[...visit.way].reverse(),visit.door],i:0};me.gesture=0;if(me.hopping<=0){me.target=null;visitStep();}}
+  return leaveDone;
+ }
+ // The name over their head (touch screens): the head's point projected, hidden off the picture (or when they are not shown); a pin
+ // or a name it touches wins (looked at a few times a second: the name fades back, farm-farmer.css .farmer-name.yield).
+ let tagX=NaN,tagY=NaN,tagFrame=0,size=null;
+ const head=new THREE.Vector3();
+ function placeTag(camera){
+  if(!shown(root)){if(!tag.hidden)tag.hidden=true;return;}
+  if(!size||tagFrame%60===0){const box=tag.parentElement;size=box?[box.clientWidth,box.clientHeight]:[0,0];}
+  head.copy(root.position);head.y+=walk.height*1.12;head.project(camera);
+  const off=Math.abs(head.x)>1||Math.abs(head.y)>1||head.z>1;
+  if(off!==tag.hidden)tag.hidden=off;
+  tagFrame++;if(off)return;
+  const x=Math.round((head.x*.5+.5)*size[0]),y=Math.round((-head.y*.5+.5)*size[1]);
+  if(x!==tagX||y!==tagY){tagX=x;tagY=y;tag.style.transform=`translate3d(${x}px,${y}px,0) translate(-50%,-100%)`;}
+  if(tagFrame%12===0){const r=tag.getBoundingClientRect();tag.classList.toggle('yield',blockers().some(b=>{if(b===tag||b.hidden)return false;const q=b.getBoundingClientRect();return q.width>0&&q.left<r.right&&q.right>r.left&&q.top<r.bottom&&q.bottom>r.top;}));}
+ }
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
  const where=()=>{if(!seenBy)return null;const p=root.position.clone();p.y+=walk.height*.5;p.project(seenBy);return {x:p.x,y:p.y,state:me.state,world:[root.position.x,root.position.z]};};
- const result={farmer,root,hit,ground,animate,pick,react,where,visit,celebrate,gesture,photo,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
+ const result={farmer,root,hit,ground,animate,pick,react,where,visit:goTo,leave,celebrate,gesture,photo,tag,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at,via:me.trip.trip.via},visiting:()=>me.visit?.leg??(visit&&root.visible?'here':null),camera:()=>seenBy,
+  dispose(){farmer.dispose();for(const m of faded)m.dispose();root.traverse(n=>{if(n.isMesh&&!n.isSkinnedMesh){n.geometry.dispose();n.material.map?.dispose();n.material.dispose();}});tag?.remove();FARM_WALKERS.delete(result);}};
  FARM_WALKERS.add(result);return result;
 }

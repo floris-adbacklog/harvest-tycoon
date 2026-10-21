@@ -53,7 +53,7 @@ import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { renderLanguageSettings } from './language-settings.js';
-import { startTranslation, setOwnText } from './i18n.js';
+import { startTranslation, setOwnText, ownWords } from './i18n.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
 import { createFarmShare,photoFrame } from './farm-share.js';
@@ -109,6 +109,8 @@ const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 // What the farmer wears (the Season Pass's looks, Oct 2026) and their face, for the pass window and Settings › Your look (season-ui.js).
 window.harvestLook=window.harvestInitialFarm.profile?.look&&typeof window.harvestInitialFarm.profile.look==='object'?window.harvestInitialFarm.profile.look:{};
 window.harvestAvatarId=window.harvestInitialFarm.profile?.avatar_id??'default';
+// Your name, for the name over your farmer (farmerTag): the profile's, until the page around the farm knows a newer one (a rename).
+const initialUsername=typeof window.harvestInitialFarm.profile?.username==='string'?window.harvestInitialFarm.profile.username:'';
 const adminView=document.documentElement.hasAttribute('data-admin-view');
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
@@ -194,7 +196,8 @@ function farmerJoins(action){
  if(action.type==='field'&&action.action==='harvest'&&plots[action.id]){look=[plots[action.id].x,plots[action.id].z];place=farmerTrip('fields',look);}
  else if((action.type==='collect'||action.type==='collect_all')&&Object.hasOwn(BUILDINGS,action.building)&&ANCHORS[action.building]){look=anchorAt(action.building);place=farmerTrip(action.building);}
  else if(action.type==='chore'){look=anchorAt('chores');place=farmerTrip('chores');}
- if(place)walker.visit(place,look);
+ // Not up the lane past a family visitor (farm-farmer.js tripNearVisit): the two never walk through each other.
+ if(place&&!(familyVisits?.visitor&&nearVisit(place)))walker.visit(place,look);
 }
 function tapOwnFarmer(){const me=window.parent?.harvestBridge?.playerId,landed=walker?.react()??Promise.resolve();if(me&&window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(me,{back:null}));}
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
@@ -429,8 +432,9 @@ async function addFarmer(){
   const bench=villageWorld?null:farmBench;
   // The family shirt (item 6) is drawn in the family's cut, colour and emblem: kept from the last Family read, or read once.
   const config=farmerOf(state,farmerFarm()),family=config.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family});farmerTrip=tripFor;
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family,tag:farmerTag(ownName()),blockers:tagBlockers});farmerTrip=tripFor;
   if(villageWorld)void addFamilyFarmers(createFarmWalker,VILLAGE_FAMILY_WALKS);
+  else void startFamilyVisits(createFarmWalker,ground);
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
 // Your Farm Family's farmers in the village (21 Oct 2026, the owner: "Doe alles behalve 9", item 5): up to six members walk there too,
@@ -440,12 +444,12 @@ async function addFarmer(){
 // ones seen most lately. One farmer at a time, each after a quiet moment, as your own; only moved while in the picture.
 const familyWalkers=[];
 const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=10*60000;
-async function familyFarmers(){
+async function familyFarmers(keep=FAMILY_FARMERS_KEEP){
  const familyId=state.family?.familyId,bridge=window.parent?.harvestBridge;if(!familyId||!bridge?.request)return [];
- try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<FAMILY_FARMERS_KEEP&&Array.isArray(kept.list))return kept.list;}catch{}
+ try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<keep&&Array.isArray(kept.list)&&kept.list.every(m=>'online' in m))return kept.list;}catch{}
  const data=await bridge.request({operation:'family',farmers:true});(await import('./family-shirt.js')).keepFamilyShirt(data?.family);
  const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string').sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(a.daysAway??0)-(b.daysAway??0))
-  .slice(0,6).map(m=>({playerId:m.playerId,farmer:m.farmer&&validFarmerConfig(m.farmer).ok?cleanFarmer(m.farmer):null}));
+  .slice(0,6).map(m=>({playerId:m.playerId,username:typeof m.username==='string'?m.username:'',online:m.online===true,daysAway:Number.isFinite(m.daysAway)?m.daysAway:null,farmer:m.farmer&&validFarmerConfig(m.farmer).ok?cleanFarmer(m.farmer):null}));
  try{sessionStorage.setItem(FAMILY_FARMERS_KEY,JSON.stringify({familyId,at:Date.now(),list}));}catch{}
  return list;
 }
@@ -457,11 +461,53 @@ async function addFamilyFarmers(createFarmWalker,walks){
    const walk=walks[i],xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    const ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
    const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
-   const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family});
-   other.playerId=member.playerId;familyWalkers.push(other);
+   const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,tag:farmerTag(member.username),blockers:tagBlockers});
+   other.playerId=member.playerId;other.username=member.username;familyWalkers.push(other);
   }
  }catch(error){console.warn('The family\'s farmers were skipped.',error);}
 }
+// A family visit on your farm (21 Oct 2026, the owner, option 2: "Now and then a family member visits your farm: one at a time,
+// preferably someone online now, takes a walk by the Farmhouse and leaves after a few minutes. Tap them and their profile opens.").
+// family-visit.js says when and who (online first, then seen most lately, taking turns; a minute or three after the farm is on screen,
+// about three minutes, then four to six minutes without); farm-farmer.js FARM_VISIT where they walk (checked to cover nothing that
+// can be tapped). Only on the farm in World I, where your own farmer walks (farmerComes: not with reduced motion, Save-Data, a 2g line
+// or in the admin view), only in a Farm Family with someone else in it, never in the evening (20:00 to 7:00, when your farmer rests).
+// One visitor at a time, made when they come and thrown away when they go; a tap: a hop, then their profile (tapFamilyFarmer). No
+// words, no toast, no window. Who: the same Family read as the village's farmers (familyFarmers), kept 20 minutes for the visits.
+const FAMILY_VISIT_KEEP=20*60000;
+let familyVisits=null,nearVisit=()=>false;
+async function startFamilyVisits(createFarmWalker,ground){
+ try{
+  if(villageWorld||!farmerComes()||familyVisits)return;
+  const [{createFamilyVisits},{FARM_VISIT,tripNearVisit,isEvening}]=await Promise.all([import('./family-visit.js'),import('./farm-farmer.js')]);
+  nearVisit=tripNearVisit;
+  familyVisits=createFamilyVisits({
+   members:()=>familyFarmers(FAMILY_VISIT_KEEP),
+   evening:()=>isEvening(),
+   // Not while the page is hidden, nor while your farmer walks that way (the Dairy's trip up the lane).
+   busy:()=>document.hidden||tripNearVisit(walker?.trip?.()),
+   arrive:async member=>{
+    const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
+    const visitor=await createFarmWalker({scene,walk:FARM_VISIT,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,visit:FARM_VISIT,tag:farmerTag(member.username),blockers:tagBlockers});
+    visitor.playerId=member.playerId;visitor.username=member.username;familyWalkers.push(visitor);
+    return {member,leave:async now=>{try{await visitor.leave(now);}finally{const i=familyWalkers.indexOf(visitor);if(i>=0)familyWalkers.splice(i,1);visitor.dispose();}}};
+   }
+  });
+ }catch(error){console.warn('The family visits were skipped.',error);}
+}
+// Every farmer's name (21 Oct 2026, the owner: "Zet ook de naam van de user in village en farm boven het poppetje", then "Toon alleen
+// naamlabel bij hover" and "Op mobiel altijd"): with a mouse the name is the hover tooltip over the farmer (pointermove); on a touch
+// screen (no hover) a small cream pill over their head all the time (farm-farmer.js placeTag: only while on the screen, at the
+// farmer's own frames, giving way to a pin or a name it touches; never tapped: pointer-events none). Players' own words: translate="no".
+const namesAlways=handheld||matchMedia('(hover: none)').matches;
+const ownName=()=>$('player-name')?.dataset.username||initialUsername;
+function farmerTag(name){
+ if(!namesAlways||typeof name!=='string'||!name.trim())return null;
+ const tag=document.createElement('span');tag.className='farmer-name';tag.setAttribute('aria-hidden','true');tag.innerHTML=ownWords(name.trim());tag.hidden=true;
+ $('building-labels').prepend(tag);return tag;
+}
+const tagBlockers=()=>[...$('building-labels').children,...$('plot-labels').children].filter(l=>!l.classList.contains('farmer-name')&&!l.hidden);
+const farmerTooltip=name=>name?`<strong>${ownWords(name)}</strong>`:'';
 function tapFamilyFarmer(id){const other=familyWalkers.find(w=>w.playerId===id),landed=other?.react()??Promise.resolve();if(window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(id,{back:null}));}
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
 // tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
@@ -2001,9 +2047,12 @@ async function init(){
    // Over a field the cursor is the tool its sweep would use: a sickle over a ripe crop, a watering can, a seed bag, gloves for care
    // (sweep-tools.js).
    if(target?.type==='plot')world.style.cursor=toolCursor(sweepAction(target))||'pointer';
-   if(!target||e.pointerType==='touch'||target.type==='pet'||target.type==='farmer'||target.type==='familyFarmer'){tooltip.hidden=true;return;}
+   // A farmer: their name, nothing more (players' own words); a pet: nothing.
+   const named=target?.type==='farmer'?farmerTooltip(ownName()):target?.type==='familyFarmer'?farmerTooltip(familyWalkers.find(w=>w.playerId===target.id)?.username):'';
+   if(!target||e.pointerType==='touch'||target.type==='pet'||(target.type==='farmer'||target.type==='familyFarmer')&&!named){tooltip.hidden=true;return;}
    tooltip.hidden=false;
-   if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
+   if(named)tooltip.innerHTML=named;
+   else if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
    else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · ${target.label&&economy.status(target.id).kind==='ready'&&b.type!=='pier'?'click to collect':'click to open'}</span>`;}
    else if(target.type==='landmark'){const l=VILLAGE_LANDMARKS[target.id];tooltip.innerHTML=`<strong>${l.name}</strong><span>${landmarkNote(target.id,landmarkDone(state,target.id))}</span>`;}
