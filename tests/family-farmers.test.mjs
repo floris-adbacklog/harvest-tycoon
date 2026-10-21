@@ -57,7 +57,7 @@ test('the village: up to six of your family\'s farmers, each in their own look o
  assert.match(game,/kept\?\.familyId===familyId&&Date\.now\(\)-kept\.at<FAMILY_FARMERS_KEEP/);
  assert.match(game,/\.slice\(0,6\)\.map\(m=>\(\{playerId:m\.playerId,farmer:m\.farmer&&validFarmerConfig\(m\.farmer\)\.ok\?cleanFarmer\(m\.farmer\):null\}\)\);/);
  assert.match(game,/if\(villageWorld\)void addFamilyFarmers\(createFarmWalker,VILLAGE_FAMILY_WALKS\);/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:member\.farmer\?\?undefined,name:'family-farmer'\}\);/);
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:member\.farmer\?\?undefined,name:'family-farmer',family\}\);/);
  assert.match(game,/for\(const other of familyWalkers\)other\.animate\(dt,camera\);/);
  // A tap: after your own farmer, the hop, then that member's profile.
  assert.match(game,/for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;/);

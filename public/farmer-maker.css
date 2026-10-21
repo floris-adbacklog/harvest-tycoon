@@ -4,6 +4,9 @@
 .farmer-maker .close-dialog svg{width:20px;height:20px}
 .farmer-maker-stage{position:relative;height:clamp(170px,32vh,280px);margin:4px 0 10px;border-radius:18px;background:radial-gradient(circle at 50% 70%,#fffaf0 0,#f3e7cf 70%);border:1px solid #e8dcc6}
 /* Wave, Cheer, Dance (21 Oct 2026): small buttons down the stage's right side, the farmer does the one tapped. */
+/* The family shirt's tile (21 Oct 2026): the family's colour, its emblem on a cream round. */
+.farmer-part.is-family{background:var(--family-color);display:grid;place-items:center}
+.farmer-part.is-family .farmer-family-emblem{width:56%;height:56%;border-radius:50%;background:#fff6df;box-shadow:0 0 0 3px #e9bd4c}
 .farmer-maker-moves{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px}
 .farmer-maker-moves .small-button{min-height:36px;min-width:84px;padding:4px 12px}
 .farmer-maker-preview{display:block;width:100%;height:100%}

@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {download} from './model-atlas.js';
-import {farmerFiles,validFarmerConfig,DEFAULT_FARMER} from './farmer-parts.js';
+import {farmerFiles,validFarmerConfig,DEFAULT_FARMER,FAMILY_SHIRT,FAMILY_SHIRTS} from './farmer-parts.js';
+import {FAMILY_EMBLEMS} from './farm-state.js';
+import {artSource} from './visual-icons.js';
 
 // The farmer every player makes for themselves (20 Oct 2026, the owner: "Doe 2"): ithappy Studios' Creative Characters, one skeleton
 // with the parts a farmer wears bound to it (scripts/build-farmer.mjs). A farmer is built from a small config (farmer-parts.js: which
@@ -50,6 +52,42 @@ export function farmerMaterial(kind,shade=false){
  }
  return m;
 }
+// The family shirt (21 Oct 2026, item 6): the cut the family picked, in one colour, the family's (its emblem's colour, as its flag),
+// with a little of the farm's baked shade, and the emblem on a small cream patch on the chest. family: {shirt, emblem} (the Family
+// read's view.family) or null: then the T-shirt in a plain cream until the family is known.
+const shirtMaterials=new Map(),patches=new Map();
+export const familyColour=emblem=>(FAMILY_EMBLEMS.find(e=>e.id===String(emblem))??FAMILY_EMBLEMS[0]).color;
+function shirtMaterial(colour){
+ let m=shirtMaterials.get(colour);
+ if(!m){m=new THREE.MeshStandardMaterial({color:new THREE.Color(colour),vertexColors:true,roughness:1,metalness:0});m.name='farmer-family-shirt';shirtMaterials.set(colour,m);}
+ return m;
+}
+// The emblem patch: a 64 px canvas (cream round, gold rim, the emblem's picture), drawn once an emblem a page.
+function patchTexture(emblem){
+ let t=patches.get(emblem);
+ if(!t){
+  const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
+  g.beginPath();g.arc(32,32,29,0,Math.PI*2);g.fillStyle='#fff6df';g.fill();g.lineWidth=4;g.strokeStyle='#e9bd4c';g.stroke();
+  t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;patches.set(emblem,t);
+  const icon=(FAMILY_EMBLEMS.find(e=>e.id===String(emblem))??FAMILY_EMBLEMS[0]).icon,source=artSource(icon);
+  if(source){const img=new Image();img.decoding='async';img.onload=()=>{const cell=img.naturalWidth/source.columns,sx=(source.index%source.columns)*cell,sy=Math.floor(source.index/source.columns)*cell;g.drawImage(img,sx,sy,cell,cell,13,13,38,38);t.needsUpdate=true;};img.src=source.src;}
+ }
+ return t;
+}
+// Where the patch sits: on the chest, in front of the upper spine, a little to the farmer's left (their heart side), facing forward.
+const PATCH=Object.freeze({bone:'Spine1',up:.17,forward:.15,side:.07,size:.11});
+function chestPatch(root,bones,height){
+ const bone=bones.get(PATCH.bone);if(!bone)return null;
+ const k=height/1.83,mesh=new THREE.Mesh(new THREE.PlaneGeometry(PATCH.size*k,PATCH.size*k),new THREE.MeshStandardMaterial({transparent:true,roughness:1,metalness:0,polygonOffset:true,polygonOffsetFactor:-2}));
+ mesh.name='family-patch';mesh.visible=false;
+ // Placed at the rest pose in the farmer's own space (createFarmer, before anything moves), then kept on the bone: it moves with the chest.
+ root.updateMatrixWorld(true);
+ const at=new THREE.Vector3();bone.getWorldPosition(at);
+ const want=new THREE.Vector3(at.x+PATCH.side*k,at.y+PATCH.up*k,at.z+PATCH.forward*k);
+ const bq=new THREE.Quaternion();bone.getWorldQuaternion(bq);const s=new THREE.Vector3();bone.getWorldScale(s);
+ mesh.position.copy(bone.worldToLocal(want));mesh.quaternion.copy(bq.invert());mesh.scale.set(1/s.x,1/s.y,1/s.z);
+ bone.add(mesh);return mesh;
+}
 // One part's meshes for a farmer: the file's meshes, sharing its geometry, bound to the farmer's bones of the same names.
 function wear(source,bones,parent,file){
  const meshes=[];
@@ -68,17 +106,29 @@ function wear(source,bones,parent,file){
 // A farmer: root (a Group to place and turn; it faces +z) with the skeleton and the parts in it, a mixer with the clips, and
 // dress(config) to change what it wears (the parts that stay are kept; a part's file loads once). height: world units, the head's top
 // (without a hat) at that height. Never throws for a bad config: it wears the default farmer instead.
-export async function createFarmer(config=DEFAULT_FARMER,{height=FARMER_HEIGHT}={}){
+// family: the family shirt's {shirt, emblem} (item 6), or null.
+export async function createFarmer(config=DEFAULT_FARMER,{height=FARMER_HEIGHT,family=null}={}){
  const [{scene,animations}]=await Promise.all([loadRig(),farmerReady()]);
  const root=new THREE.Group();root.name='farmer';
  const body=scene.clone(true);body.scale.setScalar(height/1.83);root.add(body);
  const bones=new Map();body.traverse(n=>{if(n.name)bones.set(n.name,n);});
  const mixer=new THREE.AnimationMixer(body),actions={};
  for(const clip of animations)actions[clip.name]=mixer.clipAction(clip);
- const worn=new Map();let current=null,token=0;
- async function dress(next){
-  const ok=validFarmerConfig(next).ok?next:DEFAULT_FARMER;
-  return await wearFiles(farmerFiles(ok))?(current=ok):current;
+ const worn=new Map(),patch=chestPatch(root,bones,height);let current=null,token=0,shirtFor=family;
+ // A new family shirt (the family's cut, colour or emblem changed): dress(config, family).
+ async function dress(next,familyNow=shirtFor){
+  const ok=validFarmerConfig(next).ok?next:DEFAULT_FARMER;shirtFor=familyNow;
+  if(!await wearFiles(farmerFiles(ok,{shirt:shirtFor?.shirt})))return current;
+  current=ok;dressShirt();return current;
+ }
+ // The family shirt worn: its meshes in the family's colour and the emblem patch on the chest; off: the patch goes.
+ function dressShirt(){
+  const on=current?.top===FAMILY_SHIRT;if(patch)patch.visible=false;
+  if(!on)return;
+  const file=farmerFiles({top:FAMILY_SHIRT},{shirt:shirtFor?.shirt})[0],meshes=worn.get(file)??[];
+  const colour=shirtFor?familyColour(shirtFor.emblem):'#efe4cc';
+  for(const m of meshes)m.material=shirtMaterial(colour);
+  if(patch&&shirtFor&&FAMILY_SHIRTS.includes(shirtFor.shirt)){patch.material.map=patchTexture(shirtFor.emblem);patch.material.needsUpdate=true;patch.visible=true;}
  }
  // The files themselves (the build's thumbnails and portraits wear one part at a time). False when a newer call came first.
  async function wearFiles(want){
@@ -87,6 +137,8 @@ export async function createFarmer(config=DEFAULT_FARMER,{height=FARMER_HEIGHT}=
   if(mine!==token)return false;
   for(const [file,meshes] of worn)if(!want.includes(file)){for(const m of meshes){m.removeFromParent();m.skeleton.dispose();}worn.delete(file);}
   for(const entry of loaded)if(entry){const [file,g]=entry;worn.set(file,wear(g,bones,body,file));}
+  // A part kept from before gets its own colours back (it may have been the family shirt).
+  for(const [file,meshes] of worn)if(!loaded.some(e=>e?.[0]===file))for(const m of meshes)if(m.material.name==='farmer-family-shirt')m.material=farmerMaterial('farmer',true);
   return true;
  }
  await dress(config);

@@ -591,7 +591,14 @@ export const FARMER_PARTS=Object.freeze(Object.fromEntries(MEASURED.map(([id,gro
  return [id,Object.freeze({id,group,slot:FARMER_GROUPS[group].slot,name,fit:FIT[fit],earned:FARMER_GROUPS[group].earned||Object.hasOwn(REWARD_TABLE,id),coversFace:flags.includes('c'),
   files:Object.freeze(files.split('+')),bytes,colour,style:style||id,glass:materials.includes('farmer-glass'),glow:materials.includes('farmer-glow')})];
 })));
-export const farmerPart=id=>typeof id==='string'&&Object.hasOwn(FARMER_PARTS,id)?FARMER_PARTS[id]:null;
+// The family shirt (21 Oct 2026, the owner: "Doe alles behalve 9", item 6): one plain top in the family's colour (its emblem's colour,
+// as its flag by the Family Hall), the emblem small on the chest. The family's leader or a co-leader picks its cut (FAMILY_SHIRTS: a
+// T-shirt, a polo shirt or a hoodie, the pack's own tops drawn in one colour), and every member can wear it in My farmer while they
+// are in that family. One part for all of them: 'family_shirt' (state.farmer.top), worn in the cut the family picked.
+export const FAMILY_SHIRT='family_shirt';
+export const FAMILY_SHIRTS=Object.freeze(['outwear_001','outwear_016','outwear_026']);
+export const FAMILY_SHIRT_PART=Object.freeze({...FARMER_PARTS.outwear_001,id:FAMILY_SHIRT,name:'Family shirt',fit:'farm',earned:true,family:true,style:FAMILY_SHIRT});
+export const farmerPart=id=>id===FAMILY_SHIRT?FAMILY_SHIRT_PART:typeof id==='string'&&Object.hasOwn(FARMER_PARTS,id)?FARMER_PARTS[id]:null;
 export const partsOfSlot=slot=>Object.values(FARMER_PARTS).filter(p=>p.slot===slot);
 
 // Everyone's farmer until they make their own: skin tone 2, a smile, brown hair, the denim dungarees and brown boots (all free).
@@ -641,8 +648,8 @@ export function wearPart(config,slot,id){
 }
 // The slots a part would take off if it were put on now (the creator says so on the part's picture).
 export const partTakesOff=(config,id)=>{const part=farmerPart(id);return part?FARMER_SLOTS.filter(slot=>slot!==part.slot&&partsClash(part,farmerPart(config?.[slot]))):[];};
-// The files a farmer wears, body first (farmer.js loads only these).
-export const farmerFiles=config=>FARMER_SLOTS.flatMap(slot=>farmerPart(config?.[slot])?.files??[]);
+// The files a farmer wears, body first (farmer.js loads only these). shirt: the family's cut, for the family shirt (else the T-shirt).
+export const farmerFiles=(config,{shirt=null}={})=>FARMER_SLOTS.flatMap(slot=>{const p=farmerPart(config?.[slot]);return p?.family&&FAMILY_SHIRTS.includes(shirt)?FARMER_PARTS[shirt].files:p?.files??[];});
 
 // What My farmer offers for free (21 Oct 2026, the owner: "maak bijna alle mijn boer items lockable, behalve huidskleuren en de basic
 // items"): the five skin tones and the basics, about the default farmer and one or two plain others a tab. Everything else My farmer
@@ -678,9 +685,11 @@ export function rewardProgress(id,state,farm={}){
 }
 export const rewardOpen=(id,state,farm={})=>{const p=rewardProgress(id,state,farm);return Boolean(p)&&p.count>=p.target;};
 // The earned parts a farm has: validFarmerConfig's owned, the same on the farm's page and on the server (farm: {level}).
-export const farmerOwned=(state,farm={})=>Object.keys(FARMER_REWARDS).filter(id=>rewardOpen(id,state,farm));
+// The family shirt: while the farm is in a family (state.family.familyId).
+export const farmerOwned=(state,farm={})=>[...Object.keys(FARMER_REWARDS).filter(id=>rewardOpen(id,state,farm)),...(typeof state?.family?.familyId==='string'&&state.family.familyId?[FAMILY_SHIRT]:[])];
 // The parts My farmer offers: the free ones and the rewards.
-export const farmerOffered=p=>Boolean(p)&&FARMER_OFFER.has(p.id);
+export const farmerOffered=p=>Boolean(p)&&(FARMER_OFFER.has(p.id)||p.family===true);
+// The pack's parts My farmer shows (its picture sheets hold these); the family shirt has a tile of its own.
 export const creatorParts=slot=>partsOfSlot(slot).filter(farmerOffered);
 // A saved farmer as stored: only its worn slots, as plain ids.
 export const cleanFarmer=config=>Object.fromEntries(FARMER_SLOTS.filter(slot=>typeof config?.[slot]==='string').map(slot=>[slot,config[slot]]));

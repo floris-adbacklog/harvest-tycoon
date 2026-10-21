@@ -15,6 +15,8 @@ import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
 import {farmNow} from './farm-client.js';
+import {keepFamilyShirt} from './family-shirt.js';
+import {FAMILY_SHIRTS} from './farmer-parts.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
 // The family emblems' names. 7 Oct 2026: the 33 new ones (farm-state.js). A game icon is called after its item; the five that are
@@ -185,6 +187,12 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  const shareEntry=()=>window.harvestChat&&view?.family?`<button type="button" class="family-share-entry family-share-chat" data-family-share ${disabled(!familyShareState(view.family,farmNow()).can)}>${art('chat')}<span><strong>Share in chat</strong><small data-family-share-note data-line="${esc(shareLine())}">${esc(shareLine())}</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`:'';
  // Anyone can bring a friend who is new to Harvest Tycoon (public/invite-ui.js), leader or not (bottom of Members).
  const friendEntry=`<button type="button" class="family-share-entry family-invite-friend" data-invite-friend>${art('invite-friends')}<span><strong>Invite a friend to Harvest Tycoon</strong><small>At level 10 you both get 150 diamonds</small></span><i data-lucide="chevron-right" data-line-icon></i></button>`;
+ // The family shirt (21 Oct 2026, the owner: "Doe alles behalve 9", item 6): the leader or a co-leader picks its cut, in the family's
+ // colour with its emblem (as on its flag); members wear it in My farmer. Only once supabase/family-shirt.sql has run (f.shirt there).
+ const SHIRT_NAMES={outwear_001:'Shirt',outwear_016:'Polo shirt',outwear_026:'Hoodie'};
+ const shirtPicker=f=>{const colour=(FAMILY_EMBLEMS.find(x=>x.id===f.emblem)??FAMILY_EMBLEMS[0]).color;
+  return `<section class="family-card family-shirt"><div><strong>Family shirt</strong><p>In your family's colour, with its emblem. Members can wear it in My farmer.</p></div>
+  <div class="family-shirt-cuts" role="group" aria-label="Family shirt">${[...FAMILY_SHIRTS,null].map(id=>`<button type="button" class="family-shirt-cut${id?'':' is-none'}" data-family-shirt="${id??''}" aria-pressed="${(f.shirt??null)===id}" style="--family-color:${colour}"><span class="family-shirt-swatch" aria-hidden="true"></span><span>${id?SHIRT_NAMES[id]:'None'}</span></button>`).join('')}</div></section>`;};
  // The gear in the header (settings): look and name, who can join, and leaving (quietly at the bottom).
  function settings(){
   const f=view.family,renameLater=f.renameAt>farmNow();
@@ -199,6 +207,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>
   ${f.mode==='open'||f.mode==='request'?`<section class="family-card family-open-row"><div><strong>Minimum level</strong><p>${f.mode==='open'?'Farmers below this level cannot join.':'Farmers below this level cannot ask to join.'} You can still invite anyone.</p></div><select data-family-min-level aria-label="Minimum level" ${disabled(false)}>${FAMILY_MIN_LEVELS.map(n=>`<option value="${n}" ${(f.minLevel??FAMILY_MIN_LEVEL)===n?'selected':''}>${n===FAMILY_MIN_LEVEL?`Any level (${n}+)`:`Level ${n}+`}</option>`).join('')}</select></section>`:''}
+  ${f.shirt!==undefined?shirtPicker(f):''}
   ${f.idleDays?`<section class="family-card family-open-row"><div><strong>Away too long</strong><p>${idleRule(f.idleDays)}</p></div><select data-family-idle-days aria-label="Away too long" ${disabled(false)}>${FAMILY_IDLE_DAYS.map(n=>`<option value="${n}" ${f.idleDays===n?'selected':''}>${n} days</option>`).join('')}</select></section>`:''}
   ${leave}`;
  }
@@ -264,6 +273,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   }
   content.querySelector('[data-family-mode]')?.addEventListener('change',event=>act({type:'family_join_mode',mode:event.currentTarget.value}));
   content.querySelector('[data-family-min-level]')?.addEventListener('change',event=>act({type:'family_min_level',level:Number(event.currentTarget.value)}));
+  content.querySelectorAll('[data-family-shirt]').forEach(b=>b.addEventListener('click',()=>{const shirt=b.dataset.familyShirt||null;if(shirt!==(view.family.shirt??null))void act({type:'family_shirt',shirt});}));
   content.querySelector('[data-family-idle-days]')?.addEventListener('change',event=>act({type:'family_idle_days',days:Number(event.currentTarget.value)}));
   inviteSearch.mount(content);bindEmblemPickers(content);
   refreshArt();if(focusId){const next=document.getElementById(focusId);next?.focus({preventScroll:true});if(next&&typeof selection==='number')try{next.setSelectionRange(selection,selection);}catch{}}
@@ -278,7 +288,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   if(busy)return;busy=true;generation++;error='';content.querySelectorAll('button').forEach(b=>b.disabled=true);
   let done=false;const names=[...namesIn(view),...inviteSearch.names()];
   // Join again's answer names the family: put in the farmer's language here, so the toast never translates the name (welcome-ui.js).
-  try{const result=await runAction(action);view=result.family;lastRead=Date.now();notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message,{names:[...names,...namesIn(view)]});if(result.completed)dialog.classList.add('family-celebrate');done=true;familyChanged();}
+  try{const result=await runAction(action);view=result.family;lastRead=Date.now();keepFamilyShirt(view);notify(action.type==='family_rejoin'&&view?.family?.name?t('Welcome back to {0}!',view.family.name):result.message,{names:[...names,...namesIn(view)]});if(result.completed)dialog.classList.add('family-celebrate');done=true;familyChanged();}
   catch(e){error=e.message;notify(error,{names});}
   finally{busy=false;render();refresh();}
   return done;
@@ -302,7 +312,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  async function load(force=false){
   if(busy||reading||!familyUnlocked(state)||!isReady()||!force&&Date.now()-lastRead<30000)return;
   reading=true;const ticket=generation;
-  try{const data=await window.parent.harvestBridge.request({operation:'family'});if(ticket!==generation)return;view=data.family;lastRead=Date.now();error='';
+  try{const data=await window.parent.harvestBridge.request({operation:'family'});if(ticket!==generation)return;view=data.family;lastRead=Date.now();error='';keepFamilyShirt(view);
    // Do not disturb a form while a farmer is typing into it.
    if(tab!=='sharing'&&(!content.contains(document.activeElement)||!(['INPUT','SELECT'].includes(document.activeElement.tagName)||document.activeElement.closest('[data-emblem-picker]'))))render();
   }catch(e){if(ticket===generation){error=e.message;lastRead=Date.now();render();}}finally{reading=false;refresh();}

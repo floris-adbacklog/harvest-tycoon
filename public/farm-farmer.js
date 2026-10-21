@@ -88,9 +88,9 @@ export const FARM_WALKERS=new Set();
 // scene: the farm's or the village's; walk: FARM_WALK or VILLAGE_WALK; ground(x, z): the height there; lite: phones (every other frame).
 // trips: whether they join in (the farm on a computer: game.js addFarmer; never on a phone, in lite mode or in the village). bench: the
 // farm's chair (FARM_BENCH, game.js places the model) for the evening, or null (the village); clock: the time now (the harness's).
-// name: 'your-farmer', or 'family-farmer' for a member's in the village.
-export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date(),name='your-farmer'}){
- const farmer=await createFarmer(config,{height:walk.height});
+// name: 'your-farmer', or 'family-farmer' for a member's in the village; family: the family shirt's {shirt, emblem} (farmer.js).
+export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date(),name='your-farmer',family=null}){
+ const farmer=await createFarmer(config,{height:walk.height,family});
  const root=farmer.root,{actions,mixer}=farmer;root.name=name;
  for(const name of ['walk','idle','look','relaxed','sit'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
  // The walk cycle covers 1.48 m of the pack's 1.83 m farmer: played at the speed that keeps the feet from sliding.

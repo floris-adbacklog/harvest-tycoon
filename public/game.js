@@ -161,11 +161,13 @@ const GESTURE_BEAT=300;
 async function openMyFarmer(){
  if(adminView)return null;
  try{
-  const {openFarmerCreator}=await import('./farmer-creator.js');
+  const [{openFarmerCreator},{familyShirt}]=await Promise.all([import('./farmer-creator.js'),import('./family-shirt.js')]);
+  // The family shirt (item 6): its cut and emblem, kept from the last Family read (or read once now).
+  const family=state.family?.familyId?await familyShirt(state.family.familyId):null;
   // The last gesture tried in the window, the farmer on the farm does once when it closes (item 4).
-  return await openFarmerCreator({config:farmerOf(state,farmerFarm()),owned:farmerOwned(state,farmerFarm()),state,farm:farmerFarm(),reducedMotion,onClose:gesture=>{if(gesture)setTimeout(()=>walker?.gesture?.(gesture),GESTURE_BEAT);},onSave:async config=>{
+  return await openFarmerCreator({config:farmerOf(state,farmerFarm()),owned:farmerOwned(state,farmerFarm()),state,farm:farmerFarm(),family,reducedMotion,onClose:gesture=>{if(gesture)setTimeout(()=>walker?.gesture?.(gesture),GESTURE_BEAT);},onSave:async config=>{
    await runAction({type:'farmer_wear',farmer:config});
-   void walker?.farmer.dress(farmerOf(state,farmerFarm()));
+   void walker?.farmer.dress(farmerOf(state,farmerFarm()),family);
   }});
  }catch(error){console.warn('My farmer could not open.',error);toast('My farmer could not open. Please try again.');return null;}
 }
@@ -413,7 +415,9 @@ async function addFarmer(){
   // The evening bench (item 3): the farm's chair at the edge of the loop, there once the farmer is (farm-farmer.js FARM_BENCH).
   let bench=null;
   if(!villageWorld&&models.has('chair_001')){const before=currentZone();zone('fields');cloneModel('chair_001',FARM_BENCH.x,FARM_BENCH.z,{height:FARM_BENCH.height,rotation:FARM_BENCH.turn+CHAIR_FACING});zone(before);bench=FARM_BENCH;}
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm()),trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench});farmerTrip=tripFor;
+  // The family shirt (item 6) is drawn in the family's cut, colour and emblem: kept from the last Family read, or read once.
+  const config=farmerOf(state,farmerFarm()),family=config.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family});farmerTrip=tripFor;
   if(villageWorld)void addFamilyFarmers(createFarmWalker,VILLAGE_FAMILY_WALKS);
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
@@ -427,7 +431,7 @@ const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=10*
 async function familyFarmers(){
  const familyId=state.family?.familyId,bridge=window.parent?.harvestBridge;if(!familyId||!bridge?.request)return [];
  try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<FAMILY_FARMERS_KEEP&&Array.isArray(kept.list))return kept.list;}catch{}
- const data=await bridge.request({operation:'family',farmers:true});
+ const data=await bridge.request({operation:'family',farmers:true});(await import('./family-shirt.js')).keepFamilyShirt(data?.family);
  const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string').sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(a.daysAway??0)-(b.daysAway??0))
   .slice(0,6).map(m=>({playerId:m.playerId,farmer:m.farmer&&validFarmerConfig(m.farmer).ok?cleanFarmer(m.farmer):null}));
  try{sessionStorage.setItem(FAMILY_FARMERS_KEY,JSON.stringify({familyId,at:Date.now(),list}));}catch{}
@@ -440,7 +444,8 @@ async function addFamilyFarmers(createFarmWalker,walks){
    await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1200));
    const walk=walks[i],xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    const ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
-   const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer'});
+   const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
+   const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family});
    other.playerId=member.playerId;familyWalkers.push(other);
   }
  }catch(error){console.warn('The family\'s farmers were skipped.',error);}

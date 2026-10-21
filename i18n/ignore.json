@@ -130,5 +130,11 @@
  "{0}: part {1} is not there exactly once",
  "{0}: unexpected quote",
  "Unknown season.",
- "Aa"
+ "Aa",
+ "family-shirt.sql: a family has a shirt that is no cut",
+ "family-shirt.sql: families.shirt is missing",
+ "family-shirt.sql: families.shirt is there with another type",
+ "family-shirt.sql: public.{0} is not the one this file expects (md5 {1}); read the live definition first",
+ "family-shirt.sql: the family row update is not where this file expects it",
+ "Spine1"
 ]

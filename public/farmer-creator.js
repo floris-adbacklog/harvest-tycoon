@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import {createFarmer} from './farmer.js';
-import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress} from './farmer-parts.js';
+import {createFarmer,familyColour} from './farmer.js';
+import {FAMILY_EMBLEMS} from './farm-state.js';
+import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress,FAMILY_SHIRT} from './farmer-parts.js';
 import {art} from './visual-icons.js';
 
 // My farmer (20 Oct 2026; your own character since 21 Oct 2026, the owner: "Doe alle 3"): put your farmer together from the pack's parts.
@@ -55,7 +56,8 @@ function addStylesheet(){
 // farmer here; the last one tried the farmer on the farm does once when the window closes (game.js). Nothing is saved. Not with
 // reduced motion (the farmer here stands still, and the farm has none).
 export const GESTURES=Object.freeze([{id:'wave',name:'Wave'},{id:'cheer',name:'Cheer'},{id:'dance',name:'Dance'}].map(Object.freeze));
-export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},onSave=async()=>{},onClose=()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
+// family: the family shirt's {shirt, emblem} (item 6; the Top tab then starts with it), or null.
+export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},family=null,onSave=async()=>{},onClose=()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
  addStylesheet();
  const saved=validFarmerConfig(config).ok?{...config}:{...DEFAULT_FARMER};
  let current={...saved},tab='body',busy=false;
@@ -85,7 +87,9 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
   const parts=creatorParts(tab).map((p,i)=>[p,i]).sort((a,b)=>FIT_ORDER.indexOf(a[0].fit)-FIT_ORDER.indexOf(b[0].fit)||a[1]-b[1]).map(([p])=>p);
   const none=REQUIRED_SLOTS.includes(tab)?'':`<button type="button" class="farmer-part is-none" data-part="" aria-pressed="${!current[tab]}" aria-label="None">${NONE}</button>`;
   grid.setAttribute('aria-label',TAB_NAMES[tab]);
-  grid.innerHTML=none+parts.map(p=>{const open=isOwned(p);return `<button type="button" class="farmer-part${open?'':' is-locked'}" data-part="${p.id}" aria-pressed="${current[tab]===p.id}" aria-label="${esc(open?TAB_NAMES[tab]:rewardText(p.id))}" style="${thumbStyle(tab,p.id)}">${open?'':`<span class="farmer-part-lock">${LOCK}</span>`}</button>`;}).join('');
+  // The family shirt first in Top (item 6): the family's colour with its emblem, for a farm in a family whose leader picked one.
+  const shirt=tab==='top'&&family?.shirt&&isOwned(farmerPart(FAMILY_SHIRT))?`<button type="button" class="farmer-part is-family" data-part="${FAMILY_SHIRT}" aria-pressed="${current.top===FAMILY_SHIRT}" aria-label="Family shirt" style="--family-color:${familyColour(family.emblem)}">${art((FAMILY_EMBLEMS.find(e=>e.id===String(family.emblem))??FAMILY_EMBLEMS[0]).icon,'farmer-family-emblem')}</button>`:'';
+  grid.innerHTML=none+shirt+parts.map(p=>{const open=isOwned(p);return `<button type="button" class="farmer-part${open?'':' is-locked'}" data-part="${p.id}" aria-pressed="${current[tab]===p.id}" aria-label="${esc(open?TAB_NAMES[tab]:rewardText(p.id))}" style="${thumbStyle(tab,p.id)}">${open?'':`<span class="farmer-part-lock">${LOCK}</span>`}</button>`;}).join('');
  }
  // Above the pictures, a goal and how far you are (the owner, 21 Oct 2026: the goal there, not a general line): what is tried on and
  // still locked; else, on a tab with things to earn, the one worn there (done) or the closest one still to earn. Or why the save failed.
@@ -105,7 +109,7 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));renderer.outputColorSpace=THREE.SRGBColorSpace;
  const scene=new THREE.Scene();scene.add(new THREE.HemisphereLight(0xfff6e6,0x9a8a6a,1.7));const sun=new THREE.DirectionalLight(0xffffff,1.9);sun.position.set(2.5,5,6);scene.add(sun);
  const camera=new THREE.PerspectiveCamera(24,1,.1,30);camera.position.set(0,1.15,5.2);camera.lookAt(0,.95,0);
- const farmer=await createFarmer(current,{height:1.83});scene.add(farmer.root);farmer.actions.idle?.play();
+ const farmer=await createFarmer(current,{height:1.83,family});scene.add(farmer.root);farmer.actions.idle?.play();
  let running=true,last=performance.now(),turn=-.35,move=null,moveLeft=0,lastMove=null;
  // The way back to facing you (turn 0, or a whole turn round) from where the slow turn is.
  const turnOf=t=>-(((t+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI);
