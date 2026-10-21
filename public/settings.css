@@ -94,3 +94,6 @@ html[data-portal] .settings-copy{display:none!important}
 #sound-dialog:not(.settings-one) #farmer-settings,#sound-dialog.settings-one #avatar-settings:not(.is-open)~#farmer-settings,#farmer-settings[hidden]{display:none}
 #farmer-settings{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:14px 0 4px}
 #farmer-settings p{margin:0;font-size:14px;color:#857660;flex:1 1 180px}
+/* My farmer belongs to the Avatar card (the owner, 21 Oct 2026: "onder kopje avatar"): the card's lower part, under a thin line. */
+#sound-dialog.settings-one #avatar-settings.is-open:has(+#farmer-settings:not([hidden])){margin-bottom:0;border-bottom:0;border-radius:18px 18px 0 0;padding-bottom:16px}
+#sound-dialog.settings-one #avatar-settings.is-open+#farmer-settings{margin:0 0 10px;padding:14px;border:1px solid #e8ded2;border-top:1px dashed #e3dad0;border-radius:0 0 18px 18px;background:#fbf8f2}
