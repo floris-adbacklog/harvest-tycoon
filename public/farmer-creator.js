@@ -110,7 +110,9 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));renderer.outputColorSpace=THREE.SRGBColorSpace;
  const scene=new THREE.Scene();scene.add(new THREE.HemisphereLight(0xfff6e6,0x9a8a6a,1.7));const sun=new THREE.DirectionalLight(0xffffff,1.9);sun.position.set(2.5,5,6);scene.add(sun);
  const camera=new THREE.PerspectiveCamera(24,1,.1,30);camera.position.set(0,1.15,5.2);camera.lookAt(0,.95,0);
- const farmer=await createFarmer(current,{height:1.83,family});scene.add(farmer.root);farmer.actions.idle?.play();
+ // A farmer that cannot load (no connection): the window goes again, with its context, and game.js says so.
+ let farmer;try{farmer=await createFarmer(current,{height:1.83,family});}catch(error){renderer.dispose();renderer.forceContextLoss();dialog.remove();throw error;}
+ scene.add(farmer.root);farmer.actions.idle?.play();
  let running=true,last=performance.now(),turn=-.35,move=null,moveLeft=0,lastMove=null;
  // The way back to facing you (turn 0, or a whole turn round) from where the slow turn is.
  const turnOf=t=>-(((t+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI);
@@ -146,9 +148,13 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
   if(t.classList.contains('close-dialog'))close();
  });
  dialog.addEventListener('close',()=>close());
- function close(){if(!running)return;running=false;farmer.dispose();renderer.dispose();if(dialog.open)dialog.close();dialog.remove();onClose(lastMove);}
+ // The preview's own WebGL context is let go at once (QA, 21 Oct 2026): a browser keeps about 16 at a time and, past that, takes the
+ // oldest away, the farm's own; after My farmer had opened that often in one visit the farm went blank. dispose() alone leaves the
+ // context for the garbage collector, which the ResizeObserver kept from it.
+ const resized=new ResizeObserver(size);
+ function close(){if(!running)return;running=false;resized.disconnect();farmer.dispose();renderer.dispose();renderer.forceContextLoss();if(dialog.open)dialog.close();dialog.remove();onClose(lastMove);}
  drawTabs();drawGrid();drawState();
- dialog.showModal();size();new ResizeObserver(size).observe(canvas);requestAnimationFrame(loop);
+ dialog.showModal();size();resized.observe(canvas);requestAnimationFrame(loop);
  return {dialog,close,config:()=>({...current}),farmer};
 }
 // A random farmer from the free parts that fit the farm's look (fit farm or plain): a skin tone, a friendly face, hair, clothes, shoes.

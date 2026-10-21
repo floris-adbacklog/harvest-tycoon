@@ -132,6 +132,10 @@ test('My farmer: a tab for every slot it offers, with words that are in every la
  assert.match(creator,/const tabs=CREATOR_TABS\.filter\(\(\[slot\]\)=>creatorParts\(slot\)\.length\);/,'a tab with nothing to offer yet is left out');
  assert.doesNotMatch(creator,/localStorage|sessionStorage|fetch\(|client\.|bridge/,'it saves only through onSave (the farm action)');
  assert.match(creator,/save\.disabled=busy\|\|!changed\(\)\|\|Boolean\(locked\);/,'nothing to save, or something not earned yet: no Save');
+ // Its preview's WebGL context goes when it closes (QA, 21 Oct 2026: after about 16 openings the browser took the farm's own away).
+ assert.match(creator,/function close\(\)\{if\(!running\)return;running=false;resized\.disconnect\(\);farmer\.dispose\(\);renderer\.dispose\(\);renderer\.forceContextLoss\(\);/);
+ assert.match(creator,/catch\(error\)\{renderer\.dispose\(\);renderer\.forceContextLoss\(\);dialog\.remove\(\);throw error;\}/,'also when the farmer cannot load');
+ assert.equal((creator.match(/new THREE\.WebGLRenderer/g)??[]).length,1);
  assert.doesNotMatch(creator,/ · /);
  const catalog=JSON.parse(read('i18n/catalog.json')),texts=new Set(Array.isArray(catalog)?catalog:Object.keys(catalog));
  for(const t of ['My farmer','Skin','Face','Hair','Hat','Glasses','Beard','Top','Trousers','Outfit','Costume','Mascot','Shoes','Socks','Gloves','Random','Save','Saving…','None','Close',
