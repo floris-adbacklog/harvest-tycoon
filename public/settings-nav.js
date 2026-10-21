@@ -2,7 +2,7 @@ import {refreshArt,art} from './visual-icons.js';
 import {settingsLink,settingsSlug} from './game-links.js';
 import {WIKI_COPY_ICON} from './wiki-link.js';
 
-// Settings as a short list (30 Sep 2026): your account stays on top; below it one row per part (Avatar, Email address, Sound, Chat,
+// Settings as a short list (30 Sep 2026): your account stays on top; below it one row per part (Profile: the avatar and your look; Email address, Sound, Chat,
 // Reminders, Farm app, Language, Privacy) that opens only that part, with a way back to the list. The parts themselves are
 // unchanged, so the code that fills or hides them keeps working; a hidden part simply has no row.
 // A link opens one part at once (4 Oct 2026, /settings/<part>, the chat's "Settings › Farm app" chip): openAt(id) before the dialog

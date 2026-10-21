@@ -42,7 +42,7 @@ export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
  const running=currentSeason(Date.now()),noApple=globalThis.document?.documentElement?.getAttribute?.('data-app-os')==='ios'&&!APPLE_SELLS_SEASON_PASS;
  offered.push(...SEASON_AVATARS.filter(a=>!locked(a.id,known)||(running?.id===a.season&&['soon','open','claim'].includes(seasonPhase(running,Date.now()))&&(!a.paid||!portalOff('payments')&&!noApple))));
  const picker=emblemPickerMarkup({emblems:owner?[...OWNER_AVATARS,...offered]:offered,checkedId:current.id,legend:'Choose your farmer avatar',nameOf:a=>labelOf(a,known),tile:tile(known),esc,field:'avatar',noun:'avatar',extraClass:'avatar-picker'});
- return `<div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-settings-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
+ return `<h3 class="settings-heading" id="avatar-settings-title">Profile</h3><div class="avatar-settings-header"><img id="avatar-preview" src="${current.src}" alt="${esc(current.name)}" width="80" height="80"><div><h3 id="avatar-card-title">Avatar</h3><p>Pick a face for your farm.</p></div></div><form id="avatar-form">${picker}<button type="submit" class="small-button avatar-save" disabled>Save avatar</button></form><p id="avatar-feedback" class="avatar-feedback" role="status" aria-live="polite"></p>`;
 }
 
 // A locked face can still be picked to see it large; it cannot be saved until it is earned (avatar-service.js checks that too). The

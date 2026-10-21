@@ -104,7 +104,7 @@ const initialWelcome=window.harvestInitialFarm.welcome;
 const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 // The admin view (3 Oct 2026, src/admin-view.js): an admin account's showcase farm, marked on the page by src/game-cloud.js before the
 // game starts. Nothing is played or counted there: no actions (farm-client.js), no sweeps, no pacing events, no Welcome back.
-// What the farmer wears (the Season Pass's looks, Oct 2026) and their face, for the pass window and Settings › Profile (season-ui.js).
+// What the farmer wears (the Season Pass's looks, Oct 2026) and their face, for the pass window and Settings › Your look (season-ui.js).
 window.harvestLook=window.harvestInitialFarm.profile?.look&&typeof window.harvestInitialFarm.profile.look==='object'?window.harvestInitialFarm.profile.look:{};
 window.harvestAvatarId=window.harvestInitialFarm.profile?.avatar_id??'default';
 const adminView=document.documentElement.hasAttribute('data-admin-view');

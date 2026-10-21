@@ -250,7 +250,9 @@ test('the review\'s fixes in windows: a button that is off is flat and faded, Se
  assert.match(nav,/for\(const p of parts\(\)\)p\.classList\.toggle\('is-open',p\.id===id\);\n  badge\(part\);/);
  assert.match(nav,/holder\.innerHTML=key\?art\(key,'dialog-badge'\):face\?/);
  assert.match(css,/#sound-dialog\.settings-one #sound-settings>\.sound-switch>span\{position:static;width:auto;height:auto;overflow:visible;clip:auto;/);
- assert.match(css,/#sound-dialog\.settings-one #avatar-settings\.is-open \.avatar-settings-header h3:not\(:has\(\.settings-copy\)\)\{display:none\}/);
+ // The Profile part (21 Oct 2026, was Avatar): the window says Profile, the avatar card keeps its own "Avatar"; Your look's card only there.
+ assert.doesNotMatch(css,/\.avatar-settings-header h3:not\(:has\(\.settings-copy\)\)\{display:none\}/);
+ assert.match(css,/#sound-dialog #look-settings\{display:none\}\n#sound-dialog\.settings-one #avatar-settings\.is-open~#look-settings:not\(\[hidden\]\)\{display:grid\}/);
  // The shop's tab says what it holds; the window keeps the owner's title.
  assert.match(farm,/<button type="button" data-shop-jump="shop-boosts" aria-controls="shop-boosts" aria-pressed="false"><i data-game-art="boost"><\/i><span>Power-ups<\/span><\/button>/);
  assert.match(farm,/<h2 id="boost-title">Boosts<\/h2>/);
