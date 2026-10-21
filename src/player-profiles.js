@@ -46,7 +46,7 @@ export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false
  // beside the name and a title under it; the badges of every season collected in their own row.
  const bg=lookBackground(player.look);
  return `<div class="farmer-identity${bg?' has-look-bg':''}"${bg?` style="--look-bg:url('${bg}')"`:''}><div class="farmer-avatar" aria-hidden="true">${framed(player.look,`<img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false">`)}</div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}${lookBadge(player.look)}</h3>${lookTitle(player.look)}<div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
- ${self?'<div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div>':''}
+ ${self?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div></div>':''}
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage,{village})}

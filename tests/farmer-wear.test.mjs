@@ -117,7 +117,7 @@ test('My farmer opens from Settings › Profile (under the avatar, which stays) 
  assert.match(game,/await runAction\(\{type:'farmer_wear',farmer:config\}\);/);
  assert.match(game,/farmerNews\(\);medalToast\(newMedals\(medalsBefore,state\)\);return result;\}/,'a goal reached: one toast after the action, as a new medal');
  assert.match(profiles,/function showMyFarmer\(id\)\{\n  const mine=window\.harvestMyFarmer;if\(id!==bridge\.playerId\|\|!mine\)return;/,'only on your own profile');
- assert.match(profiles,/\$\{self\?'<div class="farmer-mine" data-my-farmer hidden><\/div>/);
+ assert.match(profiles,/\$\{self\?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden><\/div>/);
  // The avatar picker is untouched.
  assert.doesNotMatch(read('public/avatar-settings.js'),/farmer-creator|harvestMyFarmer/);
  for(const copy of ['public/farmer-parts.js','supabase/functions/farm-api/farmer-parts.js'])assert.equal(read(copy),read('game/farmer-parts.js'),copy);

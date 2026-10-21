@@ -153,5 +153,14 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-mine[hidden]{display:none}
 .farmer-share{display:grid;gap:12px;margin:-8px 0 20px}
 .farmer-share-button{justify-self:start;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 18px}
+/* Your own profile's two buttons side by side and the same height (the owner, 21 Oct 2026), the share picture under them, full width;
+   stacked on a phone. */
+.farmer-own-actions{display:flex;flex-wrap:wrap;align-items:stretch;gap:12px;margin:-8px 0 20px}
+.farmer-own-actions .farmer-mine,.farmer-own-actions .farmer-share{margin:0}
+.farmer-own-actions .farmer-share{display:contents}
+.farmer-own-actions :is(.farmer-open-button,.farmer-share-button){min-height:52px;box-sizing:border-box}
+.farmer-own-actions .farmer-mine .farmer-open-button{height:100%}
+.farmer-own-actions .farm-share-box{flex:1 0 100%}
+@media(max-width:480px){.farmer-own-actions{flex-direction:column}.farmer-own-actions :is(.farmer-mine .farmer-open-button,.farmer-share-button){width:100%}}
 .farmer-share .farm-share-box{margin:0}
 @media(max-width:480px){.farmer-share-button{justify-self:stretch}}
