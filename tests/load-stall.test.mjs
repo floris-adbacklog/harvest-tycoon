@@ -312,7 +312,7 @@ test('the privacy policy says what the report holds, that it is not linked to th
  assert.match(storage,/<tr><td data-label="Name"><code>harvest-tycoon:load-stall<\/code><\/td><td data-label="What it does">Session storage: [^<]*/);
  assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: (1[5-9]|2\d|3[01]) October 2026/,'15 Oct 2026 or a later update');
  // 21 Oct 2026 (public/graphics-mode.js): the two graphics keys on the device are listed too.
- for(const key of ['harvest-tycoon:graphics','harvest-tycoon:graphics-run'])assert.match(storage,new RegExp(`<tr><td data-label="Name"><code>${key}</code></td><td data-label="What it does">Local storage: `),key);assert.doesNotMatch(policy,/ · /);
+ for(const key of ['harvest-tycoon:graphics-choice','harvest-tycoon:graphics-run'])assert.match(storage,new RegExp(`<tr><td data-label="Name"><code>${key}</code></td><td data-label="What it does">Local storage: `),key);assert.doesNotMatch(policy,/ · /);
 });
 // 15 Oct 2026, review fix: both store apps load this site, so from the site's release they send the report too, with no app update. The
 // owner's steps for their privacy answers (Play's Data safety, the App Store's App Privacy) are written down with the others.

@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {gpuName,shadowTrouble,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,
+import {gpuName,shadowTrouble,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,CRASHES_FOR_SIMPLE,OLD_GRAPHICS_KEY,
  GRAPHICS_KEY,RUN_KEY,HEALTHY_MS,RUN_MAX_AGE,GFX_MODES} from '../public/graphics-mode.js';
 import {noteOnDevice,LOAD_FAILED_KEY} from '../public/loading-screen.js';
 import {stallRow,STALL_KINDS,STALL_GFX} from '../supabase/functions/farm-api/load-stall-service.js';
@@ -47,6 +47,7 @@ test('a start that ended under the player is found once at the next start; one t
  markRun(s,{away:false},t0+11000);assert.ok(lastRunCrashed(s,t0+60000),'back in sight');
  assert.equal(lastRunCrashed(s,t0+RUN_MAX_AGE+1),null,'older than a day: not the last start');
  endRun(s);assert.equal(lastRunCrashed(s,t0+60000),null,'a minute of play or the page going takes the mark away');
+ const twice=store();markRun(twice,{stage:'farm',step:'code',crashes:1},t0);markRun(twice,{percent:50},t0+3000);assert.equal(lastRunCrashed(twice,t0+60000).crashes,1,'the count of starts that ended early stays on the mark');
  assert.equal(lastRunCrashed(store({[RUN_KEY]:'{oops'}),t0),null);assert.equal(lastRunCrashed(store({[RUN_KEY]:'[1]'}),t0),null);
  assert.equal(HEALTHY_MS,60000);
 });
@@ -69,9 +70,13 @@ test('public/game.js: the mode before anything is drawn, shadows only in full, t
  const game=read('public/game.js'),init=game.slice(game.indexOf('async function init(){'),game.indexOf('export const farmReady=init();'));
  assert.match(game,/const gpuHandheld=handheld\|\|mobileLayout\.matches\|\|matchMedia\('\(pointer: coarse\)'\)\.matches;/,'touch screens, even wide ones');
  // The last start's crash is read before this start marks its own, and before anything else of the start.
- const crash=init.indexOf('const crashed=lastRunCrashed(gfxStore);'),mark=init.indexOf("markRun(gfxStore,{stage:'farm'"),ui=init.indexOf('bindUI();updateUI();');
+ const crash=init.indexOf('const crashed=lastRunCrashed(gfxStore),'),mark=init.indexOf("markRun(gfxStore,{stage:'farm'"),ui=init.indexOf('bindUI();updateUI();');
  assert.ok(crash>0&&crash<mark&&mark<ui,'crash check, then the mark, then the UI');
- assert.match(init,/if\(crashed\)\{graphicsTrouble\(gfxStore\);noteOnDevice\(\{kind:'crash',/);
+ // One start that ended early is only a note; the second in a row switches simple on (owner, 21 Oct 2026: off unless real trouble).
+ assert.match(init,/const crashed=lastRunCrashed\(gfxStore\),crashes=crashed\?\(Number\(crashed\.crashes\)\|\|0\)\+1:0;\n  if\(crashed\)\{if\(crashes>=CRASHES_FOR_SIMPLE\)graphicsTrouble\(gfxStore\);noteOnDevice\(\{kind:'crash',/);
+ assert.equal(CRASHES_FOR_SIMPLE,2);assert.match(init,/,crashes,away:document\.hidden\}\);/,'the count rides on the new mark');
+ assert.ok(init.indexOf('gfxStore?.removeItem(OLD_GRAPHICS_KEY)')>=0&&init.indexOf('gfxStore?.removeItem(OLD_GRAPHICS_KEY)')<init.indexOf('graphicsChoice({storage:gfxStore'),'the first afternoon\'s choice is gone before it could be read');
+ assert.notEqual(GRAPHICS_KEY,OLD_GRAPHICS_KEY);
  assert.match(init,/const gpu=gpuName\(renderer\.getContext\(\)\);gfxMode=graphicsMode\(\{simple:graphicsSimple,gpu\}\);/);
  assert.match(init,/renderer\.shadowMap\.enabled=gfxMode==='full';/);assert.match(init,/sun\.castShadow=gfxMode==='full';/);
  assert.ok(init.indexOf("renderer.shadowMap.enabled=gfxMode==='full';")<init.indexOf('renderer.render('),'set before the first picture');

@@ -16,7 +16,7 @@ import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} fr
 import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure,noteOnDevice} from './loading-screen.js';
 import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
-import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY} from './graphics-mode.js';
+import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE} from './graphics-mode.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -2012,12 +2012,13 @@ async function init(){
  const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)],level:()=>levelProgress(state).level});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open   // the tips about later features from level 10 (13 Oct 2026)
  try{
   // Graphics (21 Oct 2026, public/graphics-mode.js): the last start that ended under the player (the app or the browser closed before a
-  // minute of play) makes this one simple, with a note for farm-api; then this start's own mark, which a minute of play or the page going
-  // takes away again.
-  const crashed=lastRunCrashed(gfxStore);
-  if(crashed){graphicsTrouble(gfxStore);noteOnDevice({kind:'crash',step:crashed.step??'code',percent:crashed.percent??0,stage:crashed.stage==='ready'?'ready':'farm',gpu:crashed.gpu??null,gfx:crashed.gfx??null,error:`[crash] The last start ended at ${crashed.percent??0}% without a minute of play.`});}
+  // minute of play) is a note for farm-api, and the second one in a row makes this start simple; then this start's own mark, which a
+  // minute of play or the page going takes away again, with the count so far.
+  try{gfxStore?.removeItem(OLD_GRAPHICS_KEY);}catch{}
+  const crashed=lastRunCrashed(gfxStore),crashes=crashed?(Number(crashed.crashes)||0)+1:0;
+  if(crashed){if(crashes>=CRASHES_FOR_SIMPLE)graphicsTrouble(gfxStore);noteOnDevice({kind:'crash',step:crashed.step??'code',percent:crashed.percent??0,stage:crashed.stage==='ready'?'ready':'farm',gpu:crashed.gpu??null,gfx:crashed.gfx??null,error:`[crash] The last start ended at ${crashed.percent??0}% without a minute of play.`});}
   endRun(gfxStore);graphicsSimple=graphicsChoice({storage:gfxStore,search:location.search}).simple;
-  markRun(gfxStore,{stage:'farm',step:'code',percent:Number($('load-progress')?.value)||0,gfx:graphicsSimple?'simple':'full',away:document.hidden});
+  markRun(gfxStore,{stage:'farm',step:'code',percent:Number($('load-progress')?.value)||0,gfx:graphicsSimple?'simple':'full',crashes,away:document.hidden});
   // Until the renderer names the chip, notes about this start carry the last start's chip and this start's planned mode.
   try{if(window.harvestStartup){window.harvestStartup.gpu=crashed?.gpu??null;window.harvestStartup.gfx=graphicsSimple?'simple':'full';}}catch{}
   bindUI();updateUI();
