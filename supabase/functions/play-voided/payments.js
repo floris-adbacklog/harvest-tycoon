@@ -17,10 +17,15 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
  '300':{diamonds:300,cents:999,price:'price_1UH5Gv04FdNTUSp4kabIfp0Y'},
  '1000':{diamonds:1000,cents:2499,price:'price_1UH5HL04FdNTUSp41DLz2C1B'}
 });
-// The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time worth €49.99 at the shop's own prices,
-// sold once per farmer for €4.99 (90% off), one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 500
-// for a diamond (coinsPerDiamond; never sold for money on their own), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server
-// takes the contents from the offer itself, never from the browser, and the "worth" line is always this sum.
+// The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time at the shop's own prices, sold once per
+// farmer for €4.99, one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 500 for a diamond
+// (coinsPerDiamond; never sold for money on their own), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server takes the
+// contents from the offer itself, never from the browser, and the "worth" line is always this sum.
+// How much is in it (21 Oct 2026, the owner: "kiezen uit 33%, 50% of 90% korting"): the price stays €4.99 (the same store product
+// everywhere), the admin picks the discount and the contents follow it: worth €49.99 at 90% (as before), €9.98 at 50%, €7.45 at 33%
+// (OFFER.discounts: valueCents is the worth checked, target the diamonds the Admin panel fills to). Nothing stores the discount: an
+// offer is valid when its worth is within 2% of one of the three (the bands never overlap), the same rule in SQL offer_post
+// (supabase/offer-discount.sql), and the screens show the real worth of what is in it, so the discount follows from that.
 // The admin picks the level it opens at per offer: level 10 at the earliest (minLevel, 13 Oct 2026; level 14 before, as the shop and
 // boosts open at 10 since 5 Oct), 14 unless the admin picks another (defaultLevel), up to 200 (supabase/offer-level-10.sql). The
 // Starter Pack keeps its own level 14 (STARTER_LEVEL).
@@ -29,29 +34,42 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 // the same rate in offer_post. (The coin pack in Power-ups has its own rule, game/farm-state.js COIN_PACK.)
 export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:500,coinsPerDiamondBefore:200,
  diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500,60:3000,90:4500}),target:5000,maxDiamonds:20000,maxCoins:10000000,
- minLevel:10,defaultLevel:14,maxLevel:200});
+ minLevel:10,defaultLevel:14,maxLevel:200,
+ discounts:Object.freeze({90:Object.freeze({valueCents:4999,target:5000}),50:Object.freeze({valueCents:998,target:1000}),33:Object.freeze({valueCents:745,target:750})}),
+ defaultDiscount:90});
+// The discounts, largest first (90, 50, 33).
+export const OFFER_DISCOUNTS=Object.freeze(Object.keys(OFFER.discounts).map(Number).sort((a,b)=>b-a));
 // What an offer is worth, in euro cents at the shop's prices.
 export function offerValueCents({diamonds=0,coins=0,vipDays=0}={},coinsPerDiamond=OFFER.coinsPerDiamond){
  return Math.round((Number(diamonds)+Number(coins)/coinsPerDiamond+(OFFER.vipDiamonds[vipDays]??0))*OFFER.diamondCents);
 }
+// The discount an offer of this worth was made at (90, 50 or 33), or null when it is worth none of them (within 2%).
+export const offerDiscountOf=value=>OFFER_DISCOUNTS.find(d=>Math.abs(value-OFFER.discounts[d].valueCents)<=OFFER.discounts[d].valueCents*0.02)??null;
+const offerWorths=()=>OFFER_DISCOUNTS.slice().reverse().map(d=>`€${(OFFER.discounts[d].valueCents/100).toFixed(2)}`);
 // VIP of 60 or 90 days (30 Sep 2026) is two or three of the shop's 30-day plan.
-// A valid offer: whole amounts, VIP of 7, 30, 60 or 90 days or none, something in it, and worth €49.99 (within 2%, so round numbers fit).
+// A valid offer: whole amounts, VIP of 7, 30, 60 or 90 days or none, something in it, and worth €7.45, €9.98 or €49.99 (within 2%, so
+// round numbers fit).
 export function offerProblem({diamonds=0,coins=0,vipDays=0}={},coinsPerDiamond=OFFER.coinsPerDiamond){
  if(![diamonds,coins,vipDays].every(Number.isInteger))return 'Use whole numbers.';
  if(diamonds<0||diamonds>OFFER.maxDiamonds||coins<0||coins>OFFER.maxCoins||!Object.hasOwn(OFFER.vipDiamonds,vipDays)&&vipDays!==0)return 'Choose amounts within the limits.';
  if(!diamonds&&!coins&&!vipDays)return 'Put something in the offer.';
  const value=offerValueCents({diamonds,coins,vipDays},coinsPerDiamond);
- if(Math.abs(value-OFFER.valueCents)>OFFER.valueCents*0.02)return `The offer must be worth €49.99; it is worth €${(value/100).toFixed(2)}.`;
+ if(offerDiscountOf(value)==null){const w=offerWorths();return `The offer must be worth ${w.slice(0,-1).join(', ')} or ${w.at(-1)}; it is worth €${(value/100).toFixed(2)}.`;}
  return null;
 }
 // A paid offer (a checkout, a Google Play or Kongregate purchase) may come from an offer made at 200 coins a diamond, before 20 Oct 2026:
 // a farmer who paid for it later still gets it. Its contents come from the offer row, never from the browser.
 export const paidOfferProblem=purchase=>{const contents={diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0};
  return offerProblem(contents)&&offerProblem(contents,OFFER.coinsPerDiamondBefore);};
-// The amounts that make €49.99 for the kinds chosen: VIP takes its share, diamonds and coins split the rest evenly.
-export function offerFill({diamonds=false,coins=false,vipDays=0}={}){
- const rest=OFFER.target-(OFFER.vipDiamonds[vipDays]??0);
- if(!diamonds&&!coins)return {diamonds:0,coins:0,vipDays};
+// The VIP lengths that fit an offer at this discount: VIP worth less than the whole offer, so diamonds or coins fill the rest (at 33% and
+// 50% only 7 days; 30 days alone is already worth €14.97).
+export const offerVipFits=(vipDays,discount=OFFER.defaultDiscount)=>!vipDays||(OFFER.vipDiamonds[vipDays]??Infinity)<(OFFER.discounts[discount]??OFFER.discounts[OFFER.defaultDiscount]).target;
+// The amounts that make the worth of the discount chosen for the kinds chosen: VIP takes its share, diamonds and coins split the rest
+// evenly. VIP that does not fit the discount (offerVipFits) leaves both at 0, which is no valid offer.
+export function offerFill({diamonds=false,coins=false,vipDays=0,discount=OFFER.defaultDiscount}={}){
+ const target=(OFFER.discounts[discount]??OFFER.discounts[OFFER.defaultDiscount]).target;
+ const rest=target-(OFFER.vipDiamonds[vipDays]??0);
+ if(!diamonds&&!coins||rest<=0)return {diamonds:0,coins:0,vipDays};
  const d=diamonds?(coins?Math.round(rest/2/50)*50:rest):0;
  return {diamonds:d,coins:coins?(rest-d)*OFFER.coinsPerDiamond:0,vipDays};
 }

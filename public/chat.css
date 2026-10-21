@@ -357,7 +357,7 @@ span.chat-avatar{cursor:default}
 .chat-request.chat-family-share.is-gone .chat-request-label{color:#6b6450}
 .chat-family-share.is-gone .chat-share-emblem>.family-emblem{filter:saturate(.35);opacity:.7}
 .chat-request.chat-family-share.is-gone .chat-share-name{color:#6b6450}
-/* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99). */
+/* The admin's special offer (src/admin-dashboard.js): what is in it, the amounts, the worth line (red while it is not €49.99, €9.98 or €7.45). */
 .admin-offer-kinds{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px;color:#5e523a;font:700 14px 'DM Sans',sans-serif}
 .admin-offer-kinds label{display:inline-flex;align-items:center;gap:6px}
 .admin-offer-kinds input[type=checkbox]{width:18px;height:18px;accent-color:#615742}

@@ -231,7 +231,7 @@ test('the wiki: a breadcrumb for search engines on every topic page, og:url and 
   assert.deepEqual(Object.entries(PAYMENT_PACKS).filter(([,p])=>!p.coins).map(([,p])=>[p.diamonds,`€${(p.cents/100).toFixed(2)}`]),DIAMOND_PACKS.map(p=>[p.amount,p.price]),'the shop and the catalogue agree');
   assert.ok(price.includes(`a one-time Starter Pack for 7 days from level ${STARTER_LEVEL} (${PAYMENT_PACKS.starter.diamonds} diamonds and ${PAYMENT_PACKS.starter.coins.toLocaleString('en-GB')} coins for €2.99)`));
   assert.equal(PAYMENT_PACKS.starter.cents,299);assert.equal(STARTER_WINDOW,7*864e5);
-  assert.ok(price.includes('a special offer from level 10, once per farmer (diamonds, coins or VIP worth €49.99 for €4.99)'));assert.equal(OFFER.cents,499);assert.equal(OFFER.valueCents,4999);
+  assert.ok(price.includes('a special offer from level 10, once per farmer (diamonds, coins or VIP worth €7.45, €9.98 or €49.99 at shop prices, for €4.99)'));assert.equal(OFFER.cents,499);assert.equal(OFFER.valueCents,4999);
   assert.match(read('supabase/special-offer.sql'),/min_level integer not null default 14 check \(min_level between 10 and 200\)/,'the special offer opens at level 10 at the earliest (13 Oct 2026)');
   assert.match(read('supabase/offer-level-10.sql'),/add constraint harvest_offers_min_level_check check \(min_level between 10 and 200\);/);assert.equal(OFFER.minLevel,10);
   if(passOnSale())assert.ok(price.includes(`seasonal passes such as the ${PASS.name} (€${(PASS.cents/100).toFixed(2)} from level ${PASS.level},`));

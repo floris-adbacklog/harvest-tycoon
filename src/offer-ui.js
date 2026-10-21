@@ -1,8 +1,8 @@
 import {fitsDevice} from './popup-ui.js';
 import {shopPrice,shopWorth} from '../public/android.js';
 
-// The special offer (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP time worth €49.99 at the shop's own
-// prices, for €4.99, once per farmer, from the level the admin picks (14 unless changed, 10 at the earliest since 13 Oct 2026,
+// The special offer (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP time worth €49.99, €9.98 or €7.45 at the
+// shop's own prices (90%, 50% or 33% off, the admin's pick since 21 Oct 2026), for €4.99, once per farmer, from the level the admin picks (14 unless changed, 10 at the earliest since 13 Oct 2026,
 // supabase/offer-level-10.sql; never in the iPhone app until Apple sells it, game/payments.js APPLE_SELLS_OFFER). The admin puts one together in the Admin panel; the server's catalogue says
 // which offer runs for this farm (diamond-checkout), so this screen needs no request of its own at the start: it reads the
 // catalogue the Starter Pack already asks for (starter-pack-ui.js, the harvest-catalog event). A big window on a computer or
@@ -21,7 +21,8 @@ export function offerParts(offer){
   ?{...p,amount:'VIP',detail:`${offer.vipDays} days`}
   :{...p,amount:number(offer[p.key]),detail:p.label});
 }
-// "Worth" is always the shop price of what is in it (game/payments.js OFFER.valueCents); the discount follows from it.
+// "Worth" is always the shop price of what is in it (game/payments.js offerValueCents, sent by diamond-checkout); the discount
+// follows from it (90, 50 or 33 since 21 Oct 2026).
 export const offerDiscount=offer=>Math.round((1-offer.cents/offer.valueCents)*100);
 // Not on the water or straight after it (14 Oct 2026, the owner on an iPhone): the offer opened by itself 0-2 s after the pond or the
 // lake closed, over the farm the player had just come back to; it now waits this long after the fishing screen was last seen.
@@ -120,9 +121,10 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  }
  // The admin panel's Preview (src/admin-dashboard.js): the window with the amounts being put together, which cannot be bought;
  // closing it brings back the offer that runs now.
- function preview({diamonds=0,coins=0,vipDays=0,hours=48}={}){
+ // valueCents: the worth of those amounts (game/payments.js offerValueCents, from the Admin panel).
+ function preview({diamonds=0,coins=0,vipDays=0,valueCents=4999,hours=48}={}){
   if(!offer?.preview)live=offer;
-  offer={id:'preview',preview:true,diamonds,coins,vipDays,audience:'all',bought:false,cents:499,valueCents:4999,endsAt:Date.now()+offset+hours*3600000};
+  offer={id:'preview',preview:true,diamonds,coins,vipDays,audience:'all',bought:false,cents:499,valueCents,endsAt:Date.now()+offset+hours*3600000};
   open();
  }
  dialog.addEventListener('close',()=>{if(!offer?.preview)return;offer=live;live=null;if(offer)draw();render();});

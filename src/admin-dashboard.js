@@ -9,7 +9,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
-import {OFFER,offerValueCents,offerProblem,offerFill,APPLE_SELLS_OFFER} from '../game/payments.js';
+import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerProblem,offerFill,offerDiscountOf,offerVipFits,APPLE_SELLS_OFFER} from '../game/payments.js';
 import {avatarImage} from '../public/player-avatars.js';
 import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
@@ -68,12 +68,15 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
   // Purchases (27 Sep 2026, the admin only): every checkout, paid or not, newest first.
   +'</div><div data-admin-panel="purchases" hidden>'
-  // Special offers (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP worth €49.99 at shop prices, for €4.99,
-  // once per farmer, from the level the admin picks: 14 unless changed, 10 at the earliest (13 Oct 2026, OFFER.minLevel,
-  // supabase/offer-level-10.sql). Ticking a kind fills in amounts worth €49.99; they can be changed while the worth stays
-  // within 2%. One offer at a time: a new one ends the one running now.
+  // Special offers (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP at shop prices, for €4.99, once per farmer,
+  // from the level the admin picks: 14 unless changed, 10 at the earliest (13 Oct 2026, OFFER.minLevel, supabase/offer-level-10.sql).
+  // The discount (21 Oct 2026, game/payments.js OFFER.discounts): 90% off is worth €49.99 (the default, as before), 50% €9.98, 33%
+  // €7.45; the price stays €4.99. Ticking a kind fills in amounts worth that; they can be changed while the worth stays within 2%
+  // of one of the three. VIP that is worth more than the whole offer cannot be picked (offerVipFits). One offer at a time: a new one
+  // ends the one running now.
   +'<section class="admin-card" id="admin-offers"><h3>'+art('diamonds')+'Special offer</h3><form id="admin-offer-form" class="admin-news admin-offer">'
-  +'<div class="admin-offer-kinds"><label><input type="checkbox" id="admin-offer-has-diamonds" checked> Diamonds</label><label><input type="checkbox" id="admin-offer-has-coins"> Coins</label>'
+  +'<div class="admin-offer-kinds"><label>Discount<select id="admin-offer-discount">'+OFFER_DISCOUNTS.map(d=>`<option value="${d}"${d===OFFER.defaultDiscount?' selected':''}>${d}% off, worth €${(OFFER.discounts[d].valueCents/100).toFixed(2)}</option>`).join('')+'</select></label>'
+  +'<label><input type="checkbox" id="admin-offer-has-diamonds" checked> Diamonds</label><label><input type="checkbox" id="admin-offer-has-coins"> Coins</label>'
   +'<label>VIP<select id="admin-offer-vip"><option value="0">None</option><option value="7">7 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></label></div>'
   +'<div class="admin-popup-fields"><label>Diamonds<input id="admin-offer-diamonds" type="number" min="0" max="'+OFFER.maxDiamonds+'" step="50" inputmode="numeric"></label>'
   +'<label>Coins<input id="admin-offer-coins" type="number" min="0" max="'+OFFER.maxCoins+'" step="1000" inputmode="numeric"></label>'
@@ -83,7 +86,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>From level<input id="admin-offer-level" type="number" min="'+OFFER.minLevel+'" max="'+OFFER.maxLevel+'" step="1" value="'+OFFER.defaultLevel+'" inputmode="numeric"></label>'
   +'<label>Runs for<select id="admin-offer-hours"><option value="24">24 hours</option><option value="48" selected>48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="336">14 days</option></select></label></div>'
   +'<p class="admin-offer-worth" id="admin-offer-worth"></p>'
-  +'<p class="admin-popup-note">Always €4.99 for what costs €49.99 in the shop (a diamond as in the 500 pack, 500 coins a diamond (50,000 coins = 100 diamonds), VIP at its diamond price). Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.'
+  +'<p class="admin-popup-note">Always €4.99. The discount sets what is in it, at shop prices: 90% off is worth €49.99, 50% off €9.98, 33% off €7.45 (a diamond as in the 500 pack, 500 coins a diamond (50,000 coins = 100 diamonds), VIP at its diamond price; at 50% and 33% only VIP 7 days fits). Farmers see the real worth and discount. Every farmer from the level above can buy it once. It opens by itself once per device, when nothing else is open, and then waits next to the diamonds until it ends.'
   // The iPhone app shows no offer until Apple sells special_offer (game/payments.js APPLE_SELLS_OFFER, 13 Oct 2026).
   +(APPLE_SELLS_OFFER?'':' The iPhone app does not show it until Apple has approved it as an in-app purchase.')+'</p>'
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'
@@ -584,19 +587,26 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  function offerWorth(){
   const o=offerDraft(),problem=offerProblem(o),line=$o('worth');
   $o('diamonds').disabled=!$o('has-diamonds').checked;$o('coins').disabled=!$o('has-coins').checked;
-  line.textContent=problem??`${offerText(o)} · worth ${euro(offerValueCents(o))} · sells for ${euro(OFFER.cents)}`;line.classList.toggle('is-wrong',Boolean(problem));
+  const value=offerValueCents(o);
+  line.textContent=problem??`${offerText(o)}, worth ${euro(value)}, sells for ${euro(OFFER.cents)} (${offerDiscountOf(value)}% off)`;line.classList.toggle('is-wrong',Boolean(problem));
   dialog.querySelector('#admin-offer-form [type="submit"]').disabled=Boolean(problem);$o('preview').disabled=Boolean(problem);
  }
- function offerRefill(){const o=offerFill({diamonds:$o('has-diamonds').checked,coins:$o('has-coins').checked,vipDays:Number($o('vip').value)||0});$o('diamonds').value=o.diamonds||'';$o('coins').value=o.coins||'';offerWorth();}
- ['has-diamonds','has-coins','vip'].forEach(id=>$o(id).addEventListener('change',offerRefill));
+ function offerRefill(){
+  // VIP worth more than the whole offer at this discount (30 days and longer at 50% and 33%) cannot be picked.
+  const discount=Number($o('discount').value)||OFFER.defaultDiscount;
+  for(const option of $o('vip').options)option.disabled=!offerVipFits(Number(option.value),discount);
+  if(!offerVipFits(Number($o('vip').value)||0,discount))$o('vip').value='0';
+  const o=offerFill({diamonds:$o('has-diamonds').checked,coins:$o('has-coins').checked,vipDays:Number($o('vip').value)||0,discount});$o('diamonds').value=o.diamonds||'';$o('coins').value=o.coins||'';offerWorth();
+ }
+ ['discount','has-diamonds','has-coins','vip'].forEach(id=>$o(id).addEventListener('change',offerRefill));
  ['diamonds','coins'].forEach(id=>$o(id).addEventListener('input',offerWorth));
  offerRefill();
- $o('preview').onclick=()=>window.harvestOffer?.preview({...offerDraft(),hours:Number($o('hours').value)});
+ $o('preview').onclick=()=>{const o=offerDraft();window.harvestOffer?.preview({...o,valueCents:offerValueCents(o),hours:Number($o('hours').value)});};
  async function showOffers(){
   const list=$o('list');if(!bridge.chat?.offerList)return;
   try{
    const offers=await bridge.chat.offerList();list.hidden=!offers.length;
-   list.innerHTML=offers.map(o=>`<li><span class="admin-recent-copy"><strong>${esc(offerText(o))}</strong><small>${esc(POPUP_AUDIENCES[o.audience]??o.audience)} · from level ${o.minLevel} · ${o.active?`until ${fmtDate(o.endsAt)}`:'ended'} · bought by ${number(o.bought)} farmer${o.bought===1?'':'s'}</small></span>${o.active?`<button type="button" class="small-button" data-offer-stop="${esc(o.id)}">Stop</button>`:''}</li>`).join('');
+   list.innerHTML=offers.map(o=>`<li><span class="admin-recent-copy"><strong>${esc(offerText(o))}, worth ${euro(offerValueCents(o))}</strong><small>${esc(POPUP_AUDIENCES[o.audience]??o.audience)} · from level ${o.minLevel} · ${o.active?`until ${fmtDate(o.endsAt)}`:'ended'} · bought by ${number(o.bought)} farmer${o.bought===1?'':'s'}</small></span>${o.active?`<button type="button" class="small-button" data-offer-stop="${esc(o.id)}">Stop</button>`:''}</li>`).join('');
   }catch{list.hidden=true;}
  }
  $o('list').addEventListener('click',async event=>{
@@ -608,7 +618,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  $o('form').addEventListener('submit',async event=>{
   event.preventDefault();const o=offerDraft();if(offerProblem(o))return;
   const hours=Number($o('hours').value),time=$o('hours').options[$o('hours').selectedIndex].text;
-  if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
+  if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} (worth ${euro(offerValueCents(o))}) for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
   try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||OFFER.defaultLevel,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
   catch(error){$o('status').textContent=why(error);}
   void showOffers();

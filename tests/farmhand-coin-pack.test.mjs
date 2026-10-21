@@ -79,7 +79,7 @@ test('the special offer values coins at 500 a diamond',()=>{
  assert.equal(OFFER.coinsPerDiamond,500);
  assert.deepEqual(offerFill({diamonds:true,coins:true,vipDays:60}),{diamonds:1000,coins:500000,vipDays:60});
  assert.equal(offerProblem({diamonds:1000,coins:500000,vipDays:60}),null);
- assert.match(offerProblem({diamonds:1000,coins:200000,vipDays:60})??'',/worth €49.99/,'the old mix is no longer worth €49.99');
+ assert.match(offerProblem({diamonds:1000,coins:200000,vipDays:60})??'',/must be worth .*€49\.99; it is worth €43\.91/,'the old mix is no longer worth €49.99');
  assert.equal(offerValueCents({coins:500000}),offerValueCents({diamonds:1000}));
  // The offer window's fine print names the same rate (the coin pack in Power-ups has its own).
  assert.match(read('src/offer-ui.js'),new RegExp(`Worth: diamonds and VIP at shop prices, coins at ${OFFER.coinsPerDiamond} a diamond\\.`));
