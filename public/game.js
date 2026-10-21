@@ -109,8 +109,6 @@ const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 // What the farmer wears (the Season Pass's looks, Oct 2026) and their face, for the pass window and Settings › Profile (season-ui.js).
 window.harvestLook=window.harvestInitialFarm.profile?.look&&typeof window.harvestInitialFarm.profile.look==='object'?window.harvestInitialFarm.profile.look:{};
 window.harvestAvatarId=window.harvestInitialFarm.profile?.avatar_id??'default';
-// The events this farmer finished (player_stats.events_finished): the Event champion's hat for your farmer opens with them, as the avatar.
-const finishedEvents=Number(window.harvestInitialFarm.profile?.events_finished)||0;
 const adminView=document.documentElement.hasAttribute('data-admin-view');
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
@@ -156,22 +154,26 @@ let herd=null;   // the farm's moving animals (farm-animals.js, 20 Oct 2026), on
 let walker=null;   // your own farmer walking on the farm or in the village (farm-farmer.js, 20 Oct 2026), once they have come
 // A tap on your own farmer (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat"): it hops, then your
 // profile opens (the same as the profile button; window.harvestProfiles is the cloud script's, the player id the page's bridge).
-// What My farmer needs to know of this farm: its level and the events it finished (farmer-parts.js farmerOwned, the same on the server).
-const farmerFarm=()=>({level:levelProgress(state).level,events:finishedEvents});
 // My farmer (21 Oct 2026, the owner: "Doe alle 3"): put your own farmer together (public/farmer-creator.js, loaded when it opens). Save is
 // the farm action farmer_wear; the farmer on the farm or in the village changes at once. Opened from Settings › Profile, your own profile
 // (window.harvestMyFarmer) and the harness (?open=farmer). Not in the admin view: nothing is saved there.
 async function openMyFarmer(){
  if(adminView)return null;
  try{
-  const {openFarmerCreator}=await import('./farmer-creator.js'),farm=farmerFarm();
-  return await openFarmerCreator({config:farmerOf(state,farm),owned:farmerOwned(state,farm),reducedMotion,onSave:async config=>{
-   await runAction({type:'farmer_wear',farmer:config,events:finishedEvents});
-   void walker?.farmer.dress(farmerOf(state,farmerFarm()));
+  const {openFarmerCreator}=await import('./farmer-creator.js');
+  return await openFarmerCreator({config:farmerOf(state),owned:farmerOwned(state),state,reducedMotion,onSave:async config=>{
+   await runAction({type:'farmer_wear',farmer:config});
+   void walker?.farmer.dress(farmerOf(state));
   }});
  }catch(error){console.warn('My farmer could not open.',error);toast('My farmer could not open. Please try again.');return null;}
 }
 if(!adminView)window.harvestMyFarmer={open:openMyFarmer};
+// A goal of My farmer reached (a hat or a costume to wear now): one short toast after the action that reached it, as a new medal gets one.
+let farmerKnown=new Set(farmerOwned(state));
+function farmerNews(){
+ const now=farmerOwned(state),known=farmerKnown;farmerKnown=new Set(now);
+ if(known&&!adminView&&now.some(id=>!known.has(id)))toast('Something new to wear in My farmer.');
+}
 function tapOwnFarmer(){walker?.react();const me=window.parent?.harvestBridge?.playerId;if(me&&window.harvestProfiles)setTimeout(()=>window.harvestProfiles.open(me,{back:null}),450);}
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
@@ -204,7 +206,7 @@ let sessionTracked=false;
 // stands (review fix: step 7's "Tap Buildings." came with it, under the card), and the guide's own pointer waits for the card (beginner-ui.js quiet).
 const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')&&!coach.active});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});farmerNews();medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
 function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
@@ -388,7 +390,7 @@ async function addFarmer(){
    const {groundUnder}=await import('./village-scene.js'),xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
   }
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm())});
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state)});
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one

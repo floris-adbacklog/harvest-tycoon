@@ -305,9 +305,6 @@ Deno.serve(async(req)=>{
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
-   // Your own farmer's clothes (21 Oct 2026, farm-state.js wearFarmer): the events this farmer finished are the server's own count
-   // (player_stats.events_finished, read above), never the page's; it opens the Event champion's part as it opens that avatar.
-   if(body.action&&typeof body.action==='object'&&body.action.type==='farmer_wear')body.action={...body.action,events:Number(profile?.events_finished)||0};
    const before=snapshot(state);
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
    // Invite a friend: the action that brings an invited farm to level 10 pays its reward in the same save.

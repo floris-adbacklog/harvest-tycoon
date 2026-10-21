@@ -13,6 +13,7 @@ import {VILLAGE_SHOP,LANDMARK_COINS_PER_DIAMOND,landmarkFullCost} from './farm-s
 import {villageLine} from './village-shop-ui.js';
 import {helpCoins,maxShare,SHARE_LIMIT,REQUEST_DAYS} from './social-ui.js';
 import {PLAYER_AVATARS,avatarGoal} from './player-avatars.js';
+import {FARMER_REWARDS} from './farmer-parts.js';
 import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_HOUR_POOLS,EVENT_GOAL_GROUPS} from './event-goals.js';
 import {HOUR_EVENT_REWARDS,eventPrizes} from './farm-state.js';
@@ -44,8 +45,9 @@ export const WIKI_TOPICS=Object.freeze([
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
 // The Avatars section of Account and settings. On CrazyGames the one earned with invited friends is left out (no invites there).
-// My farmer (21 Oct 2026, the owner: "Doe alle 3"): your own 3D farmer, beside the avatar that stays your picture (public/farmer-creator.js).
-const farmerBody=()=>`<p>My farmer is the farmer who walks on your farm and in the village. Tap them: they hop and your profile opens. Open My farmer in Settings, under your avatar, or on your own profile, and tap Save.</p><p>Skin, face, hair, glasses, beards and clothes are free. Hats and costumes you earn: the straw hat at level 2, and every avatar you earn brings one too, the Ranch owner a cowboy hat, the Beekeeper a bee suit and the Lantern keeper a pumpkin head. Until then one shows a lock: you can try it on and see how to earn it. Your avatar stays your picture in the chat, on the leaderboards and in your family.</p>`;
+// My farmer (21 Oct 2026, the owner: "Doe alle 3"): your own 3D farmer, beside the avatar that stays your picture (public/farmer-creator.js);
+// its hats and costumes have goals of their own (farmer-parts.js FARMER_REWARDS).
+const farmerBody=()=>`<p>My farmer is the farmer who walks on your farm and in the village. Tap them: they hop and your profile opens. Open My farmer in Settings, under your avatar, or on your own profile, and tap Save.</p><p>Skin, face, hair, glasses, beards and clothes are free. Hats and two costumes you earn by farming, each with a goal of its own: the straw hat after your first ${FARMER_REWARDS.hat_009.target} crops, the chef's hat for baking bread, the sailor cap for fishing, the bee suit for honey. Until then one shows a lock with its goal and how far you are: you can try it on. Your avatar stays your picture in the chat, on the leaderboards and in your family.</p>`;
 const avatarsBody=(portal=false)=>`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
  +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
  // The Halloween Pass face (4 Oct 2026) is a purchase: not on CrazyGames, and hidden in our apps (public/android.css .wiki-paid).

@@ -135,8 +135,12 @@ test('My farmer: a tab for every slot it offers, with words that are in every la
  assert.doesNotMatch(creator,/ · /);
  const catalog=JSON.parse(read('i18n/catalog.json')),texts=new Set(Array.isArray(catalog)?catalog:Object.keys(catalog));
  for(const t of ['My farmer','Skin','Face','Hair','Hat','Glasses','Beard','Top','Trousers','Outfit','Costume','Mascot','Shoes','Socks','Gloves','Random','Save','Saving…','None','Close',
-  'Earned with levels, goals and passes.','Your farmer could not be saved. Please try again.','Reach level {0}.','Earn this first to wear it.','The farmer who walks on your farm and in the village.'])assert.ok(texts.has(t),t);
- for(const id of Object.keys(P.FARMER_REWARDS)){const t=P.rewardText(id).replace(/^Reach level \d+\.$/,'Reach level {0}.');assert.ok(texts.has(t),`${id}: ${t}`);}
+  'Earned by farming: each has a goal of its own.','Your farmer could not be saved. Please try again.','Earn this first to wear it.','The farmer who walks on your farm and in the village.',
+  'Something new to wear in My farmer.'])assert.ok(texts.has(t),t);
+ // Every goal's words are a text of the catalog (with its number as {0}).
+ const goals=[...creator.matchAll(/:n=>`([^`]+)`/g)].map(m=>m[1].replace('${number(n)}','{0}'));
+ assert.equal(goals.length,Object.keys(P.FARMER_GOALS).length);for(const t of goals)assert.ok(texts.has(t),t);
+ for(const {goal} of Object.values(P.FARMER_REWARDS))assert.match(creator,new RegExp(`\\b${goal}:n=>`),goal);
  assert.match(read('scripts/i18n-extract.mjs'),/\|farmer-parts\)\\\.js\$\//,'the parts\' working names are not shown');
 });
 
@@ -145,7 +149,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/void addPets\(\);void addFarmer\(\);/,'after the first picture, with the pets');
  assert.doesNotMatch(game,/^import[^\n]*farm-farmer/m,'never in the first load');
  assert.match(game,/if\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state,farmerFarm\(\)\)\}\);/,'phones every other frame, in the farmer\'s own clothes');
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state\)\}\);/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
  assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n return null;\n\}/,'asked last of all');
  assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)return;/,'only on screen');

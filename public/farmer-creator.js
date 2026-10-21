@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 import {createFarmer} from './farmer.js';
-import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardText} from './farmer-parts.js';
+import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress} from './farmer-parts.js';
 import {art} from './visual-icons.js';
 
 // My farmer (20 Oct 2026; your own character since 21 Oct 2026, the owner: "Doe alle 3"): put your farmer together from the pack's parts.
 // They walk on your farm and in the village; the painted avatar stays your picture everywhere else. A 3D farmer turning slowly at the
 // top, a row of tabs (one a slot: skin, face, hair, ...) and the pictures of that slot's parts below (scripts/build-farmer-pictures.mjs:
 // one sheet a slot, only the parts offered here). A tap puts a part on; what does not go with it comes off (farmer-parts.js wearPart).
-// Hats, costumes and mascots are earned (farmer-parts.js FARMER_REWARDS): one not earned yet carries a lock, can be tried on, and says
-// how to earn it; Save waits until everything worn is yours. Save sends the farm action farmer_wear (onSave), which checks it again.
+// Hats and two costumes are earned, each with a goal of its own (farmer-parts.js FARMER_REWARDS, 21 Oct 2026): one not earned yet carries
+// a lock, can be tried on, and says its goal and how far the farm is ("Catch 25 fish" 12 / 25); Save waits until everything worn is
+// yours. Save sends the farm action farmer_wear (onSave), which checks it again.
 export const THUMB_BASE='/assets/farmer/thumbs/';
 const COLUMNS=10;
 // The tabs, in this order, with their names. A tab with nothing to offer yet (the mascots: future rewards) is left out.
@@ -17,8 +18,19 @@ export const CREATOR_TABS=Object.freeze([
  ['outfit','Outfit'],['costume','Costume'],['mascot','Mascot'],['shoes','Shoes'],['socks','Socks'],['gloves','Gloves']
 ].map(Object.freeze));
 const TAB_NAMES=Object.fromEntries(CREATOR_TABS),FIT_ORDER=['farm','plain','fun','off'];
-// The slots whose parts are earned: their tab says how, in one line.
+// The slots whose parts are earned: their tab says so, in one line.
 const EARNED_TABS=new Set(['hat','costume','mascot']);
+const number=n=>Number(n).toLocaleString('en-US');
+// Each goal in words (farmer-parts.js FARMER_GOALS counts it).
+export const GOAL_TEXTS=Object.freeze({
+ harvested:n=>`Harvest ${number(n)} crops`,watered:n=>`Water ${number(n)} crops`,sold:n=>`Sell ${number(n)} crops`,eggs:n=>`Collect ${number(n)} eggs`,
+ milk:n=>`Collect ${number(n)} milk`,bread:n=>`Bake ${number(n)} bread`,honey:n=>`Collect ${number(n)} honey`,pets:n=>`Pat Rex and Mimi ${number(n)} times`,
+ fish:n=>`Catch ${number(n)} fish`,deliveries:n=>`Complete ${number(n)} delivery orders`,rounds:n=>`Finish ${number(n)} helping-hand rounds`,
+ chores:n=>`Do ${number(n)} chores`,upgrades:n=>`Upgrade buildings ${number(n)} times`,tractor:n=>`Use the tractor ${number(n)} times`,
+ visits:n=>`Play on ${number(n)} days`,streak:n=>`Play ${number(n)} days in a row`
+});
+// A part's goal in words ('' for a free part), and how far a farm is with it.
+export function rewardText(id){const p=rewardProgress(id,{});return p?GOAL_TEXTS[p.goal](p.target):'';}
 const LOCK='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.2" fill="currentColor"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const NONE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M6.5 17.5l11-11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const CLOSE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
@@ -34,9 +46,10 @@ function addStylesheet(){
  if(sheet||document.querySelector('link[href^="/farmer-maker.css"]'))return;
  sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/farmer-maker.css';document.head.append(sheet);
 }
-// Opens the window. config: the farmer as it is now; owned: the earned parts the farm has (farmer-parts.js farmerOwned); onSave(config):
+// Opens the window. config: the farmer as it is now; owned: the earned parts the farm has (farmer-parts.js farmerOwned); state: the farm
+// (for how far a goal is); onSave(config):
 // saves it (a promise; a refusal's message is shown). Returns {dialog, close, config()}.
-export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],onSave=async()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
+export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},onSave=async()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
  addStylesheet();
  const saved=validFarmerConfig(config).ok?{...config}:{...DEFAULT_FARMER};
  let current={...saved},tab='body',busy=false;
@@ -45,7 +58,7 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],onSave=a
  dialog.innerHTML=`<div class="dialog-top"><div class="dialog-heading">${art('my-farmer','dialog-badge')}<div class="dialog-titles"><h2 id="farmer-maker-title">My farmer</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">${CLOSE}</button></div></div>
 <div class="farmer-maker-stage"><canvas class="farmer-maker-preview" width="360" height="360" aria-hidden="true"></canvas></div>
 <div class="market-tabs farmer-maker-tabs" role="tablist" aria-label="My farmer">${tabs.map(([slot,name])=>`<button type="button" role="tab" data-slot="${slot}" aria-selected="false"><span class="farmer-tab-thumb" aria-hidden="true"></span><span>${name}</span></button>`).join('')}</div>
-<p class="farmer-maker-rule" hidden>Earned with levels, goals and passes.</p>
+<p class="farmer-maker-rule" hidden>Earned by farming: each has a goal of its own.</p>
 <p class="farmer-maker-note" role="status" aria-live="polite" hidden></p>
 <div class="farmer-maker-grid" role="group"></div>
 <div class="dialog-actions farmer-maker-actions"><button type="button" class="secondary-button farmer-maker-random">Random</button><button type="button" class="primary-button farmer-maker-save" disabled>Save</button></div>`;
@@ -73,9 +86,9 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],onSave=a
  // Above the pictures: how to earn what is tried on, or why the save failed. Save waits for a change and for everything to be yours.
  function drawState(message=''){
   const locked=lockedWorn()[0];
-  const text=message||(locked?rewardText(locked.id):'');
-  note.hidden=!text;note.classList.toggle('is-locked',Boolean(!message&&locked));
-  note.innerHTML=text?`${!message&&locked?LOCK:''}<span>${esc(text)}</span>`:'';
+  const text=message||(locked?rewardText(locked.id):''),progress=!message&&locked?rewardProgress(locked.id,state):null;
+  note.hidden=!text;note.classList.toggle('is-locked',Boolean(progress));
+  note.innerHTML=text?`${progress?LOCK:''}<span>${esc(text)}</span>${progress?`<b>${number(progress.count)} / ${number(progress.target)}</b>`:''}`:'';
   save.disabled=busy||!changed()||Boolean(locked);save.textContent=busy?'Saving…':'Save';
  }
  // The 3D preview: its own small renderer, the farmer breathing and turning slowly (standing still with reduced motion).

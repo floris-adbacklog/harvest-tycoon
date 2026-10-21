@@ -190,4 +190,4 @@ download (Creative_Characters.blend, its .fbx and .glb zips) stays out of the re
   every colour half way to the nearest of the farm's palette.png and a little less saturated, 25 KB). It also measures the catalog into
   `game/farmer-parts.js` (the parts, their groups, which go together, free or earned).
 - `scripts/build-farmer-pictures.mjs` (the game's own code in a muted headless Chrome): a picture sheet a slot for My farmer
-  (`thumbs/`, only the parts it offers, 13 files, 356 KB) and My farmer's own picture (`public/assets/icons/my-farmer.webp`).
+  (`thumbs/`, only the parts it offers, 12 files, 127 KB) and My farmer's own picture (`public/assets/icons/my-farmer.webp`).

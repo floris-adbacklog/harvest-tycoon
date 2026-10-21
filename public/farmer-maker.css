@@ -20,6 +20,7 @@
 .farmer-maker-rule{margin:-4px 2px 8px;font-size:13px;font-weight:700;color:#857660}
 .farmer-maker-note{display:flex;align-items:center;gap:8px;margin:0 2px 10px;padding:8px 12px;border-radius:12px;background:#fff6e1;border:1px solid #edd9ac;color:#5b4520;font-weight:700;font-size:14px}
 .farmer-maker-note svg{flex:none;width:18px;height:18px;color:var(--btn-gold-edge)}
+.farmer-maker-note b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--btn-gold-edge)}
 .farmer-maker-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:8px}
 .farmer-maker-actions button{min-height:44px;padding:0 20px}
 @media (prefers-reduced-motion:reduce){.farmer-part{transition:none}}

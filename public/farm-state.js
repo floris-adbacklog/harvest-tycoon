@@ -4174,12 +4174,10 @@ function normalizePets(state){
 // Your own farmer (21 Oct 2026, the owner: "Doe alle 3"): what they wear is kept in state.farmer, one part id per slot (game/farmer-parts.js).
 // A farm that never dressed its farmer has no farmer key and shows the default farmer (farmerOf); older rules keep the key as it is
 // (normalizeFarm keeps keys it does not know). Only farmer_wear writes it, after the same check the page makes: known parts that go
-// together, only parts My farmer offers, and of the earned ones (hats, costumes, mascots) only those this farm has, read from the farm
-// itself (farmerOwned: its level, its goals, its passes) and the events it finished (action.events: farm-api puts the farmer's own
-// player_stats.events_finished there, whatever the page sent). Nothing is paid, counted or given (NO_EVENT_ACTIONS).
-function wearFarmer(state,config,events){
- const owned=farmerOwned(state,{level:levelOf(state),events});
- const check=validFarmerConfig(config,{owned,offered:true});
+// together, only parts My farmer offers, and of the earned ones (hats, two costumes) only those whose own goal this farm reached, read
+// from its own counters (farmerOwned). Nothing is paid, counted or given (NO_EVENT_ACTIONS).
+function wearFarmer(state,config){
+ const check=validFarmerConfig(config,{owned:farmerOwned(state),offered:true});
  if(!check.ok)throw new Error(/not earned/.test(check.error)?'Earn this first to wear it.':'Choose a farmer.');
  state.farmer=cleanFarmer(config);
  return {farmer:{...state.farmer}};
@@ -4311,7 +4309,7 @@ function dispatchFarmAction(state,action,now,random){
   // A pat of the farm's dog or cat, or the village's deer (20 Oct 2026): no feature gate, the deer checks World II itself.
   case 'pet_pat':return patPet(state,action.pet,now,random);
   // Your own farmer's clothes (21 Oct 2026): no feature gate, every farm has its farmer.
-  case 'farmer_wear':return wearFarmer(state,action.farmer,action.events);
+  case 'farmer_wear':return wearFarmer(state,action.farmer);
   default:throw new Error('Unknown farm action.');
  }
 }
