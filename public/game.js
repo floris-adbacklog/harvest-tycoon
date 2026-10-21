@@ -157,11 +157,13 @@ let walker=null;   // your own farmer walking on the farm or in the village (far
 // My farmer (21 Oct 2026, the owner: "Doe alle 3"): put your own farmer together (public/farmer-creator.js, loaded when it opens). Save is
 // the farm action farmer_wear; the farmer on the farm or in the village changes at once. Opened from Settings › Profile, your own profile
 // (window.harvestMyFarmer) and the harness (?open=farmer). Not in the admin view: nothing is saved there.
+const GESTURE_BEAT=300;
 async function openMyFarmer(){
  if(adminView)return null;
  try{
   const {openFarmerCreator}=await import('./farmer-creator.js');
-  return await openFarmerCreator({config:farmerOf(state,farmerFarm()),owned:farmerOwned(state,farmerFarm()),state,farm:farmerFarm(),reducedMotion,onSave:async config=>{
+  // The last gesture tried in the window, the farmer on the farm does once when it closes (item 4).
+  return await openFarmerCreator({config:farmerOf(state,farmerFarm()),owned:farmerOwned(state,farmerFarm()),state,farm:farmerFarm(),reducedMotion,onClose:gesture=>{if(gesture)setTimeout(()=>walker?.gesture?.(gesture),GESTURE_BEAT);},onSave:async config=>{
    await runAction({type:'farmer_wear',farmer:config});
    void walker?.farmer.dress(farmerOf(state,farmerFarm()));
   }});

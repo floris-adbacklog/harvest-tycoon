@@ -47,20 +47,25 @@ bpy.context.view_layer.update()
 pb = skeleton.pose.bones
 for b in pb:
     b.rotation_mode = 'QUATERNION'
-ad0 = skeleton.animation_data_create()
-ad0.action = bpy.data.actions['Idle_Breathing']
-if hasattr(ad0, 'action_slot') and ad0.action.slots:
-    ad0.action_slot = ad0.action.slots[0]
-bpy.context.scene.frame_set(int(ad0.action.frame_range[0]))
-bpy.context.view_layer.update()
-BASE = {b.name: (b.location.copy(), b.rotation_quaternion.copy(), b.scale.copy()) for b in pb}
-ad0.action = None
-TO_ARM = skeleton.matrix_world.to_3x3().inverted()
 V = mathutils.Vector
+# The first pose of Idle_Breathing, read from its curves (in the background an action's pose is only on the evaluated copy).
+BASE = {b.name: [V((0, 0, 0)), mathutils.Quaternion((1, 0, 0, 0)), V((1, 1, 1))] for b in pb}
+idle = bpy.data.actions['Idle_Breathing']
+curves = [fc for layer in idle.layers for strip in layer.strips for cb in strip.channelbags for fc in cb.fcurves] if hasattr(idle, 'layers') else list(idle.fcurves)
+for fc in curves:
+    if not fc.data_path.startswith('pose.bones["'):
+        continue
+    bone, prop = fc.data_path[len('pose.bones["'):].split('"].')
+    if bone in BASE:
+        slot = {'location': 0, 'rotation_quaternion': 1, 'scale': 2}.get(prop)
+        if slot is not None:
+            BASE[bone][slot][fc.array_index] = fc.evaluate(idle.frame_range[0])
+skeleton.animation_data_create()
+TO_ARM = skeleton.matrix_world.to_3x3().inverted()
 def base_pose():
     for b in pb:
         loc, rot, sc = BASE[b.name]
-        b.location = loc; b.rotation_quaternion = rot; b.scale = sc
+        b.location = loc; b.rotation_quaternion = rot.normalized(); b.scale = sc
     bpy.context.view_layer.update()
 def about_head(b, q):
     head = b.matrix.to_translation()
@@ -108,6 +113,36 @@ def breathe(up):
         turn('Spine1', (1, 0, 0), up)
     return step
 clip('Farmer_Sit', [(1, [seated]), (45, [seated, breathe(-2)]), (90, [seated])])
+# Gestures (item 4: My farmer's Wave, Cheer and Dance, played once): simple keyframes, each from and back to the standing pose.
+def arm(side, upper, fore):
+    def step():
+        aim(side + 'Arm', upper); aim(side + 'ForeArm', fore)
+    return step
+# Wave: the right arm up, the hand waving side to side four times.
+up_r = arm('Right', (-.45, -.12, .88), (-.12, -.15, 1))
+wave_out = arm('Right', (-.45, -.12, .88), (-.55, -.1, .83))
+wave_in = arm('Right', (-.45, -.12, .88), (.2, -.1, .97))
+clip('Farmer_Wave', [(1, []), (9, [up_r]), (15, [wave_out]), (21, [wave_in]), (27, [wave_out]), (33, [wave_in]), (39, [wave_out]), (45, [up_r]), (57, [])])
+# Cheer: both arms up in a V, pumped twice, the chest a little open.
+def cheer(lift_by):
+    def step():
+        turn('Spine1', (1, 0, 0), 6)
+        for side, x in (('Left', 1), ('Right', -1)):
+            aim(side + 'Arm', (x * .5, -.1, .86 - lift_by)); aim(side + 'ForeArm', (x * (.35 + lift_by), -.1, .93 - lift_by))
+    return step
+clip('Farmer_Cheer', [(1, []), (8, [cheer(0)]), (13, [cheer(.35)]), (18, [cheer(0)]), (23, [cheer(.35)]), (28, [cheer(0)]), (40, [])])
+# Dance: a sway from side to side on the beat, elbows bent, knees giving a little in turn.
+def sway(d):
+    def step():
+        turn('Hips', (0, 0, 1), 12 * d)
+        turn('Spine', (0, 1, 0), -7 * d)
+        lift('Hips', -.03)
+        turn(('Left' if d > 0 else 'Right') + 'Leg', (1, 0, 0), 18)
+        for side, x in (('Left', 1), ('Right', -1)):
+            high = (x == d)
+            aim(side + 'Arm', (x * .45, -.35, -.82)); aim(side + 'ForeArm', (x * .15, -.75, .65 if high else .2))
+    return step
+clip('Farmer_Dance', [(1, []), (9, [sway(1)]), (18, [sway(-1)]), (27, [sway(1)]), (36, [sway(-1)]), (45, [sway(1)]), (54, [sway(-1)]), (66, [])])
 skeleton.animation_data.action = None
 # The skeleton at its rest pose: the parts are bound there.
 skeleton.animation_data_clear()

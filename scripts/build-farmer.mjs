@@ -142,8 +142,8 @@ for(const node of root.listNodes()){
 
 // The rig: the skeleton and the clips, no mesh.
 const CLIPS={Idle_Breathing:'idle',Idle_Look_Around:'look',Idle_Relaxed:'relaxed',Walk_Forward:'walk',
- // Keyframed in farmer-export.py (21 Oct 2026): sitting on the bench in the evening.
- Farmer_Sit:'sit'};
+ // Keyframed in farmer-export.py (21 Oct 2026): sitting on the bench in the evening, and My farmer's three gestures.
+ Farmer_Sit:'sit',Farmer_Wave:'wave',Farmer_Cheer:'cheer',Farmer_Dance:'dance'};
 // The hop: the pack's jump goes 1.15 m up (the Root bone's height); a farmer tapped on the farm hops a fifth of that.
 const HOP_HEIGHT=.2;
 let rigBytes=0;

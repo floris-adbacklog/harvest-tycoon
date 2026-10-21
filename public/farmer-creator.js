@@ -49,15 +49,20 @@ function addStylesheet(){
 }
 // Opens the window. config: the farmer as it is now; owned: the earned parts the farm has (farmer-parts.js farmerOwned); state: the farm
 // (for how far a goal is); onSave(config):
-// saves it (a promise; a refusal's message is shown). Returns {dialog, close, config()}.
-export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},onSave=async()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
+// saves it (a promise; a refusal's message is shown); onClose(gesture): the window closed, with the last gesture tried (or null).
+// Returns {dialog, close, config()}.
+// Gestures (21 Oct 2026, the owner: "Doe alles behalve 9", item 4): Wave, Cheer and Dance under the farmer, each played once by the
+// farmer here; the last one tried the farmer on the farm does once when the window closes (game.js). Nothing is saved. Not with
+// reduced motion (the farmer here stands still, and the farm has none).
+export const GESTURES=Object.freeze([{id:'wave',name:'Wave'},{id:'cheer',name:'Cheer'},{id:'dance',name:'Dance'}].map(Object.freeze));
+export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},onSave=async()=>{},onClose=()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
  addStylesheet();
  const saved=validFarmerConfig(config).ok?{...config}:{...DEFAULT_FARMER};
  let current={...saved},tab='body',busy=false;
  const tabs=CREATOR_TABS.filter(([slot])=>creatorParts(slot).length);
  const dialog=document.createElement('dialog');dialog.className='game-dialog is-sheet is-m farmer-maker';dialog.setAttribute('aria-labelledby','farmer-maker-title');
  dialog.innerHTML=`<div class="dialog-top"><div class="dialog-heading">${art('my-farmer','dialog-badge')}<div class="dialog-titles"><h2 id="farmer-maker-title">My farmer</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">${CLOSE}</button></div></div>
-<div class="farmer-maker-stage"><canvas class="farmer-maker-preview" width="360" height="360" aria-hidden="true"></canvas></div>
+<div class="farmer-maker-stage"><canvas class="farmer-maker-preview" width="360" height="360" aria-hidden="true"></canvas>${reducedMotion?'':`<div class="farmer-maker-moves" role="group" aria-label="Gestures">${GESTURES.map(({id,name})=>`<button type="button" class="small-button" data-move="${id}">${name}</button>`).join('')}</div>`}</div>
 <div class="market-tabs farmer-maker-tabs" role="tablist" aria-label="My farmer">${tabs.map(([slot,name])=>`<button type="button" role="tab" data-slot="${slot}" aria-selected="false"><span class="farmer-tab-thumb" aria-hidden="true"></span><span>${name}</span></button>`).join('')}</div>
 <p class="farmer-maker-note" role="status" aria-live="polite" hidden></p>
 <div class="farmer-maker-grid" role="group"></div>
@@ -101,13 +106,23 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  const scene=new THREE.Scene();scene.add(new THREE.HemisphereLight(0xfff6e6,0x9a8a6a,1.7));const sun=new THREE.DirectionalLight(0xffffff,1.9);sun.position.set(2.5,5,6);scene.add(sun);
  const camera=new THREE.PerspectiveCamera(24,1,.1,30);camera.position.set(0,1.15,5.2);camera.lookAt(0,.95,0);
  const farmer=await createFarmer(current,{height:1.83});scene.add(farmer.root);farmer.actions.idle?.play();
- let running=true,last=performance.now(),turn=-.35;
+ let running=true,last=performance.now(),turn=-.35,move=null,moveLeft=0,lastMove=null;
+ // The way back to facing you (turn 0, or a whole turn round) from where the slow turn is.
+ const turnOf=t=>-(((t+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI);
+ function playMove(name){
+  const a=farmer.actions[name];if(!a)return;
+  const from=move??farmer.actions.idle;a.reset();a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;a.play();if(from&&from!==a)from.crossFadeTo(a,.25,false);
+  move=a;moveLeft=a.getClip().duration;lastMove=name;
+ }
  function size(){const w=canvas.clientWidth||300,h=canvas.clientHeight||300;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
  function loop(now){
   if(!running)return;requestAnimationFrame(loop);
   const dt=Math.min(.1,(now-last)/1000);last=now;
   // With reduced motion the farmer stands still, in the idle's first pose (not the pack's arms-out rest pose).
-  if(!reducedMotion)turn+=dt*.35;farmer.mixer.update(reducedMotion?0:dt);
+  // A gesture: they turn to face you while doing it, then breathe and turn on.
+  if(move){turn+=turnOf(turn)*Math.min(1,dt*6);if((moveLeft-=dt)<=0){farmer.actions.idle?.reset().play();move.crossFadeTo(farmer.actions.idle,.3,false);move=null;}}
+  else if(!reducedMotion)turn+=dt*.35;
+  farmer.mixer.update(reducedMotion?0:dt);
   farmer.root.rotation.y=turn;renderer.render(scene,camera);
  }
  const redraw=()=>{drawTabs();drawGrid();drawState();void farmer.dress(current);};
@@ -118,6 +133,7 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  }
  dialog.addEventListener('click',event=>{
   const t=event.target.closest('button');if(!t||busy)return;
+  if(t.dataset.move){playMove(t.dataset.move);return;}
   if(t.dataset.slot){tab=t.dataset.slot;drawTabs();drawGrid();drawState();grid.scrollTop=0;return;}
   if(t.dataset.part!==undefined){current=wearPart(current,tab,t.dataset.part||null);redraw();return;}
   if(t.classList.contains('farmer-maker-random')){current=randomFarmer(Math.random);redraw();return;}
@@ -125,7 +141,7 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
   if(t.classList.contains('close-dialog'))close();
  });
  dialog.addEventListener('close',()=>close());
- function close(){if(!running)return;running=false;farmer.dispose();renderer.dispose();if(dialog.open)dialog.close();dialog.remove();}
+ function close(){if(!running)return;running=false;farmer.dispose();renderer.dispose();if(dialog.open)dialog.close();dialog.remove();onClose(lastMove);}
  drawTabs();drawGrid();drawState();
  dialog.showModal();size();new ResizeObserver(size).observe(canvas);requestAnimationFrame(loop);
  return {dialog,close,config:()=>({...current}),farmer};

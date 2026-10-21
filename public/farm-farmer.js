@@ -92,7 +92,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  hit.position.y=walk.height*.52;hit.userData.farmer=true;root.add(hit);
  const spots=walk.spots,start=Math.floor(random()*spots.length);
  root.position.set(spots[start][0],ground(spots[start][0],spots[start][1]),spots[start][1]);scene.add(root);
- const me={spot:start,target:null,rest:REST[0]*random(),yaw:Math.PI/4,face:Math.PI/4,state:'idle',current:null,hopping:0,hops:1,hopUp:HOP_UP,trip:null,tripDone:-Infinity,clock:0};
+ const me={spot:start,target:null,rest:REST[0]*random(),yaw:Math.PI/4,face:Math.PI/4,state:'idle',current:null,hopping:0,hops:1,hopUp:HOP_UP,gesture:0,trip:null,tripDone:-Infinity,clock:0};
  const frustum=new THREE.Frustum(),matrix=new THREE.Matrix4(),sphere=new THREE.Sphere();let frame=0,wait=0,seenBy=null;
  function play(name,fade=FADE){
   const next=actions[name];if(!next||next===me.current)return;
@@ -122,6 +122,8 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   const at=root.position;
   if((checked+=dt)>=EVENING_CHECK){checked=0;evening();}
   if(me.away==='sitting')return;
+  // A gesture (My farmer's Wave, Cheer or Dance): they stand and do it once, facing you, then breathe again.
+  if(me.gesture>0){me.yaw=turnTowards(me.yaw,Math.PI/4,TURN*dt);root.rotation.y=me.yaw;if((me.gesture-=dt)<=0)play('idle',.3);return;}
   if(me.hopping>0){
    // The hop (21 Oct 2026, the owner: the pack's jump, made small, sank into the ground: its legs still tucked a full jump's worth):
    // the whole farmer goes up and down once, standing as they are; the ground is never crossed.
@@ -196,7 +198,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   if(me.away==='going')me.away=null;
   // On their way somewhere: the waypoint they were walking to is taken again after the hop.
   if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
-  me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');
+  me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');me.gesture=0;
   me.landed?.();me.landed=null;me.hops=1;me.hopUp=HOP_UP;
   if(!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY)){at0();return Promise.resolve();}
   me.hopping=HOP_TIME;
@@ -208,12 +210,21 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   if(me.away||me.hopping>0||!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY))return null;
   if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
   me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');
-  me.hops=CHEER_HOPS;me.hopUp=CHEER_UP;me.hopping=HOP_TIME;
+  me.hops=CHEER_HOPS;me.hopUp=CHEER_UP;me.hopping=HOP_TIME;me.gesture=0;
+  // Both arms up while they hop (the Cheer gesture, once), where the rig has it.
+  if(actions.cheer){actions.cheer.setLoop(THREE.LoopOnce,1);actions.cheer.clampWhenFinished=true;play('cheer',.15);}
   return [root.position.x,root.position.y+walk.height*1.1,root.position.z];
+ }
+ // A gesture once (item 4: chosen in My farmer, played here when it closes): 'wave', 'cheer' or 'dance'. Not on the bench, not mid-hop.
+ function gesture(name){
+  const a=['wave','cheer','dance'].includes(name)?actions[name]:null;
+  if(!a||me.away||me.hopping>0)return false;
+  if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
+  me.target=null;a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;play(name,.25);me.gesture=a.getClip().duration;return true;
  }
  const at0=()=>{me.hopping=0;root.position.y=ground(root.position.x,root.position.z);};
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
  const where=()=>{if(!seenBy)return null;const p=root.position.clone();p.y+=walk.height*.5;p.project(seenBy);return {x:p.x,y:p.y,state:me.state,world:[root.position.x,root.position.z]};};
- const result={farmer,root,hit,ground,animate,pick,react,where,visit,celebrate,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
+ const result={farmer,root,hit,ground,animate,pick,react,where,visit,celebrate,gesture,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
  FARM_WALKERS.add(result);return result;
 }

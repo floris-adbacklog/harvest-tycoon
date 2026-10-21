@@ -43,7 +43,7 @@ test('the catalog holds every part of the pack, in its groups, with its files th
 
 test('a part file is a quantized, meshopt-packed skinned mesh bound to bones by name, with no picture; the rig has the pack\'s five clips and our own',()=>{
  const rig=glb('public/assets/farmer/farmer-rig.glb');
- assert.deepEqual(rig.animations.map(a=>a.name).sort(),['hop','idle','look','relaxed','sit','walk']);
+ assert.deepEqual(rig.animations.map(a=>a.name).sort(),['cheer','dance','hop','idle','look','relaxed','sit','walk','wave']);
  assert.equal(rig.nodes.length,45,'the pack\'s 44 bones under its Skeleton node');assert.ok(!rig.meshes,'no mesh in the rig');
  const bones=new Set(rig.nodes.map(n=>n.name));
  for(const id of ['body_010','hat_009','outfit_001','costume_7','gloves_018','male_emotion_usual_002']){
@@ -288,4 +288,29 @@ test('the evening: from 20:00 to 7:00 by the player\'s clock your farmer rests o
  // The sitting clip is keyframed in the Blender step (the pack has none), built into the rig with --rig-only.
  assert.match(read('scripts/farmer-export.py'),/clip\('Farmer_Sit', \[/);assert.match(read('scripts/build-farmer.mjs'),/Farmer_Sit:'sit'/);
  assert.match(read('scripts/build-farmer.mjs'),/RIG_ONLY=process\.argv\.includes\('--rig-only'\)/);
+});
+
+test('gestures: Wave, Cheer and Dance in My farmer, keyframed on the pack\'s skeleton; the farmer on the farm does the last one tried once the window closes (the owner, 21 Oct 2026, item 4)',()=>{
+ const exp=read('scripts/farmer-export.py'),build=read('scripts/build-farmer.mjs'),creator=read('public/farmer-creator.js'),walker=read('public/farm-farmer.js'),game=read('public/game.js');
+ // Keyframed in the Blender step from the idle's first pose (read from its curves), never downloaded.
+ for(const name of ['Farmer_Wave','Farmer_Cheer','Farmer_Dance','Farmer_Sit'])assert.match(exp,new RegExp(`clip\\('${name}', \\[`));
+ assert.match(build,/Farmer_Sit:'sit',Farmer_Wave:'wave',Farmer_Cheer:'cheer',Farmer_Dance:'dance'\}/);
+ assert.match(exp,/BASE\[bone\]\[slot\]\[fc\.array_index\] = fc\.evaluate\(idle\.frame_range\[0\]\)/);
+ assert.doesNotMatch(exp+build,/mixamo|https?:\/\//i);
+ // Every clip of the rig is short and starts and ends on the ground: the gestures are 1-2.5 s.
+ const rig=glb('public/assets/farmer/farmer-rig.glb');assert.ok(statSync(file('public/assets/farmer/farmer-rig.glb')).size<130_000);
+ for(const name of ['wave','cheer','dance'])assert.ok(rig.animations.some(a=>a.name===name),name);
+ // My farmer: three small buttons on the stage (not with reduced motion), each played once there; nothing saved.
+ assert.match(creator,/export const GESTURES=Object\.freeze\(\[\{id:'wave',name:'Wave'\},\{id:'cheer',name:'Cheer'\},\{id:'dance',name:'Dance'\}\]\.map\(Object\.freeze\)\);/);
+ assert.match(creator,/\$\{reducedMotion\?'':`<div class="farmer-maker-moves" role="group" aria-label="Gestures">/);
+ assert.match(creator,/a\.reset\(\);a\.setLoop\(THREE\.LoopOnce,1\);a\.clampWhenFinished=true;a\.play\(\);/);
+ assert.match(creator,/dialog\.remove\(\);onClose\(lastMove\);\}/);
+ const catalog=JSON.parse(read('i18n/catalog.json')),texts=new Set(Array.isArray(catalog)?catalog:Object.keys(catalog));
+ for(const t of ['Wave','Cheer','Dance','Gestures'])assert.ok(texts.has(t),t);
+ // The farm: once, facing you, not on the bench or mid-hop; a tap still hops and opens the profile.
+ assert.match(walker,/const a=\['wave','cheer','dance'\]\.includes\(name\)\?actions\[name\]:null;\n  if\(!a\|\|me\.away\|\|me\.hopping>0\)return false;/);
+ assert.match(game,/onClose:gesture=>\{if\(gesture\)setTimeout\(\(\)=>walker\?\.gesture\?\.\(gesture\),GESTURE_BEAT\);\}/);
+ assert.match(game,/else if\(target\.type==='farmer'\)tapOwnFarmer\(\);/);
+ // A celebration lifts both arms (the Cheer) while they hop.
+ assert.match(walker,/if\(actions\.cheer\)\{actions\.cheer\.setLoop\(THREE\.LoopOnce,1\);actions\.cheer\.clampWhenFinished=true;play\('cheer',\.15\);\}/);
 });
