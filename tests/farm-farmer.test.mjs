@@ -148,7 +148,8 @@ test('your farmer on the farm and in the village: after the first picture, only 
  const game=read('public/game.js'),walker=read('public/farm-farmer.js');
  assert.match(game,/void addPets\(\);void addFarmer\(\);/,'after the first picture, with the pets');
  assert.doesNotMatch(game,/^import[^\n]*farm-farmer/m,'never in the first load');
- assert.match(game,/if\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/);
+ assert.match(game,/function farmerComes\(\)\{const connection=navigator\.connection;return !\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\);\}/);
+ assert.match(game,/async function addFarmer\(\)\{\n try\{\n  if\(!farmerComes\(\)\)return;/);
  assert.match(game,/const config=farmerOf\(state,farmerFarm\(\)\),family=/);assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config,trips:/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
  assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n \/\/ Then your family's farmers in the village \(item 5\): their profile\.\n for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;\n\}/,'asked last of all (then the family\'s)');
@@ -284,7 +285,16 @@ test('the evening: from 20:00 to 7:00 by the player\'s clock your farmer rests o
  assert.match(walker,/if\(late&&!me\.away&&!me\.trip&&me\.hopping<=0\)\{me\.away='going';me\.target=front;\}\n  else if\(!late&&me\.away==='sitting'\)getUp\(\);/);
  assert.match(walker,/if\(me\.away==='sitting'\)return Promise\.resolve\(\);/);assert.match(walker,/if\(!trips\|\|!place\|\|me\.hopping>0\|\|me\.away\)return false;/);
  // The chair is the farm's own chair_001, there only with the farmer, only on the farm (the village has none).
- assert.match(game,/if\(!villageWorld&&models\.has\('chair_001'\)\)\{const before=currentZone\(\);zone\('fields'\);cloneModel\('chair_001',FARM_BENCH\.x,FARM_BENCH\.z,\{height:FARM_BENCH\.height,rotation:FARM_BENCH\.turn\+CHAIR_FACING\}\);zone\(before\);bench=FARM_BENCH;\}/);
+ assert.match(game,/function placeBench\(spot\)\{if\(villageWorld\|\|farmBench\|\|!models\.has\('chair_001'\)\)return;const before=currentZone\(\);zone\('fields'\);cloneModel\('chair_001',spot\.x,spot\.z,\{height:spot\.height,rotation:spot\.turn\+CHAIR_FACING\}\);zone\(before\);farmBench=spot;\}/);
+ // QA, 21 Oct 2026: the chair stands before the scenery is planted and the farmer comes after it, so the scenery is the same on every
+ // visit (it reckons with what stands when it is planted) and leaves the farmer's loop, chair and trip spots free.
+ assert.match(game,/if\(farmerSpots\)placeBench\(farmerSpots\.FARM_BENCH\);\n  buildScenery\(\{scene,models,mobile:mobileLayout\.matches,clear:farmerSpots\?\.inFarmerWay\?\?null\}\);/);
+ assert.match(game,/if\(!villageWorld\)await sceneryDone;/);assert.match(game,/if\(!villageWorld\)sceneryDone=addScenery\(\);/);
+ assert.match(read('public/scenery.js'),/if\(clear\)\{const d=entry\.size,across=Math\.max\(d\.x,d\.z\)\/2\/d\.y;list=list\.filter\(\(\[x,z,height\]\)=>!clear\(x,z,height\*across\)\);\}/);
+ const {inFarmerWay}=await import('../public/farm-farmer.js');
+ for(const [x,z] of [...FARM_WALK.spots,[FARM_BENCH.x,FARM_BENCH.z],...Object.values(FARM_TRIPS).map(t=>t.at),...FIELD_TRIPS.map(t=>t.at)])assert.ok(inFarmerWay(x,z,0),`${x},${z}`);
+ assert.ok(inFarmerWay(-15.18,-1.53,1.08)&&inFarmerWay(-14.23,-1.53,.76),'the two bushes that stood on the loop on a computer');
+ assert.ok(!inFarmerWay(-20,-8,1)&&!inFarmerWay(-13.16,3,.5),'the rest of the farm keeps its scenery');
  // The sitting clip is keyframed in the Blender step (the pack has none), built into the rig with --rig-only.
  assert.match(read('scripts/farmer-export.py'),/clip\('Farmer_Sit', \[/);assert.match(read('scripts/build-farmer.mjs'),/Farmer_Sit:'sit'/);
  assert.match(read('scripts/build-farmer.mjs'),/RIG_ONLY=process\.argv\.includes\('--rig-only'\)/);

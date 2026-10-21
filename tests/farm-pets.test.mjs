@@ -30,7 +30,7 @@ test('the pets are small: meshopt-packed, quantized, painted from palette.png, w
 
 test('they come after the farm or the village is on screen, never in the loading bar\'s models, and a failure leaves the farm as it is',()=>{
  const game=read('public/game.js'),pets=read('public/farm-pets.js');
- assert.match(game,/if\(!villageWorld\)void addScenery\(\);if\(villageWorld\)void addVillageExtras\(\);void addPets\(\);/,'after the first picture');
+ assert.match(game,/if\(!villageWorld\)sceneryDone=addScenery\(\);if\(villageWorld\)void addVillageExtras\(\);void addPets\(\);/,'after the first picture');
  assert.match(game,/await new Promise\(done=>'requestIdleCallback' in window\?requestIdleCallback\(done,\{timeout:4000\}\):setTimeout\(done,1500\)\);/,'after the scenery has started');
  assert.match(game,/const \{createPets,FARM_PETS,VILLAGE_DEER\}=await import\('\.\/farm-pets\.js'\);/,'loaded only then');
  assert.doesNotMatch(game,/^import[^\n]*farm-pets/m,'never in the first load');

@@ -188,7 +188,7 @@ test('the extras are painted with the village\'s palette and loaded only there, 
  assert.match(scene,/import \{mergeGeometries\} from 'three\/addons\/utils\/BufferGeometryUtils\.js';/);
  for(const name of readdirSync(new URL('../public/',import.meta.url),{recursive:true}).filter(n=>/\.(m?js|html|css|json)$/.test(n)&&!n.startsWith('vendor')&&n!=='village-scene.js'))
   assert.doesNotMatch(read(`public/${name}`),/village-extras\.glb/,`only the village scene loads the extras (${name})`);
- assert.match(game,/if\(!villageWorld\)void addScenery\(\);if\(villageWorld\)void addVillageExtras\(\);/,'after the village is on screen, never on the farm');
+ assert.match(game,/if\(!villageWorld\)sceneryDone=addScenery\(\);if\(villageWorld\)void addVillageExtras\(\);/,'after the village is on screen, never on the farm');
  assert.match(game,/console\.warn\('The village extras were skipped\.',error\);/,'a file that does not come leaves the village as it is');
  const tick=/if\(now-lastTick>500\)\{[^\n]*\}/.exec(game)?.[0]??'';assert.match(tick,/atmosphere\?\.tick\(\);syncVillageExtras\(\);/,'a build shows within half a second');
  assert.doesNotMatch(/function expandVisuals\(\)\{[^\n]*\}/.exec(game)[0],/syncVillageExtras/,'not in expandVisuals (tests/village-square.test.mjs runs it alone)');

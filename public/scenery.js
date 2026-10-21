@@ -22,7 +22,10 @@ export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','moun
 const RING=1+(SPREAD-1)*.85,K=Math.SQRT1_2;
 const ringPoint=(degrees,a,b)=>{const phi=degrees*Math.PI/180,sx=a*Math.cos(phi),sb=b*Math.sin(phi);return {x:1.4+(sx-sb)*K,z:1.5+(-sx-sb)*K,angle:Math.atan2(-((-a*Math.sin(phi))-(b*Math.cos(phi)))*K,((-a*Math.sin(phi))-(b*Math.cos(phi)))*K)};};
 
-export function buildScenery({scene,models,mobile=false}){
+// clear(x, z, reach): true where a piece must not stand (game.js: your farmer's loop, chair and trip spots, farm-farmer.js
+// inFarmerWay, only on a farm where the farmer walks). Asked of the bushes, flowers, tufts and bales once all are chosen, so the rest
+// of the scenery stands where it always did; a piece in the way is simply left out.
+export function buildScenery({scene,models,mobile=false,clear=null}){
  const rand=seeded(20260924),group=new THREE.Group();group.name='Scenery';scene.add(group);
  // The trees and bushes sway in the wind (scene-polish.js): they are measured upright, or a spot beside one would be free at one
  // moment and taken the next, and the scenery would differ between visits (6 Oct 2026).
@@ -71,7 +74,9 @@ export function buildScenery({scene,models,mobile=false}){
  }
  // Many copies of one model as instanced meshes: [x,z,height,rotation,y] each.
  function instanced(name,list,{shadow=true}={}){
-  const entry=models.get(name);if(!entry||!list.length)return;
+  const entry=models.get(name);if(!entry)return;
+  if(clear){const d=entry.size,across=Math.max(d.x,d.z)/2/d.y;list=list.filter(([x,z,height])=>!clear(x,z,height*across));}
+  if(!list.length)return;
   entry.object.updateMatrixWorld(true);
   entry.object.traverse(mesh=>{
    if(!mesh.isMesh)return;

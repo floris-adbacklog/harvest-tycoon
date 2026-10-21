@@ -357,9 +357,14 @@ async function loadModel(name){
 // first load is not slower; if any of it fails the farm simply stays as it is.
 async function addScenery(){
  try{
+  // Your farmer's evening chair stands before the scenery is planted, and the scenery leaves the farmer's loop, chair and trip spots
+  // free (21 Oct 2026, QA): the scenery reckons with what stands on the farm when it is planted, and the chair came at a different
+  // moment on every visit, so the bushes moved between visits and some stood on the farmer's loop. Only where the farmer comes.
+  const walking=farmerComes()?import('./farm-farmer.js').catch(()=>null):null;
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
-  await loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4);
-  buildScenery({scene,models,mobile:mobileLayout.matches});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
+  const [farmerSpots]=await Promise.all([walking,loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4)]);
+  if(farmerSpots)placeBench(farmerSpots.FARM_BENCH);
+  buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
  void addAnimals();
 }
@@ -401,20 +406,25 @@ async function addPets(){
 // farm's animals: not with reduced motion, Save-Data or a 2g line, and if it fails the farm simply has no farmer.
 // chair_001's seat faces its own -x: turned this much more, it faces the way FARM_BENCH says.
 const CHAIR_FACING=0;
+function farmerComes(){const connection=navigator.connection;return !(reducedMotion||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''));}
+// The evening bench (item 3): the farm's chair at the edge of the loop, placed before the scenery (addScenery) on a farm the farmer comes to.
+let farmBench=null;
+function placeBench(spot){if(villageWorld||farmBench||!models.has('chair_001'))return;const before=currentZone();zone('fields');cloneModel('chair_001',spot.x,spot.z,{height:spot.height,rotation:spot.turn+CHAIR_FACING});zone(before);farmBench=spot;}
+let sceneryDone=Promise.resolve();
 async function addFarmer(){
  try{
-  const connection=navigator.connection;if(reducedMotion||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
+  if(!farmerComes())return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
-  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,tripFor,FARM_BENCH}=await import('./farm-farmer.js');
+  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,tripFor}=await import('./farm-farmer.js');
+  // On the farm the farmer comes after the scenery is planted, so it never stands where the scenery looks for room.
+  if(!villageWorld)await sceneryDone;
   // On the farm the grass is the ground and a lane's top .085 over it, as for the pets (addPets).
   const walk=villageWorld?VILLAGE_WALK:FARM_WALK,lanes=roadRects();let ground=(x,z)=>{let y=0;for(const r of lanes){const inside=Math.min(x-r.minX,r.maxX-x,z-r.minZ,r.maxZ-z);if(inside>0)y=Math.max(y,.085*Math.min(1,inside/.3));}return y;};
   if(villageWorld){
    const {groundUnder}=await import('./village-scene.js'),xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
   }
-  // The evening bench (item 3): the farm's chair at the edge of the loop, there once the farmer is (farm-farmer.js FARM_BENCH).
-  let bench=null;
-  if(!villageWorld&&models.has('chair_001')){const before=currentZone();zone('fields');cloneModel('chair_001',FARM_BENCH.x,FARM_BENCH.z,{height:FARM_BENCH.height,rotation:FARM_BENCH.turn+CHAIR_FACING});zone(before);bench=FARM_BENCH;}
+  const bench=villageWorld?null:farmBench;
   // The family shirt (item 6) is drawn in the family's cut, colour and emblem: kept from the last Family read, or read once.
   const config=farmerOf(state,farmerFarm()),family=config.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
   walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family});farmerTrip=tripFor;
@@ -2021,7 +2031,7 @@ async function init(){
     panFarm(shift.side,shift.depth);
    }
   });
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)void addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()});

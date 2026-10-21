@@ -56,6 +56,19 @@ const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
 // ways). x, z: the seat; turn: the way the chair (and the farmer on it) faces: to the right of the screen, so they are seen sitting
 // (facing the camera a seated farmer looks like a standing one, and hides the chair); height: the chair's.
 export const FARM_BENCH=Object.freeze({x:-13.16,z:-.45,turn:Math.PI*3/4,height:.9});
+// Where the farm's scenery leaves room for your farmer (21 Oct 2026, QA): its bushes, sunflowers and tufts come from a seeded list
+// (scenery.js) that knows nothing of the farmer, and on a computer two bushes stood on the loop and a third beside it, so the farmer
+// walked through them. scenery.js asks this of every piece (x, z and how far it reaches round) and leaves out one in the way: of the
+// loop (each spot to the next), of the evening chair and the spot in front of it where they stand up, and of the trips' spots.
+const FARMER_ROOM=.35,toSegment=(x,z,[ax,az],[bx,bz])=>{const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz,t=l?Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l)):0;return Math.hypot(x-ax-t*dx,z-az-t*dz);};
+let farmerWays=null;
+export function inFarmerWay(x,z,r){
+ if(!farmerWays){
+  const loop=FARM_WALK.spots,front=[FARM_BENCH.x+Math.sin(FARM_BENCH.turn)*.7,FARM_BENCH.z+Math.cos(FARM_BENCH.turn)*.7];
+  farmerWays=[...loop.map((p,i)=>[p,loop[(i+1)%loop.length]]),[[FARM_BENCH.x,FARM_BENCH.z],front],...[...Object.values(FARM_TRIPS),...FIELD_TRIPS].map(t=>[t.at,t.at])];
+ }
+ return farmerWays.some(([a,b])=>toSegment(x,z,a,b)<r+FARMER_ROOM);
+}
 export const EVENING_FROM=20,MORNING_AT=7;
 export const isEvening=(date=new Date())=>{const h=date.getHours();return h>=EVENING_FROM||h<MORNING_AT;};
 // The family's farmers in the village (21 Oct 2026, item 5): up to six members of your Farm Family walk there too, each in their own

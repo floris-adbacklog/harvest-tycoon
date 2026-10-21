@@ -5,8 +5,8 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 test('the scenery loads after the farm is on screen and never stops the farm',()=>{
  const game=read('public/game.js');
- assert.match(game,/ready=true;if\(!villageWorld\)setupMinimap\(\);positionBuildingLabels\(\);updateUI\(\);if\(!villageWorld\)void addScenery\(\);/,'after the first frame, not during the loading screen');
- assert.match(game,/await loadInBatches\(SCENERY_MODELS\.filter\(name=>!models\.has\(name\)\),loadModel,4\);/);
+ assert.match(game,/ready=true;if\(!villageWorld\)setupMinimap\(\);positionBuildingLabels\(\);updateUI\(\);if\(!villageWorld\)sceneryDone=addScenery\(\);/,'after the first frame, not during the loading screen');
+ assert.match(game,/const \[farmerSpots\]=await Promise\.all\(\[walking,loadInBatches\(SCENERY_MODELS\.filter\(name=>!models\.has\(name\)\),loadModel,4\)\]\);/);
  assert.match(game,/catch\(error\)\{console\.warn\('The extra scenery was skipped\.',error\);\}/,'a failure leaves the farm as it is');
 });
 
