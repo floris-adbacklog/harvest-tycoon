@@ -18,7 +18,7 @@ function clock(){
   timers:{set:(f,ms)=>{list.push({id:++id,at:now+ms,f});return id;},clear:i=>{const k=list.findIndex(t=>t.id===i);if(k>=0)list.splice(k,1);}},
   async run(){list.sort((a,b)=>a.at-b.at);const t=list.shift();if(!t)return null;const waited=t.at-now;now=t.at;await t.f();await new Promise(r=>setTimeout(r,0));return waited/1000;}};
 }
-const A={playerId:'a',online:true,daysAway:0},B={playerId:'b',online:false,daysAway:1},C={playerId:'c',online:false,daysAway:5};
+const A={playerId:'a',online:true,daysAway:0},B={playerId:'b',online:true,daysAway:1},C={playerId:'c',online:true,daysAway:5};
 function visits({members=[A,B,C],evening=()=>false,busy=()=>false,random=()=>.5}={}){
  const c=clock(),came=[],here=new Set();let most=0;
  const v=createFamilyVisits({members:async()=>members,evening,busy,random,timers:c.timers,
@@ -26,15 +26,16 @@ function visits({members=[A,B,C],evening=()=>false,busy=()=>false,random=()=>.5}
  return {v,c,came,here,most:()=>most};
 }
 
-test('who comes: online members first, then the ones seen most lately; the first four take turns, never twice in a row',()=>{
- assert.deepEqual(visitOrder([C,B,A,{playerId:'d'},null,{name:'x'}]).map(m=>m.playerId),['a','b','c','d'],'online, then fewest days away; unknown days last; only members');
+test('who comes: only members online now (the owner, 21 Oct 2026), the ones seen most lately first; the first four take turns, never twice in a row',()=>{
+ assert.deepEqual(visitOrder([C,B,A,{playerId:'d'},{playerId:'e',online:false,daysAway:0},null,{name:'x'}]).map(m=>m.playerId),['a','b','c'],'online only, fewest days away first; only members');
+ assert.equal(pickVisitor([{playerId:'off',online:false,daysAway:0}]),null,'nobody online: nobody comes');
  const visited=new Map();let last=null;const order=[];
  for(let i=1;i<=6;i++){const m=pickVisitor([C,B,A],visited,last);order.push(m.playerId);visited.set(m.playerId,i);last=m.playerId;}
  assert.deepEqual(order,['a','b','c','a','b','c'],'online first, then rotating');
  // Someone online later in the list still comes first.
  assert.equal(pickVisitor([{playerId:'x',online:false,daysAway:0},{playerId:'y',online:true,daysAway:9}]).playerId,'y');
  // Only the first VISIT_POOL of the order.
- const many=Array.from({length:7},(_,i)=>({playerId:`m${i}`,online:false,daysAway:i}));const seen=new Set();const v2=new Map();let l2=null;
+ const many=Array.from({length:7},(_,i)=>({playerId:`m${i}`,online:true,daysAway:i}));const seen=new Set();const v2=new Map();let l2=null;
  for(let i=1;i<=12;i++){const m=pickVisitor(many,v2,l2);seen.add(m.playerId);v2.set(m.playerId,i);l2=m.playerId;}
  assert.equal(VISIT_POOL,4);assert.deepEqual([...seen].sort(),['m0','m1','m2','m3']);
  // One other member: always them; nobody: nobody.
@@ -77,7 +78,7 @@ test('game.js: only on the farm where your farmer walks (not the village, the ad
  assert.match(game,/async function startFamilyVisits\(createFarmWalker,ground\)\{\n try\{\n  if\(villageWorld\|\|!farmerComes\(\)\|\|familyVisits\)return;/,'the admin view and the village: never');
  assert.match(game,/  if\(villageWorld\)void addFamilyFarmers\(createFarmWalker,VILLAGE_FAMILY_WALKS\);\n  else void startFamilyVisits\(createFarmWalker,ground\);/,'after your own farmer, on the farm');
  // Who: the Family read (no new operation), kept 20 minutes for the visits; no family: [] without asking.
- assert.match(game,/members:\(\)=>familyFarmers\(FAMILY_VISIT_KEEP\),/);assert.match(game,/const FAMILY_VISIT_KEEP=20\*60000;/);
+ assert.match(game,/members:\(\)=>familyFarmers\(FAMILY_VISIT_KEEP\),/);assert.match(game,/const FAMILY_VISIT_KEEP=FAMILY_FARMERS_KEEP;/);
  assert.match(game,/const familyId=state\.family\?\.familyId,bridge=window\.parent\?\.harvestBridge;if\(!familyId\|\|!bridge\?\.request\)return \[\];/);
  assert.match(game,/evening:\(\)=>isEvening\(\),/);assert.match(game,/busy:\(\)=>document\.hidden\|\|tripNearVisit\(walker\?\.trip\?\.\(\)\),/);
  // One model, made when they come (lite on phones), in their own look and family shirt, thrown away when they go.

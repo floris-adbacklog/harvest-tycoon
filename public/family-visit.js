@@ -5,11 +5,12 @@
 // The times, in seconds: the first visit a minute or three after the farm is on screen, each visit about three minutes, then a break
 // of four to six minutes. A moment the visit cannot start (the evening, the tab hidden, your farmer on a trip that way): a short wait.
 export const VISIT_FIRST=Object.freeze([60,180]),VISIT_STAY=Object.freeze([150,210]),VISIT_BREAK=Object.freeze([240,360]),VISIT_RETRY=Object.freeze([20,40]);
-// Who may come: the members online now first, then the ones seen most lately; of those the first VISIT_POOL take turns.
+// Who may come: only the members online now (the owner, 21 Oct 2026: "alleen andere family members die online zijn"), the ones seen
+// most lately first; of those the first VISIT_POOL take turns.
 export const VISIT_POOL=4;
 const between=([a,b],random)=>a+random()*(b-a);
 export function visitOrder(members){
- return (Array.isArray(members)?members:[]).filter(m=>m&&typeof m.playerId==='string')
+ return (Array.isArray(members)?members:[]).filter(m=>m&&typeof m.playerId==='string'&&m.online===true)
   .sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(Number.isFinite(a.daysAway)?a.daysAway:Infinity)-(Number.isFinite(b.daysAway)?b.daysAway:Infinity));
 }
 // The next visitor: in that order, the one whose last visit is longest ago (never: first), and never the same one twice in a row when

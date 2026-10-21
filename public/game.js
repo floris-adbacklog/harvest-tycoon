@@ -443,28 +443,41 @@ async function addFarmer(){
 // familyFarmers), once a visit and kept 10 minutes (sessionStorage, for travelling back and forth); online members first, then the
 // ones seen most lately. One farmer at a time, each after a quiet moment, as your own; only moved while in the picture.
 const familyWalkers=[];
-const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=10*60000;
+// Only the members online now (the owner, 21 Oct 2026: "Zet players in village en farm gewoon alleen andere family members die online
+// zijn, toon ze anders niet"): kept two minutes, so who is shown follows who is online.
+const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=2*60000,FAMILY_FARMERS_SYNC=2*60000;
 async function familyFarmers(keep=FAMILY_FARMERS_KEEP){
  const familyId=state.family?.familyId,bridge=window.parent?.harvestBridge;if(!familyId||!bridge?.request)return [];
- try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<keep&&Array.isArray(kept.list)&&kept.list.every(m=>'online' in m))return kept.list;}catch{}
+ try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<keep&&Array.isArray(kept.list)&&kept.list.every(m=>'online' in m))return kept.list.filter(m=>m.online===true);}catch{}
  const data=await bridge.request({operation:'family',farmers:true});(await import('./family-shirt.js')).keepFamilyShirt(data?.family);
- const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string').sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(a.daysAway??0)-(b.daysAway??0))
+ const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string'&&m.online===true).sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(a.daysAway??0)-(b.daysAway??0))
   .slice(0,6).map(m=>({playerId:m.playerId,username:typeof m.username==='string'?m.username:'',online:m.online===true,daysAway:Number.isFinite(m.daysAway)?m.daysAway:null,farmer:m.farmer&&validFarmerConfig(m.farmer).ok?cleanFarmer(m.farmer):null}));
  try{sessionStorage.setItem(FAMILY_FARMERS_KEY,JSON.stringify({familyId,at:Date.now(),list}));}catch{}
  return list;
 }
 async function addFamilyFarmers(createFarmWalker,walks){
- try{
-  const list=await familyFarmers(),{groundUnder}=await import('./village-scene.js');
-  for(const [i,member] of list.slice(0,walks.length).entries()){
-   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1200));
-   const walk=walks[i],xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
-   const ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
-   const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
-   const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,tag:farmerTag(member.username),blockers:tagBlockers});
-   other.playerId=member.playerId;other.username=member.username;familyWalkers.push(other);
-  }
- }catch(error){console.warn('The family\'s farmers were skipped.',error);}
+ // Each member on a walk of their own (slot); every two minutes the ones gone offline leave and the ones come online join.
+ const slots=new Map(),villagers=new Set();
+ async function sync(){
+  try{
+   const list=await familyFarmers(),online=new Set(list.map(m=>m.playerId)),{groundUnder}=await import('./village-scene.js');
+   if(!villageWorld)return;
+   for(const other of [...villagers])if(!online.has(other.playerId)){
+    villagers.delete(other);slots.delete(other);const i=familyWalkers.indexOf(other);if(i>=0)familyWalkers.splice(i,1);other.root.removeFromParent();other.dispose();
+   }
+   for(const member of list){
+    if([...villagers].some(o=>o.playerId===member.playerId))continue;
+    const used=new Set(slots.values()),slot=walks.findIndex((_,i)=>!used.has(i));if(slot<0)break;
+    await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1200));
+    const walk=walks[slot],xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
+    const ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
+    const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
+    const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,tag:farmerTag(member.username),blockers:tagBlockers});
+    other.playerId=member.playerId;other.username=member.username;familyWalkers.push(other);villagers.add(other);slots.set(other,slot);
+   }
+  }catch(error){console.warn('The family\'s farmers were skipped.',error);}
+ }
+ await sync();setInterval(()=>{if(!document.hidden)void sync();},FAMILY_FARMERS_SYNC);
 }
 // A family visit on your farm (21 Oct 2026, the owner, option 2: "Now and then a family member visits your farm: one at a time,
 // preferably someone online now, takes a walk by the Farmhouse and leaves after a few minutes. Tap them and their profile opens.").
@@ -474,7 +487,7 @@ async function addFamilyFarmers(createFarmWalker,walks){
 // or in the admin view), only in a Farm Family with someone else in it, never in the evening (20:00 to 7:00, when your farmer rests).
 // One visitor at a time, made when they come and thrown away when they go; a tap: a hop, then their profile (tapFamilyFarmer). No
 // words, no toast, no window. Who: the same Family read as the village's farmers (familyFarmers), kept 20 minutes for the visits.
-const FAMILY_VISIT_KEEP=20*60000;
+const FAMILY_VISIT_KEEP=FAMILY_FARMERS_KEEP;
 let familyVisits=null,nearVisit=()=>false;
 async function startFamilyVisits(createFarmWalker,ground){
  try{
