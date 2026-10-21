@@ -243,3 +243,21 @@ test('your farmer joins in: a harvest, a collect or a chore takes them to a chec
  assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches\}\);farmerTrip=tripFor;/);
  assert.doesNotMatch(walker,/localStorage|runAction|client\.|track\(/,'visual only');
 });
+
+test('your farmer celebrates a level-up or an event won: two happy hops and a little confetti, once the level-up card is closed (the owner, 21 Oct 2026, item 2)',()=>{
+ const walker=read('public/farm-farmer.js'),game=read('public/game.js'),events=read('public/live-events-ui.js');
+ assert.match(walker,/const CHEER_HOPS=2,CHEER_UP=\.18;/);
+ assert.match(walker,/me\.hops=CHEER_HOPS;me\.hopUp=CHEER_UP;me\.hopping=HOP_TIME;/);
+ assert.match(walker,/if\(me\.hopping<=0&&me\.hops>1\)\{me\.hops--;me\.hopping=HOP_TIME;at\.y=ground\(at\.x,at\.z\);\}/,'the second hop straight after the first, from the ground');
+ assert.match(walker,/me\.landed\?\.\(\);me\.landed=null;me\.hops=1;me\.hopUp=HOP_UP;/,'a tap is one ordinary hop again');
+ assert.match(walker,/function celebrate\(\)\{\n  if\(me\.away\|\|me\.hopping>0\|\|!\(performance\.now\(\)-\(me\.steppedAt\?\?-Infinity\)<MOVED_RECENTLY\)\)return null;/,'not in the picture, on the bench or mid-hop: nothing');
+ // Both level-up paths (a farm action and a sweep) and an event's reward collected (coins or diamonds).
+ assert.equal(game.match(/if\(change\.leveled\)track\('level_up',\{level:change\.level\}\);if\(change\.leveled\)farmerCheers\(\);/g).length,2);
+ assert.match(game,/onClaimed:reward=>\{if\(reward\?\.coins>0\|\|reward\?\.diamonds>0\)farmerCheers\(\);\}/);
+ assert.match(events,/notify\?\.\(r\.reward\.message\);onClaimed\?\.\(r\.reward\);/);
+ // The card first: a beat, then they wait while a window is in front (a minute at most).
+ assert.match(game,/const CHEER_BEAT=900,CHEER_WAIT=60000;/);
+ assert.match(game,/if\(modalOpen\(\)&&performance\.now\(\)-asked<CHEER_WAIT\)\{setTimeout\(now,400\);return;\}const at=walker\.celebrate\(\);if\(at\)confettiAt\(\.\.\.at\);/);
+ // The confetti: the harvest's particles (under the same cap of 100), never with reduced motion.
+ assert.match(game,/function confettiAt\(x,y,z,count=22\)\{\n if\(reducedMotion\)return;\n for\(let i=0;i<count&&particles\.length<100;i\+\+\)\{/);
+});

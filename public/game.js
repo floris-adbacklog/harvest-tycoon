@@ -222,7 +222,7 @@ let sessionTracked=false;
 // stands (review fix: step 7's "Tap Buildings." came with it, under the card), and the guide's own pointer waits for the card (beginner-ui.js quiet).
 const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')&&!coach.active});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
 function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
@@ -848,6 +848,27 @@ function particleBurst(id,water=false,count=13){
   mesh.position.set(v.x,.9,v.z);scene.add(mesh);particles.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*2,1.5+Math.random()*1.5,(Math.random()-.5)*2),life:1});
  }
 }
+// A little confetti (21 Oct 2026, item 2: your farmer celebrates a level-up or an event won): the harvest's particles, flat, thrown up
+// from a spot, in the game's colours made bright (buttons.css's green, gold, red and diamond blue, and the harvest's light gold; not
+// toned down by the farm's light, or a speck of it is lost on the grass). Never with reduced motion.
+const CONFETTI=[0x58b865,0xf2b544,0xe0624c,0x7fc3ea,0xffe58a];
+function confettiAt(x,y,z,count=22){
+ if(reducedMotion)return;
+ for(let i=0;i<count&&particles.length<100;i++){
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(.3,.18),new THREE.MeshBasicMaterial({color:CONFETTI[i%CONFETTI.length],transparent:true,side:THREE.DoubleSide,toneMapped:false}));
+  mesh.position.set(x,y,z);mesh.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,0);scene.add(mesh);
+  particles.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*1.8,1.8+Math.random()*1.4,(Math.random()-.5)*1.8),life:1.3});
+ }
+}
+// Your farmer celebrates (21 Oct 2026, the owner: "Doe alles behalve 9", item 2): a level-up or an event's reward collected. Two happy
+// hops and the confetti, only when they are in the picture. The level-up card comes up a moment after the action (CHEER_BEAT); a window
+// in front first closes, so it is seen: until then they wait (a minute at most).
+const CHEER_BEAT=900,CHEER_WAIT=60000;
+function farmerCheers(){
+ if(!walker?.celebrate)return;
+ const asked=performance.now(),now=()=>{if(modalOpen()&&performance.now()-asked<CHEER_WAIT){setTimeout(now,400);return;}const at=walker.celebrate();if(at)confettiAt(...at);};
+ setTimeout(now,CHEER_BEAT);
+}
 // Where a spot on the farm is on the screen (in page pixels).
 function toScreen(x,y,z){const p=new THREE.Vector3(x,y,z).project(camera),r=world.getBoundingClientRect();return {x:r.left+(p.x*.5+.5)*r.width,y:r.top+(-p.y*.5+.5)*r.height};}
 // The harvest flies from the field to the Market button (harvest-fly.js), where it goes into your stock.
@@ -999,7 +1020,7 @@ function endSweep(){
  sweepTip.swept(action,run.count);
  // As after a tap (runAction): the guide, the reminder, a level-up.
  beginner?.afterAction(result);if(action==='harvest'){nudge?.harvested();farmerJoins({type:'field',action:'harvest',id:result.fields.at(-1).id});}
- const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});
+ const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();
  // The chime that closes the sweep (its snips played on the way), or the level-up's own.
  try{const cue=soundForAction({type:'fields',action},result,run.level,levelProgress(state).level);if(cue){farmAudio.play(cue);if(cue==='levelup')haptic('levelup');}}catch{}
  const crops={},last=result.fields.at(-1).id;let xp=0,golden=0;
@@ -1702,7 +1723,7 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>villageWorld?zoomFarm(1.25):stepFarm(1));$('zoom-out').addEventListener('click',()=>villageWorld?zoomFarm(1/1.25):stepFarm(-1));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
- liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh()});
+ liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh(),onClaimed:reward=>{if(reward?.coins>0||reward?.diamonds>0)farmerCheers();}});
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
  // that has not been paid yet. After the code, a farm reload pays the diamonds (the gift pop-up) and both disappear.
  emailCheckUI=createEmailCheck({bridge:window.parent.harvestBridge,email:()=>emailAccount.email,canChange:()=>emailAccount.canChange===true,onDone:()=>client.refresh(),

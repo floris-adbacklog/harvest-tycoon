@@ -69,7 +69,7 @@ export function eligibilityNote(eligibility,now=Date.now()){
  return null;
 }
 
-export function createLiveEventsUI({state,notify,refreshFarm,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge,now=farmNow}){
+export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge,now=farmNow}){
  const button=doc.getElementById('events-button'),dot=doc.getElementById('events-dot'),hint=doc.getElementById('mobile-events-hint'),entry=doc.querySelector('[data-menu-action="events-button"]');
  let locked=null;
  // A running event you have not joined or opened yet lights the dot too (30 Sep 2026: players forgot an event was on; joining counts
@@ -187,7 +187,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
  }
  async function claim(b){
   if(busy)return;busy=true;b.disabled=true;
-  try{const r=await bridge.request({operation:'events',command:'claim',eventId:b.dataset.claim});notify?.(r.reward.message);await refreshFarm?.();await load();}
+  try{const r=await bridge.request({operation:'events',command:'claim',eventId:b.dataset.claim});notify?.(r.reward.message);onClaimed?.(r.reward);await refreshFarm?.();await load();}
   catch(e){dialog.querySelector('[data-status]').textContent=e.message;b.disabled=false;}
   finally{busy=false;}
  }

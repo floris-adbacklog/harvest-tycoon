@@ -52,6 +52,8 @@ const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
 // How long they stand at a spot (seconds), and what they do there: breathe, look around or rest on one leg.
 const REST=[4,10],STILL={idle:.45,look:.35,relaxed:.2};
 const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14,MOVED_RECENTLY=250,LANDED_WAIT=1500;
+// A celebration (21 Oct 2026, item 2: a level-up or an event won): two happy hops, a little higher than a tap's.
+const CHEER_HOPS=2,CHEER_UP=.18;
 const turnOf=(from,to)=>((to-from+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 const turnTowards=(from,to,step)=>{const d=turnOf(from,to);return Math.abs(d)<=step?from+d:from+Math.sign(d)*step;};
 const choose=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,0);for(const [k,w] of Object.entries(odds)){r-=w;if(r<=0)return k;}return 'idle';};
@@ -80,7 +82,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  hit.position.y=walk.height*.52;hit.userData.farmer=true;root.add(hit);
  const spots=walk.spots,start=Math.floor(random()*spots.length);
  root.position.set(spots[start][0],ground(spots[start][0],spots[start][1]),spots[start][1]);scene.add(root);
- const me={spot:start,target:null,rest:REST[0]*random(),yaw:Math.PI/4,face:Math.PI/4,state:'idle',current:null,hopping:0,trip:null,tripDone:-Infinity,clock:0};
+ const me={spot:start,target:null,rest:REST[0]*random(),yaw:Math.PI/4,face:Math.PI/4,state:'idle',current:null,hopping:0,hops:1,hopUp:HOP_UP,trip:null,tripDone:-Infinity,clock:0};
  const frustum=new THREE.Frustum(),matrix=new THREE.Matrix4(),sphere=new THREE.Sphere();let frame=0,wait=0,seenBy=null;
  function play(name,fade=FADE){
   const next=actions[name];if(!next||next===me.current)return;
@@ -88,13 +90,18 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  }
  play('idle');mixer.update(random()*3);
  // Facing the camera a little (it looks from +x, +z) while standing; the next spot of the loop when the rest is over.
- function rest(){me.target=null;me.rest=REST[0]+random()*(REST[1]-REST[0]);me.face=Math.PI/4+(random()-.5)*1.2;play(choose(STILL,random));}
+ function rest(){
+  // On a trip a pause (after a hop) is short, and the stay keeps the time it had left.
+  if(me.trip){me.target=null;if(me.trip.leg!=='stay')me.rest=.5;play(me.trip.leg==='stay'?'look':'idle');return;}
+  me.target=null;me.rest=REST[0]+random()*(REST[1]-REST[0]);me.face=Math.PI/4+(random()-.5)*1.2;play(choose(STILL,random));}
  function step(dt){
   const at=root.position;
   if(me.hopping>0){
    // The hop (21 Oct 2026, the owner: the pack's jump, made small, sank into the ground: its legs still tucked a full jump's worth):
    // the whole farmer goes up and down once, standing as they are; the ground is never crossed.
-   me.hopping=Math.max(0,me.hopping-dt);at.y=ground(at.x,at.z)+Math.sin(Math.PI*(1-me.hopping/HOP_TIME))*HOP_UP*walk.height;
+   me.hopping=Math.max(0,me.hopping-dt);at.y=ground(at.x,at.z)+Math.sin(Math.PI*(1-me.hopping/HOP_TIME))*me.hopUp*walk.height;
+   // A celebration's next hop follows straight on.
+   if(me.hopping<=0&&me.hops>1){me.hops--;me.hopping=HOP_TIME;at.y=ground(at.x,at.z);}
    if(me.hopping<=0){at.y=ground(at.x,at.z);rest();me.landed?.();me.landed=null;}
   }
   else if(me.target){
@@ -161,14 +168,23 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   // On their way somewhere: the waypoint they were walking to is taken again after the hop.
   if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
   me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');
-  me.landed?.();me.landed=null;
+  me.landed?.();me.landed=null;me.hops=1;me.hopUp=HOP_UP;
   if(!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY)){at0();return Promise.resolve();}
   me.hopping=HOP_TIME;
   return new Promise(done=>{const timer=setTimeout(()=>{me.landed=null;done();},LANDED_WAIT);me.landed=()=>{clearTimeout(timer);done();};});
  }
+ // A celebration (a level-up, an event won): they stop, turn to you and hop twice. Returns where to throw a little confetti (just over
+ // their head), or null when they are not in the picture (or not there: resting on the bench in the evening) and nothing happens.
+ function celebrate(){
+  if(me.away||me.hopping>0||!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY))return null;
+  if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
+  me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');
+  me.hops=CHEER_HOPS;me.hopUp=CHEER_UP;me.hopping=HOP_TIME;
+  return [root.position.x,root.position.y+walk.height*1.1,root.position.z];
+ }
  const at0=()=>{me.hopping=0;root.position.y=ground(root.position.x,root.position.z);};
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
  const where=()=>{if(!seenBy)return null;const p=root.position.clone();p.y+=walk.height*.5;p.project(seenBy);return {x:p.x,y:p.y,state:me.state,world:[root.position.x,root.position.z]};};
- const result={farmer,root,hit,ground,animate,pick,react,where,visit,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
+ const result={farmer,root,hit,ground,animate,pick,react,where,visit,celebrate,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
  FARM_WALKERS.add(result);return result;
 }
