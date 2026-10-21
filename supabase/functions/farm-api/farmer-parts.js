@@ -705,11 +705,14 @@ export const creatorParts=slot=>partsOfSlot(slot).filter(farmerOffered);
 // A saved farmer as stored: only its worn slots, as plain ids.
 export const cleanFarmer=config=>Object.fromEntries(FARMER_SLOTS.filter(slot=>typeof config?.[slot]==='string').map(slot=>[slot,config[slot]]));
 // The farmer a farm shows: its own (state.farmer, written by the farm action farmer_wear) or, for a farm that never made one, the
-// default farmer. A part it no longer has (a refunded season) or no longer offered comes off; anything broken is the default farmer.
+// default farmer. A part it no longer has (a refunded season, the family shirt after leaving the family) or no longer offered comes
+// off; a top or trousers that come off make way for the free plain ones (QA, 21 Oct 2026: a farmer who left their family walked
+// bare-chested on the farm, in the village and in the share picture). Anything broken is the default farmer.
+const IN_PLACE_OF=Object.freeze({top:'outwear_001',bottom:'pants_002'});
 export function farmerOf(state,farm={}){
  const saved=state?.farmer;
  if(!saved||typeof saved!=='object'||Array.isArray(saved)||!validFarmerConfig(saved).ok)return {...DEFAULT_FARMER};
  const owned=new Set(farmerOwned(state,farm));let config=cleanFarmer(saved);
- for(const slot of FARMER_SLOTS){const p=farmerPart(config[slot]);if(p&&(!farmerOffered(p)||p.earned&&!owned.has(p.id)))config=wearPart(config,slot,null);}
+ for(const slot of FARMER_SLOTS){const p=farmerPart(config[slot]);if(p&&(!farmerOffered(p)||p.earned&&!owned.has(p.id)))config=wearPart(wearPart(config,slot,null),slot,IN_PLACE_OF[slot]??null);}
  return validFarmerConfig(config).ok?config:{...DEFAULT_FARMER};
 }

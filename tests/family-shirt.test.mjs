@@ -58,7 +58,8 @@ test('My farmer: a member wears it as a top while they are in a family, drawn in
  // The farm action: saved in a family; a farm that left its family shows it no more (farmerOf takes it off).
  const s=structuredClone(inFamily);applyFarmAction(s,{type:'farmer_wear',farmer:worn},now);assert.equal(s.farmer.top,FAMILY_SHIRT);
  assert.equal(farmerOf(s,{level:15}).top,FAMILY_SHIRT);
- const left={...s,family:{familyId:null,unclaimedCount:0}};assert.equal(farmerOf(left,{level:15}).top,undefined);
+ const left={...s,family:{familyId:null,unclaimedCount:0}};assert.equal(farmerOf(left,{level:15}).top,'outwear_001','the plain T-shirt in its place, never bare-chested');
+ assert.ok(validFarmerConfig(farmerOf(left,{level:15}),{owned:farmerOwned(left,{level:15}),offered:true}).ok,'and My farmer can save it as it shows');
  assert.throws(()=>applyFarmAction(structuredClone(alone),{type:'farmer_wear',farmer:worn},now));
  // The files: the family's cut, or the T-shirt until the family is known; My farmer's picture sheets are untouched (its own tile).
  assert.deepEqual(farmerFiles(worn,{shirt:'outwear_026'}).filter(f=>f.startsWith('outwear')),FARMER_PARTS.outwear_026.files);
