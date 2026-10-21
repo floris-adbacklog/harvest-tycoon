@@ -189,6 +189,55 @@ dialog.is-card:has(>:is(.level-up-close,.rookie-close,.popup-close,.payment-dism
  .dialog-heading .dialog-badge{width:36px;height:36px}
  dialog.is-sheet .dialog-top{border-bottom:0;margin-bottom:12px}
  dialog.is-cheer .level-up-art,dialog.is-cheer .welcome-back-art .game-art{width:56px;height:56px}
+ /* Kongregate without full screen (21 Oct 2026, the owner: "vaak zijn ze te groot als in normale (niet uitvergrote) weergave"): in a
+    1024x640 to 1100x700 frame every list window stood from 12 px under the top to 12 px above the bottom, the big ones 1000 px wide with
+    one long column (a Bakery recipe 964 px wide and 221 px high, one and a half market rows under the day's pick, the family's heading a
+    third of its window). Now the farm shows around every window, the long lists stand in two columns as in a big window (desktop-hud.css),
+    and the parts above a list take less room. The heading and its × stay on top while the window scrolls, as everywhere. */
+ dialog.is-sheet,dialog.is-card{max-height:calc(100dvh - 40px)}
+ dialog.is-sheet.is-l{width:min(900px,calc(100vw - 96px))}
+ dialog.is-sheet.is-m{width:min(680px,calc(100vw - 96px))}
+ dialog.is-sheet .dialog-heading,dialog.is-card:not(.is-cheer) .dialog-heading{padding-top:12px}
+ dialog.is-sheet .dialog-top{padding-bottom:8px}
+ dialog.is-sheet .dialog-top .dialog-heading{padding-top:12px;padding-bottom:4px;margin-bottom:8px}
+ /* Tabs: one row of 40 px. */
+ .market-tabs>button,#family-tabs button{min-height:40px;padding-block:5px}
+ .market-tabs>button>.game-art,#family-tabs .game-art{width:22px;height:22px}
+ /* The Market: the day's pick smaller, the rows closer together. */
+ #market-outlook{margin:0 0 10px;padding:10px 14px}
+ #market-outlook .market-highlight{margin:6px 0}
+ #market-outlook .market-highlight>.game-art{width:36px;height:36px}
+ #market-outlook .market-highlight strong{font-size:18px}
+ #market-outlook .market-forecast{padding-top:6px}
+ #market-outlook .market-board-link{margin-top:4px}
+ #market-items .market-row.market-card{padding:8px 0}
+ /* Farm family: a smaller emblem, the tabs right under the heading. */
+ #family-dialog .family-heading-emblem,#family-dialog .family-heading-emblem>.family-emblem{width:44px;height:44px}
+ #family-tabs{margin:6px 0 0}
+ /* A building: the chain, the slots and "What shall we make?" take less room (as on a phone), so the recipes start higher up. */
+ #building-content .milling-chain{padding:6px 8px}
+ #building-content .milling-chain .game-art{width:32px;height:32px}
+ #building-content .milling-chain>span{gap:2px}
+ #building-content .milling-note{margin:6px 0 10px;font-size:13px}
+ #building-content .production-capacity{margin:4px 0 8px}
+ #building-content .production-batches{margin-bottom:10px}
+ #building-content .recipe-section-heading{margin:12px 0 6px}
+ #building-content .recipe-section-heading h3{font-size:19px}
+ #building-content .first-batch-note{margin:4px 0 10px}
+ /* Today: the week of the streak and its gift in less height. */
+ #daily-gift .streak-panel{padding:10px 12px;margin-bottom:10px}
+ #daily-gift .streak-head{margin-bottom:8px}
+ #daily-gift .streak-days{margin-bottom:8px}
+ .today-tabs{margin:10px 0 8px}
+ /* Seeds and Quests: the lines above the list closer to it. */
+ #seed-dialog>p{margin-bottom:10px}
+ #seed-dialog .seed-yield-line{margin-bottom:10px}
+ #task-list .quest-item{padding:10px}
+ /* My farmer: the farmer a little lower (its parts stand in two rows, desktop-hud.css). */
+ dialog.farmer-maker .farmer-maker-stage{height:clamp(150px,28vh,220px)}
+ /* The Fish book over the pond: the same room around it, its title and × on top while it scrolls. */
+ dialog .pond-book{max-height:calc(100% - 40px)}
+ dialog .pond-book-head{position:sticky;top:-14px;z-index:2;margin-top:-14px;padding-top:14px;padding-bottom:6px;background:var(--cream)}
 }
 /* A fold whose summary is the rule itself, with "How it works" at its end for the rest. */
 details.fold>summary .fold-more{margin-inline-start:auto;color:var(--ink-soft);font-weight:700}

@@ -151,4 +151,20 @@
   /* Under 501 px (landscape, a mouse) there is no map above the side tools (as before). */
   @media(max-height:500px){.side-tools{--tool:clamp(24px,calc((100dvh - 160px)/12),38px);top:100px}}
  }
+ /* The windows with a long list (21 Oct 2026, Kongregate without full screen, the owner: "vaak zijn ze te groot"): two columns, as in a
+    big window above (dialog-shell.css makes the window itself smaller and what stands above the list shorter). */
+ #market-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
+ #market-items>:not(.market-card){grid-column:1/-1}
+ #market-items .market-price-list{grid-template-columns:repeat(4,minmax(0,1fr))}
+ :is(#crop-catalog,#building-dialog .recipe-list,#today-content .daily-list){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ :is(#crop-catalog,#building-dialog .recipe-list)>.future-unlocks{grid-column:1/-1}
+ :is(#crop-catalog,#building-dialog .recipe-list) .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #building-dialog .future-unlocks .recipe-card{grid-column:auto}
+ #building-dialog .recipe-list>.factory-recipe-group{align-self:start}
+ #building-dialog .recipe-list>.factory-recipe-group[open]{grid-column:1/-1}
+ #building-dialog .factory-recipe-group[open] .factory-recipe-group-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ /* My farmer: the twelve parts in two rows (one row ran on past the window's edge: Costume, Shoes and Gloves only by a sideways scroll a
+    mouse cannot find). */
+ dialog.farmer-maker .farmer-maker-tabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));overflow:visible}
+ dialog.farmer-maker .farmer-maker-tabs button{min-width:0}
 }
