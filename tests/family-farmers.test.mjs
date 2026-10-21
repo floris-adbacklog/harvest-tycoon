@@ -51,14 +51,15 @@ test('the village: up to six of your family\'s farmers, each in their own look o
   }
  }
  const game=read('public/game.js');
- // Once a visit, kept 10 minutes; online members first; at most six; only in the village, after your own farmer (the same rules).
+ // Kept a minute, read again every two; only members online now; at most six; after your own farmer (the same rules).
+ // (On the farm too since 21 Oct 2026: tests/family-online.test.mjs.)
  assert.match(game,/const data=await bridge\.request\(\{operation:'family',farmers:true\}\);/);
- assert.match(game,/const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=2\*60000,FAMILY_FARMERS_SYNC=2\*60000;/);
- assert.match(game,/typeof m\.playerId==='string'&&m\.online===true\)\.sort\(/,'only members online now (the owner, 21 Oct 2026)');
+ assert.match(game,/const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=60000,FAMILY_FARMERS_SYNC=2\*60000;/);
+ assert.match(game,/typeof m\.playerId==='string'&&m\.online===true\)\.sort\(\(a,b\)=>\(a\.daysAway\?\?0\)-\(b\.daysAway\?\?0\)\)/,'only members online now (the owner, 21 Oct 2026), seen most lately first');
  assert.match(game,/async function familyFarmers\(keep=FAMILY_FARMERS_KEEP\)\{/);assert.match(game,/kept\?\.familyId===familyId&&Date\.now\(\)-kept\.at<keep&&/);
  assert.match(game,/\.slice\(0,6\)\.map\(m=>\(\{playerId:m\.playerId,username:typeof m\.username==='string'\?m\.username:'',online:m\.online===true,daysAway:Number\.isFinite\(m\.daysAway\)\?m\.daysAway:null,farmer:m\.farmer&&validFarmerConfig\(m\.farmer\)\.ok\?cleanFarmer\(m\.farmer\):null\}\)\);/);
- assert.match(game,/if\(villageWorld\)void addFamilyFarmers\(createFarmWalker,VILLAGE_FAMILY_WALKS\);/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:member\.farmer\?\?undefined,name:'family-farmer',family,tag:farmerTag\(member\.username\),blockers:tagBlockers\}\);/);
+ assert.match(game,/const walks=villageWorld\?VILLAGE_FAMILY_WALKS:FARM_FAMILY_WALKS,/);
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:member\.farmer\?\?undefined,name:'family-farmer',family,appear:true,tag:farmerTag\(member\.username\),blockers:tagBlockers\}\);/);
  assert.match(game,/for\(const other of familyWalkers\)other\.animate\(dt,camera\);/);
  // A tap: after your own farmer, the hop, then that member's profile.
  assert.match(game,/for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;/);

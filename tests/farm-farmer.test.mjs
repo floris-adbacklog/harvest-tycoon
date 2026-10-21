@@ -156,8 +156,8 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/async function addFarmer\(\)\{\n try\{\n  if\(!farmerComes\(\)\)return;/);
  assert.match(game,/const config=farmerOf\(state,farmerFarm\(\)\),family=/);assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config,trips:/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
- assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n \/\/ Then your family's farmers in the village \(item 5\): their profile\.\n for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;\n\}/,'asked last of all (then the family\'s)');
- assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{\n[^\n]*\n   if\(me\.visit\?\.leg==='in'\)arrived\(\);else if\(me\.visit\?\.leg==='out'\)gone\(\);\n   if\(me\.trip\)/,'only on screen (on a trip: only where they are; a visitor comes or goes at once)');
+ assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n \/\/ Then your family's farmers on the farm and in the village \(item 5\): their profile\.\n for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;\n\}/,'asked last of all (then the family\'s)');
+ assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{\n[^\n]*\n   if\(fade\)fadeBy\(Infinity\);\n   if\(me\.trip\)/,'only on screen (on a trip: only where they are; a family member\'s fade is over at once)');
  assert.doesNotMatch(walker,/localStorage|runAction|state\.|client\.|track\(/,'it saves and counts nothing');
  const {FARM_WALK,VILLAGE_WALK}=await import('../public/farm-farmer.js');
  const {FARM_PETS,VILLAGE_DEER}=await import('../public/farm-pets.js');

@@ -196,8 +196,7 @@ function farmerJoins(action){
  if(action.type==='field'&&action.action==='harvest'&&plots[action.id]){look=[plots[action.id].x,plots[action.id].z];place=farmerTrip('fields',look);}
  else if((action.type==='collect'||action.type==='collect_all')&&Object.hasOwn(BUILDINGS,action.building)&&ANCHORS[action.building]){look=anchorAt(action.building);place=farmerTrip(action.building);}
  else if(action.type==='chore'){look=anchorAt('chores');place=farmerTrip('chores');}
- // Not up the lane past a family visitor (farm-farmer.js tripNearVisit): the two never walk through each other.
- if(place&&!(familyVisits?.visitor&&nearVisit(place)))walker.visit(place,look);
+ if(place)walker.visit(place,look);
 }
 function tapOwnFarmer(){const me=window.parent?.harvestBridge?.playerId,landed=walker?.react()??Promise.resolve();if(me&&window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(me,{back:null}));}
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
@@ -420,7 +419,7 @@ async function addFarmer(){
  try{
   if(!farmerComes())return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
-  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,tripFor}=await import('./farm-farmer.js');
+  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,FARM_FAMILY_WALKS,FARM_FAMILY_LITE,familyStage,tripFor}=await import('./farm-farmer.js');
   // On the farm the farmer comes after the scenery is planted, so it never stands where the scenery looks for room.
   if(!villageWorld)await sceneryDone;
   // On the farm the grass is the ground and a lane's top .085 over it, as for the pets (addPets).
@@ -433,80 +432,59 @@ async function addFarmer(){
   // The family shirt (item 6) is drawn in the family's cut, colour and emblem: kept from the last Family read, or read once.
   const config=farmerOf(state,farmerFarm()),family=config.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
   walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family,tag:farmerTag(ownName()),blockers:tagBlockers});farmerTrip=tripFor;
-  if(villageWorld)void addFamilyFarmers(createFarmWalker,VILLAGE_FAMILY_WALKS);
-  else void startFamilyVisits(createFarmWalker,ground);
+  // Your Farm Family's members online now, on the farm and in the village alike (on a phone's farm at most FARM_FAMILY_LITE).
+  const walks=villageWorld?VILLAGE_FAMILY_WALKS:FARM_FAMILY_WALKS,cap=villageWorld||!(handheld||mobileLayout.matches)?walks.length:FARM_FAMILY_LITE;
+  void addFamilyFarmers(createFarmWalker,familyStage,walks,cap,villageWorld?null:ground);
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
-// Your Farm Family's farmers in the village (21 Oct 2026, the owner: "Doe alles behalve 9", item 5): up to six members walk there too,
-// each in their own look (their saved farmer, or the default one), each round a small loop of their own (farm-farmer.js
-// VILLAGE_FAMILY_WALKS); a tap: a hop, then that member's profile. Who: the Family read with farmers (farm-api family-service.js
-// familyFarmers), once a visit and kept 10 minutes (sessionStorage, for travelling back and forth); online members first, then the
-// ones seen most lately. One farmer at a time, each after a quiet moment, as your own; only moved while in the picture.
+// Your Farm Family's farmers (21 Oct 2026, the owner: "Doe alles behalve 9", item 5, then "toon alle online players in de fam in farm en
+// village, dus geen 'bezoekjes' meer"): every other member online now walks on your farm and in the village, all at once and for as
+// long as they are online; members not online are not shown. Each in their own look (their saved farmer, or the default one), each
+// round a small loop of their own (farm-farmer.js FARM_FAMILY_WALKS on the farm, VILLAGE_FAMILY_WALKS in the village: six each; more
+// online than that: the six seen most lately; a phone's farm three, FARM_FAMILY_LITE). A tap: a hop, then that member's profile. Who:
+// the Family read with farmers (farm-api family-service.js familyFarmers), kept a minute (sessionStorage, for travelling back and
+// forth) and read again every two minutes: who went offline fades out, who came online fades in. One farmer at a time, each after a
+// quiet moment, as your own; only moved while in the picture, a phone at every other frame. Not with reduced motion, Save-Data, a 2g
+// line or in the admin view (addFarmer: farmerComes). In the evening they keep walking: they are online (only your own farmer rests).
 const familyWalkers=[];
 // Only the members online now (the owner, 21 Oct 2026: "Zet players in village en farm gewoon alleen andere family members die online
-// zijn, toon ze anders niet"): kept two minutes, so who is shown follows who is online.
-const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=2*60000,FAMILY_FARMERS_SYNC=2*60000;
+// zijn, toon ze anders niet"): kept a minute and read again every two, so who is shown follows who is online.
+const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=60000,FAMILY_FARMERS_SYNC=2*60000;
 async function familyFarmers(keep=FAMILY_FARMERS_KEEP){
  const familyId=state.family?.familyId,bridge=window.parent?.harvestBridge;if(!familyId||!bridge?.request)return [];
  try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<keep&&Array.isArray(kept.list)&&kept.list.every(m=>'online' in m))return kept.list.filter(m=>m.online===true);}catch{}
  const data=await bridge.request({operation:'family',farmers:true});(await import('./family-shirt.js')).keepFamilyShirt(data?.family);
- const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string'&&m.online===true).sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(a.daysAway??0)-(b.daysAway??0))
+ const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string'&&m.online===true).sort((a,b)=>(a.daysAway??0)-(b.daysAway??0))
   .slice(0,6).map(m=>({playerId:m.playerId,username:typeof m.username==='string'?m.username:'',online:m.online===true,daysAway:Number.isFinite(m.daysAway)?m.daysAway:null,farmer:m.farmer&&validFarmerConfig(m.farmer).ok?cleanFarmer(m.farmer):null}));
  try{sessionStorage.setItem(FAMILY_FARMERS_KEY,JSON.stringify({familyId,at:Date.now(),list}));}catch{}
  return list;
 }
-async function addFamilyFarmers(createFarmWalker,walks){
- // Each member on a walk of their own (slot); every two minutes the ones gone offline leave and the ones come online join.
- const slots=new Map(),villagers=new Set();
+// walks: the six loops; cap: how many of them to fill; ground: the farm's (the village's is the hills' under each loop).
+async function addFamilyFarmers(createFarmWalker,familyStage,walks,cap,ground){
+ // Each member on a walk of their own (shown: playerId -> walk); every two minutes the ones gone offline leave and the ones come
+ // online join, each fading in where they walk (or out where they stand).
+ const shown=new Map(),walkers=new Map();let busy=false;
  async function sync(){
+  if(busy)return;busy=true;
   try{
-   const list=await familyFarmers(),online=new Set(list.map(m=>m.playerId)),{groundUnder}=await import('./village-scene.js');
-   if(!villageWorld)return;
-   for(const other of [...villagers])if(!online.has(other.playerId)){
-    villagers.delete(other);slots.delete(other);const i=familyWalkers.indexOf(other);if(i>=0)familyWalkers.splice(i,1);other.root.removeFromParent();other.dispose();
-   }
-   for(const member of list){
-    if([...villagers].some(o=>o.playerId===member.playerId))continue;
-    const used=new Set(slots.values()),slot=walks.findIndex((_,i)=>!used.has(i));if(slot<0)break;
+   const list=await familyFarmers(),{leave,join}=familyStage(shown,list,cap);
+   const groundUnder=villageWorld?(await import('./village-scene.js')).groundUnder:null;
+   await Promise.all(leave.map(async id=>{
+    const other=walkers.get(id);walkers.delete(id);
+    try{await other?.leave();}finally{shown.delete(id);const i=familyWalkers.indexOf(other);if(i>=0)familyWalkers.splice(i,1);other?.root.removeFromParent();other?.dispose();}
+   }));
+   for(const {member,slot} of join){
     await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1200));
     const walk=walks[slot],xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
-    const ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
+    const under=groundUnder?groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)}):ground;
     const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
-    const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,tag:farmerTag(member.username),blockers:tagBlockers});
-    other.playerId=member.playerId;other.username=member.username;familyWalkers.push(other);villagers.add(other);slots.set(other,slot);
+    const other=await createFarmWalker({scene,walk,ground:under,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,appear:true,tag:farmerTag(member.username),blockers:tagBlockers});
+    other.playerId=member.playerId;other.username=member.username;familyWalkers.push(other);walkers.set(member.playerId,other);shown.set(member.playerId,slot);
    }
   }catch(error){console.warn('The family\'s farmers were skipped.',error);}
+  finally{busy=false;}
  }
  await sync();setInterval(()=>{if(!document.hidden)void sync();},FAMILY_FARMERS_SYNC);
-}
-// A family visit on your farm (21 Oct 2026, the owner, option 2: "Now and then a family member visits your farm: one at a time,
-// preferably someone online now, takes a walk by the Farmhouse and leaves after a few minutes. Tap them and their profile opens.").
-// family-visit.js says when and who (online first, then seen most lately, taking turns; a minute or three after the farm is on screen,
-// about three minutes, then four to six minutes without); farm-farmer.js FARM_VISIT where they walk (checked to cover nothing that
-// can be tapped). Only on the farm in World I, where your own farmer walks (farmerComes: not with reduced motion, Save-Data, a 2g line
-// or in the admin view), only in a Farm Family with someone else in it, never in the evening (20:00 to 7:00, when your farmer rests).
-// One visitor at a time, made when they come and thrown away when they go; a tap: a hop, then their profile (tapFamilyFarmer). No
-// words, no toast, no window. Who: the same Family read as the village's farmers (familyFarmers), kept 20 minutes for the visits.
-const FAMILY_VISIT_KEEP=FAMILY_FARMERS_KEEP;
-let familyVisits=null,nearVisit=()=>false;
-async function startFamilyVisits(createFarmWalker,ground){
- try{
-  if(villageWorld||!farmerComes()||familyVisits)return;
-  const [{createFamilyVisits},{FARM_VISIT,tripNearVisit,isEvening}]=await Promise.all([import('./family-visit.js'),import('./farm-farmer.js')]);
-  nearVisit=tripNearVisit;
-  familyVisits=createFamilyVisits({
-   members:()=>familyFarmers(FAMILY_VISIT_KEEP),
-   evening:()=>isEvening(),
-   // Not while the page is hidden, nor while your farmer walks that way (the Dairy's trip up the lane).
-   busy:()=>document.hidden||tripNearVisit(walker?.trip?.()),
-   arrive:async member=>{
-    const family=member.farmer?.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
-    const visitor=await createFarmWalker({scene,walk:FARM_VISIT,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer',family,visit:FARM_VISIT,tag:farmerTag(member.username),blockers:tagBlockers});
-    visitor.playerId=member.playerId;visitor.username=member.username;familyWalkers.push(visitor);
-    return {member,leave:async now=>{try{await visitor.leave(now);}finally{const i=familyWalkers.indexOf(visitor);if(i>=0)familyWalkers.splice(i,1);visitor.dispose();}}};
-   }
-  });
- }catch(error){console.warn('The family visits were skipped.',error);}
 }
 // Every farmer's name (21 Oct 2026, the owner: "Zet ook de naam van de user in village en farm boven het poppetje", then "Toon alleen
 // naamlabel bij hover" and "Op mobiel altijd"): with a mouse the name is the hover tooltip over the farmer (pointermove); on a touch
@@ -1524,7 +1502,7 @@ function pointerTarget(event){
  const pet=pets?.pick(raycaster);if(pet)return {type:'pet',id:pet};
  // Your farmer (20 Oct 2026) last of all: a hop, then your own profile (tapOwnFarmer).
  if(walker?.pick(raycaster))return {type:'farmer'};
- // Then your family's farmers in the village (item 5): their profile.
+ // Then your family's farmers on the farm and in the village (item 5): their profile.
  for(const other of familyWalkers)if(other.pick(raycaster))return {type:'familyFarmer',id:other.playerId};
  return null;
 }
