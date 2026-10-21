@@ -128,12 +128,14 @@ export const appStoreFinishLink=transaction=>`${APP_STORE_LINKS.finish}?transact
 // in the app, Kongregate's in Kreds on Kongregate (15 Oct 2026), else the euro price as on the website (Stripe shows it in the farmer's
 // currency at checkout). worth: an amount at the same rate as the pack's price (the special offer's "worth €49.99"), in the same currency.
 const euro=cents=>`€${(Number(cents)/100).toFixed(2)}`;
+// A worth of whole euros without cents ("€50", "€10"; 21 Oct 2026, the special offer's round worths), else as a price ("€7.50").
+const euroWorth=cents=>Number(cents)%100===0?`€${Number(cents)/100}`:euro(cents);
 export function shopPrice(catalog,pack,cents){const p=catalog?.prices?.[pack];return typeof p?.price==='string'&&p.price?p.price:euro(cents);}
 export function shopWorth(catalog,pack,cents,worthCents){
  const p=catalog?.prices?.[pack];
  // Kreds on Kongregate (15 Oct 2026, src/kongregate-kreds.js): the worth in Kreds at the pack's own rate, a round ten ("500 Kreds" for
  // an offer of 50 Kreds). shopPrice needs nothing new: Kongregate's price comes as its text ("50 Kreds").
  if(Number.isSafeInteger(p?.kreds)&&p.kreds>0&&cents>0)return `${Math.round(p.kreds*worthCents/cents/10)*10} Kreds`;
- if(!p||!Number.isFinite(p.micros)||!/^[A-Z]{3}$/.test(p.currency??'')||!(cents>0))return euro(worthCents);
+ if(!p||!Number.isFinite(p.micros)||!/^[A-Z]{3}$/.test(p.currency??'')||!(cents>0))return euroWorth(worthCents);
  try{return new Intl.NumberFormat(undefined,{style:'currency',currency:p.currency}).format(p.micros/1e6*worthCents/cents);}catch{return euro(worthCents);}
 }

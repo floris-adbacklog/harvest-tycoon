@@ -18,7 +18,7 @@ function offerPostDef(sql){
 
 test('three discounts: worth €49.99 at 90% off, €9.98 at 50%, €7.45 at 33%, always for €4.99',()=>{
  assert.deepEqual(OFFER_DISCOUNTS,[90,50,33]);assert.equal(OFFER.defaultDiscount,90);
- assert.deepEqual(Object.fromEntries(OFFER_DISCOUNTS.map(d=>[d,{...OFFER.discounts[d]}])),{90:{valueCents:4999,target:5000},50:{valueCents:998,target:1000},33:{valueCents:745,target:750}});
+ assert.deepEqual(Object.fromEntries(OFFER_DISCOUNTS.map(d=>[d,{...OFFER.discounts[d]}])),{90:{valueCents:4999,target:5000,shownCents:5000},50:{valueCents:998,target:1000,shownCents:1000},33:{valueCents:745,target:750,shownCents:750}});
  assert.equal(OFFER.valueCents,OFFER.discounts[90].valueCents,'90% is the offer as before');assert.equal(OFFER.target,OFFER.discounts[90].target);
  assert.equal(OFFER.cents,499);assert.equal(OFFER.price,'price_1UL3qr04FdNTUSp41m7H0DCp','one Stripe price for every discount');
  assert.equal(PLAY_PRODUCTS.offer,'special_offer');assert.equal(APPLE_PRODUCTS.offer,'special_offer');
@@ -88,7 +88,7 @@ test('the database takes the same three worths (supabase/offer-discount.sql): md
 
 test('the screens show the real worth of what is in the offer, never a fixed €49.99',()=>{
  const fn=read('supabase/functions/diamond-checkout/index.ts');
- assert.match(fn,/cents:OFFER\.cents,valueCents:offerValueCents\(\{diamonds:o\.diamonds,coins:o\.coins,vipDays:o\.vip_days\}\),bought:/);
+ assert.match(fn,/cents:OFFER\.cents,valueCents:offerShownCents\(\{diamonds:o\.diamonds,coins:o\.coins,vipDays:o\.vip_days\}\),bought:/);
  assert.doesNotMatch(fn,/valueCents:OFFER\.valueCents/);
  const ui=read('src/offer-ui.js');
  assert.match(ui,/function preview\(\{diamonds=0,coins=0,vipDays=0,valueCents=4999,hours=48\}=\{\}\)/);
@@ -97,6 +97,18 @@ test('the screens show the real worth of what is in the offer, never a fixed €
  assert.match(admin,/<select id="admin-offer-discount">'\+OFFER_DISCOUNTS\.map\(/);
  assert.match(admin,/offerFill\(\{diamonds:\$o\('has-diamonds'\)\.checked,coins:\$o\('has-coins'\)\.checked,vipDays:Number\(\$o\('vip'\)\.value\)\|\|0,discount\}\)/);
  assert.match(admin,/\['discount','has-diamonds','has-coins','vip'\]\.forEach\(id=>\$o\(id\)\.addEventListener\('change',offerRefill\)\);/);
- assert.match(admin,/window\.harvestOffer\?\.preview\(\{\.\.\.o,valueCents:offerValueCents\(o\),hours:/);
+ assert.match(admin,/window\.harvestOffer\?\.preview\(\{\.\.\.o,valueCents:offerShownCents\(o\),hours:/);
  for(const f of ['diamond-checkout','stripe-webhook','play-voided','app-store-notify'])assert.equal(read(`supabase/functions/${f}/payments.js`),read('game/payments.js'),f);
+});
+
+test('players see the round worth of the discount: €50, €10 or €7.50 (the owner, 21 Oct 2026: "dus €50, €10 of €7.50")',async()=>{
+ const pay=await import('../game/payments.js'),{shopWorth}=await import('../public/android.js');
+ for(const [d,shown,text] of [[90,5000,'€50'],[50,1000,'€10'],[33,750,'€7.50']]){
+  const o=pay.offerFill({diamonds:true,coins:true,discount:d});
+  assert.equal(pay.offerShownCents(o),shown);assert.equal(shopWorth(null,'offer',pay.OFFER.cents,shown),text);
+  assert.equal(Math.round((1-pay.OFFER.cents/shown)*100),d,'the window still says the discount picked');
+ }
+ assert.equal(pay.offerShownCents({diamonds:5000}),5000,'5,000 diamonds add up to €49.90 but show €50');
+ assert.equal(pay.offerShownCents({diamonds:300}),pay.offerValueCents({diamonds:300}),'no discount: the sum itself');
+ assert.equal(shopWorth(null,'offer',499,4999),'€49.99','a worth with cents keeps them');
 });

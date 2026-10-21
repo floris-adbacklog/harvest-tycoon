@@ -25,7 +25,7 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 // everywhere), the admin picks the discount and the contents follow it: worth €49.99 at 90% (as before), €9.98 at 50%, €7.45 at 33%
 // (OFFER.discounts: valueCents is the worth checked, target the diamonds the Admin panel fills to). Nothing stores the discount: an
 // offer is valid when its worth is within 2% of one of the three (the bands never overlap), the same rule in SQL offer_post
-// (supabase/offer-discount.sql), and the screens show the real worth of what is in it, so the discount follows from that.
+// (supabase/offer-discount.sql), and the screens show the round worth of that discount (offerShownCents: €50, €10, €7.50), so the discount follows from that.
 // The admin picks the level it opens at per offer: level 10 at the earliest (minLevel, 13 Oct 2026; level 14 before, as the shop and
 // boosts open at 10 since 5 Oct), 14 unless the admin picks another (defaultLevel), up to 200 (supabase/offer-level-10.sql). The
 // Starter Pack keeps its own level 14 (STARTER_LEVEL).
@@ -35,7 +35,7 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
 export const OFFER=Object.freeze({cents:499,valueCents:4999,price:'price_1UL3qr04FdNTUSp41m7H0DCp',coinsPerDiamond:500,coinsPerDiamondBefore:200,
  diamondCents:499/500,vipDiamonds:Object.freeze({7:500,30:1500,60:3000,90:4500}),target:5000,maxDiamonds:20000,maxCoins:10000000,
  minLevel:10,defaultLevel:14,maxLevel:200,
- discounts:Object.freeze({90:Object.freeze({valueCents:4999,target:5000}),50:Object.freeze({valueCents:998,target:1000}),33:Object.freeze({valueCents:745,target:750})}),
+ discounts:Object.freeze({90:Object.freeze({valueCents:4999,target:5000,shownCents:5000}),50:Object.freeze({valueCents:998,target:1000,shownCents:1000}),33:Object.freeze({valueCents:745,target:750,shownCents:750})}),
  defaultDiscount:90});
 // The discounts, largest first (90, 50, 33).
 export const OFFER_DISCOUNTS=Object.freeze(Object.keys(OFFER.discounts).map(Number).sort((a,b)=>b-a));
@@ -45,6 +45,10 @@ export function offerValueCents({diamonds=0,coins=0,vipDays=0}={},coinsPerDiamon
 }
 // The discount an offer of this worth was made at (90, 50 or 33), or null when it is worth none of them (within 2%).
 export const offerDiscountOf=value=>OFFER_DISCOUNTS.find(d=>Math.abs(value-OFFER.discounts[d].valueCents)<=OFFER.discounts[d].valueCents*0.02)??null;
+// The worth players see (21 Oct 2026, the owner: "Doe toch ronde getallen", "dus €50, €10 of €7.50"): the round worth of the discount
+// the offer was made at (shownCents: €50, €10 or €7.50), not the sum of its contents (5,000 diamonds add up to €49.90); the sum when it
+// fits none of them. The discount on the window still comes out at 90%, 50% and 33% (€4.99 against those).
+export function offerShownCents(contents){const value=offerValueCents(contents),d=offerDiscountOf(value);return d==null?value:OFFER.discounts[d].shownCents;}
 const offerWorths=()=>OFFER_DISCOUNTS.slice().reverse().map(d=>`€${(OFFER.discounts[d].valueCents/100).toFixed(2)}`);
 // VIP of 60 or 90 days (30 Sep 2026) is two or three of the shop's 30-day plan.
 // A valid offer: whole amounts, VIP of 7, 30, 60 or 90 days or none, something in it, and worth €7.45, €9.98 or €49.99 (within 2%, so

@@ -9,7 +9,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
-import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerProblem,offerFill,offerDiscountOf,offerVipFits,APPLE_SELLS_OFFER} from '../game/payments.js';
+import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerShownCents,offerProblem,offerFill,offerDiscountOf,offerVipFits,APPLE_SELLS_OFFER} from '../game/payments.js';
 import {avatarImage} from '../public/player-avatars.js';
 import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
@@ -587,7 +587,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  function offerWorth(){
   const o=offerDraft(),problem=offerProblem(o),line=$o('worth');
   $o('diamonds').disabled=!$o('has-diamonds').checked;$o('coins').disabled=!$o('has-coins').checked;
-  const value=offerValueCents(o);
+  const value=offerShownCents(o);
   line.textContent=problem??`${offerText(o)}, worth ${euro(value)}, sells for ${euro(OFFER.cents)} (${offerDiscountOf(value)}% off)`;line.classList.toggle('is-wrong',Boolean(problem));
   dialog.querySelector('#admin-offer-form [type="submit"]').disabled=Boolean(problem);$o('preview').disabled=Boolean(problem);
  }
@@ -601,12 +601,12 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  ['discount','has-diamonds','has-coins','vip'].forEach(id=>$o(id).addEventListener('change',offerRefill));
  ['diamonds','coins'].forEach(id=>$o(id).addEventListener('input',offerWorth));
  offerRefill();
- $o('preview').onclick=()=>{const o=offerDraft();window.harvestOffer?.preview({...o,valueCents:offerValueCents(o),hours:Number($o('hours').value)});};
+ $o('preview').onclick=()=>{const o=offerDraft();window.harvestOffer?.preview({...o,valueCents:offerShownCents(o),hours:Number($o('hours').value)});};
  async function showOffers(){
   const list=$o('list');if(!bridge.chat?.offerList)return;
   try{
    const offers=await bridge.chat.offerList();list.hidden=!offers.length;
-   list.innerHTML=offers.map(o=>`<li><span class="admin-recent-copy"><strong>${esc(offerText(o))}, worth ${euro(offerValueCents(o))}</strong><small>${esc(POPUP_AUDIENCES[o.audience]??o.audience)} · from level ${o.minLevel} · ${o.active?`until ${fmtDate(o.endsAt)}`:'ended'} · bought by ${number(o.bought)} farmer${o.bought===1?'':'s'}</small></span>${o.active?`<button type="button" class="small-button" data-offer-stop="${esc(o.id)}">Stop</button>`:''}</li>`).join('');
+   list.innerHTML=offers.map(o=>`<li><span class="admin-recent-copy"><strong>${esc(offerText(o))}, worth ${euro(offerShownCents(o))}</strong><small>${esc(POPUP_AUDIENCES[o.audience]??o.audience)} · from level ${o.minLevel} · ${o.active?`until ${fmtDate(o.endsAt)}`:'ended'} · bought by ${number(o.bought)} farmer${o.bought===1?'':'s'}</small></span>${o.active?`<button type="button" class="small-button" data-offer-stop="${esc(o.id)}">Stop</button>`:''}</li>`).join('');
   }catch{list.hidden=true;}
  }
  $o('list').addEventListener('click',async event=>{
@@ -618,7 +618,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  $o('form').addEventListener('submit',async event=>{
   event.preventDefault();const o=offerDraft();if(offerProblem(o))return;
   const hours=Number($o('hours').value),time=$o('hours').options[$o('hours').selectedIndex].text;
-  if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} (worth ${euro(offerValueCents(o))}) for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
+  if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} (worth ${euro(offerShownCents(o))}) for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
   try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||OFFER.defaultLevel,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
   catch(error){$o('status').textContent=why(error);}
   void showOffers();
