@@ -35,7 +35,7 @@ create table if not exists public.load_stalls (
  platform text,
  device text,
  staff boolean not null default false,
- kind text not null check (kind in ('auto','card','reload_hung','left','refresh','part')),
+ kind text not null check (kind in ('auto','card','reload_hung','left','refresh','part','lost','crash')),
  step text not null check (step in ('code','models','account','scene','village','frame')),
  percent smallint,
  models smallint,

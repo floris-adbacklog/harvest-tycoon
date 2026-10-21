@@ -206,7 +206,7 @@ const IPHONE='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit
 const NOW=Date.UTC(2026,9,15,12),GOOD={id:'0b6f2a1c-3d4e-4f5a-8b6c-7d8e9f0a1b2c',kind:'left',step:'models',percent:47,models:96,view:42,total:65,hidden:true,online:true,protocol:'h3',waiting:2,files:['/game.js','/model-atlas.js'],at:NOW-60000};
 test('stallRow: a checked row with the platform and device type, never a player, an IP address or a user agent',()=>{
  const row=stallRow(GOOD,{platform:'browser',agent:IPHONE,portal:undefined,staff:false,now:NOW});
- assert.deepEqual(row,{note_id:GOOD.id,created_at:'2026-10-15T12:00:00.000Z',platform:'web',device:'iPhone · Safari',staff:false,kind:'left',step:'models',percent:47,models:96,view_s:42,total_s:65,hidden:true,online:true,protocol:'h3',waiting:2,files:['/game.js','/model-atlas.js'],stage:null,error:null});
+ assert.deepEqual(row,{note_id:GOOD.id,created_at:'2026-10-15T12:00:00.000Z',platform:'web',device:'iPhone · Safari',staff:false,kind:'left',step:'models',percent:47,models:96,view_s:42,total_s:65,hidden:true,online:true,protocol:'h3',waiting:2,files:['/game.js','/model-atlas.js'],stage:null,error:null,gpu:null,gfx:null});
  for(const key of Object.keys(row))assert.doesNotMatch(key,/player|user|ip|agent|email|name/,key);assert.ok(!Object.values(row).includes(IPHONE));
  assert.equal(stallRow({...GOOD,player_id:'f1',ip:'1.2.3.4'},{now:NOW}).player_id,undefined,'what else comes along stays out');
  assert.equal(stallRow({...GOOD,kind:'refresh'},{agent:`${IPHONE} HarvestTycoonApp/1.1`,staff:true,now:NOW}).platform,'ios_app');assert.equal(stallRow(GOOD,{staff:true,now:NOW}).staff,true);
@@ -303,14 +303,16 @@ test('the farm page keeps room for every file\'s timing, before it waits for any
 });
 test('the privacy policy says what the report holds, that it is not linked to the account, and lists its storage key',()=>{
  const policy=read('public/privacy.html'),game=policy.slice(policy.indexOf('<h3>Your game</h3>'),policy.indexOf('</ul>',policy.indexOf('<h3>Your game</h3>')));
- const item='<li>When the game does not finish loading: a short technical report, sent with your next visit, of how far it got, how long it took, which game files did not arrive, your browser and device type and whether you were online. It is not linked to your account, and we delete it after 90 days.</li>';
+ const item='<li>When the game does not finish loading, its 3D view stops, or it closes while starting: a short technical report, sent with your next visit, of how far it got, how long it took, which game files did not arrive, your browser and device type, the name of your device\'s graphics chip and the graphics setting the game used, and whether you were online. It is not linked to your account, and we delete it after 90 days.</li>';
  assert.ok(game.includes(item),'in the "Your game" list');assert.ok(game.indexOf('<li>Where and on what you last opened the game:')<game.indexOf(item),'after where and on what you last opened it');
  assert.equal(STALL_KEEP_DAYS,90,'as the policy says');
  const kept=policy.slice(policy.indexOf('<h2 id="retention">'),policy.indexOf('<h2 id="your-rights">'));
  assert.ok(kept.includes('<li><strong>Reports of a game that did not finish loading</strong>: 90 days, then they are deleted. They are not linked to your account.</li>'),'and in How long we keep data');
  const storage=policy.slice(policy.indexOf('<h2 id="cookies">'),policy.indexOf('<h3>Analytics and advertising</h3>'));
  assert.match(storage,/<tr><td data-label="Name"><code>harvest-tycoon:load-stall<\/code><\/td><td data-label="What it does">Session storage: [^<]*/);
- assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: 1[5-9] October 2026/,'15 Oct 2026 or a later update');assert.doesNotMatch(policy,/ · /);
+ assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: (1[5-9]|2\d|3[01]) October 2026/,'15 Oct 2026 or a later update');
+ // 21 Oct 2026 (public/graphics-mode.js): the two graphics keys on the device are listed too.
+ for(const key of ['harvest-tycoon:graphics','harvest-tycoon:graphics-run'])assert.match(storage,new RegExp(`<tr><td data-label="Name"><code>${key}</code></td><td data-label="What it does">Local storage: `),key);assert.doesNotMatch(policy,/ · /);
 });
 // 15 Oct 2026, review fix: both store apps load this site, so from the site's release they send the report too, with no app update. The
 // owner's steps for their privacy answers (Play's Data safety, the App Store's App Privacy) are written down with the others.

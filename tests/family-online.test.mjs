@@ -47,7 +47,7 @@ test('game.js: only members online now, read again every two minutes (the kept l
  assert.match(game,/const walks=villageWorld\?VILLAGE_FAMILY_WALKS:FARM_FAMILY_WALKS,cap=villageWorld\|\|!\(handheld\|\|mobileLayout\.matches\)\?walks\.length:FARM_FAMILY_LITE;\n  void addFamilyFarmers\(createFarmWalker,familyStage,walks,cap,villageWorld\?null:ground\);/);
  // After your own farmer, so never with reduced motion, Save-Data, a 2g line or in the admin view.
  assert.match(game,/async function addFarmer\(\)\{\n try\{\n  if\(!farmerComes\(\)\)return;/);
- assert.match(game,/function farmerComes\(\)\{const connection=navigator\.connection;return !\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\);\}/);
+ assert.match(game,/function farmerComes\(\)\{const connection=navigator\.connection;return !\(reducedMotion\|\|graphicsSimple\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\);\}/);
  // Who leaves first fades out (then is thrown away), then the new ones come one at a time in a quiet moment, fading in.
  const block=game.slice(game.indexOf('async function addFamilyFarmers'),game.indexOf('// Every farmer\'s name'));
  assert.match(block,/const list=await familyFarmers\(\),\{leave,join\}=familyStage\(shown,list,cap\);/);

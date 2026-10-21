@@ -80,7 +80,7 @@ test('the game notes the first look and sends it at once; the first touch goes w
  assert.match(client,/const sent=withLook\(action\),run=line\.then\(\(\)=>bridge\.request\(withNotes\(\{operation:'action',action:stamped\(sent\),requestId:crypto\.randomUUID\(\)\}\)\)\);/,'with the reminder question\'s steps that wait (13 Oct 2026)');
  assert.match(client,/const sendLook=\(\)=>\{if\(noted&&!adminView\(\)\)void send\(\{type:'first_look'\},true\)\.then\(replace,\(\)=>\{\}\);\};/);
  // The farm's models load 8 at a time (7 Oct 2026; 4 before).
- assert.match(game,/loadInBatches\(modelNames,async name=>\{await loadModel\(name\);loaded\+\+;loadingUI\.modelsReady\(loaded\);\},8\)/);
+ assert.match(game,/loadInBatches\(modelNames,async name=>\{await loadModel\(name\);loaded\+\+;loadingUI\.modelsReady\(loaded\);if\(loaded%8===0\)markRun\(gfxStore,\{percent:Number\(\$\('load-progress'\)\?\.value\)\|\|0\}\);\},8\)/);
 });
 
 test('timers under 2 minutes keep their seconds, and step 10 says how long the eggs take now',()=>{

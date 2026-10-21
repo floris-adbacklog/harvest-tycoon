@@ -7,7 +7,7 @@
  <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp?v=20261021" alt="Harvest Tycoon" width="1024" height="1024"></a>
  <p class="eyebrow">HARVEST TYCOON</p>
  <h1>Privacy Policy</h1>
- <p class="updated">Last updated: 16 October 2026</p>
+ <p class="updated">Last updated: 21 October 2026</p>
 </header>
 <main class="legal-card">
  <section class="legal-summary" aria-labelledby="summary-title">
@@ -69,7 +69,7 @@
   <li>A record of recent game actions with their times, so that the server can check them and repair problems.</li>
   <li>When you were last active, used to show whether you are online.</li>
   <li>Where and on what you last opened the game: your IP address, your browser and device type, the country of your device’s time zone and the language you play in. We use this to keep the game fair and secure (for example to spot one person playing with several accounts) and to see where our players come from and which languages they play in. Only your latest visit is kept: each new visit replaces it.</li>
-  <li>When the game does not finish loading: a short technical report, sent with your next visit, of how far it got, how long it took, which game files did not arrive, your browser and device type and whether you were online. It is not linked to your account, and we delete it after 90 days.</li>
+  <li>When the game does not finish loading, its 3D view stops, or it closes while starting: a short technical report, sent with your next visit, of how far it got, how long it took, which game files did not arrive, your browser and device type, the name of your device's graphics chip and the graphics setting the game used, and whether you were online. It is not linked to your account, and we delete it after 90 days.</li>
   <li>Farm families: the families you join or create, your role, your contributions, invitations, and the help, gifts and requests you exchange with family members.</li>
   <li>Events: whether you took part, your progress, your ranking and your rewards.</li>
   <li>The chat: the messages you send (in the global chat, your family chat or a private chat), with your player name, avatar and the time; which chats you have read; the farmers you block; reports you make about a message; and your chat settings. If a moderator mutes or bans you from the chat, we keep that decision and its reason.</li>
@@ -245,7 +245,9 @@
    <tr><td data-label="Name"><code>harvest-tycoon:cookies</code></td><td data-label="What it does">Remembers whether you accepted or declined cookies for Google Analytics, the Meta Pixel and the TikTok Pixel.</td><td data-label="How long">12 months, then we ask again</td></tr>
    <tr><td data-label="Name"><code>harvest-tycoon:open</code></td><td data-label="What it does">Session storage: remembers which screen a link to the game opens (for example Feedback, or a Discord link to confirm), so it still opens after you sign in.</td><td data-label="How long">Until the game opens it, at most 30 minutes (a Discord link 10 minutes), or until you close the tab</td></tr>
    <tr><td data-label="Name"><code>harvest-tycoon:load-stall</code></td><td data-label="What it does">Session storage: when the game does not finish loading, keeps the short technical report about it (see <a href="#what-we-collect">section 2</a>) until the game sends it.</td><td data-label="How long">Until your farm is next loaded, or until you close the tab</td></tr>
-   <tr><td data-label="Name"><code>harvest-tycoon:load-failed</code></td><td data-label="What it does">Local storage: when the game showed "Your farm could not load", keeps a copy of that short technical report (see <a href="#what-we-collect">section 2</a>), so it is still sent when the app or tab was closed.</td><td data-label="How long">Until your farm is next loaded (at most 20 hours)</td></tr>
+   <tr><td data-label="Name"><code>harvest-tycoon:load-failed</code></td><td data-label="What it does">Local storage: when the game showed "Your farm could not load", its 3D view stopped, or it closed while starting, keeps a copy of that short technical report (see <a href="#what-we-collect">section 2</a>), so it is still sent when the app or tab was closed.</td><td data-label="How long">Until your farm is next loaded (at most 20 hours)</td></tr>
+   <tr><td data-label="Name"><code>harvest-tycoon:graphics</code></td><td data-label="What it does">Local storage: whether the game uses simple graphics on this device, by your choice in Settings › Graphics or because the 3D view of your farm stopped before.</td><td data-label="How long">Until you change it</td></tr>
+   <tr><td data-label="Name"><code>harvest-tycoon:graphics-run</code></td><td data-label="What it does">Local storage: while your farm starts, how far it got and which graphics chip and setting it used. If the game closes before a minute of play, the next start uses simple graphics and sends the short technical report.</td><td data-label="How long">Until your farm has run a minute or the page is closed (at most 20 hours)</td></tr>
    <tr><td data-label="Name"><code>harvest-payment-event:…</code></td><td data-label="What it does">Session storage that stops a purchase from being counted twice.</td><td data-label="How long">Until you close the tab</td></tr>
   </tbody>
  </table>

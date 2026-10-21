@@ -11,9 +11,11 @@
 import {platformOf,deviceName} from './admin-analytics-service.js';
 // kind: 'auto' the farm opened again by itself, 'card' Try again, 'reload_hung' its reload got no answer and Try again showed, 'left'
 // the page went while still loading, 'refresh' the player refreshed it by hand, 'part' (18 Oct 2026) the farm opened but one of the
-// farm page's own parts broke on the way (src/game-cloud.js part; its error in error). step: loading-screen.js loadStep's words and 'frame'
+// farm page's own parts broke on the way (src/game-cloud.js part; its error in error), 'lost' (21 Oct 2026) the 3D view was lost during
+// play or while loading, 'crash' the last start ended under the player without a minute of play (public/graphics-mode.js; both written by
+// the farm itself, loading-screen.js noteOnDevice). step: loading-screen.js loadStep's words and 'frame'
 // (farmHandOver), the same as src/analytics.js LOAD_STEPS (tests/load-stall.test.mjs keeps them equal).
-export const STALL_KINDS=Object.freeze(['auto','card','reload_hung','left','refresh','part']);
+export const STALL_KINDS=Object.freeze(['auto','card','reload_hung','left','refresh','part','lost','crash']);
 export const STALL_STEPS=Object.freeze(['code','models','account','scene','village','frame']);
 export const STALL_PROTOCOLS=Object.freeze(['h2','h3','http/1.1','http/1.0']);
 export const STALL_FILE=/^\/[A-Za-z0-9._/-]{1,100}$/;
@@ -26,6 +28,12 @@ export const STALL_KEEP_DAYS=90,STALL_MAX_FILES=5;
 // (review of 18 Oct 2026).
 export const STALL_STAGES=Object.freeze(['begin','watch','parts','game','farm','ready']);
 export const STALL_ERROR_MAX=160;
+// 21 Oct 2026 (a Pixel 10 Pro Fold that lost its 3D view): the graphics chip's name as the browser tells it (one line, at most 100
+// characters, no e-mail address) and the mode the farm ran in (public/graphics-mode.js GFX_MODES).
+export const STALL_GPU_MAX=100,STALL_GFX=Object.freeze(['full','noshadow','simple']);
+export function stallGpu(value){
+ const line=stallError(value);return line?Array.from(line).slice(0,STALL_GPU_MAX).join('').trim()||null:null;
+}
 export function stallError(value){
  if(typeof value!=='string')return null;
  const clean=value.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,'').replace(/[\u0000-\u001f\u007f]+/g,' ').replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g,'[email]').replace(/\s+/g,' ').trim();
@@ -43,7 +51,7 @@ export function stallRow(note,{platform,agent,portal,staff,now=Date.now()}={}){
  return {note_id:typeof note.id==='string'&&STALL_ID.test(note.id)?note.id:null,created_at:new Date(now-now%HOUR).toISOString(),platform:platformOf({hint:platform,agent,portal}),device:deviceName(agent)?.slice(0,60)??null,staff:staff===true,
   kind:note.kind,step:note.step,percent:whole(note.percent,100),models:whole(note.models,999),view_s:whole(note.view,86400),total_s:whole(note.total,86400),
   hidden:yes(note.hidden),online:yes(note.online),protocol:STALL_PROTOCOLS.includes(note.protocol)?note.protocol:null,waiting:whole(note.waiting,999),files,
-  stage:STALL_STAGES.includes(note.stage)?note.stage:null,error:stallError(note.error)};
+  stage:STALL_STAGES.includes(note.stage)?note.stage:null,error:stallError(note.error),gpu:stallGpu(note.gpu),gfx:STALL_GFX.includes(note.gfx)?note.gfx:null};
 }
 export async function recordLoadStall({admin,note,platform,agent,portal,staff,now=Date.now()}){
  const row=stallRow(note,{platform,agent,portal,staff,now});if(!row)return null;

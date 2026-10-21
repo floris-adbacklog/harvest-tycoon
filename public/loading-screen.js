@@ -270,11 +270,28 @@ const navProtocol=win=>{try{return String(win.performance.getEntriesByType('navi
 // 15 Oct 2026, review fix: each note has its own random id, so a load sent again (src/connection.js withRetry) counts its stall once.
 const stallId=()=>{try{return globalThis.crypto.randomUUID();}catch{return null;}};
 // 18 Oct 2026 (option 1): how far the farm page's start came and the first thing that broke there (win.harvestStartup, src/game-cloud.js).
-const startupOf=win=>{try{const s=win?.harvestStartup;return s?{stage:STARTUP_STAGES.includes(s.stage)?s.stage:null,error:typeof s.error==='string'?cut160(s.error):null}:{};}catch{return {};}};
+// 21 Oct 2026: and the graphics chip and the mode the farm ran in (public/game.js sets them with the renderer; graphics-mode.js).
+const GFX=['full','noshadow','simple'];
+const gpuLine=value=>typeof value==='string'&&value.trim()?Array.from(value.replace(/\s+/g,' ').trim()).slice(0,100).join(''):null;
+const startupOf=win=>{try{const s=win?.harvestStartup;return s?{stage:STARTUP_STAGES.includes(s.stage)?s.stage:null,error:typeof s.error==='string'?cut160(s.error):null,
+ gpu:gpuLine(s.gpu),gfx:GFX.includes(s.gfx)?s.gfx:null}:{};}catch{return {};}};
 function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,page=win,at,error}){
  try{
   const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),...startupOf(win),...(typeof error==='string'?{error:cut160(error)}:{}),at};
   storage.setItem(LOAD_STALL_KEY,JSON.stringify(note));return note;
+ }catch{return null;}
+}
+// A note the farm writes itself after its load (21 Oct 2026, public/graphics-mode.js): 'lost' the 3D view was lost (during play or while
+// loading), 'crash' the last start ended under the player without a minute of play. Kept on this device (LOAD_FAILED_KEY) for the next
+// farm load, as a failed start's note is (src/supabase.js takeStall); a note still waiting there stays, one note per load. stage, gpu and
+// gfx given here (the last start's) win over this start's.
+export function noteOnDevice({kind,step,percent=100,stage,gpu,gfx,error,hidden=false,win=globalThis.window,device=deviceStorage(win),now=Date.now()}={}){
+ try{
+  if(!device||device.getItem(LOAD_FAILED_KEY))return null;
+  const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models:0,view:0,total:0,hidden:hidden===true,online:win?.navigator?.onLine??null,protocol:navProtocol(win),
+   waiting:0,files:[],...startupOf(win),...(stage!==undefined?{stage}:{}),...(gpu!==undefined?{gpu:gpuLine(gpu)}:{}),...(gfx!==undefined?{gfx:GFX.includes(gfx)?gfx:null}:{}),
+   ...(typeof error==='string'?{error:cut160(error)}:{}),at:now};
+  device.setItem(LOAD_FAILED_KEY,JSON.stringify(note));return note;
  }catch{return null;}
 }
 // 15 Oct 2026, review fix: 'left' never takes the place of a note this page's load already left (written since this page began: the page
@@ -335,5 +352,5 @@ export function watchLoading(bridge,portal,{translate=()=>{},doc=document,win=wi
  // failure (21 Oct 2026, public/farm-start.js): the farm did not open and showed its own error card with Try again (no WebGL 2, or its
  // start broke): a note of kind 'card' with that failure's line (startFailure) as its error, in this tab and on this device.
  return {failed:()=>recover('failed'),done(ready,{brokenPart=false,failure=null}={}){if(over)return;stop();if(ready)try{storage.removeItem(LOAD_RETRY_KEY);}catch{}if(brokenPart)note('part');
-  if(!ready&&typeof failure==='string'){const written=note('card',failure);if(written)try{device?.setItem(LOAD_FAILED_KEY,JSON.stringify(written));}catch{}}}};
+  if(!ready&&typeof failure==='string'){const written=note('card',failure);if(written)try{if(!device?.getItem(LOAD_FAILED_KEY))device?.setItem(LOAD_FAILED_KEY,JSON.stringify(written));}catch{}}}};
 }

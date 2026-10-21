@@ -14,8 +14,9 @@ import {createLookSettings} from './look-settings.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
 import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
-import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure} from './loading-screen.js';
+import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure,noteOnDevice} from './loading-screen.js';
 import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
+import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY} from './graphics-mode.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -126,6 +127,14 @@ function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
 const handheld=handheldDevice();   // phones, tablets and the apps: the farm rests under a window (frame, public/windows.js)
+// The graphics (21 Oct 2026, public/graphics-mode.js). A phone, a tablet, the apps or an unfolded foldable (a touch screen, even one wider
+// than 900 px) never get the computer's heavy settings; simple graphics after any trouble; no shadows on a PowerVR or Imagination GPU.
+// gfxMode is what the farm runs with ('full', 'noshadow' or 'simple'), read with the renderer.
+const gpuHandheld=handheld||mobileLayout.matches||matchMedia('(pointer: coarse)').matches;
+const gfxStore=(()=>{try{return window.localStorage;}catch{return null;}})();
+let graphicsSimple=false,gfxMode='full',runHealthy=false,lastShown=Date.now();
+addEventListener('pagehide',()=>endRun(gfxStore));
+document.addEventListener('visibilitychange',()=>{lastShown=Date.now();if(!runHealthy&&gfxStore?.getItem?.(RUN_KEY))markRun(gfxStore,{away:document.hidden});});
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide. On a
 // computer too until the first harvest (6 Oct 2026: from the whole valley the ripe corn was some 25 px, and 37% of new farmers on a
@@ -379,7 +388,7 @@ async function addScenery(){
 // before. Not with reduced motion (the farm does not move then) or when the browser asks to save data. Site only: no rules or save.
 async function addAnimals(){
  try{
-  const connection=navigator.connection;if(reducedMotion||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
+  const connection=navigator.connection;if(reducedMotion||graphicsSimple||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:5000}):setTimeout(done,2000));
   const {createHerd,ANIMATED}=await import('./farm-animals.js');
   // The still animals: the pens' (animalAt), the Ranch's horses, the Animal paddock's horse (a stop with a pin: it stays on its spot)
@@ -394,6 +403,7 @@ async function addAnimals(){
 // them (about 100 KB each); if they fail, the farm simply has no pets.
 async function addPets(){
  try{
+  if(graphicsSimple)return;   // simple graphics: no pets (each is a moving, skinned model)
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1500));
   const {createPets,FARM_PETS,VILLAGE_DEER}=await import('./farm-pets.js');
   // On the farm the grass is the ground; the lane's top is .085 over it (ROADS, farm-layout.js), and a pet steps up onto it over 0.3.
@@ -412,7 +422,7 @@ async function addPets(){
 // farm's animals: not with reduced motion, Save-Data or a 2g line, and if it fails the farm simply has no farmer.
 // chair_001's seat faces its own -x: turned this much more, it faces the way FARM_BENCH says.
 const CHAIR_FACING=0;
-function farmerComes(){const connection=navigator.connection;return !(reducedMotion||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''));}
+function farmerComes(){const connection=navigator.connection;return !(reducedMotion||graphicsSimple||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''));}
 // The evening bench (item 3): the farm's chair at the edge of the loop, placed before the scenery (addScenery) on a farm the farmer comes to.
 let farmBench=null;
 function placeBench(spot){if(villageWorld||farmBench||!models.has('chair_001'))return;const before=currentZone();zone('fields');cloneModel('chair_001',spot.x,spot.z,{height:spot.height,rotation:spot.turn+CHAIR_FACING});zone(before);farmBench=spot;}
@@ -1252,7 +1262,7 @@ function resize(){
  if(!renderer||!camera)return;
  measureTools();
  const width=world.clientWidth,height=world.clientHeight;if(width<=0||height<=0)return;const aspect=width/height;
- const ratio=Math.min(devicePixelRatio,mobileLayout.matches?1.5:1.75);
+ const ratio=pixelRatioFor({devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple});
  if(ratio!==viewportRatio){renderer.setPixelRatio(ratio);viewportRatio=ratio;}
  if(width!==viewportWidth||height!==viewportHeight){renderer.setSize(width,height);viewportWidth=width;viewportHeight=height;lastDraw=0;}   // a new size clears the picture: drawn again at once, under a window too
  const mobile=mobileLayout.matches;
@@ -1789,7 +1799,16 @@ function clearRail(){
 // After every answer from the server (farm-client.js onChange). The village has no fields and never loads the farm's models: createPlots
 // there threw "Missing model: ground_004", so each reply in the village (a request, a build, a batch) ended in that error.
 function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
+// Settings › Graphics (21 Oct 2026, public/graphics-mode.js): Simple graphics on or off, saved on this device, and the farm opens again
+// with it as Try again does (on a portal its page opens the farm again). Its text says it also switches on by itself after trouble.
+function bindGraphicsSetting(){
+ const box=$('graphics-simple');if(!box)return;
+ box.checked=graphicsSimple;
+ box.onchange=()=>{chooseGraphics(gfxStore,box.checked);$('graphics-status').textContent='Opening your farm again…';
+  const again=document.querySelector('#error .primary-button');setTimeout(()=>{if(typeof again?.onclick==='function')again.onclick();else try{window.parent.location.reload();}catch{location.reload();}},300);};
+}
 function bindUI(){
+ bindGraphicsSetting();
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
@@ -1967,14 +1986,22 @@ function goalAction(goal){
 const CONTEXT_RESTORE_MS=5000;
 let restoreTimer=0;
 function bindContextRestore(canvas){
- let wasReady=false;
+ let wasReady=false,losses=0,before=null,lostAt=0;
+ // Simple graphics after a lost view (21 Oct 2026, public/graphics-mode.js; review the same day): a phone that switched apps loses the view
+ // and gets it back at once, so a loss counts only when the farm was in sight (not hidden, nor just shown again). It switches simple on
+ // at once, in case the app closes right after it, and back to what it was when the view returns within the 5 seconds, unless it was the
+ // second loss on this page; a view that does not come back while in sight switches it on too. Every loss is noted for farm-api, with
+ // whether it happened out of sight.
  canvas.addEventListener('webglcontextlost',event=>{
-  event.preventDefault();clearTimeout(restoreTimer);if(ready)wasReady=true;ready=false;$('restoring').hidden=false;
+  const playing=ready,away=document.hidden||Date.now()-lastShown<CONTEXT_RESTORE_MS;event.preventDefault();clearTimeout(restoreTimer);if(ready)wasReady=true;ready=false;$('restoring').hidden=false;
+  losses++;lostAt=Date.now();if(losses===1)before=gfxStore?.getItem?.(GRAPHICS_KEY)??null;if(!away||losses>1)graphicsTrouble(gfxStore);
+  noteOnDevice({kind:'lost',step:villageWorld?'village':'scene',percent:playing?100:Number($('load-progress')?.value)||0,hidden:away,error:`[lost] The 3D view was lost ${playing?'during play':'while loading'}${away?' out of sight':''}.`});
   if(firstVisit){client.look({chain:{lost:1}});client.sendLook();}
-  restoreTimer=setTimeout(()=>{$('restoring').hidden=true;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;},CONTEXT_RESTORE_MS);
+  restoreTimer=setTimeout(()=>{if(!document.hidden)graphicsTrouble(gfxStore);$('restoring').hidden=true;$('error-message').textContent='The 3D view was interrupted. Reload to return to your saved farm.';$('error').hidden=false;},CONTEXT_RESTORE_MS);
  });
  canvas.addEventListener('webglcontextrestored',()=>{
   clearTimeout(restoreTimer);$('restoring').hidden=true;$('error').hidden=true;
+  if(losses===1&&Date.now()-lostAt<=CONTEXT_RESTORE_MS){if(before==='simple'||before==='full')chooseGraphics(gfxStore,before==='simple');else try{gfxStore?.removeItem(GRAPHICS_KEY);}catch{}}
   scene?.traverse(o=>{for(const m of [o.material].flat())if(m)for(const v of Object.values(m))if(v?.isCanvasTexture)v.needsUpdate=true;});
   // Lost while the farm was still loading: init goes on and starts the farm itself.
   if(!wasReady)return;
@@ -1984,12 +2011,28 @@ function bindContextRestore(canvas){
 async function init(){
  const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)],level:()=>levelProgress(state).level});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open   // the tips about later features from level 10 (13 Oct 2026)
  try{
+  // Graphics (21 Oct 2026, public/graphics-mode.js): the last start that ended under the player (the app or the browser closed before a
+  // minute of play) makes this one simple, with a note for farm-api; then this start's own mark, which a minute of play or the page going
+  // takes away again.
+  const crashed=lastRunCrashed(gfxStore);
+  if(crashed){graphicsTrouble(gfxStore);noteOnDevice({kind:'crash',step:crashed.step??'code',percent:crashed.percent??0,stage:crashed.stage==='ready'?'ready':'farm',gpu:crashed.gpu??null,gfx:crashed.gfx??null,error:`[crash] The last start ended at ${crashed.percent??0}% without a minute of play.`});}
+  endRun(gfxStore);graphicsSimple=graphicsChoice({storage:gfxStore,search:location.search}).simple;
+  markRun(gfxStore,{stage:'farm',step:'code',percent:Number($('load-progress')?.value)||0,gfx:graphicsSimple?'simple':'full',away:document.hidden});
+  // Until the renderer names the chip, notes about this start carry the last start's chip and this start's planned mode.
+  try{if(window.harvestStartup){window.harvestStartup.gpu=crashed?.gpu??null;window.harvestStartup.gfx=graphicsSimple?'simple':'full';}}catch{}
   bindUI();updateUI();
   // The 3D view on its own (21 Oct 2026, public/farm-start.js): a second try with the safest options, and "needs WebGL 2" only when even
-  // a plain WebGL 2 context cannot be made. A fault in bindUI or updateUI above is the farm that could not load, never WebGL.
-  renderer=createFarmRenderer(options=>new THREE.WebGLRenderer(options),{antialias:!mobileLayout.matches,alpha:false,powerPreference:mobileLayout.matches?'low-power':'high-performance'}).renderer;
+  // a plain WebGL 2 context cannot be made. A fault in bindUI or updateUI above is the farm that could not load, never WebGL. A start that
+  // needed the second try is trouble too: simple graphics from the next start on.
+  const made=createFarmRenderer(options=>new THREE.WebGLRenderer(options),rendererOptions({handheld:gpuHandheld,simple:graphicsSimple}));
+  renderer=made.renderer;if(made.retried)graphicsTrouble(gfxStore);
   renderer.setClearColor(0xdeede6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.32;
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
+  // The graphics chip and the mode: no shadows in simple graphics or on a PowerVR or Imagination GPU (set before anything is drawn, so no
+  // shader ever reads a shadow map there). Both go with every note about this start (src/game-cloud.js harvestStartup, loading-screen.js).
+  const gpu=gpuName(renderer.getContext());gfxMode=graphicsMode({simple:graphicsSimple,gpu});
+  try{if(window.harvestStartup){window.harvestStartup.gpu=gpu;window.harvestStartup.gfx=gfxMode;}}catch{}
+  markRun(gfxStore,{gpu,gfx:gfxMode,step:'models'});
+  renderer.shadowMap.enabled=gfxMode==='full';renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   world.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Interactive farm. Use Tab to move between fields, and Enter to work a field.');
   bindContextRestore(renderer.domElement);
   scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-25,25,17,-17,.1,300);   // far enough for the mountains at the edge when zoomed out
@@ -1998,7 +2041,7 @@ async function init(){
   // (the old warm-yellow sky, sun and haze made the whole valley beige, so the haze stays a light green-white). daylight.js moves it
   // through the day.
   const hemi=new THREE.HemisphereLight(0xdcebff,0x778b40,1.95);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=true;sun.shadow.mapSize.set(mobileLayout.matches?1024:2048,mobileLayout.matches?1024:2048);sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const sun=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=gfxMode==='full';{const size=shadowSize({handheld:gpuHandheld,simple:graphicsSimple});sun.shadow.mapSize.set(size,size);}sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   cropMotion=createCropMotion({scene,reducedMotion});
   scene.fog=new THREE.Fog(0xdeede6,60,150);
   let loaded=0;
@@ -2013,8 +2056,8 @@ async function init(){
    camera.near=-200;
    // Only a farmer in the village loads its scene code (and its mesh decoder): the farm never downloads it.
    const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES,VILLAGE_FAR_SIDE,VILLAGE_FRAME,VILLAGE_LANDMARK_SPOTS,VILLAGE_CLOUD_HEIGHT,VILLAGE_VIEW}=await import('./village-scene.js');
-   const [village]=await Promise.all([loadVillage({onProgress:share=>loadingUI.modelsReady(Math.round(share*99))}),client.load().then(()=>loadingUI.accountReady())]);
-   loadingUI.modelsReady(100);scene.add(village);villageGroup=village;
+   const [village]=await Promise.all([loadVillage({onProgress:share=>{loadingUI.modelsReady(Math.round(share*99));if(Math.round(share*99)%10===0)markRun(gfxStore,{percent:Number($('load-progress')?.value)||0});}}),client.load().then(()=>loadingUI.accountReady())]);
+   loadingUI.modelsReady(100);scene.add(village);villageGroup=village;markRun(gfxStore,{step:'village',percent:Number($('load-progress')?.value)||0});
    // The whole village (measured round the places the owner approved on 30 Sep, VILLAGE_FRAME), the middle of the places on its side of
    // the lake (an upright phone's view: the far side is a swipe away) and how far the camera may look. Landmarks never move the frames.
    const spots={...VILLAGE_PLACES,...VILLAGE_UTILITIES},framed=VILLAGE_FRAME.map(k=>spots[k]);villageFrame={...measureVillage(framed),phone:measureVillage(Object.entries(spots).filter(([k])=>!VILLAGE_FAR_SIDE.includes(k)).map(([,spot])=>spot),0).focus,view:VILLAGE_VIEW};
@@ -2023,11 +2066,12 @@ async function init(){
    for(const [key,spot] of Object.entries(VILLAGE_LANDMARK_SPOTS))addVillageLandmark(key,spot);
    atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches,cloudHeight:VILLAGE_CLOUD_HEIGHT});measureFarm();resize();icons();
   }else{
-  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);},8).then(()=>markChain('models'))]);
+  await Promise.all([client.load().then(()=>loadingUI.accountReady()),loadInBatches(modelNames,async name=>{await loadModel(name);loaded++;loadingUI.modelsReady(loaded);if(loaded%8===0)markRun(gfxStore,{percent:Number($('load-progress')?.value)||0});},8).then(()=>markChain('models'))]);
   // A farm without its models (11 Oct 2026): a palette that was refused, or a moment offline just as they started, made every model an
   // invisible stand-in and the farm opened as an empty valley that nothing opened again (harness, 11 Oct). More than half of them missing
   // now fails the start (src/game-cloud.js): the page opens once more by itself, a second time it shows Try again.
   if(missingModels*2>modelNames.length)throw Object.assign(new Error('missing-models'),{reopen:true});
+  markRun(gfxStore,{step:'scene',percent:Number($('load-progress')?.value)||0});
   decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
@@ -2077,7 +2121,10 @@ async function init(){
     panFarm(shift.side,shift.depth);
    }
   });
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  markRun(gfxStore,{step:'frame',percent:99});
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
+  // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
+  markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()});

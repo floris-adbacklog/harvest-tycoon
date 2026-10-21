@@ -51,7 +51,7 @@ test('they come after the farm is on screen, never in the loading bar\'s models,
  assert.doesNotMatch(game,/^import[^\n]*farm-animals/m,'never in the first load');
  assert.doesNotMatch(game,/modelNames\.push\([^)]*_101/,'not among the models the loading bar waits for');
  assert.match(game,/ \}catch\(error\)\{console\.warn\('The extra scenery was skipped\.',error\);\}\n void addAnimals\(\);\n\}/,'after the extra scenery');
- assert.match(game,/if\(reducedMotion\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/,'not with reduced motion or to save data');
+ assert.match(game,/if\(reducedMotion\|\|graphicsSimple\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/,'not with reduced motion or to save data');
  assert.match(game,/const \{createHerd,ANIMATED\}=await import\('\.\/farm-animals\.js'\);/);
  assert.match(game,/catch\(error\)\{console\.warn\('The animals were left standing\.',error\);\}/);
  assert.match(animals,/catch\(error\)\{console\.warn\('An animal could not load; its still model stays\.',file,error\);continue;\}/);

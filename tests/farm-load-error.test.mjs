@@ -123,8 +123,9 @@ test('the next load brings the failure kept on the device when the tab has none 
 test('public/game.js makes the renderer on its own, after its UI, and its error card says what broke',()=>{
  const game=read('public/game.js'),init=game.slice(game.indexOf('async function init(){'),game.indexOf('export const farmReady=init();'));
  assert.match(game,/import \{createFarmRenderer,startErrorText,androidPhoneApp\} from '\.\/farm-start\.js';/);
- assert.ok(init.indexOf('bindUI();updateUI();')<init.indexOf('renderer=createFarmRenderer('),'the UI first, as before');
- assert.match(init,/renderer=createFarmRenderer\(options=>new THREE\.WebGLRenderer\(options\),\{antialias:!mobileLayout\.matches,alpha:false,powerPreference:mobileLayout\.matches\?'low-power':'high-performance'\}\)\.renderer;/);
+ assert.ok(init.indexOf('bindUI();updateUI();')<init.indexOf('const made=createFarmRenderer('),'the UI first, as before');
+ // 21 Oct 2026 (public/graphics-mode.js): the options by device and mode, and a start that needed the second try is trouble.
+ assert.match(init,/const made=createFarmRenderer\(options=>new THREE\.WebGLRenderer\(options\),rendererOptions\(\{handheld:gpuHandheld,simple:graphicsSimple\}\)\);\n  renderer=made\.renderer;if\(made\.retried\)graphicsTrouble\(gfxStore\);/);
  assert.doesNotMatch(game,/new THREE\.WebGLRenderer\(\{/,'no renderer made around it');
  assert.doesNotMatch(init,/if\(!renderer\)\$\('error-message'\)/,'never "needs WebGL 2" for a missing renderer alone');
  assert.match(init,/farmFailure=startFailure\(error\);\n  try\{\$\('error-message'\)\.textContent=startErrorText\(error,\{androidApp:androidPhoneApp\(window\)\}\);\}catch\{\}/);

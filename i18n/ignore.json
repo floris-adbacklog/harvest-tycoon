@@ -148,5 +148,8 @@
  "winter target",
  "{0} is not the body read on 21 Oct 2026 (md5 {1} instead of {2}): read it again and regenerate",
  "No WebGL 2 context.",
- "WebGL2Unavailable"
+ "WebGL2Unavailable",
+ "during play",
+ "while loading",
+ "out of sight"
 ]

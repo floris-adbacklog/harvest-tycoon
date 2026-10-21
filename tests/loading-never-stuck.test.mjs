@@ -240,7 +240,7 @@ test('the trip\'s bar follows the village as it arrives, though the site sends n
  const packed=await trip(url=>url.startsWith(VILLAGE)?{trickle:2000,packed:3071567}:'ok');t.after(packed.restore);
  for(let i=0;i<80&&!packed.done;i++)await later(250);
  assert.ok(packed.village?.isGroup);assert.deepEqual(packed.net.progress.map(v=>Math.round(v*8)),[1,2,3,4,5,6,7,8],'a packed length sent along does not end the bar halfway');
- const game=read('public/game.js');assert.match(game,/loadVillage\(\{onProgress:share=>loadingUI\.modelsReady\(Math\.round\(share\*99\)\)\}\)/);
+ const game=read('public/game.js');assert.match(game,/loadVillage\(\{onProgress:share=>\{loadingUI\.modelsReady\(Math\.round\(share\*99\)\);if\(Math\.round\(share\*99\)%10===0\)markRun\(gfxStore,\{percent:Number\(\$\('load-progress'\)\?\.value\)\|\|0\}\);\}\}\)/);
  assert.match(game,/villageWorld\?\{loading:'Travelling to the village',village:true\}:undefined/,'its own step in farm_load_retry');
 });
 test('a layout request that never answers: a fresh one beside it after 8 seconds, and the village opens',{skip},async t=>{

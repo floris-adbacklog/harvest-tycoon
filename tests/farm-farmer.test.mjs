@@ -152,7 +152,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  const game=read('public/game.js'),walker=read('public/farm-farmer.js');
  assert.match(game,/void addPets\(\);void addFarmer\(\);/,'after the first picture, with the pets');
  assert.doesNotMatch(game,/^import[^\n]*farm-farmer/m,'never in the first load');
- assert.match(game,/function farmerComes\(\)\{const connection=navigator\.connection;return !\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\);\}/);
+ assert.match(game,/function farmerComes\(\)\{const connection=navigator\.connection;return !\(reducedMotion\|\|graphicsSimple\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\);\}/);
  assert.match(game,/async function addFarmer\(\)\{\n try\{\n  if\(!farmerComes\(\)\)return;/);
  assert.match(game,/const config=farmerOf\(state,farmerFarm\(\)\),family=/);assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config,trips:/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);

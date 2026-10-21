@@ -15,7 +15,7 @@ test('a lost 3D view waits under a small card and comes back by itself; Try agai
  const lost=restore.slice(restore.indexOf("'webglcontextlost'"),restore.indexOf("'webglcontextrestored'"));
  assert.match(lost,/event\.preventDefault\(\);/);assert.match(lost,/ready=false;\$\('restoring'\)\.hidden=false;/);
  assert.doesNotMatch(lost.split('restoreTimer=setTimeout(')[0],/\$\('error'\)\.hidden=false/,'#error is not shown at once');
- assert.match(lost,/restoreTimer=setTimeout\(\(\)=>\{\$\('restoring'\)\.hidden=true;\$\('error-message'\)\.textContent='The 3D view was interrupted\. Reload to return to your saved farm\.';\$\('error'\)\.hidden=false;\},CONTEXT_RESTORE_MS\);/);
+ assert.match(lost,/restoreTimer=setTimeout\(\(\)=>\{if\(!document\.hidden\)graphicsTrouble\(gfxStore\);\$\('restoring'\)\.hidden=true;\$\('error-message'\)\.textContent='The 3D view was interrupted\. Reload to return to your saved farm\.';\$\('error'\)\.hidden=false;\},CONTEXT_RESTORE_MS\);/);
  assert.match(game,/const CONTEXT_RESTORE_MS=5000;/);
  // A loss during a new farm's first visit counts in its load chain (A1).
  assert.match(lost,/if\(firstVisit\)\{client\.look\(\{chain:\{lost:1\}\}\);client\.sendLook\(\);\}/);
