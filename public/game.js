@@ -73,7 +73,7 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
-import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer } from './farmer-parts.js';
+import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
 // The apps' Back button and the farm's rest under a window on phones, tablets and the apps (13 Oct 2026, public/windows.js).
 import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
@@ -175,9 +175,11 @@ if(!adminView)window.harvestMyFarmer={open:openMyFarmer};
 // A goal of My farmer reached (a hat or a costume to wear now): one short toast after the action that reached it, as a new medal gets one.
 // What My farmer's goals read besides the farm itself: its level (farmer-parts.js farmerOwned; the server uses levelOf, the same).
 function farmerFarm(){return {level:levelProgress(state).level};}
-let farmerKnown=new Set(farmerOwned(state,farmerFarm()));
+// Not the family shirt (QA, 21 Oct 2026): joining a family said "Something new to wear" even when it had no shirt to show.
+const earnedToWear=()=>farmerOwned(state,farmerFarm()).filter(id=>id!==FAMILY_SHIRT);
+let farmerKnown=new Set(earnedToWear());
 function farmerNews(){
- const now=farmerOwned(state,farmerFarm()),known=farmerKnown;farmerKnown=new Set(now);
+ const now=earnedToWear(),known=farmerKnown;farmerKnown=new Set(now);
  if(known&&!adminView&&now.some(id=>!known.has(id)))toast('Something new to wear in My farmer.');
 }
 // The profile opens once the hop is over (the owner, 21 Oct 2026: "wacht met profiel open als die klaar is met springen"): the farmer back

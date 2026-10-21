@@ -103,4 +103,6 @@ test('supabase/family-shirt.sql: guarded, one transaction, the commit patched in
  const tags=[...sql.matchAll(/do \$(\w+)\$/g)].map(m=>m[1]),vars=[...sql.matchAll(/declare ([^;]*;(?:[^;]*;)*?)\s*begin/g)].flatMap(m=>[...m[1].matchAll(/(?:^|;|,)\s*(\w+)\s+(?:jsonb|text|regprocedure)/g)].map(x=>x[1]));
  for(const t of tags)assert.ok(!vars.includes(t),t);
  assert.match(read('supabase/functions/farm-api/player-log.js'),/family_shirt:'Chose the family shirt'/);
+ // Joining a family is no "Something new to wear in My farmer." (QA, 21 Oct 2026): a family without a shirt has none to show.
+ assert.match(read('public/game.js'),/const earnedToWear=\(\)=>farmerOwned\(state,farmerFarm\(\)\)\.filter\(id=>id!==FAMILY_SHIRT\);\nlet farmerKnown=new Set\(earnedToWear\(\)\);/);
 });
