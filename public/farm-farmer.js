@@ -233,9 +233,21 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
   me.target=null;a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;play(name,.25);me.gesture=a.getClip().duration;return true;
  }
+ // The share picture (21 Oct 2026, item 7: "Share my farm" shows your farmer standing in the scene): for the moment of the photo they
+ // stand facing you in the idle's first pose, where they are when that is in the picture, else on the first spot of their loop or a
+ // trip's that is (all checked to cover nothing; inFrame([x, z]) says what the photo shows); from the evening chair they stand up in
+ // front of it. Returns a function that puts everything back as it was, or null when no spot is in the picture (no farmer then).
+ function photo(inFrame){
+  const was={x:root.position.x,y:root.position.y,z:root.position.z,yaw:root.rotation.y,state:me.state};
+  let at=me.away==='sitting'&&front?front:[root.position.x,root.position.z];
+  if(!inFrame(at)){at=[...spots,...Object.values(FARM_TRIPS).map(t=>t.at),...FIELD_TRIPS.map(t=>t.at)].find(p=>inFrame(p));if(!at||walk!==FARM_WALK)return null;}
+  root.position.set(at[0],ground(at[0],at[1]),at[1]);root.rotation.y=Math.PI/4;
+  mixer.stopAllAction();actions.idle?.reset().play();mixer.update(0);root.updateMatrixWorld(true);
+  return ()=>{root.position.set(was.x,was.y,was.z);root.rotation.y=was.yaw;mixer.stopAllAction();me.current=null;play(was.state in actions?was.state:'idle',0);mixer.update(0);};
+ }
  const at0=()=>{me.hopping=0;root.position.y=ground(root.position.x,root.position.z);};
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
  const where=()=>{if(!seenBy)return null;const p=root.position.clone();p.y+=walk.height*.5;p.project(seenBy);return {x:p.x,y:p.y,state:me.state,world:[root.position.x,root.position.z]};};
- const result={farmer,root,hit,ground,animate,pick,react,where,visit,celebrate,gesture,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
+ const result={farmer,root,hit,ground,animate,pick,react,where,visit,celebrate,gesture,photo,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
  FARM_WALKERS.add(result);return result;
 }

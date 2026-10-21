@@ -1641,9 +1641,13 @@ function shootFarmPhoto(width,height){
  const max=renderer.capabilities.maxTextureSize,scale=Math.min(mobileLayout.matches?1.5:1.25,max/width,max/height);
  const photo=camera.clone();Object.assign(photo,photoFrame(camera,width/height));photo.updateProjectionMatrix();
  const was=hovered;highlight(-1);
+ // Your farmer stands in it, facing you (21 Oct 2026, the owner: "Doe alles behalve 9", item 7; farm-farmer.js photo), on a spot the
+ // photo shows; everything goes back as it was right after.
+ const inPhoto=([x,z])=>{const v=new THREE.Vector3(x,1,z).project(photo);return Math.abs(v.x)<.85&&Math.abs(v.y)<.8;};
+ let farmerBack=null;try{farmerBack=walker?.photo?.(inPhoto)??null;}catch{}
  const out=document.createElement('canvas');out.width=width;out.height=height;const ctx=out.getContext('2d');ctx.imageSmoothingQuality='high';
  try{renderer.setDrawingBufferSize(width,height,scale);renderer.render(scene,photo);ctx.drawImage(renderer.domElement,0,0,width,height);}
- finally{renderer.setDrawingBufferSize(viewportWidth,viewportHeight,viewportRatio);renderer.render(scene,camera);highlight(was);}
+ finally{farmerBack?.();renderer.setDrawingBufferSize(viewportWidth,viewportHeight,viewportRatio);renderer.render(scene,camera);highlight(was);}
  return out;
 }
 const mapProject=(x,z)=>{const v=new THREE.Vector3(x,0,z).project(mapCamera);return [(v.x+1)/2*mapBuffer.width,(1-v.y)/2*mapBuffer.height];};

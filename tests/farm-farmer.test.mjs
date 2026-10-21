@@ -314,3 +314,16 @@ test('gestures: Wave, Cheer and Dance in My farmer, keyframed on the pack\'s ske
  // A celebration lifts both arms (the Cheer) while they hop.
  assert.match(walker,/if\(actions\.cheer\)\{actions\.cheer\.setLoop\(THREE\.LoopOnce,1\);actions\.cheer\.clampWhenFinished=true;play\('cheer',\.15\);\}/);
 });
+
+test('Share my farm: your farmer stands in the picture, facing you, on a spot it shows; everything goes back right after (the owner, 21 Oct 2026, item 7)',()=>{
+ const game=read('public/game.js'),walker=read('public/farm-farmer.js');
+ assert.match(game,/let farmerBack=null;try\{farmerBack=walker\?\.photo\?\.\(inPhoto\)\?\?null;\}catch\{\}/);
+ assert.match(game,/finally\{farmerBack\?\.\(\);renderer\.setDrawingBufferSize\(viewportWidth,viewportHeight,viewportRatio\);/,'put back before the farm is drawn again');
+ assert.match(game,/const inPhoto=\(\[x,z\]\)=>\{const v=new THREE\.Vector3\(x,1,z\)\.project\(photo\);return Math\.abs\(v\.x\)<\.85&&Math\.abs\(v\.y\)<\.8;\};/);
+ // Where they stand: where they are, else the first spot of their loop or of a trip the photo shows (all checked to cover nothing);
+ // from the evening chair, in front of it. Standing, facing you, the idle's first pose.
+ assert.match(walker,/let at=me\.away==='sitting'&&front\?front:\[root\.position\.x,root\.position\.z\];/);
+ assert.match(walker,/at=\[\.\.\.spots,\.\.\.Object\.values\(FARM_TRIPS\)\.map\(t=>t\.at\),\.\.\.FIELD_TRIPS\.map\(t=>t\.at\)\]\.find\(p=>inFrame\(p\)\);/);
+ assert.match(walker,/root\.rotation\.y=Math\.PI\/4;\n  mixer\.stopAllAction\(\);actions\.idle\?\.reset\(\)\.play\(\);mixer\.update\(0\);/);
+ assert.match(walker,/return \(\)=>\{root\.position\.set\(was\.x,was\.y,was\.z\);root\.rotation\.y=was\.yaw;/);
+});

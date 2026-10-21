@@ -202,7 +202,7 @@ test('the level-up card, your own profile and the game are wired as agreed',()=>
  const game=read('public/game.js'),shoot=game.match(/\nfunction shootFarmPhoto\(width,height\)\{\n([\s\S]*?)\n\}\n/)[1];
  assert.match(shoot,/if\(!ready\|\|!renderer\|\|!camera\|\|villageWorld\|\|renderer\.getContext\(\)\.isContextLost\(\)\)return null;/);
  assert.match(shoot,/try\{renderer\.setDrawingBufferSize\(width,height,scale\);renderer\.render\(scene,photo\);ctx\.drawImage\(renderer\.domElement,0,0,width,height\);\}/);
- assert.match(shoot,/finally\{renderer\.setDrawingBufferSize\(viewportWidth,viewportHeight,viewportRatio\);renderer\.render\(scene,camera\);highlight\(was\);\}/);
+ assert.match(shoot,/finally\{(farmerBack\?\.\(\);)?renderer\.setDrawingBufferSize\(viewportWidth,viewportHeight,viewportRatio\);renderer\.render\(scene,camera\);highlight\(was\);\}/);
  assert.doesNotMatch(shoot,/await|setTimeout|requestAnimationFrame/,'render and copy in one go: the buffer is gone after a frame');
  assert.doesNotMatch(game,/preserveDrawingBuffer/,'never kept for every frame');
  assert.match(game,/const farmShare=villageWorld\?null:createFarmShare\(\{capture:shootFarmPhoto,/);assert.match(game,/window\.harvestShareFarm=farmShare;/);
