@@ -13,7 +13,8 @@ import {squareMarkup} from '../public/village-square-ui.js';
 import {boatMarkup} from '../public/boat-ui.js';
 import {villageLine,villageMessage,untilText,waitButton,VILLAGE_ASK} from '../public/village-shop-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+// farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{return null;}};
 
 // The Village tab of the diamond shop (20 Oct 2026, the owner's choices; plan-wereld-2/winkel/spec-dorpswinkel.md): five items for World II

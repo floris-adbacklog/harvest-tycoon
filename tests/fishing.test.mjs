@@ -6,7 +6,8 @@ import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {POND_LOADING_TIP} from '../public/loading-screen.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+// farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
 // The Fishing pond (11 Oct 2026, part C). It ships closed first (POND_OPEN false): these tests play the rules with the pond open,
 // whatever the switch says today, from the same source with only the switch turned (G), and check the switch itself as it is.
 const SOURCE=read('game/farm-state.js');

@@ -45,10 +45,10 @@ test('they come after the farm or the village is on screen, never in the loading
 test('a pet never takes a tap from anything else, and a tap on one is a hop and a heart at once (the find is the rules\' pet_pat)',()=>{
  const game=read('public/game.js'),pets=read('public/farm-pets.js'),css=read('public/farm-life.css');
  const pick=/function pointerTarget\(event\)\{[^]*?\n\}/.exec(game)[0];
- assert.match(pick,/obj=obj\.parent;\}\}\n \/\/ A pet[^\n]*\n const pet=pets\?\.pick\(raycaster\);if\(pet\)return \{type:'pet',id:pet\};\n return null;\n\}$/,'asked last, when the tap found no field, building, pin or place');
- assert.match(game,/else if\(target\.type==='pet'\)patPet\(target\.id\);\},/);
+ assert.match(pick,/obj=obj\.parent;\}\}\n \/\/ A pet[^\n]*\n const pet=pets\?\.pick\(raycaster\);if\(pet\)return \{type:'pet',id:pet\};\n( \/\/ Your farmer[^\n]*\n if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n)? return null;\n\}$/,'asked last, when the tap found no field, building, pin or place (only your own farmer after it, 20 Oct 2026)');
+ assert.match(game,/else if\(target\.type==='pet'\)patPet\(target\.id\);(else if\(target\.type==='farmer'\)(walker\?\.react|tapOwnFarmer)\(\);)?\},/);
  assert.match(game,/async function patPet\(id\)\{\n if\(!pets\?\.react\(id\)\|\|adminView\|\|patting\.has\(id\)\)return;/,'the hop and the heart first, always');
- assert.match(game,/if\(!target\|\|e\.pointerType==='touch'\|\|target\.type==='pet'\)\{tooltip\.hidden=true;return;\}/,'no tooltip of its own (no new text)');
+ assert.match(game,/if\(!target\|\|e\.pointerType==='touch'\|\|target\.type==='pet'(\|\|target\.type==='farmer')?\)\{tooltip\.hidden=true;return;\}/,'no tooltip of its own (no new text)');
  assert.doesNotMatch(pets,/runAction|localStorage|sessionStorage|state\.|client\.|track\(/,'the pets themselves play, save and count nothing');
  assert.match(pets,/heart\.className='pet-heart';heart\.setAttribute\('aria-hidden','true'\);/);
  assert.match(css,/\.pet-heart\{position:absolute;z-index:1;transform:translate\(-50%,-100%\);pointer-events:none;color:var\(--btn-red\);/,'nothing to tap, the game\'s red');

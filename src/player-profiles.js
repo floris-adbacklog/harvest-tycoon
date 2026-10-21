@@ -46,7 +46,7 @@ export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false
  // beside the name and a title under it; the badges of every season collected in their own row.
  const bg=lookBackground(player.look);
  return `<div class="farmer-identity${bg?' has-look-bg':''}"${bg?` style="--look-bg:url('${bg}')"`:''}><div class="farmer-avatar" aria-hidden="true">${framed(player.look,`<img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false">`)}</div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}${lookBadge(player.look)}</h3>${lookTitle(player.look)}<div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
- ${self?'<div class="farmer-share" data-farmer-share hidden></div>':''}
+ ${self?'<div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div>':''}
  <div class="farmer-chat" data-farmer-chat hidden></div>
  <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
  ${renderStatPages(player,now,statPage,{village})}
@@ -225,6 +225,14 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
    const sent=await family.invite(player.playerId);setOwnText(button,sent?'Invited':label,[offer.familyName]);button.disabled=sent;
   };
  }
+ // My farmer (21 Oct 2026, the owner: "Doe alle 3"): on your own profile only, the button that opens your own 3D farmer (the game hands it
+ // over: window.harvestMyFarmer, public/game.js; not in the admin view). Your avatar stays this profile's picture.
+ function showMyFarmer(id){
+  const mine=window.harvestMyFarmer;if(id!==bridge.playerId||!mine)return;
+  const slot=content.querySelector('[data-my-farmer]');if(!slot)return;
+  slot.innerHTML=`<button type="button" class="secondary-button farmer-open-button">${art('my-farmer')}My farmer</button>`;slot.hidden=false;
+  slot.querySelector('button').onclick=()=>void window.harvestMyFarmer?.open();
+ }
  // Share my farm (Oct 2026, public/farm-share.js): on your own profile, a picture of your farm with your invite link that opens in place.
  // The game hands it over (window.harvestShareFarm; not in the village). One slot, kept through the refresh every 30 seconds, so a
  // picture being made or shown stays.
@@ -263,7 +271,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
   clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId,village:Boolean(village?.())});refreshVipBadges(dialog,Date.now()+clockOffset);
   // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
   bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
-  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showShare(id);
+  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showMyFarmer(id);showShare(id);
   content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
   chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
  }

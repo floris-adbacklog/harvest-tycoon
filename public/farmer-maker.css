@@ -1,0 +1,26 @@
+/* My farmer (public/farmer-creator.js; 20 Oct 2026, your own character since 21 Oct 2026). The game's cream cards and the buttons.css
+   tokens: a picture tile is a cream card with the second button's line and edge, the worn one the main green's line, one not earned
+   yet a gold lock. */
+.farmer-maker .close-dialog svg{width:20px;height:20px}
+.farmer-maker-stage{height:clamp(170px,32vh,280px);margin:4px 0 10px;border-radius:18px;background:radial-gradient(circle at 50% 70%,#fffaf0 0,#f3e7cf 70%);border:1px solid #e8dcc6}
+.farmer-maker-preview{display:block;width:100%;height:100%}
+.farmer-maker-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.farmer-maker-tabs::-webkit-scrollbar{display:none}
+.farmer-maker-tabs button{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px;padding:4px 6px 5px;font-size:12px;background:transparent}
+.farmer-tab-thumb{display:block;width:38px;height:38px;border-radius:10px;background-color:#fffaf0;background-repeat:no-repeat}
+.farmer-maker-tabs button.is-empty .farmer-tab-thumb{opacity:.45}
+.farmer-maker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;padding:2px 2px 8px}
+.farmer-part{position:relative;aspect-ratio:1;border-radius:14px;background-color:#fffaf0;background-repeat:no-repeat;border:2px solid var(--btn-second-line);box-shadow:0 3px 0 var(--btn-second-edge);cursor:pointer;padding:0;transition:transform .1s,box-shadow .1s,border-color .1s}
+.farmer-part:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-second-edge)}
+.farmer-part[aria-pressed="true"]{border-color:var(--btn-main);box-shadow:0 3px 0 var(--btn-main-edge),0 0 0 2px #3f8a4a40}
+.farmer-part.is-none{display:grid;place-items:center;color:var(--btn-second-text)}
+.farmer-part.is-none svg{width:30px;height:30px;opacity:.7}
+.farmer-part-lock{position:absolute;right:4px;top:4px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--btn-gold);color:var(--btn-gold-text);box-shadow:0 1px 0 var(--btn-gold-edge)}
+.farmer-part-lock svg{width:12px;height:12px}
+.farmer-maker-rule{margin:-4px 2px 8px;font-size:13px;font-weight:700;color:#857660}
+.farmer-maker-note{display:flex;align-items:center;gap:8px;margin:0 2px 10px;padding:8px 12px;border-radius:12px;background:#fff6e1;border:1px solid #edd9ac;color:#5b4520;font-weight:700;font-size:14px}
+.farmer-maker-note svg{flex:none;width:18px;height:18px;color:var(--btn-gold-edge)}
+.farmer-maker-note b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--btn-gold-edge)}
+.farmer-maker-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:8px}
+.farmer-maker-actions button{min-height:44px;padding:0 20px}
+@media (prefers-reduced-motion:reduce){.farmer-part{transition:none}}

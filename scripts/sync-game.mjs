@@ -7,6 +7,11 @@ for(const name of ['diamond-checkout','app-store-notify'])copyFileSync(new URL('
 // Kongregate's server API (15 Oct 2026): the sign-in check for kongregate-auth, and the Kreds inventory, use and prices for diamond-checkout.
 for(const name of ['kongregate-auth','diamond-checkout'])copyFileSync(new URL('../game/kongregate-api.js',import.meta.url),new URL(`../supabase/functions/${name}/kongregate-api.js`,import.meta.url));
 copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../public/farm-state.js',import.meta.url));
+// The farmer's parts and which go together (20 Oct 2026, scripts/build-farmer.mjs): the site builds farmers from it, and farm-state.js
+// imports it beside itself (game/, public/ and farm-api).
+copyFileSync(new URL('../game/farmer-parts.js',import.meta.url),new URL('../public/farmer-parts.js',import.meta.url));
+// And beside farm-api's farm-state.js, which checks a farmer before it saves it (21 Oct 2026, the farm action farmer_wear).
+copyFileSync(new URL('../game/farmer-parts.js',import.meta.url),new URL('../supabase/functions/farm-api/farmer-parts.js',import.meta.url));
 
 copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../supabase/functions/farm-api/farm-state.js',import.meta.url));
 

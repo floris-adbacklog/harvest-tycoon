@@ -1,3 +1,6 @@
+// Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
+// copied beside each farm-state.js by scripts/sync-game.mjs).
+import {validFarmerConfig,farmerOwned,cleanFarmer} from './farmer-parts.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -2849,7 +2852,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);normalizePets(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3623,7 +3626,8 @@ export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
 // at the village lake (12 Oct 2026) counts for the village events since 20 Oct 2026 (their "Catch lake fish" goal), and still for no
 // challenge and no Family Chest: a cast moves no stat a farm event or the chest counts (earned, coins spent, harvests, batches...).
 // A pat of a pet (20 Oct 2026) neither: its coins, crops, planks and XP are a small find, never a goal's progress.
-export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','pet_pat']));
+// Dressing your own farmer (21 Oct 2026, farmer_wear) counts for nothing at all: no coins, no XP, no stat.
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','pet_pat','farmer_wear']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
 // opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
 // either: FULL_CARE_COST diamonds.
@@ -4167,6 +4171,23 @@ function normalizePets(state){
  if(!p||typeof p!=='object'||Array.isArray(p)){delete state.pets;return;}
  state.pets=Object.fromEntries(Object.keys(PETS).filter(k=>Number.isSafeInteger(p[k])&&p[k]>0).map(k=>[k,p[k]]));
 }
+// Your own farmer (21 Oct 2026, the owner: "Doe alle 3"): what they wear is kept in state.farmer, one part id per slot (game/farmer-parts.js).
+// A farm that never dressed its farmer has no farmer key and shows the default farmer (farmerOf); older rules keep the key as it is
+// (normalizeFarm keeps keys it does not know). Only farmer_wear writes it, after the same check the page makes: known parts that go
+// together, only parts My farmer offers, and of the earned ones (hats, two costumes) only those whose own goal this farm reached, read
+// from its own counters (farmerOwned). Nothing is paid, counted or given (NO_EVENT_ACTIONS).
+function wearFarmer(state,config){
+ const check=validFarmerConfig(config,{owned:farmerOwned(state),offered:true});
+ if(!check.ok)throw new Error(/not earned/.test(check.error)?'Earn this first to wear it.':'Choose a farmer.');
+ state.farmer=cleanFarmer(config);
+ return {farmer:{...state.farmer}};
+}
+// A saved state.farmer as the rules expect it: a plain object of slots and part ids that go together. Never made here.
+function normalizeFarmer(state){
+ const f=state.farmer;if(f===undefined)return;
+ if(!f||typeof f!=='object'||Array.isArray(f)||!validFarmerConfig(cleanFarmer(f)).ok){delete state.farmer;return;}
+ state.farmer=cleanFarmer(f);
+}
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
@@ -4287,6 +4308,8 @@ function dispatchFarmAction(state,action,now,random){
   case 'lake_fish':return landLakeFish(state,action.n,action.landed,action.perfect,now);
   // A pat of the farm's dog or cat, or the village's deer (20 Oct 2026): no feature gate, the deer checks World II itself.
   case 'pet_pat':return patPet(state,action.pet,now,random);
+  // Your own farmer's clothes (21 Oct 2026): no feature gate, every farm has its farmer.
+  case 'farmer_wear':return wearFarmer(state,action.farmer);
   default:throw new Error('Unknown farm action.');
  }
 }
