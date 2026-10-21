@@ -58,7 +58,7 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  dialog.innerHTML=`<div class="dialog-top"><div class="dialog-heading">${art('my-farmer','dialog-badge')}<div class="dialog-titles"><h2 id="farmer-maker-title">My farmer</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">${CLOSE}</button></div></div>
 <div class="farmer-maker-stage"><canvas class="farmer-maker-preview" width="360" height="360" aria-hidden="true"></canvas></div>
 <div class="market-tabs farmer-maker-tabs" role="tablist" aria-label="My farmer">${tabs.map(([slot,name])=>`<button type="button" role="tab" data-slot="${slot}" aria-selected="false"><span class="farmer-tab-thumb" aria-hidden="true"></span><span>${name}</span></button>`).join('')}</div>
-<p class="farmer-maker-rule" hidden>Earned by farming: each has a goal of its own.</p>
+<p class="farmer-maker-rule" hidden>Earn these by playing. Each one has its own goal.</p>
 <p class="farmer-maker-note" role="status" aria-live="polite" hidden></p>
 <div class="farmer-maker-grid" role="group"></div>
 <div class="dialog-actions farmer-maker-actions"><button type="button" class="secondary-button farmer-maker-random">Random</button><button type="button" class="primary-button farmer-maker-save" disabled>Save</button></div>`;
