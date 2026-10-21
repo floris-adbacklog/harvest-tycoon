@@ -8,8 +8,11 @@ export const FAMILY_MIN_LEVEL=10;
 // skip them, while CROPS[key] still finds a growing one for the fields, the scene and the tractor), and in ITEMS at the end (storage
 // and the market, at one fixed price: fixedPrice). Cranberries: the berry bush bush_003 in a deep red, a little lower, 4 hours,
 // harvested once (the field is empty after it, unlike the berries), 400 coins each at the market (sell 500 × the market's 0.8).
+// Brussels sprouts (Winter 2026 on, 21 Oct 2026): the same rules, on the cabbage plant plant_004 in a fresh sprout green and a little
+// taller, so a field of them reads as sprout stalks rather than cabbages. The item key is 'sprouts'; its pictures are brussels-sprouts.
 export const SEASON_CROPS=Object.freeze({
- cranberries:Object.freeze({name:'Cranberries',seedName:'Cranberry seeds',cost:0,sell:500,duration:14400000,xp:27,model:'bush_003',height:.72,use:'Sell at the market',tint:0xb0283c,season:'autumn',seedOnly:true,fixedPrice:true})
+ cranberries:Object.freeze({name:'Cranberries',seedName:'Cranberry seeds',cost:0,sell:500,duration:14400000,xp:27,model:'bush_003',height:.72,use:'Sell at the market',tint:0xb0283c,season:'autumn',seedOnly:true,fixedPrice:true}),
+ sprouts:Object.freeze({name:'Brussels sprouts',seedName:'Brussels sprout seeds',cost:0,sell:500,duration:14400000,xp:27,model:'plant_004',height:.62,use:'Sell at the market',tint:0x6fa83a,season:'winter',seedOnly:true,fixedPrice:true})
 });
 export const seasonCrop=key=>typeof key==='string'&&Object.hasOwn(SEASON_CROPS,key);
 const withSeasonCrops=crops=>{for(const [key,crop] of Object.entries(SEASON_CROPS))Object.defineProperty(crops,key,{value:crop,enumerable:false});return crops;};
@@ -3122,7 +3125,9 @@ export function seasonCounts(state){
 // What a weekly goal counts. festival: crops harvested, a field of the season crop counting twice (the Harvest festival).
 export const SEASON_GOAL_COUNTS=Object.freeze({
  gift:state=>whole(state.login?.visits),dailies:state=>whole(state.stats?.dailies),harvest:state=>whole(state.stats?.harvested),
- festival:state=>whole(state.stats?.harvested)+whole(state.stats?.season_crop_harvests),goods:state=>whole(state.stats?.produced),
+ festival:state=>whole(state.stats?.harvested)+whole(state.stats?.season_crop_harvests),
+ // Winter's Sprout week: the same count (a field of the season crop counting twice), in its own words.
+ sprouts:state=>whole(state.stats?.harvested)+whole(state.stats?.season_crop_harvests),goods:state=>whole(state.stats?.produced),
  fish:state=>whole(state.stats?.fish)+whole(state.stats?.lake_fish),hand:state=>whole(state.stats?.activities)});
 // Every look of every season: what it is (kind), its name, and its picture or colour. kind 'avatar' ids follow the avatar check of
 // player_stats ('season-…'); the avatars themselves are in public/player-avatars.js. emblem: the family emblem's id (FAMILY_EMBLEMS).
@@ -3148,7 +3153,27 @@ export const SEASON_LOOKS=Object.freeze({
  'autumn-2026-float':{kind:'bobber',name:'Autumn float',colors:{top:0xe58a2c,bottom:0xfffdf5,antenna:0x316c3a},season:'autumn-2026'},
  'autumn-2026-golden-rod':{kind:'rod',name:'Golden rod',colors:{pole:0xe3a53c,grip:0xa8741f,reel:0xf2cf74,top:0xe3a53c,bottom:0xf7dc8f},season:'autumn-2026'},
  'autumn-2026-emblem':{kind:'emblem',name:'Harvest shield',art:'emblem-autumn',emblem:'100',season:'autumn-2026'},
- 'autumn-2026-tractor':{kind:'tractor',name:'Pumpkin paint',tint:0xe8822a,art:'tractor-paint-autumn',season:'autumn-2026'}
+ 'autumn-2026-tractor':{kind:'tractor',name:'Pumpkin paint',tint:0xe8822a,art:'tractor-paint-autumn',season:'autumn-2026'},
+ // Winter 2026 (21 Oct 2026, the owner: "maak winterpass"): snow, cocoa and frost; nothing of Christmas (kept for a Christmas Pass).
+ // The colours: the diamond button's ice blue, the main button's pine green and the second button's cocoa brown (buttons.css).
+ 'season-winter-2026-cocoa-maker':{kind:'avatar',name:'Cocoa maker',art:'avatar-cocoa-maker',season:'winter-2026'},
+ 'season-winter-2026-snow-farmhand':{kind:'avatar',name:'Snow farmhand',art:'avatar-snow-farmhand',season:'winter-2026'},
+ 'season-winter-2026-frost-royal':{kind:'avatar',name:'Frost royal',art:'avatar-frost-royal',season:'winter-2026'},
+ 'winter-2026-frame':{kind:'frame',name:'Winter wreath',art:'frame-winter',season:'winter-2026'},
+ 'winter-2026-badge':{kind:'badge',name:'Winter 2026',art:'season-badge-winter-2026',season:'winter-2026'},
+ 'winter-2026-golden-sledge':{kind:'badge',name:'Golden sledge',art:'golden-sledge',season:'winter-2026'},
+ 'winter-2026-title-snowflake-collector':{kind:'title',name:'Snowflake Collector',season:'winter-2026'},
+ 'winter-2026-title-sledge-champion':{kind:'title',name:'Sledge Champion',season:'winter-2026'},
+ 'winter-2026-title-winter-legend':{kind:'title',name:'Winter Legend',season:'winter-2026'},
+ 'winter-2026-title-frost-hero':{kind:'title',name:'Frost Hero',season:'winter-2026'},
+ 'winter-2026-color-ice-blue':{kind:'color',name:'Ice blue',color:'#1f5877',season:'winter-2026'},
+ 'winter-2026-color-pine-green':{kind:'color',name:'Pine green',color:'#2b5e32',season:'winter-2026'},
+ 'winter-2026-color-cocoa':{kind:'color',name:'Cocoa',color:'#5b4520',season:'winter-2026'},
+ 'winter-2026-bg-valley':{kind:'bg',name:'Snowy valley',art:'profile-bg-winter',season:'winter-2026'},
+ 'winter-2026-float':{kind:'bobber',name:'Winter float',colors:{top:0x7cc4e8,bottom:0xfffdf5,antenna:0x2b5e32},season:'winter-2026'},
+ 'winter-2026-frost-rod':{kind:'rod',name:'Frost rod',colors:{pole:0xcfe3ee,grip:0x1f5877,reel:0xe3f3fd,top:0x9fc4da,bottom:0xfffdf5},season:'winter-2026'},
+ 'winter-2026-emblem':{kind:'emblem',name:'Snowman shield',art:'emblem-winter',emblem:'101',season:'winter-2026'},
+ 'winter-2026-tractor':{kind:'tractor',name:'Frost paint',tint:0xcfe3ee,art:'tractor-paint-winter',season:'winter-2026'}
 });
 export const seasonLook=id=>typeof id==='string'&&Object.hasOwn(SEASON_LOOKS,id)?SEASON_LOOKS[id]:null;
 // The family emblems a season gives (an emblem's id is its place in FAMILY_EMBLEMS): never in the picker unless a member of the family
@@ -3159,7 +3184,8 @@ export const SEASON_EMBLEMS=Object.freeze(Object.fromEntries(Object.entries(SEAS
 // discount (the Buildings discount voucher), crops (Instant harvest), production (Finish production), seeds ({crop: packets}) and looks.
 // purchase: comes with the purchase itself (the paid tier 1 avatar): owned at once, nothing to collect.
 // farmer: parts for your own 3D farmer (21 Oct 2026, item 8; game/farmer-parts.js FARMER_PASS_PARTS): kept in state.farmerParts, a
-// list that only grows (a refund takes the paid ones back), owned through the pass in My farmer. No tier of Autumn 2026 has one.
+// list that only grows (a refund takes the paid ones back), owned through the pass in My farmer. No tier of Autumn 2026 has one;
+// Winter 2026 has five.
 const utc=(month,day,year=2026)=>Date.UTC(year,month-1,day);
 // Autumn 2026 (plan §7): its start is the first 00:00 UTC after the owner's go (startsAt null: not scheduled, nothing shows). It ends
 // with Monday 21 December (endsAt, 22 Dec 00:00 UTC) and its rewards can be collected until 28 December. The weeks keep their dates; a
@@ -3280,7 +3306,143 @@ const AUTUMN_2026=Object.freeze({id:'autumn-2026',name:'Autumn',title:'Autumn 20
   tierPair({looks:['autumn-2026-title-harvest-hero'],coins:300},{looks:['season-autumn-2026-pumpkin-royal','autumn-2026-golden-pumpkin'],diamonds:50})
  ])
 });
-const SEASON_LIST=Object.freeze([AUTUMN_2026]);
+// Winter 2026 (21 Oct 2026, the owner: "maak winterpass en zet hem alvast helemaal onder herfst pass dat die eraan komt, je kan hem al
+// kopen, start na 22 dec"): the next season, from 22 December 00:00 UTC (the moment Autumn ends) to 20 March 2027 (endsAt 21 March
+// 00:00 UTC, the astronomical spring), its rewards to collect until 27 March. Its points are snowflakes, its crop Brussels sprouts.
+// - The pre-sale: on sale from saleFrom while Autumn runs, once per farmer, from level 20 (game/payments.js SEASON_SALE has the same
+//   dates; a test keeps them equal). Bought, the season's id is in passPremium at once, and with it the Cocoa maker (the paid tier 1
+//   avatar, seasonLooksOwned); nothing else counts or opens before 22 December. The window shows it below Autumn (seasonComing).
+// - The same shape as Autumn (its tiers mirror Autumn's; a test checks the totals): 1,500 paid and 200 free diamonds, the same VIP,
+//   farmhand, boosts, carts and seed packets, winter goods, and five parts for your own farmer (farmer, game/farmer-parts.js
+//   FARMER_PASS_PARTS): free the black beanie (tier 10) and the blue cuffed gloves (62); paid the ski goggles (29), the long beige coat
+//   (49) and the penguin suit (79). Nothing of Christmas: that is kept for a Christmas Pass.
+// - 89 days: a tier is 125 snowflakes (1.4 × 89, rounded to 5). Double days (everything and the cap twice): New Year, 31 December and
+//   1 January (doubles), and the last two days, 19 and 20 March (a week of its own, as Autumn's).
+const WINTER_2026=Object.freeze({id:'winter-2026',name:'Winter',title:'Winter 2026',passName:'Winter Season Pass',starts:'Starts 22 December',
+ teaser:'Three avatars, a golden sledge, a winter wreath, a penguin suit for your farmer and Brussels sprouts to grow.',point:'snowflake',points:'snowflakes',
+ art:'season-pass-winter',pointArt:'season-point-winter',banner:'season-pass-banner-winter',crop:'sprouts',
+ saleFrom:utc(10,21),startsAt:utc(12,22),endsAt:utc(3,21,2027),claimUntil:utc(3,28,2027),
+ doubles:Object.freeze([Object.freeze({from:utc(12,31),to:utc(1,2,2027),name:'New Year'})]),
+ weeks:Object.freeze([
+  {from:utc(12,22),name:'First snow',art:'season-point-winter',goal:{kind:'gift',target:5}},
+  {from:utc(12,29),name:'New Year week',art:'candles',goal:{kind:'dailies',target:10}},
+  {from:utc(1,5,2027),name:'Frosty fields',art:'sprouts',goal:{kind:'harvest',target:150}},
+  {from:utc(1,12,2027),name:'Warm kitchen',art:'stew',goal:{kind:'goods',target:30}},
+  {from:utc(1,19,2027),name:'Ice fishing',art:'fish-trout',goal:{kind:'fish',target:25}},
+  {from:utc(1,26,2027),name:'Snow shovels',art:'helping-hand',goal:{kind:'hand',target:40}},
+  {from:utc(2,2,2027),name:'Sprout week',art:'sprouts',goal:{kind:'sprouts',target:100}},
+  {from:utc(2,9,2027),name:'Cosy evenings',art:'wool',goal:{kind:'dailies',target:10}},
+  {from:utc(2,16,2027),name:'Winter market',art:'cheese',goal:{kind:'goods',target:30}},
+  {from:utc(2,23,2027),name:'Frozen pond',art:'fish-trout',goal:{kind:'fish',target:25}},
+  {from:utc(3,2,2027),name:'Woodpile',art:'chores',goal:{kind:'hand',target:40}},
+  {from:utc(3,9,2027),name:'First thaw',art:'bread',goal:{kind:'harvest',target:150}},
+  {from:utc(3,16,2027),name:'Last snow',art:'milk',goal:{kind:'gift',target:3}},
+  {from:utc(3,19,2027),name:'Final days',art:'season-point-winter',double:true,goal:null}
+ ].map(w=>Object.freeze(w))),
+ tiers:Object.freeze([
+  tierPair({looks:['winter-2026-title-snowflake-collector'],coins:60},{looks:['season-winter-2026-cocoa-maker'],purchase:true}),
+  tierPair({items:{wool:6}},{boost:'harvest',length:'1h'}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({boost:'harvest',length:'30m'},{items:{milk:16}}),
+  tierPair({diamonds:20},{looks:['winter-2026-color-ice-blue'],farmhand:1}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({seeds:{sprouts:2}},{boost:'xp',length:'1h'}),
+  tierPair({coins:60},{seeds:{sprouts:3}}),
+  tierPair({boost:'xp',length:'30m'},{items:{cheese:6}}),
+  tierPair({farmer:['hat_006'],coins:60},{diamonds:50}),
+  tierPair({coins:60},{cart:1}),
+  tierPair({looks:['winter-2026-float']},{vipDays:7}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({boost:'coins',length:'30m'},{items:{bread:7}}),
+  tierPair({diamonds:20},{farmhand:1}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({items:{candles:1}},{boost:'harvest',length:'1h'}),
+  tierPair({coins:60},{seeds:{sprouts:3}}),
+  tierPair({coins:60},{items:{candles:2}}),
+  tierPair({coins:120},{looks:['winter-2026-title-sledge-champion'],diamonds:50}),
+  tierPair({coins:60},{cart:1}),
+  tierPair({items:{yarn:3}},{boost:'xp',length:'1h'}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({boost:'harvest',length:'30m'},{items:{stew:5}}),
+  tierPair({looks:['season-winter-2026-snow-farmhand'],diamonds:20},{looks:['winter-2026-frame'],farmhand:1}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({items:{stew:2}},{boost:'coins',length:'1h'}),
+  tierPair({coins:60},{seeds:{sprouts:3}}),
+  tierPair({coins:60},{farmer:['glasses_013']}),
+  tierPair({cart:1},{diamonds:50}),
+  tierPair({coins:60},{cart:1}),
+  tierPair({items:{cherryjam:2}},{boost:'harvest',length:'1h'}),
+  tierPair({seeds:{sprouts:2}},{diamonds:50}),
+  tierPair({boost:'xp',length:'30m'},{items:{berrypreserves:3}}),
+  tierPair({diamonds:20},{looks:['winter-2026-emblem']}),
+  tierPair({coins:60},{diamonds:50}),
+  tierPair({items:{berrypreserves:1}},{boost:'harvest',length:'1d'}),
+  tierPair({coins:60},{seeds:{sprouts:3}}),
+  tierPair({coins:60},{items:{wool:13}}),
+  tierPair({seeds:{sprouts:3},coins:200},{diamonds:50}),
+  tierPair({coins:100},{cart:1}),
+  tierPair({items:{goatcheese:1}},{vipDays:7}),
+  tierPair({coins:100},{diamonds:50}),
+  tierPair({boost:'coins',length:'30m'},{discount:1}),
+  tierPair({diamonds:20},{farmhand:1}),
+  tierPair({coins:100},{diamonds:50}),
+  tierPair({items:{milk:8}},{boost:'harvest',length:'1h'}),
+  tierPair({coins:100},{seeds:{sprouts:3}}),
+  tierPair({coins:100},{farmer:['outwear_021']}),
+  tierPair({looks:['winter-2026-badge'],farmhand:1},{looks:['winter-2026-bg-valley'],diamonds:50}),
+  tierPair({coins:100},{cart:1}),
+  tierPair({items:{wool:6}},{boost:'xp',length:'1h'}),
+  tierPair({coins:100},{diamonds:50}),
+  tierPair({boost:'harvest',length:'30m'},{items:{bread:7}}),
+  tierPair({diamonds:20},{crops:1}),
+  tierPair({coins:100},{diamonds:50}),
+  tierPair({seeds:{sprouts:3}},{boost:'coins',length:'1h'}),
+  tierPair({coins:100},{seeds:{sprouts:3}}),
+  tierPair({boost:'xp',length:'30m'},{items:{candles:2}}),
+  tierPair({coins:200},{looks:['winter-2026-color-pine-green'],diamonds:50}),
+  tierPair({coins:100},{cart:1}),
+  tierPair({farmer:['gloves_011']},{boost:'harvest',length:'1h'}),
+  tierPair({coins:100},{diamonds:50}),
+  tierPair({boost:'coins',length:'30m'},{items:{stew:5}}),
+  tierPair({diamonds:20},{looks:['winter-2026-frost-rod'],farmhand:1}),
+  tierPair({coins:100},{diamonds:50}),
+  tierPair({items:{candles:1}},{boost:'coins',length:'1d'}),
+  tierPair({coins:100},{seeds:{sprouts:3}}),
+  tierPair({coins:100},{items:{cherryjam:4}}),
+  tierPair({cart:1},{diamonds:50}),
+  tierPair({coins:150},{cart:1}),
+  tierPair({items:{yarn:3}},{vipDays:7}),
+  tierPair({coins:150},{diamonds:50}),
+  tierPair({boost:'harvest',length:'30m'},{items:{berrypreserves:3}}),
+  tierPair({looks:['winter-2026-color-cocoa'],diamonds:20},{looks:['winter-2026-tractor'],discount:1}),
+  tierPair({coins:150},{diamonds:50}),
+  tierPair({items:{stew:2}},{boost:'harvest',length:'1h'}),
+  tierPair({coins:150},{seeds:{sprouts:3}}),
+  tierPair({coins:150},{farmer:['costume_2']}),
+  tierPair({coins:300},{diamonds:50}),
+  tierPair({coins:150},{cart:1}),
+  tierPair({items:{cherryjam:2}},{boost:'xp',length:'1h'}),
+  tierPair({seeds:{sprouts:3}},{diamonds:50}),
+  tierPair({boost:'xp',length:'30m'},{items:{milk:16}}),
+  tierPair({diamonds:20},{production:1}),
+  tierPair({coins:150},{diamonds:50}),
+  tierPair({items:{berrypreserves:1}},{boost:'coins',length:'1h'}),
+  tierPair({coins:150},{seeds:{sprouts:3}}),
+  tierPair({coins:150},{items:{cheese:6}}),
+  tierPair({coins:300},{looks:['winter-2026-title-winter-legend'],diamonds:50}),
+  tierPair({coins:150},{cart:1}),
+  tierPair({items:{goatcheese:1}},{boost:'harvest',length:'1h'}),
+  tierPair({coins:150},{diamonds:50}),
+  tierPair({boost:'coins',length:'30m'},{items:{bread:7}}),
+  tierPair({diamonds:20},{farmhand:1}),
+  tierPair({coins:150},{diamonds:50}),
+  tierPair({items:{milk:8}},{boost:'xp',length:'1d'}),
+  tierPair({coins:150},{seeds:{sprouts:3}}),
+  tierPair({coins:150},{items:{candles:2}}),
+  tierPair({looks:['winter-2026-title-frost-hero'],coins:300},{looks:['season-winter-2026-frost-royal','winter-2026-golden-sledge'],diamonds:50})
+ ])
+});
+const SEASON_LIST=Object.freeze([AUTUMN_2026,WINTER_2026]);
 export const SEASON_IDS=Object.freeze(SEASON_LIST.map(s=>s.id));
 // 1.4 × the season's days (from its start to its end), rounded to 5: 65 for a start on 6 November.
 export const seasonPerTier=(startsAt,endsAt)=>Math.max(5,Math.round(1.4*Math.round((endsAt-startsAt)/DAY_MS)/5)*5);
@@ -3307,8 +3469,25 @@ export function currentSeason(now=Date.now()){
  return seasons.find(s=>seasonPhase(s,now)==='open')??seasons.find(s=>['soon','claim'].includes(seasonPhase(s,now)))??null;
 }
 export const seasonPremium=(state,id)=>Array.isArray(state.passPremium)&&state.passPremium.includes(id);
+// The next season in its pre-sale (Winter 2026 while Autumn runs, 21 Oct 2026): one whose start is still to come and whose sale has
+// begun (saleFrom), and that is not the season the window shows now. Its tiers are not open: it can only be bought, and is shown below.
+export function seasonUpcoming(now=Date.now()){
+ const shown=currentSeason(now)?.id;
+ return SEASON_IDS.map(seasonById).find(s=>s.id!==shown&&s.startsAt!=null&&s.saleFrom!=null&&now>=s.saleFrom&&now<s.startsAt)??null;
+}
+// What the window's card for that season shows: the season, whether this farm bought it (the Cocoa maker is theirs then), and whether
+// this farm may buy it (from level 20). null: no season in its pre-sale, or the farm below level 10 (the window is not open to it).
+export function seasonComing(state,now=Date.now()){
+ const season=seasonUpcoming(now);if(!season||levelOf(state)<SEASON_LEVEL)return null;
+ return {season,premium:seasonPremium(state,season.id),canBuy:levelOf(state)>=SEASON_BUY_LEVEL,startsIn:season.startsAt-now};
+}
 // Which week of the season a moment is in (-1: before its first week), and that week's goal for this season (halved, rounded up, in the
 // week of a start on a Friday or Saturday).
+// Whether everything counts double at this moment: a double week, or one of the season's double days (doubles: Winter's New Year).
+export function seasonDouble(season,now){
+ const w=seasonWeekIndex(season,now);
+ return w>=0&&season.weeks[w].double===true||(season.doubles??[]).some(d=>now>=d.from&&now<d.to);
+}
 export function seasonWeekIndex(season,now){let i=-1;season.weeks.forEach((w,k)=>{if(now>=w.from)i=k;});return now<season.endsAt?i:-1;}
 export function seasonWeekTarget(season,index){
  const w=season.weeks[index];if(!w?.goal)return 0;
@@ -3321,7 +3500,7 @@ export function seasonTally(season,entry,state,now){
  const e={...entry,base:{...entry.base},week:entry.week?{...entry.week}:null},counts=seasonCounts(state);
  if(now>=season.startsAt&&now<season.endsAt){
   const day=utcDay(now);if(e.day!==day){e.day=day;e.today=0;}
-  const w=seasonWeekIndex(season,now),double=w>=0&&season.weeks[w].double===true,cap=SEASON_DAY_CAP*(double?2:1);
+  const w=seasonWeekIndex(season,now),double=seasonDouble(season,now),cap=SEASON_DAY_CAP*(double?2:1);
   let gain=0;for(const [key,points] of Object.entries(SEASON_POINTS))gain+=points*Math.max(0,counts[key]-(Number.isSafeInteger(e.base[key])?e.base[key]:counts[key]));
   const add=Math.max(0,Math.min(gain*(double?2:1),cap-e.today));e.today+=add;e.points+=add;
   if(w>=0){
@@ -3404,7 +3583,7 @@ export function seasonView(state,now=Date.now()){
  const season=currentSeason(now);if(!season)return null;
  const phase=seasonPhase(season,now),stored=cleanEntry(state.season),own=stored?.id===season.id?stored:null;
  const entry=own?seasonTally(season,own,state,now):null,tier=seasonTier(season,entry),premium=seasonPremium(state,season.id);
- const w=seasonWeekIndex(season,now),week=w>=0?season.weeks[w]:null,double=week?.double===true;
+ const w=seasonWeekIndex(season,now),week=w>=0?season.weeks[w]:null,double=phase==='open'&&seasonDouble(season,now),doubleDay=double&&week?.double!==true?(season.doubles??[]).find(d=>now>=d.from&&now<d.to)??null:null;
  const earned=entry?Math.floor(entry.points/season.perTier)+entry.skips:0,inTier=entry&&tier<SEASON_TIERS?entry.points%season.perTier:0;
  const chests=seasonChestsReached(season,entry),beyond=entry&&earned>=SEASON_TIERS?Math.max(0,entry.points-(SEASON_TIERS-entry.skips)*season.perTier):0;
  const open=phase==='open'||phase==='claim';
@@ -3413,7 +3592,7 @@ export function seasonView(state,now=Date.now()){
  const prevWaiting=prevEntry&&seasonPhase(prevSeason,now)==='claim'?['free',...(seasonPremium(state,prevSeason.id)?['paid']:[])].reduce((n,track)=>n+prevSeason.tiers.slice(0,seasonTier(prevSeason,prevEntry)).filter((t,i)=>!t[track].purchase&&!prevEntry[track].includes(i+1)).length,0):0;
  return {season,phase,entry,tier,premium,points:entry?.points??0,today:entry?.today??0,cap:SEASON_DAY_CAP*(double?2:1),double,
   perTier:season.perTier,inTier,toNext:tier<SEASON_TIERS&&entry?season.perTier-inTier:0,chests,chestsClaimed:entry?.chests??0,toChest:SEASON_CHEST_POINTS-beyond%SEASON_CHEST_POINTS,
-  week,weekIndex:w,weekTarget:w>=0?seasonWeekTarget(season,w):0,weekCount:entry?.week&&week?.goal?Math.max(0,SEASON_GOAL_COUNTS[week.goal.kind](state)-entry.week.base):0,weekDone:entry?.week?.done===true,
+  week,doubleDay,weekIndex:w,weekTarget:w>=0?seasonWeekTarget(season,w):0,weekCount:entry?.week&&week?.goal?Math.max(0,SEASON_GOAL_COUNTS[week.goal.kind](state)-entry.week.base):0,weekDone:entry?.week?.done===true,
   waiting:waiting+prevWaiting,prev:prevEntry?{season:prevSeason,entry:prevEntry,waiting:prevWaiting,tier:seasonTier(prevSeason,prevEntry)}:null,
   visible:levelOf(state)>=SEASON_LEVEL&&(phase==='soon'||phase==='open'||phase==='claim'&&(tier>0||prevWaiting>0))};
 }
@@ -3425,7 +3604,8 @@ export function seasonTotals(season){
  const shop=sum(paid,'diamonds')+paid.reduce((n,r)=>n+boostWorth(r),0)+sum(paid,'vipDays')/7*VIP_PLANS.week.cost+sum(paid,'farmhand')*BOOSTS.farmhand.cost
   +sum(paid,'cart')*COIN_PACK.cost+sum(paid,'discount')*BOOSTS.upgrade.cost+sum(paid,'crops')*BOOSTS.crops.cost+sum(paid,'production')*BOOSTS.production.cost;
  return {diamonds:sum(paid,'diamonds'),freeDiamonds:sum(free,'diamonds'),vipDays:sum(paid,'vipDays'),farmhandDays:sum(paid,'farmhand'),boosts:paid.filter(r=>r.boost).length,
-  avatars:looks(paid).filter(id=>SEASON_LOOKS[id].kind==='avatar').length,otherLooks:looks(paid).filter(id=>SEASON_LOOKS[id].kind!=='avatar').length,shop};
+  avatars:looks(paid).filter(id=>SEASON_LOOKS[id].kind==='avatar').length,otherLooks:looks(paid).filter(id=>SEASON_LOOKS[id].kind!=='avatar').length,
+  farmerParts:paid.reduce((n,r)=>n+(r.farmer?.length??0),0),shop};
 }
 const seasonEntryFor=(state,id)=>state.season?.id===id?state.season:state.seasonPrev?.id===id?state.seasonPrev:null;
 // What stands in the way of a reward that does something now: Instant harvest needs a growing crop, Finish production a running batch,
@@ -3482,10 +3662,11 @@ export function skipSeasonTier(state,expectedCost,now=Date.now()){
  spendDiamonds(state,SEASON_SKIP_COST);entry.skips++;state.stats.season_skips=(state.stats.season_skips??0)+1;
  return {season:season.id,tier:seasonTier(season,entry),cost:SEASON_SKIP_COST};
 }
-// A bonus chest after tier 100: 500 × level coins (in fives), one at a time, while the season runs and in its collecting week.
-export function claimSeasonChest(state,now=Date.now()){
+// A bonus chest after tier 100: 500 × level coins (in fives), one at a time, while the season runs and in its collecting week (id: the
+// last season's, from its strip, once the next one runs).
+export function claimSeasonChest(state,now=Date.now(),id){
  normalizeFarm(state,now);
- const season=currentSeason(now),entry=season&&state.season?.id===season.id?state.season:null,phase=seasonPhase(season,now);
+ const season=id?seasonById(id):currentSeason(now),entry=season?seasonEntryFor(state,season.id):null,phase=seasonPhase(season,now);
  if(!entry||(phase!=='open'&&phase!=='claim'))throw new Error('There is no bonus chest to open.');
  if(seasonChestsReached(season,entry)<=entry.chests)throw new Error(`Every ${SEASON_CHEST_POINTS} points after tier ${SEASON_TIERS} open a bonus chest.`);
  const coins=Math.round(SEASON_CHEST_COINS*Math.max(1,levelOf(state))/5)*5;
@@ -4270,7 +4451,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'pass_claim':return claimPassTier(state,action.track,action.tier,now);
   case 'season_claim':return claimSeasonTier(state,action.track,action.tier,now,action.season);
   case 'season_skip':return skipSeasonTier(state,action.expectedCost,now);
-  case 'season_chest':return claimSeasonChest(state,now);
+  case 'season_chest':return claimSeasonChest(state,now,action.season);
   case 'season_look':return wearFarmLook(state,action.slot,action.id??null);
   case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
@@ -4539,7 +4720,7 @@ export const FAMILY_EMBLEMS=Object.freeze(['wheat','corn','sunflower','apples','
  // after the 40 family emblems.
  'salad','beangratin','applecompote','applevinegar','pickledbeans','truffleomelette','berrycheesecake',
  // The Season Pass's emblems (Oct 2026, ids 100 on; SEASON_EMBLEMS): only for a family where a member collected one.
- 'emblem-autumn'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
+ 'emblem-autumn','emblem-winter'].map((icon,i)=>({id:String(i),icon,color:['#6b8e50','#c39538','#b57851','#517c83','#8b6a95','#a66c71'][i%6]})));
 // The emblem picker (7 Oct 2026) offers all 100: first the 40 real family emblems (family-…), animals first, then things; then the
 // 60 game icons (the 53 old crop and goods emblems and the 7 new ones), crops first, then goods, then the farm's own things. Every
 // family can pick any of them, also one it had before. A new family starts with the first one.

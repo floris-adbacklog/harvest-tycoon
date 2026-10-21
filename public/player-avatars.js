@@ -225,7 +225,11 @@ export const PLAYER_AVATARS=Object.freeze([
 export const SEASON_AVATARS=Object.freeze([
  {id:'season-autumn-2026-harvest-chef',name:'Harvest chef',src:'/assets/avatars/avatar-harvest-chef.webp',season:'autumn-2026',paid:true,purchase:true},
  {id:'season-autumn-2026-autumn-harvester',name:'Autumn harvester',src:'/assets/avatars/avatar-autumn-harvester.webp',season:'autumn-2026'},
- {id:'season-autumn-2026-pumpkin-royal',name:'Pumpkin royal',src:'/assets/avatars/avatar-pumpkin-royal.webp',season:'autumn-2026',paid:true}
+ {id:'season-autumn-2026-pumpkin-royal',name:'Pumpkin royal',src:'/assets/avatars/avatar-pumpkin-royal.webp',season:'autumn-2026',paid:true},
+ // Winter 2026 (21 Oct 2026): the Cocoa maker comes with the purchase, also in the pre-sale before 22 December.
+ {id:'season-winter-2026-cocoa-maker',name:'Cocoa maker',src:'/assets/avatars/avatar-cocoa-maker.webp',season:'winter-2026',paid:true,purchase:true},
+ {id:'season-winter-2026-snow-farmhand',name:'Snow farmhand',src:'/assets/avatars/avatar-snow-farmhand.webp',season:'winter-2026'},
+ {id:'season-winter-2026-frost-royal',name:'Frost royal',src:'/assets/avatars/avatar-frost-royal.webp',season:'winter-2026',paid:true}
 ].map(Object.freeze));
 export const seasonAvatar=id=>SEASON_AVATARS.find(a=>a.id===id)??null;
 export const DEFAULT_AVATAR='default';

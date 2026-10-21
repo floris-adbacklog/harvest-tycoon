@@ -62,7 +62,7 @@ export function createKredsShop({link,pay,current=()=>null,now=()=>Date.now(),uu
   // When the farm opens (src/game-cloud.js): everything bought and not credited yet, each in the usual result window.
   bridge.playRecover=async()=>{if(recent())return;const {credited}=await claim();for(const id of credited)bridge.purchaseDone?.(id);};
   // A purchase: Kongregate's window for this pack, one at a time; the shop's button stays busy until the window closes.
-  bridge.checkout=async(pack,_requestId,offerId)=>{
+  bridge.checkout=async(pack,_requestId,offerId,{season}={})=>{
    if(busy)throw new Error(KREDS_TEXT.busy);
    const who=link.user();
    // Kongregate's guests cannot buy (their docs): Kongregate's own sign-in window instead. The farm itself never opens for a guest.
@@ -71,7 +71,7 @@ export function createKredsShop({link,pay,current=()=>null,now=()=>Date.now(),uu
    if(who.id!==current())throw new Error(KREDS_TEXT.failed);
    busy=true;
    try{
-    const made=await bridge.payments({operation:'create',pack,requestId:uuid(),...(offerId?{offerId}:{})});
+    const made=await bridge.payments({operation:'create',pack,requestId:uuid(),...(offerId?{offerId}:{}),...(season?{season}:{})});
     if(!UUID.test(made?.purchaseId??'')||made.store!=='kongregate'||made.product!==KONG_PRODUCTS[pack]||made.account!==user?.id)throw new Error(KREDS_TEXT.failed);
     const result=await link.purchase(made.product,made.purchaseId);
     gone();

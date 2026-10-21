@@ -18,7 +18,7 @@ const wear=(s,farmer)=>applyFarmAction(s,{type:'farmer_wear',farmer},now);
 
 test('My farmer offers a short, calm choice, nearly all of it earned: free are the skin tones and the basics',()=>{
  const counts=Object.fromEntries(FARMER_SLOTS.map(slot=>[slot,creatorParts(slot).length]));
- assert.deepEqual(counts,{body:5,face:9,hair:12,hat:17,glasses:6,faceExtra:8,top:10,bottom:8,outfit:6,costume:2,mascot:0,shoes:8,socks:0,gloves:6});
+ assert.deepEqual(counts,{body:5,face:9,hair:12,hat:18,glasses:7,faceExtra:8,top:11,bottom:8,outfit:6,costume:3,mascot:0,shoes:8,socks:0,gloves:7});   // Winter 2026 (21 Oct 2026): + its five pass parts
  const free=Object.fromEntries(FARMER_SLOTS.map(slot=>[slot,creatorParts(slot).filter(p=>!p.earned).length]));
  assert.deepEqual(free,{body:5,face:2,hair:3,hat:0,glasses:1,faceExtra:1,top:2,bottom:1,outfit:1,costume:0,mascot:0,shoes:1,socks:0,gloves:1},
   'the owner, 21 Oct 2026: "maak bijna alle mijn boer items lockable, behalve huidskleuren en de basic items"');

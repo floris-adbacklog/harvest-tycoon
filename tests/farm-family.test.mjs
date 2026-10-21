@@ -221,7 +221,7 @@ test('The four Family pages each use their own generated PNG; on phones Farm Fam
 
 test('new emblems preserve existing IDs and only leaders may change them',()=>{
  const old=['wheat','corn','sunflower','apples','berries','honey','bread','milk','eggs','tractor','farm','trophy'];
- assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,101,'100, and the Season Pass emblem (id 100, only with a member who has it)');
+ assert.deepEqual(FAMILY_EMBLEMS.slice(0,12).map(e=>e.icon),old);assert.equal(FAMILY_EMBLEMS.length,102,'100, and the Season Pass emblems (ids 100 and 101, only with a member who has one)');
  assert.deepEqual(FAMILY_EMBLEMS.slice(21,25).map(e=>[e.id,e.icon]),[['21','family-fox'],['22','family-owl'],['23','family-windmill'],['24','family-horseshoe']],'four new emblems, appended after the old ones');
  assert.deepEqual(FAMILY_EMBLEMS.slice(25,27).map(e=>[e.id,e.icon]),[['25','lettuce'],['26','barley']],'27 Sep 2026: 35 more, appended again');
  assert.deepEqual(FAMILY_EMBLEMS.slice(59,61).map(e=>[e.id,e.icon]),[['59','berrysmoothie'],['60','family-rooster']],'7 Oct 2026: 33 real family emblems, appended again');

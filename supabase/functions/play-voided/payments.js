@@ -80,14 +80,24 @@ export function passCheckoutProblem({level=1,owned=false,now=Date.now(),price=PA
 // collected in the game (game/farm-state.js claimSeasonTier). The dates are the game's (SEASONS in farm-state.js; a test keeps them equal):
 // startsAt null until the owner says go. CrazyGames and Discord sell nothing (only the free row); the iPhone app does not sell it either
 // (APPLE_SELLS_SEASON_PASS, below): the owner made no App Store product (20 Oct 2026).
+// The pre-sale (21 Oct 2026, the owner: "zet hem alvast helemaal onder herfst pass dat die eraan komt, je kan hem al kopen, start na
+// 22 dec"): a season with saleFrom is on sale from then until its end, also before its start (Winter 2026 while Autumn runs). The
+// checkout then names the season it is for (body.season: its id), and the purchase row keeps that id (pass_id), so a Winter purchase
+// always credits Winter and an Autumn one Autumn (supabase/season-pass-engine.sql harvest_season_target). A checkout without a season
+// (a page from before the pre-sale) buys the season open now, as before.
 export const SEASON_SALE=Object.freeze({name:'Season Pass',cents:1999,level:20,product:'prod_VTg71Dn0njkTPI',price:'price_1USilO04FdNTUSp4FI12JA9l',
- seasons:Object.freeze([Object.freeze({id:'autumn-2026',name:'Autumn 2026',startsAt:Date.UTC(2026,9,21),endsAt:Date.UTC(2026,11,22),claimUntil:Date.UTC(2026,11,29)})])});
+ seasons:Object.freeze([Object.freeze({id:'autumn-2026',name:'Autumn 2026',startsAt:Date.UTC(2026,9,21),endsAt:Date.UTC(2026,11,22),claimUntil:Date.UTC(2026,11,29)}),
+  Object.freeze({id:'winter-2026',name:'Winter 2026',saleFrom:Date.UTC(2026,9,21),startsAt:Date.UTC(2026,11,22),endsAt:Date.UTC(2027,2,21),claimUntil:Date.UTC(2027,2,28)})])});
 export const seasonSale=id=>SEASON_SALE.seasons.find(s=>s.id===id)??null;
 // The season on sale now (open: its start reached, its end not), or null.
 export const seasonOnSale=(now=Date.now(),seasons=SEASON_SALE.seasons)=>seasons.find(s=>s.startsAt!=null&&now>=s.startsAt&&now<s.endsAt)??null;
-// Why a farmer cannot start a Season Pass checkout, or null (diamond-checkout).
-export function seasonCheckoutProblem({level=1,owned=false,now=Date.now(),price=SEASON_SALE.price,seasons=SEASON_SALE.seasons}={}){
- if(!seasonOnSale(now,seasons))return {error:'The Season Pass is not on sale right now.',status:409};
+// Every season on sale now: the open one, and one in its pre-sale (from saleFrom until its start).
+export const seasonsOnSale=(now=Date.now(),seasons=SEASON_SALE.seasons)=>seasons.filter(s=>s.startsAt!=null&&now>=(s.saleFrom??s.startsAt)&&now<s.endsAt);
+// The season a checkout buys: the one it names, when that one is on sale now; without a name the season open now. null: none.
+export const seasonForCheckout=(id,now=Date.now(),seasons=SEASON_SALE.seasons)=>id==null?seasonOnSale(now,seasons):typeof id==='string'?seasonsOnSale(now,seasons).find(s=>s.id===id)??null:null;
+// Why a farmer cannot start a Season Pass checkout, or null (diamond-checkout). season: the id the checkout names (none: the open one).
+export function seasonCheckoutProblem({level=1,owned=false,now=Date.now(),price=SEASON_SALE.price,seasons=SEASON_SALE.seasons,season}={}){
+ if(!seasonForCheckout(season,now,seasons))return {error:'The Season Pass is not on sale right now.',status:409};
  if(!price)return {error:'The Season Pass is not available yet.',status:503};
  if(!(level>=SEASON_SALE.level))return {error:`The Season Pass is for sale from level ${SEASON_SALE.level}.`,status:409};
  if(owned)return {error:'You already have the Season Pass for this season.',status:409};

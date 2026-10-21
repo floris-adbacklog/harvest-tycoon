@@ -33,7 +33,7 @@ test('the catalog holds every part of the pack, in its groups, with its files th
  let total=0;
  for(const p of Object.values(FARMER_PARTS)){
   assert.match(p.id,/^[a-z0-9_]+$/);assert.ok(p.name&&!p.name.includes('|'),p.id);assert.ok(['farm','plain','fun','off'].includes(p.fit),p.id);
-  assert.equal(p.slot,FARMER_GROUPS[p.group].slot);assert.equal(p.earned,FARMER_GROUPS[p.group].earned||Object.hasOwn(P.FARMER_REWARDS,p.id),p.id);
+  assert.equal(p.slot,FARMER_GROUPS[p.group].slot);assert.equal(p.earned,FARMER_GROUPS[p.group].earned||Object.hasOwn(P.FARMER_REWARDS,p.id)||Object.hasOwn(P.FARMER_PASS_PARTS,p.id),p.id);   // a pass's part is earned too (Winter 2026)
   for(const f of p.files){const size=statSync(file(`public/assets/farmer/parts/${f}.glb`)).size;total+=size;assert.ok(size<125_000,`${f} is ${size} bytes`);}
  }
  assert.ok(total<7_200_000,`all parts ${total} bytes`);

@@ -23,7 +23,7 @@ const BASE=FAMILY_EMBLEMS.filter(e=>!Object.hasOwn(SEASON_EMBLEMS,e.id));
 const create=emblem=>familyMutate(emptyFamilyContext(),farm(),'alice',{type:'family_create',name:'Meadow Friends',emblem},now);
 
 test('the new emblems are added at the end (ids 60-92 and 93-99), so every family keeps its emblem',()=>{
- assert.equal(BASE.length,100);assert.deepEqual(FAMILY_EMBLEMS.slice(100).map(e=>[e.id,e.icon]),[['100','emblem-autumn']],'the Season Pass emblems after them');
+ assert.equal(BASE.length,100);assert.deepEqual(FAMILY_EMBLEMS.slice(100).map(e=>[e.id,e.icon]),[['100','emblem-autumn'],['101','emblem-winter']],'the Season Pass emblems after them (Winter 2026: 101)');
  FAMILY_EMBLEMS.forEach((e,i)=>assert.equal(e.id,String(i),'an id is its place in the list'));
  assert.deepEqual(FAMILY_EMBLEMS.slice(60,93).map(e=>e.icon),NEW);
  assert.deepEqual(BASE.slice(93).map(e=>e.icon),NEW_GAME,'7 Oct 2026: 7 more game icons');
@@ -87,15 +87,16 @@ test('the old emblems still show everywhere: the family window, the flag and a f
 test('the server takes exactly the ids that exist: 0-99, the old ones and the new ones',()=>{
  for(const id of ['0','17','59','60','92','93','99'])assert.equal(familyEmblemValid(id),true,id);
  for(let i=0;i<FAMILY_EMBLEMS.length;i++)assert.equal(familyEmblemValid(String(i)),true,String(i));
- for(const id of ['101','999','07','093',' 60','-1','1e1','__proto__','',null,undefined,60,99])assert.equal(familyEmblemValid(id),false,String(id));
+ for(const id of ['102','999','07','093',' 60','-1','1e1','__proto__','',null,undefined,60,99])assert.equal(familyEmblemValid(id),false,String(id));
  assert.equal(create('60').context.families[0].emblem,'60');
  assert.equal(create('93').context.families[0].emblem,'93');
  assert.equal(create('99').context.families[0].emblem,'99');
  assert.equal(create('0').context.families[0].emblem,'0');
- for(const id of ['100','101','999','07',undefined])assert.deepEqual([create(id).failed,create(id).result],[true,{error:'Choose a family emblem.'}],String(id));   // 100: a Season Pass emblem nobody here has   // a failed create is counted, not thrown
+ for(const id of ['100','101','102','999','07',undefined])assert.deepEqual([create(id).failed,create(id).result],[true,{error:'Choose a family emblem.'}],String(id));   // 100: a Season Pass emblem nobody here has   // a failed create is counted, not thrown
  let c=create('60').context;
  for(const id of ['17','92','93','99','0','60']){const r=familyMutate(c,farm(),'alice',{type:'family_emblem',emblem:id},now);assert.equal(r.failed,false);c=r.context;assert.equal(c.families[0].emblem,id);}
- assert.throws(()=>familyMutate(c,farm(),'alice',{type:'family_emblem',emblem:'101'},now),/Choose a family emblem/);
+ assert.throws(()=>familyMutate(c,farm(),'alice',{type:'family_emblem',emblem:'102'},now),/Choose a family emblem/);
+ assert.throws(()=>familyMutate(c,farm(),'alice',{type:'family_emblem',emblem:'101'},now),/needs this emblem from the Season Pass/,'Winter 2026\'s emblem the same way');
  assert.throws(()=>familyMutate(c,farm(),'alice',{type:'family_emblem',emblem:'100'},now),/needs this emblem from the Season Pass/);
  for(const path of ['public/farm-state.js','supabase/functions/farm-api/farm-state.js'])assert.equal(read(path),read('game/farm-state.js'),`${path} is in sync`);
 });

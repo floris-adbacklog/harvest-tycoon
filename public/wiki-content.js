@@ -17,7 +17,7 @@ import {FARMER_REWARDS} from './farmer-parts.js';
 import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_HOUR_POOLS,EVENT_GOAL_GROUPS} from './event-goals.js';
 import {HOUR_EVENT_REWARDS,eventPrizes} from './farm-state.js';
-import {currentSeason,seasonPhase,seasonTotals,SEASON_POINTS,SEASON_DAY_CAP,SEASON_WEEK_BONUS,SEASON_SKIP_COST,SEASON_CHEST_POINTS,SEASON_CHEST_COINS,SEASON_TIERS,SEASON_LEVEL,SEASON_BUY_LEVEL,SEASON_CROPS,APPLE_SELLS_SEASON_PASS} from './farm-state.js';
+import {currentSeason,seasonUpcoming,seasonPhase,seasonTotals,SEASON_POINTS,SEASON_DAY_CAP,SEASON_WEEK_BONUS,SEASON_SKIP_COST,SEASON_CHEST_POINTS,SEASON_CHEST_COINS,SEASON_TIERS,SEASON_LEVEL,SEASON_BUY_LEVEL,SEASON_CROPS,APPLE_SELLS_SEASON_PASS} from './farm-state.js';
 import {portal as portalAround,privacyContact} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
@@ -172,16 +172,25 @@ function passSection(h){
 
 // The Season Pass (Oct 2026): the rules in the same sentences as its window, while a season shows (from its preview until its collecting
 // week ends). The paid row only where it is sold (h.shop; not in the iPhone app while Apple does not sell it).
+// Winter 2026 (21 Oct 2026): each paragraph whole in the season's own word (leaves, snowflakes; one text each to translate), its crop,
+// its double days, and while Autumn runs a paragraph on the Winter Season Pass coming (its dates; bought ahead where it is sold).
 function seasonSection(h){
  const s=currentSeason(h.now);if(!s||!['soon','open','claim'].includes(seasonPhase(s,h.now)))return '';
- const p=SEASON_POINTS,t=seasonTotals(s),crop=SEASON_CROPS[s.crop],sold=h.shop&&!(h.appStore&&!APPLE_SELLS_SEASON_PASS);
- return section('Season Pass',`<p>${h.lvl(SEASON_LEVEL)} ${s.title}, until ${passDay(s.endsAt-DAY)}. Every ${number(s.perTier)} leaves = 1 tier, ${SEASON_TIERS} tiers in all, each with a free reward and a paid one. Collect each reward with its own button, until ${passDay(s.claimUntil-DAY)}. Leaves only count this season.</p>`
-  +`<p>Leaves: a daily gift ${p.gift}, a daily challenge ${p.daily}, a delivery ${p.delivery}, an event reward ${p.event}, a quest ${p.quest}, a fish, a helping hand or a chore ${p.fish}. Up to ${SEASON_DAY_CAP} leaves a day. Weekly goal: +${SEASON_WEEK_BONUS} leaves, on top of the daily limit. Double week: everything counts double, the daily limit too (${SEASON_DAY_CAP*2}).</p>`
-  +`<p>Skip a tier: ${SEASON_SKIP_COST} diamonds per tier. After tier ${SEASON_TIERS}, every ${number(SEASON_CHEST_POINTS)} leaves open a bonus chest with ${SEASON_CHEST_COINS} × your level coins.</p>`
+ const p=SEASON_POINTS,t=seasonTotals(s),crop=SEASON_CROPS[s.crop],sold=h.shop&&!(h.appStore&&!APPLE_SELLS_SEASON_PASS),snow=s.point==='snowflake',next=seasonUpcoming(h.now);
+ return section('Season Pass',(snow?`<p>${h.lvl(SEASON_LEVEL)} ${s.title}, until ${passDay(s.endsAt-DAY)}. Every ${number(s.perTier)} snowflakes = 1 tier, ${SEASON_TIERS} tiers in all, each with a free reward and a paid one. Collect each reward with its own button, until ${passDay(s.claimUntil-DAY)}. Snowflakes only count this season.</p>`
+   :`<p>${h.lvl(SEASON_LEVEL)} ${s.title}, until ${passDay(s.endsAt-DAY)}. Every ${number(s.perTier)} leaves = 1 tier, ${SEASON_TIERS} tiers in all, each with a free reward and a paid one. Collect each reward with its own button, until ${passDay(s.claimUntil-DAY)}. Leaves only count this season.</p>`)
+  +(snow?`<p>Snowflakes: a daily gift ${p.gift}, a daily challenge ${p.daily}, a delivery ${p.delivery}, an event reward ${p.event}, a quest ${p.quest}, a fish, a helping hand or a chore ${p.fish}. Up to ${SEASON_DAY_CAP} snowflakes a day. Weekly goal: +${SEASON_WEEK_BONUS} snowflakes, on top of the daily limit. Double days, at New Year (31 December and 1 January) and on the last two days: everything counts double, the daily limit too (${SEASON_DAY_CAP*2}).</p>`
+   :`<p>Leaves: a daily gift ${p.gift}, a daily challenge ${p.daily}, a delivery ${p.delivery}, an event reward ${p.event}, a quest ${p.quest}, a fish, a helping hand or a chore ${p.fish}. Up to ${SEASON_DAY_CAP} leaves a day. Weekly goal: +${SEASON_WEEK_BONUS} leaves, on top of the daily limit. Double week: everything counts double, the daily limit too (${SEASON_DAY_CAP*2}).</p>`)
+  +(snow?`<p>Skip a tier: ${SEASON_SKIP_COST} diamonds per tier. After tier ${SEASON_TIERS}, every ${number(SEASON_CHEST_POINTS)} snowflakes open a bonus chest with ${SEASON_CHEST_COINS} × your level coins.</p>`
+   :`<p>Skip a tier: ${SEASON_SKIP_COST} diamonds per tier. After tier ${SEASON_TIERS}, every ${number(SEASON_CHEST_POINTS)} leaves open a bonus chest with ${SEASON_CHEST_COINS} × your level coins.</p>`)
   +(sold?`<p>From level ${SEASON_BUY_LEVEL} the paid rewards can be bought once this season: ${number(t.diamonds)} diamonds, ${t.vipDays} days of VIP, ${t.farmhandDays} days of farmhand, ${t.boosts} boosts, ${t.avatars} avatars and ${t.otherLooks} other season looks. Tiers you already reached open at once.</p>`:'')
   +`<p>Your look: avatars, an avatar frame, badges, titles, name colours, a profile background, a float, a fishing rod, a family emblem and tractor paint. What you collect stays yours. Choose what you wear in Settings, under Appearance.</p>`
-  // The season's crop in its own words (Autumn: cranberries).
-  +(s.crop==='cranberries'?`<p>Cranberries: one seed packet = one field of cranberries. Cranberries only grow in the autumn: plant them until ${passDay(s.endsAt-DAY)}. They grow in ${wikiTime(crop.duration)}; water and extra care give more, like any crop. Sell them at the market for ${number(Math.round(crop.sell*0.8))} coins each. They do not count for medals.</p>`:''));
+  +(s.tiers.some(x=>x.free.farmer||x.paid.farmer)?'<p>Things for My farmer: tap Wear on one you collected, and My farmer opens with it on. Save keeps it.</p>':'')
+  // The season's crop in its own words (Autumn: cranberries; Winter: Brussels sprouts).
+  +(s.crop==='cranberries'?`<p>Cranberries: one seed packet = one field of cranberries. Cranberries only grow in the autumn: plant them until ${passDay(s.endsAt-DAY)}. They grow in ${wikiTime(crop.duration)}; water and extra care give more, like any crop. Sell them at the market for ${number(Math.round(crop.sell*0.8))} coins each. They do not count for medals.</p>`:'')
+  +(s.crop==='sprouts'?`<p>Brussels sprouts: one seed packet = one field of Brussels sprouts. Brussels sprouts only grow in the winter: plant them until ${passDay(s.endsAt-DAY)}. They grow in ${wikiTime(crop.duration)}; water and extra care give more, like any crop. Sell them at the market for ${number(Math.round(crop.sell*0.8))} coins each. They do not count for medals. Seed packets you have left keep until next winter.</p>`:'')
+  +(next?.id==='winter-2026'?(sold?`<p>Winter Season Pass: from ${passDay(next.startsAt)} to ${passDay(next.endsAt-DAY)}, with snowflakes, Brussels sprouts and ${SEASON_TIERS} new tiers. From level ${SEASON_BUY_LEVEL} it can be bought already, once: the Cocoa maker avatar is yours at once, and the paid rewards open on ${passDay(next.startsAt)}.</p>`
+   :`<p>Winter Season Pass: from ${passDay(next.startsAt)} to ${passDay(next.endsAt-DAY)}, with snowflakes, Brussels sprouts and ${SEASON_TIERS} new tiers.</p>`):''));
 }
 
 // A building's section: its recipes as a table (cards on a phone). The Buildings topic and The Village share it.

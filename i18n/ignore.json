@@ -136,5 +136,15 @@
  "family-shirt.sql: families.shirt is there with another type",
  "family-shirt.sql: public.{0} is not the one this file expects (md5 {1}); read the live definition first",
  "family-shirt.sql: the family row update is not where this file expects it",
- "Spine1"
+ "Spine1",
+ "autumn end",
+ "autumn paid looks",
+ "autumn target",
+ "season list",
+ "the one-season-per-player index is missing",
+ "winter collecting week",
+ "winter end",
+ "winter paid looks",
+ "winter target",
+ "{0} is not the body read on 21 Oct 2026 (md5 {1} instead of {2}): read it again and regenerate"
 ]

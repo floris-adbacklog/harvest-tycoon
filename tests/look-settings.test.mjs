@@ -6,8 +6,8 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // 21 Oct 2026, the owner: "Je look staat nu heel lelijk onder instellingen, kan het niet onder een nieuw kopje", then "Doe je look ook
 // onder avatar, en verander het kopje mijn avatar in iets breders zodat het fit". Settings › Profile (was Avatar): the avatar card, then
 // a Your look card with what is worn and one button; the tiles live in the Your look window.
-// After the season (its rewards collected until 28 Dec 2026): only the looks a farmer has show.
-const NOW=Date.UTC(2027,1,1,12);
+// After the seasons (Autumn's rewards collected until 28 Dec 2026, Winter's until 27 Mar 2027): only the looks a farmer has show.
+const NOW=Date.UTC(2027,4,1,12);
 
 test('Your look: no look, no card; a card is what is worn, the count and one button, never the tiles',()=>{
  assert.equal(lookSummaryMarkup({looks:[]},NOW,{}),'');

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {createFarmer,familyColour} from './farmer.js';
 import {FAMILY_EMBLEMS} from './farm-state.js';
-import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress,FAMILY_SHIRT,FARMER_PASS_PARTS} from './farmer-parts.js';
+import {FARMER_SLOTS,REQUIRED_SLOTS,DEFAULT_FARMER,creatorParts,farmerPart,wearPart,validFarmerConfig,rewardProgress,FAMILY_SHIRT,FARMER_PASS_PARTS,farmerThumbStyle} from './farmer-parts.js';
 import {art} from './visual-icons.js';
 
 // My farmer (20 Oct 2026; your own character since 21 Oct 2026, the owner: "Doe alle 3"): put your farmer together from the pack's parts.
@@ -12,7 +12,6 @@ import {art} from './visual-icons.js';
 // a lock, can be tried on, and says its goal and how far the farm is ("Catch 25 fish" 12 / 25); Save waits until everything worn is
 // yours. Save sends the farm action farmer_wear (onSave), which checks it again.
 export const THUMB_BASE='/assets/farmer/thumbs/';
-const COLUMNS=10;
 // The tabs, in this order, with their names. A tab with nothing to offer yet (the mascots: future rewards) is left out.
 export const CREATOR_TABS=Object.freeze([
  ['body','Skin'],['face','Face'],['hair','Hair'],['hat','Hat'],['glasses','Glasses'],['faceExtra','Beard'],['top','Top'],['bottom','Trousers'],
@@ -39,11 +38,7 @@ const NONE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circl
 const CLOSE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A part's picture: its cell in its slot's sheet (the sheet holds the parts offered here, in creatorParts' order).
-export function thumbStyle(slot,id){
- const list=creatorParts(slot),i=list.findIndex(p=>p.id===id),rows=Math.ceil(list.length/COLUMNS);if(i<0)return '';
- const x=COLUMNS>1?(i%COLUMNS)/(COLUMNS-1)*100:0,y=rows>1?Math.floor(i/COLUMNS)/(rows-1)*100:0;
- return `background-image:url('${THUMB_BASE}${slot}.webp');background-size:${COLUMNS*100}% ${rows*100}%;background-position:${x.toFixed(3)}% ${y.toFixed(3)}%`;
-}
+export const thumbStyle=(slot,id)=>farmerThumbStyle(slot,id,THUMB_BASE);
 let sheet=null;
 function addStylesheet(){
  if(sheet||document.querySelector('link[href^="/farmer-maker.css"]'))return;
@@ -58,10 +53,12 @@ function addStylesheet(){
 // reduced motion (the farmer here stands still, and the farm has none).
 export const GESTURES=Object.freeze([{id:'wave',name:'Wave'},{id:'cheer',name:'Cheer'},{id:'dance',name:'Dance'}].map(Object.freeze));
 // family: the family shirt's {shirt, emblem} (item 6; the Top tab then starts with it), or null.
-export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},family=null,onSave=async()=>{},onClose=()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
+// tryOn: a part put on as the window opens, on its own tab (the Season Pass's Wear, 21 Oct 2026): Save keeps it, Close does not.
+export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},family=null,tryOn=null,onSave=async()=>{},onClose=()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
  addStylesheet();
  const saved=validFarmerConfig(config).ok?{...config}:{...DEFAULT_FARMER};
  let current={...saved},tab='body',busy=false;
+ {const part=farmerPart(tryOn);if(part&&creatorParts(part.slot).some(p=>p.id===part.id)){current=wearPart(current,part.slot,part.id);tab=part.slot;}}
  const tabs=CREATOR_TABS.filter(([slot])=>creatorParts(slot).length);
  const dialog=document.createElement('dialog');dialog.className='game-dialog is-sheet is-m farmer-maker';dialog.setAttribute('aria-labelledby','farmer-maker-title');
  dialog.innerHTML=`<div class="dialog-top"><div class="dialog-heading">${art('my-farmer','dialog-badge')}<div class="dialog-titles"><h2 id="farmer-maker-title">My farmer</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">${CLOSE}</button></div></div>

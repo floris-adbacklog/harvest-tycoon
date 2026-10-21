@@ -130,7 +130,7 @@ test('the avatar picker is the same row, with the faces as tiles',()=>{
  assert(!/avatar-grid|avatar-choice/.test(css),'the wall of squares is gone');
 });
 test('all 100 family emblems have a picture that ships and a name',async()=>{
- assert.equal(FAMILY_EMBLEMS.length,101);   // and since Oct 2026 the Season Pass's emblem-autumn (id 100); 7 Oct 2026: 33 real family emblems and 7 more game icons (tests/family-emblems.test.mjs)
+ assert.equal(FAMILY_EMBLEMS.length,102);   // and since Oct 2026 the Season Pass's emblem-autumn (id 100) and emblem-winter (id 101, 21 Oct 2026); 7 Oct 2026: 33 real family emblems and 7 more game icons (tests/family-emblems.test.mjs)
  const {artSource}=await import('../public/visual-icons.js');for(const e of FAMILY_EMBLEMS)assert.ok(artSource(e.icon),`${e.icon} has a picture`);
  const icons=read('public/visual-icons.js'),ui=read('public/family-ui.js');
  for(const icon of ['family-fox','family-owl','family-windmill','family-horseshoe']){

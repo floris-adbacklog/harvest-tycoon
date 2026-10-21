@@ -116,6 +116,11 @@ const pictureFolder=Object.create(null);
 // tractor-paint-autumn: the tractor's own icon with its body in the Pumpkin paint (rendered from the game's tractor picture, no new art).
 for(const key of ['season-pass-autumn','season-point-autumn','cranberries','cranberries-seeds','golden-pumpkin','emblem-autumn','tractor-paint-autumn']){pictures[key]=key;webpPictures.add(key);}
 for(const key of ['season-badge-autumn-2026','frame-autumn','profile-bg-autumn','season-pass-banner-autumn']){pictures[key]=key;webpPictures.add(key);pictureFolder[key]='season';}
+// Winter 2026 (21 Oct 2026, the owner's 13 pictures, processed like Autumn's). tractor-paint-winter: the tractor icon in the Frost paint.
+// The season crop's item key is 'sprouts'; its pictures are brussels-sprouts and brussels-sprouts-seeds.
+for(const key of ['season-pass-winter','season-point-winter','golden-sledge','emblem-winter','tractor-paint-winter']){pictures[key]=key;webpPictures.add(key);}
+pictures.sprouts='brussels-sprouts';pictures['sprouts-seeds']='brussels-sprouts-seeds';webpPictures.add('sprouts');webpPictures.add('sprouts-seeds');
+for(const key of ['season-badge-winter-2026','frame-winter','profile-bg-winter','season-pass-banner-winter']){pictures[key]=key;webpPictures.add(key);pictureFolder[key]='season';}
 const folder=key=>pictureFolder[key]??'icons';
 export const pictureFile=name=>`/assets/${folder(name)}/${name}.${webpPictures.has(name)?'webp':'png'}`;
 // Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.

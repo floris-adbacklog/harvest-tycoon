@@ -160,14 +160,15 @@ let walker=null;   // your own farmer walking on the farm or in the village (far
 // the farm action farmer_wear; the farmer on the farm or in the village changes at once. Opened from Settings › Profile, your own profile
 // (window.harvestMyFarmer) and the harness (?open=farmer). Not in the admin view: nothing is saved there.
 const GESTURE_BEAT=300;
-async function openMyFarmer(){
+// wear: a part to put on as it opens (the Season Pass's Wear button, public/season-ui.js): the farmer saves it with Save.
+async function openMyFarmer({wear=null}={}){
  if(adminView)return null;
  try{
   const [{openFarmerCreator},{familyShirt}]=await Promise.all([import('./farmer-creator.js'),import('./family-shirt.js')]);
   // The family shirt (item 6): its cut and emblem, kept from the last Family read (or read once now).
   const family=state.family?.familyId?await familyShirt(state.family.familyId):null;
   // The last gesture tried in the window, the farmer on the farm does once when it closes (item 4).
-  return await openFarmerCreator({config:farmerOf(state,farmerFarm()),owned:farmerOwned(state,farmerFarm()),state,farm:farmerFarm(),family,reducedMotion,onClose:gesture=>{if(gesture)setTimeout(()=>walker?.gesture?.(gesture),GESTURE_BEAT);},onSave:async config=>{
+  return await openFarmerCreator({config:farmerOf(state,farmerFarm()),owned:farmerOwned(state,farmerFarm()),state,farm:farmerFarm(),family,tryOn:wear,reducedMotion,onClose:gesture=>{if(gesture)setTimeout(()=>walker?.gesture?.(gesture),GESTURE_BEAT);},onSave:async config=>{
    await runAction({type:'farmer_wear',farmer:config});
    void walker?.farmer.dress(farmerOf(state,farmerFarm()),family);
   }});

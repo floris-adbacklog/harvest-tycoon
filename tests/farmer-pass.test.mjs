@@ -52,11 +52,12 @@ test('the running Autumn 2026 pass is untouched (its tiers as live, none gives a
  assert.deepEqual(G.normalizeFarm(structuredClone(copy),now+120000).farmerParts,['hat_034'],'and back on the new rules');
 });
 
-test('FARMER_PASS_PARTS: empty until the Winter pass, written down how it will be used; the Christmas pieces stay out of My farmer',()=>{
- assert.deepEqual(FARMER_PASS_PARTS,{});
+test('FARMER_PASS_PARTS: Winter 2026\'s five (the penguin suit, black beanie and ski goggles kept for Winter, a coat and gloves); the Christmas pieces stay out of My farmer',()=>{
+ assert.deepEqual(FARMER_PASS_PARTS,{hat_006:'winter-2026',gloves_011:'winter-2026',glasses_013:'winter-2026',outwear_021:'winter-2026',costume_2:'winter-2026'});
  const parts=read('game/farmer-parts.js');
- assert.match(parts,/The Winter pass will use it like this: a winter hat, a scarf and a coat/);
  assert.match(parts,/No Christmas outfit here: that is kept for a Christmas Pass\./);
+ // Each one earned only through the pass: no goal of its own, and in the Winter tiers exactly once.
+ for(const id of Object.keys(FARMER_PASS_PARTS))assert.ok(FARMER_PARTS[id].earned&&FARMER_OFFER.has(id),id);
  for(const id of ['hat_015','costume_5'])assert.ok(!FARMER_OFFER.has(id)&&!Object.hasOwn(FARMER_PASS_PARTS,id),`${FARMER_PARTS[id].name} is not offered`);
  // A part a pass gives says so in My farmer (in every language).
  assert.match(read('public/farmer-creator.js'),/if\(Object\.hasOwn\(FARMER_PASS_PARTS,id\)\)return 'In the Season Pass\.';/);

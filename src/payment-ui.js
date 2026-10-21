@@ -1,5 +1,5 @@
 import {art} from '../public/visual-icons.js';
-import {paymentPack,PASS} from '../game/payments.js';
+import {paymentPack,PASS,seasonSale} from '../game/payments.js';
 import {formatDuration} from '../public/farm-state.js';
 
 // purchase: the one Stripe's page returned with (the address), or one bought through Google Play in the Android app (Oct 2026,
@@ -34,7 +34,8 @@ export function showPaymentReturn(bridge,purchase=bridge.paymentReturn?.()){
     // The Halloween Pass (Oct 2026) adds nothing by itself: its paid rewards open, and each is collected in the pass. Bought before the
     // season (the pre-sale), it says when it starts, by the server's clock.
     // The Season Pass (Oct 2026): the paid row of this season opens, the avatar of the purchase is yours, and each reward is collected in the pass.
-    if(result.pack==='season')display('credited','Your Season Pass is here!','The paid rewards are open. Collect each one in the Season Pass.','Payment confirmed');else
+    // Bought in its pre-sale (21 Oct 2026: Winter 2026 while Autumn runs), it says when it starts, by the server's clock.
+    if(result.pack==='season'){const wait=(seasonSale(result.passId)?.startsAt??0)-(Number(result.serverNow)||Date.now());display('credited','Your Season Pass is here!',wait>0?`It starts in ${formatDuration(wait)}. The avatar that comes with it is yours already.`:'The paid rewards are open. Collect each one in the Season Pass.','Payment confirmed');}else
     if(result.pack==='pass'){const wait=PASS.startsAt-(Number(result.serverNow)||Date.now());display('credited','Your Halloween Pass is here!',wait>0?`It starts in ${formatDuration(wait)}. Then collect each paid reward in the Halloween Pass.`:'The paid rewards are open. Collect each one in the Halloween Pass.','Payment confirmed');}else
     display('credited',result.pack==='starter'?'Your Starter Pack is here!':'A little sparkle for your farm',result.pack==='starter'?`10,000 coins, ${Number(result.diamonds||500).toLocaleString('en-US')} diamonds and one of every crop have been added to your account.`:`${Number(result.diamonds).toLocaleString('en-US')} diamonds have been added to your farm. Enjoy your next little upgrade!`,'Payment confirmed');retry.hidden=true;
     window.harvestSound?.('purchase');

@@ -306,7 +306,8 @@ async function openFarm(){
     pass:data?.pass&&!prices.pass?{...data.pass,ready:false}:data?.pass,
     // The Season Pass (Oct 2026): not for sale where the store gives no price, and never in the iPhone app while Apple does not sell it
     // (game/payments.js APPLE_SELLS_SEASON_PASS: appleProduct gives none, so the App Store is not even asked).
-    season:data?.season&&!prices.season?{...data.season,ready:false}:data?.season??null};
+    season:data?.season&&!prices.season?{...data.season,ready:false}:data?.season??null,
+    seasons:Array.isArray(data?.seasons)?data.seasons.map(s=>prices.season?s:{...s,ready:false}):[]};
   };
   // The App Store's purchase goes as Apple's signed transaction (up to 16 KB); a refusal (not Apple's, another farmer's: a 403) is not
   // asked again.
@@ -336,8 +337,9 @@ async function openFarm(){
   bridge.playRecover=async()=>{if(!inAppStore||ticket!==generation)return;for(const message of await inAppStore.pending()){try{await bridge.playSettle(message);}catch{}}};
   let recovered=0;
   const storeRecoverSoon=async()=>{if(Date.now()-recovered<10000)return;recovered=Date.now();try{await bridge.playRecover();}catch{}};
-  const storeCheckout=async(pack,offerId)=>{
-   const made=await bridge.payments({operation:'create',pack,requestId:crypto.randomUUID(),...(offerId?{offerId}:{})});
+  // season (21 Oct 2026, the pre-sale): the Season Pass of that season (its id), else the one open now.
+  const storeCheckout=async(pack,offerId,season)=>{
+   const made=await bridge.payments({operation:'create',pack,requestId:crypto.randomUUID(),...(offerId?{offerId}:{}),...(season?{season}:{})});
    if(!made?.purchaseId||!made.product||made.account!==user.id)throw new Error('Checkout is unavailable. Please try again later.');
    const result=await inAppStore.buy({product:made.product,account:made.account,purchase:made.purchaseId});
    if(ticket!==generation)throw new Error('Your session has ended.');
@@ -354,9 +356,9 @@ async function openFarm(){
   // In a frame (framed) Stripe's page opens in a new tab, made on the tap itself (one opened after waiting for the server is blocked as
   // a pop-up), and the farm waits for the payment in its purchase window (bridge.purchaseDone with tab, src/payment-ui.js). In the
   // Galaxy Store app (webPay) the app opens Stripe's page in the phone's browser, and the farm waits the same way.
-  bridge.checkout=async(pack,requestId,offerId)=>{if(inApp&&!inAppStore&&!webPay)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId);
+  bridge.checkout=async(pack,requestId,offerId,{season}={})=>{if(inApp&&!inAppStore&&!webPay)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId,season);
    const tab=framed?window.open('','_blank'):null;if(framed&&!tab)throw new Error('Allow pop-ups for this page to pay in a new tab.');
-   try{const data=await bridge.payments({operation:'create',pack,requestId,language:document.documentElement?.lang,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
+   try{const data=await bridge.payments({operation:'create',pack,requestId,language:document.documentElement?.lang,...(offerId?{offerId}:{}),...(season?{season}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
     if(webPay){bridge.purchaseDone?.(data.purchaseId,{tab:true,app:true});location.assign(url.href);return {store:'browser'};}
     if(!tab){location.assign(url.href);return;}
     tab.opener=null;tab.location.href=url.href;bridge.purchaseDone?.(data.purchaseId,{tab:true});return {store:'tab'};}

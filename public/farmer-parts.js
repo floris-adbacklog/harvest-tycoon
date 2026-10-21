@@ -589,12 +589,12 @@ const REWARD_TABLE=Object.freeze({
 // Parts a Season Pass gives (21 Oct 2026, the owner: "Doe alles behalve 9", item 8): a tier's reward {farmer:[part id, ...]} (farm-state.js
 // claimSeasonTier) puts them in state.farmerParts, and farmerOwned counts them as earned; a refunded pass takes its paid ones back.
 // Each one is listed here with its pass, so My farmer offers it (locked until collected: "In the Season Pass") and farmer_wear knows
-// it. Empty for now: the Autumn 2026 pass is running and its tiers stay as they are.
-// The Winter pass will use it like this: a winter hat, a scarf and a coat, e.g. FARMER_PASS_PARTS={hat_006:'winter-2026',
-// outwear_042:'winter-2026', ...} and in its tiers tierPair({farmer:['hat_006']},{...}). The pack has no scarf: that needs a new
-// part (scripts/farmer-export.py and build-farmer.mjs), and every part listed here needs its cell in My farmer's picture sheets
-// (scripts/build-farmer-pictures.mjs). No Christmas outfit here: that is kept for a Christmas Pass.
-export const FARMER_PASS_PARTS=Object.freeze({});
+// it. The Autumn 2026 pass has none (its tiers stayed as they were).
+// Winter 2026 (21 Oct 2026, the owner: "maak winterpass"): the penguin suit, the black beanie and the ski goggles (kept for Winter by
+// the Christmas Pass plan), the long beige coat as its winter coat and the blue cuffed gloves; none of them earned any other way.
+// The pack has no scarf, and the dark parka and the blue puffer jacket are earned already (REWARD_TABLE). Each one listed here has its
+// cell in My farmer's picture sheets (scripts/build-farmer-pictures.mjs). No Christmas outfit here: that is kept for a Christmas Pass.
+export const FARMER_PASS_PARTS=Object.freeze({hat_006:'winter-2026',gloves_011:'winter-2026',glasses_013:'winter-2026',outwear_021:'winter-2026',costume_2:'winter-2026'});
 export const FARMER_PARTS=Object.freeze(Object.fromEntries(MEASURED.map(([id,group,style,files,bytes,colour,materials])=>{
  const [name,fit,flags='']=group==='face'?faceName(id):group==='body'?[BODY_NAMES[id],Number(id.slice(-3))>=9&&Number(id.slice(-3))<=13?'p':'u']:(NAMES[id]??`${id}|p`).split('|');
  return [id,Object.freeze({id,group,slot:FARMER_GROUPS[group].slot,name,fit:FIT[fit],earned:FARMER_GROUPS[group].earned||Object.hasOwn(REWARD_TABLE,id)||Object.hasOwn(FARMER_PASS_PARTS,id),coversFace:flags.includes('c'),
@@ -702,6 +702,14 @@ export const farmerOwned=(state,farm={})=>[...new Set([...Object.keys(FARMER_REW
 export const farmerOffered=p=>Boolean(p)&&(FARMER_OFFER.has(p.id)||p.family===true);
 // The pack's parts My farmer shows (its picture sheets hold these); the family shirt has a tile of its own.
 export const creatorParts=slot=>partsOfSlot(slot).filter(farmerOffered);
+// A part's picture: its cell in its slot's sheet of My farmer (public/assets/farmer/thumbs/<slot>.webp, 10 a row, in creatorParts'
+// order; scripts/build-farmer-pictures.mjs). The same style everywhere a part is shown (My farmer, the Season Pass's reward tile).
+export const FARMER_THUMB_COLUMNS=10;
+export function farmerThumbStyle(slot,id,base='/assets/farmer/thumbs/'){
+ const list=creatorParts(slot),i=list.findIndex(p=>p.id===id),rows=Math.ceil(list.length/FARMER_THUMB_COLUMNS);if(i<0)return '';
+ const x=(i%FARMER_THUMB_COLUMNS)/(FARMER_THUMB_COLUMNS-1)*100,y=rows>1?Math.floor(i/FARMER_THUMB_COLUMNS)/(rows-1)*100:0;
+ return `background-image:url('${base}${slot}.webp');background-size:${FARMER_THUMB_COLUMNS*100}% ${rows*100}%;background-position:${x.toFixed(3)}% ${y.toFixed(3)}%`;
+}
 // A saved farmer as stored: only its worn slots, as plain ids.
 export const cleanFarmer=config=>Object.fromEntries(FARMER_SLOTS.filter(slot=>typeof config?.[slot]==='string').map(slot=>[slot,config[slot]]));
 // The farmer a farm shows: its own (state.farmer, written by the farm action farmer_wear) or, for a farm that never made one, the

@@ -1,10 +1,10 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonsOnSale,seasonForCheckout,seasonSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT} from './payments.js';
 import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 import {verifyAppleJws} from './app-store.js';
 import {kongId,kongToken,KongregateRefused,REFUSED_TEXT,verifyKongregate,kongUserItems,kongUseItem,kongItemPrices} from './kongregate-api.js';
-import {checkoutEmail,checkoutLocale} from './checkout-session.js';
+import {checkoutEmail,checkoutLocale,seasonCheckoutText} from './checkout-session.js';
 const origin='https://www.harvesttycoon.com';
 const cors={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -21,7 +21,8 @@ const appleEnabled=String(Deno.env.get('APPLE_PAYMENTS_ENABLED')??'').trim().toL
 // sets KONG_PAYMENTS_ENABLED to exactly 'true'. While it is off a Kongregate account gets the same 403 as before Kreds, for every store.
 // KONGREGATE_TEST_USERS: Kongregate user ids (commas between) whose purchases are tests (the developer account buys for 0 Kreds).
 const kongEnabled=kongPaymentsEnabled(Deno.env.get('KONG_PAYMENTS_ENABLED'));
-const purchaseReply=(p:any)=>({id:p.id,pack:p.pack,coins:p.coins,diamonds:p.diamonds,status:p.status,livemode:p.livemode,vipDays:p.vip_days??0,serverNow:Date.now()});
+// passId: a pass or season purchase's own pass (21 Oct 2026: the result window says when a season bought in its pre-sale starts).
+const purchaseReply=(p:any)=>({id:p.id,pack:p.pack,coins:p.coins,diamonds:p.diamonds,status:p.status,livemode:p.livemode,vipDays:p.vip_days??0,passId:p.pass_id??null,serverNow:Date.now()});
 // The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (10 or higher since 13 Oct
 // 2026, supabase/offer-level-10.sql). A problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
 async function currentOffer(player:string){
@@ -208,9 +209,12 @@ Deno.serve(async req=>{
   const pass={id:PASS.id,cents:PASS.cents,startsAt:PASS.startsAt,endsAt:PASS.endsAt,level:PASS.level,ready:Boolean(PASS.price)&&passOnSale()};
   // The Season Pass (Oct 2026): the season on sale now, from the catalogue itself (whether this farm has it is in the farm,
   // state.passPremium). ready: open and priced; never in the iPhone app while Apple does not sell it (APPLE_SELLS_SEASON_PASS).
-  const onSale=seasonOnSale();
-  const season=onSale?{id:onSale.id,cents:SEASON_SALE.cents,level:SEASON_SALE.level,endsAt:onSale.endsAt,ready:Boolean(SEASON_SALE.price)&&!seasonStoreProblem(apple?'app_store':'other')}:null;
-  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':apple?'app_store':kong?'kongregate':'stripe',serverNow:Date.now(),starter,offer:special,pass,season,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
+  // seasons (21 Oct 2026, the pre-sale): every season on sale now, the open one and one bought ahead of its start (Winter 2026 while
+  // Autumn runs), each with its own start; season stays the open one for pages from before.
+  const onSale=seasonOnSale(),seasonReady=Boolean(SEASON_SALE.price)&&!seasonStoreProblem(apple?'app_store':'other');
+  const season=onSale?{id:onSale.id,cents:SEASON_SALE.cents,level:SEASON_SALE.level,endsAt:onSale.endsAt,ready:seasonReady}:null;
+  const seasons=seasonsOnSale().map(s=>({id:s.id,cents:SEASON_SALE.cents,level:SEASON_SALE.level,startsAt:s.startsAt,endsAt:s.endsAt,ready:seasonReady}));
+  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':apple?'app_store':kong?'kongregate':'stripe',serverNow:Date.now(),starter,offer:special,pass,season,seasons,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
    const r=await admin.from('harvest_purchases').select('*').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);
@@ -288,15 +292,18 @@ Deno.serve(async req=>{
    // The Season Pass (Oct 2026): the season open now, from level 20, once per farmer per season (a unique index too,
    // supabase/season-pass-engine.sql): game/payments.js seasonCheckoutProblem, which the tests run. Owned: a paid row for this season,
    // or the season already in the farm's passPremium. Not in the iPhone app (APPLE_SELLS_SEASON_PASS).
+   // The pre-sale (21 Oct 2026): the page names the season it buys (body.season); only one on sale now (seasonForCheckout), and its id
+   // goes into the row (pass_id), so Winter bought while Autumn runs is credited to Winter. No name: the season open now, as before.
    const notHere=seasonStoreProblem(apple?'app_store':play?'google_play':kong?'kongregate':'stripe');if(notHere)return reply({error:notHere.error},notHere.status);
-   const open=seasonOnSale();
+   if(body.season!=null&&typeof body.season!=='string')return reply({error:'Choose a season.'},400);
+   const open=seasonForCheckout(body.season??null);
    if(!open)return reply({error:'The Season Pass is not on sale right now.'},409);
    const [level,owned,farmPasses]=await Promise.all([admin.from('player_stats').select('level').eq('player_id',user.id).maybeSingle(),
     admin.from('harvest_purchases').select('id').eq('player_id',user.id).eq('pack','season').eq('pass_id',open.id).in('status',['credited','test_paid']).limit(1),
     admin.from('player_farms').select('passes:state->passPremium').eq('player_id',user.id).maybeSingle()]);
    if(level.error)throw level.error;if(owned.error)throw owned.error;if(farmPasses.error)throw farmPasses.error;
    const inFarm=Array.isArray(farmPasses.data?.passes)&&farmPasses.data.passes.includes(open.id);
-   const problem=seasonCheckoutProblem({level:level.data?.level??1,owned:Boolean(owned.data?.length)||inFarm});
+   const problem=seasonCheckoutProblem({level:level.data?.level??1,owned:Boolean(owned.data?.length)||inFarm,season:open.id});
    if(problem)return reply({error:problem.error},problem.status);
    pack={id:'season',cents:SEASON_SALE.cents,price:SEASON_SALE.price,product:SEASON_SALE.product,diamonds:0,coins:0,passId:open.id};
   }else{try{pack=checkoutPack(body.pack);}catch{return reply({error:'Choose a diamond pack.'},400);}}
@@ -332,6 +339,8 @@ Deno.serve(async req=>{
   if(Date.now()-Date.parse(p.created_at)>23*3600000&&!p.stripe_session_id)return reply({error:'This checkout request needs review. Please contact support before retrying.'},409);
   const openPage=(row:any)=>stripe.checkout.sessions.create({
    mode:'payment',line_items:[{price:priceId,quantity:1}],client_reference_id:user.id,metadata:{app:'harvest-tycoon',purchase_id:row.id,player_id:user.id},
+   // A Season Pass page says which season it is for, and when one bought ahead starts (21 Oct 2026, checkout-session.js).
+   ...(packId==='season'&&seasonCheckoutText(seasonSale(row.pass_id),body.language)?{custom_text:{submit:{message:seasonCheckoutText(seasonSale(row.pass_id),body.language)}}}:{}),
    // 10 Oct 2026: the account's confirmed address is filled in, and the page speaks the game's language (checkout-session.js).
    customer_email:checkoutEmail(user),locale:checkoutLocale(body.language),
    // Adaptive Pricing (27 Sep 2026): a farmer abroad sees and pays the euro price in their own currency (₹, $, zł …), converted by

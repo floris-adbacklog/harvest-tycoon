@@ -12,6 +12,9 @@ const {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,seasonById,sc
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const H=3600000,D=24*H,ID='autumn-2026',START=Date.UTC(2026,10,6);   // the plan's example: Friday 6 November
 scheduleSeason(ID,START);
+// Autumn on its own here: the next season (Winter 2026, from 22 Dec) is taken out of this copy of the rules, so these tests read as
+// they did; tests/season-pass-winter.test.mjs has Winter, and the two seasons together.
+scheduleSeason('winter-2026',null);
 const S=()=>seasonById(ID);
 const at=(month,day,hour=12)=>Date.UTC(2026,month-1,day,hour);
 function farm(level=40,now=at(11,9)){const s=createFarm(now-3*D);s.xp=xpForLevel(level)+5;return normalizeFarm(s,now);}
@@ -35,10 +38,10 @@ test('Autumn 2026: 100 tiers, 1,500 paid and 200 free diamonds, something on eve
  for(const [i,x] of s.tiers.entries())assert.ok(Object.keys(x.paid).length&&Object.keys(x.free).length,`tier ${i+1} has both`);
  const looks=track=>s.tiers.flatMap(x=>x[track].looks??[]);
  assert.equal(looks('paid').length,12,'12 paid season things');assert.equal(looks('free').length,6,'6 free ones');
- assert.deepEqual([...looks('free'),...looks('paid')].sort(),Object.keys(SEASON_LOOKS).sort(),'every look of the catalogue, once');
+ assert.deepEqual([...looks('free'),...looks('paid')].sort(),Object.keys(SEASON_LOOKS).filter(id=>SEASON_LOOKS[id].season===ID).sort(),'every look of the catalogue, once');
  assert.deepEqual(s.tiers[0].paid,{looks:['season-autumn-2026-harvest-chef'],purchase:true},'the Harvest chef comes with the purchase');
  assert.deepEqual(s.tiers[24].free.looks,['season-autumn-2026-autumn-harvester']);assert.deepEqual(s.tiers[99].paid.looks,['season-autumn-2026-pumpkin-royal','autumn-2026-golden-pumpkin']);
- for(const [id,look] of Object.entries(SEASON_LOOKS))if(look.color)assert.ok(['#9c6214','#96402f','#316c3a'].includes(look.color),`${id}: the game's palette`);
+ for(const [id,look] of Object.entries(SEASON_LOOKS))if(look.color&&look.season===ID)assert.ok(['#9c6214','#96402f','#316c3a'].includes(look.color),`${id}: the game's palette`);
  for(const look of Object.values(SEASON_LOOKS))assert.ok(!/ · /.test(look.name));
 });
 test('a tier skip never pays: at most 50 diamonds a tier in both rows together, and VIP never on a tier with diamonds',()=>{
@@ -262,7 +265,7 @@ test('the iPhone app: the App Store path is built but switched off (APPLE_SELLS_
  assert.equal(P.appleProduct('season',true),'season_pass');assert.equal(P.seasonStoreProblem('app_store',true),null);
  assert.equal(P.APPLE_PRODUCTS,P.PLAY_PRODUCTS,'the App Store keeps Google Play\'s ids');
  const checkout=read('supabase/functions/diamond-checkout/index.ts'),main=read('src/main.js');
- assert.match(checkout,/const notHere=seasonStoreProblem\(apple\?'app_store'/);assert.match(checkout,/ready:Boolean\(SEASON_SALE\.price\)&&!seasonStoreProblem\(apple\?'app_store':'other'\)/);
+ assert.match(checkout,/const notHere=seasonStoreProblem\(apple\?'app_store'/);assert.match(checkout,/seasonReady=Boolean\(SEASON_SALE\.price\)&&!seasonStoreProblem\(apple\?'app_store':'other'\)/);
  assert.match(main,/storeProducts=appStore\?Object\.fromEntries\(Object\.keys\(APPLE_PRODUCTS\)\.filter\(pack=>appleProduct\(pack\)\)/,'off: the App Store is not even asked for a price');
 });
 test('supabase/season-pass-engine.sql is generated from the rules and guards every function it patches',()=>{
@@ -298,7 +301,7 @@ test('family-service reads the members\' looks and season emblems only for the f
 });
 test('the window: the rule in one sentence, the value line without a euro beside diamonds, the iPhone app shows the free row only',async()=>{
  // season-ui.js reads the page's copy of the rules (public/farm-state.js, a module of its own): the start goes there too.
- (await import('../public/farm-state.js')).scheduleSeason(ID,START);
+ {const pub=await import('../public/farm-state.js');pub.scheduleSeason(ID,START);pub.scheduleSeason('winter-2026',null);}
  const ui=await import('../public/season-ui.js');
  const now=at(11,12),s=farm(40,now),v=seasonView(s,now);
  assert.equal(ui.seasonRule(v),'Every 65 leaves = 1 tier. Up to 250 a day.');

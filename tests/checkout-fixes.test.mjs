@@ -39,7 +39,7 @@ test('the payment page speaks the game\'s language where Stripe has it, else fol
 
 test('diamond-checkout fills both in and opens a new page when the old one expired, but not for a row just back from an app',()=>{
  const src=read('supabase/functions/diamond-checkout/index.ts');
- assert.match(src,/import \{checkoutEmail,checkoutLocale\} from '\.\/checkout-session\.js';/);
+ assert.match(src,/import \{checkoutEmail,checkoutLocale,seasonCheckoutText\} from '\.\/checkout-session\.js';/);
  assert.match(src,/customer_email:checkoutEmail\(user\),locale:checkoutLocale\(body\.language\),/);
  // the session's metadata and the payment's are the row's own (a fresh row gets its own id in both)
  assert.match(src,/metadata:\{app:'harvest-tycoon',purchase_id:row\.id,player_id:user\.id\}/);
@@ -74,7 +74,7 @@ test('the webhook ends an unpaid page\'s own pending Stripe row, and only that',
 });
 
 test('the page sends its language with a Stripe checkout',()=>{
- assert.match(read('src/main.js'),/bridge\.payments\(\{operation:'create',pack,requestId,language:document\.documentElement\?\.lang,\.\.\.\(offerId\?\{offerId\}:\{\}\)\}\)/);
+ assert.match(read('src/main.js'),/bridge\.payments\(\{operation:'create',pack,requestId,language:document\.documentElement\?\.lang,\.\.\.\(offerId\?\{offerId\}:\{\}\),\.\.\.\(season\?\{season\}:\{\}\)\}\)/);
  assert.match(read('src/farm-session.js'),/bridge\.payments\(\{operation:'create',pack,requestId,language:doc\?\.documentElement\?\.lang,\.\.\.\(offerId\?\{offerId\}:\{\}\)\}\)/);
 });
 

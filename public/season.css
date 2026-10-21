@@ -230,3 +230,27 @@ button.season-reward{cursor:zoom-in}
 .leaderboard-portrait>.look-framed>.look-frame,.family-member-portrait>.look-framed>.look-frame{inset:-2px;width:calc(100% + 4px);height:calc(100% + 4px)}
 .farmer-identity h3 .look-badge{width:28px;height:28px;vertical-align:-5px}
 .look-title-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#efe6d8;color:#8a4f12;font:700 22px/1 'Outfit',sans-serif}
+/* Winter 2026 (21 Oct 2026): the next season in its pre-sale, a cream card at the very bottom of the window (season-ui.js comingCard);
+   from 22 December the last season's collecting week as a strip at the top that opens to its waiting rewards (prevStrip); a part for
+   your own farmer as its cell in My farmer's picture sheet. */
+.season-coming{display:grid;gap:10px;margin:18px 0 6px;padding:12px;border:2px solid #b8d6e6;border-radius:18px;background:#fffdf5;box-shadow:0 3px 0 #9fc4da55}
+.season-coming .season-banner{box-shadow:none}
+.season-coming-copy{display:grid;gap:8px}
+.season-coming h3{display:flex;align-items:center;gap:8px;margin:0;font:700 19px/1.2 'Outfit',sans-serif;color:#3d2f14}
+.season-coming .season-coming-ticket{width:34px;height:34px;flex:none;object-fit:contain}
+.season-coming .season-phase{color:var(--btn-diamond-text,#1f5877)}
+.season-coming-tiles{display:flex;flex-wrap:wrap;gap:6px}
+.season-coming-tile{display:grid;place-items:center;width:56px;height:56px;padding:3px;border:1px solid #e6ddd1;border-radius:14px;background:#fbf8f3;cursor:pointer}
+span.season-coming-tile{cursor:default}
+.season-coming-tile .game-art,.season-coming-tile img{width:46px;height:46px;object-fit:contain}
+.season-coming-tile .season-look-face{border-radius:50%}
+.season-coming-note{font-size:13px;line-height:1.45;color:#6f5a35}
+.season-coming-bought{margin:0;font:700 16px/1.2 'Outfit',sans-serif;color:#3f6b2c}
+#season-dialog .season-coming .primary-button.season-buy{justify-self:end}
+.season-farmer-thumb{display:block;flex:none;width:34px;height:34px;border-radius:10px;background-color:#f3e7d3;background-repeat:no-repeat}
+.season-coming-tile .season-farmer-thumb{width:46px;height:46px}
+.season-prev-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 10px;padding:6px 8px 6px 10px;border:1px solid #e6ddd1;border-radius:14px;background:#fbf8f3}
+.season-prev-strip>.season-prev{flex:1;margin:0;padding:0;border:0;background:none}
+.season-prev-strip .season-prev-art{width:30px;height:30px;flex:none;object-fit:contain}
+.season-prev-strip>.season-prev-tiers{flex-basis:100%;margin:2px 0 4px}
+@media(max-width:600px){#season-dialog .season-coming .primary-button.season-buy{width:100%;justify-self:stretch}.season-coming-tiles{gap:5px}.season-coming-tile{width:47px;height:47px;padding:2px;border-radius:12px}.season-coming-tile .game-art,.season-coming-tile img,.season-coming-tile .season-farmer-thumb{width:40px;height:40px}}
