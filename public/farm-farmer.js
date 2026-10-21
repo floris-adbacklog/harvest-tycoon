@@ -17,6 +17,38 @@ export const FARM_WALK=Object.freeze({height:1.9,walk:1.05,spots:Object.freeze([
 // the deer's slope, between a tree, the red house at the bend and the blue house's roof (nothing hides them there), in the middle of a
 // computer's first view.
 export const VILLAGE_WALK=Object.freeze({height:.95,walk:.5,spots:Object.freeze([[17,-7.6],[16.4,-9.2],[17.6,-9.4],[18.6,-8.2],[18,-8.3]])});
+// The farmer joins in (21 Oct 2026, the owner: "Doe alles behalve 9", item 1): after a harvest, a collect at a building or a chore, they
+// walk over and stand by it a while, then walk back to their loop. Only to the places below, each a spot checked in the harness on a
+// computer's two views (1440 x 900 and Kongregate's 1000 x 620, the camera moved over the place as a player pans there) where they cover
+// nothing that can be tapped (no field, building, pin, name, pet or animal behind them) and stand on open ground (no tree, fence or prop
+// under their feet), and a way there over open ground and the roads (tests/farm-farmer.test.mjs keeps both clear of the yards, the
+// fields, the pond and the pets' walks). The farther places (the Factory, the east and west of the valley) are a walk too long to join.
+// at: where they stand; via: the way there from their loop (and back the other way round).
+const trip=(at,via=[])=>Object.freeze({at:Object.freeze(at),via:Object.freeze(via.map(p=>Object.freeze(p)))});
+// Out of the loop north of the cart beside it; down the lane (south of the tractor) for the fields' west side and the Bakery.
+const OUT=[-13.6,-4.4],LANE=[OUT,[-9.6,-4.4],[-9.6,2],[-7.8,3]],TRUNK=[OUT,[-10,-4.4]];
+export const FARM_TRIPS=Object.freeze({
+ chores:trip([-14.66,-5.7]),
+ mill:trip([-14.5,.95]),
+ bakery:trip([-13.79,10.6],[...LANE,[-7.8,10.6]]),
+ dairy:trip([-4.8,-14.66],[OUT,[-7.8,-4.4],[-7.8,-14.66]]),
+ pigfarm:trip([-28.49,-3.25],[[-16.2,-5.2],[-27.4,-5.2]]),
+ windmill:trip([11.64,-.95],[...TRUNK,[11.64,-4.4]]),
+ coop:trip([21.65,-6.1],[...TRUNK,[21.65,-4.4]])
+});
+// The fields: along the lane on their west side and along the trunk road on their north side; the nearest to the field worked on.
+export const FIELD_TRIPS=Object.freeze([
+ ...[4.8,9.3,13.05,17.55,22.05,26.55].map(z=>trip([-7,z],[...LANE,[-7.8,z]])),
+ ...[.85,3.1,6.1].map(x=>trip([x,-2.8],[OUT,[x,-4.4],[x,-3.6]]))
+]);
+// The trip for a place (a building's key, 'chores', or 'fields' with the field's x and z), or null.
+export function tripFor(place,[x,z]=[0,0]){
+ if(place!=='fields')return Object.hasOwn(FARM_TRIPS,place)?FARM_TRIPS[place]:null;
+ return FIELD_TRIPS.reduce((best,t)=>Math.hypot(t.at[0]-x,t.at[1]-z)<Math.hypot(best.at[0]-x,best.at[1]-z)?t:best);
+}
+// A trip: they walk at TRIP_PACE times their calm pace, stay TRIP_STAY seconds (a little longer with every new action there), and
+// go nowhere for TRIP_REST seconds after they are back, so a farmer harvesting all over never sees them zig-zag.
+const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
 // How long they stand at a spot (seconds), and what they do there: breathe, look around or rest on one leg.
 const REST=[4,10],STILL={idle:.45,look:.35,relaxed:.2};
 const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14,MOVED_RECENTLY=250,LANDED_WAIT=1500;
@@ -33,12 +65,14 @@ function blob(size){
 // For the screenshot harness: every page's walker (where it stands on the screen, to tap it).
 export const FARM_WALKERS=new Set();
 // scene: the farm's or the village's; walk: FARM_WALK or VILLAGE_WALK; ground(x, z): the height there; lite: phones (every other frame).
-export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random}){
+// trips: whether they join in (the farm on a computer: game.js addFarmer; never on a phone, in lite mode or in the village).
+export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false}){
  const farmer=await createFarmer(config,{height:walk.height});
  const root=farmer.root,{actions,mixer}=farmer;root.name='your-farmer';
  for(const name of ['walk','idle','look','relaxed'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
  // The walk cycle covers 1.48 m of the pack's 1.83 m farmer: played at the speed that keeps the feet from sliding.
- if(actions.walk)actions.walk.timeScale=walk.walk/(1.48*walk.height/1.83/actions.walk.getClip().duration);
+ const walkPace=actions.walk?walk.walk/(1.48*walk.height/1.83/actions.walk.getClip().duration):1;
+ if(actions.walk)actions.walk.timeScale=walkPace;
  actions.hop?.setLoop(THREE.LoopOnce,1);if(actions.hop)actions.hop.clampWhenFinished=true;
  root.add(blob(walk.height*.55));
  // The tap target: a box round the farmer, a little bigger, so a phone's finger finds them. Never drawn.
@@ -46,7 +80,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  hit.position.y=walk.height*.52;hit.userData.farmer=true;root.add(hit);
  const spots=walk.spots,start=Math.floor(random()*spots.length);
  root.position.set(spots[start][0],ground(spots[start][0],spots[start][1]),spots[start][1]);scene.add(root);
- const me={spot:start,target:null,rest:REST[0]*random(),yaw:Math.PI/4,face:Math.PI/4,state:'idle',current:null,hopping:0};
+ const me={spot:start,target:null,rest:REST[0]*random(),yaw:Math.PI/4,face:Math.PI/4,state:'idle',current:null,hopping:0,trip:null,tripDone:-Infinity,clock:0};
  const frustum=new THREE.Frustum(),matrix=new THREE.Matrix4(),sphere=new THREE.Sphere();let frame=0,wait=0,seenBy=null;
  function play(name,fade=FADE){
   const next=actions[name];if(!next||next===me.current)return;
@@ -65,19 +99,35 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   }
   else if(me.target){
    const dx=me.target[0]-at.x,dz=me.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
-   if(d<.05)rest();
+   if(d<.05){if(me.trip)tripStep();else rest();}
    else{
-    me.yaw=turnTowards(me.yaw,want,TURN*dt);
-    // It turns first, then walks: no sliding sideways.
-    if(Math.abs(turnOf(me.yaw,want))<.5){play('walk');const s=Math.min(d,walk.walk*dt);at.x+=dx/d*s;at.z+=dz/d*s;at.y=ground(at.x,at.z);}
+    me.yaw=turnTowards(me.yaw,want,TURN*(me.trip?1.6:1)*dt);
+    // It turns first, then walks: no sliding sideways. On a trip a brisker step (the walk played faster to match).
+    const pace=me.trip?TRIP_PACE:1;if(actions.walk)actions.walk.timeScale=walkPace*pace;
+    if(Math.abs(turnOf(me.yaw,want))<.5){play('walk');const s=Math.min(d,walk.walk*pace*dt);at.x+=dx/d*s;at.z+=dz/d*s;at.y=ground(at.x,at.z);}
    }
   }else{
    me.yaw=turnTowards(me.yaw,me.face,TURN*.4*dt);
-   if((me.rest-=dt)<=0){me.spot=(me.spot+1)%spots.length;me.target=spots[me.spot];}
+   if((me.rest-=dt)<=0){if(me.trip)tripStep();else{me.spot=(me.spot+1)%spots.length;me.target=spots[me.spot];}}
   }
   root.rotation.y=me.yaw;
  }
+ // A trip, one waypoint at a time: there (way), the stay (stay), and back to the loop's nearest spot (home).
+ function tripStep(){
+  const t=me.trip;
+  if(t.leg==='way'||t.leg==='home'){
+   if(t.i<t.path.length){me.target=t.path[t.i++];return;}
+   if(t.leg==='home'){me.trip=null;me.tripDone=me.clock;rest();return;}
+   // Arrived: they face what they came for and stand there a while.
+   t.leg='stay';me.target=null;me.rest=t.stay;me.face=Math.atan2(t.look[0]-root.position.x,t.look[1]-root.position.z);play(choose({idle:.6,look:.4},random));return;
+  }
+  // The stay is over: back the way they came, to the loop's nearest spot.
+  const near=spots.reduce((best,p,i)=>Math.hypot(p[0]-t.from[0],p[1]-t.from[1])<Math.hypot(spots[best][0]-t.from[0],spots[best][1]-t.from[1])?i:best,0);
+  me.spot=near;t.leg='home';t.i=0;t.path=[...t.trip.via].reverse().concat([spots[near]]);tripStep();
+ }
  const shown=o=>{for(let n=o;n;n=n.parent)if(!n.visible)return false;return true;};
+ // A spot on the farm is in the picture (as the camera saw it last).
+ const inView=([x,z])=>{if(!seenBy)return false;const p=new THREE.Vector3(x,walk.height/2,z).project(seenBy);return Math.abs(p.x)<.95&&Math.abs(p.y)<.95;};
  // One frame (dt in seconds; game.js caps it): only while in the picture, a phone at every other frame (with that frame's time too).
  function animate(dt,camera){
   frame++;wait+=dt;seenBy=camera;
@@ -86,8 +136,20 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   if(!shown(root))return;
   matrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(matrix);
   sphere.center.copy(root.position);sphere.center.y+=walk.height/2;sphere.radius=walk.height;
-  if(!frustum.intersectsSphere(sphere))return;
-  me.steppedAt=performance.now();step(t);mixer.update(t);
+  // Off the picture they stand still, unless on a trip: then they keep walking (only where they are, not their arms and legs).
+  if(!frustum.intersectsSphere(sphere)){if(me.trip){me.clock+=t;step(t);}return;}
+  me.clock+=t;me.steppedAt=performance.now();step(t);mixer.update(t);
+ }
+ // A trip to a place (tripFor's): look, the x and z they face once there (the building or the field). Only on the farm on a computer
+ // (trips), while they are walking their loop or resting in it (not hopping), the place's spot in the picture, and TRIP_REST seconds
+ // after the last trip ended. A new action at the place they stand at keeps them there a little longer. True when they go (or stay).
+ function visit(place,look){
+  if(!trips||!place||me.hopping>0||me.away)return false;
+  if(me.trip){if(me.trip.trip===place&&me.trip.leg==='stay'){me.rest=Math.min(TRIP_STAY_MAX,me.rest+TRIP_MORE);return true;}return false;}
+  if(me.clock-me.tripDone<TRIP_REST||!inView(place.at))return false;
+  const from=[root.position.x,root.position.z];
+  me.trip={trip:place,leg:'way',i:0,path:[...place.via,place.at],from,look,stay:TRIP_STAY[0]+random()*(TRIP_STAY[1]-TRIP_STAY[0])};
+  tripStep();return true;
  }
  // A tap that found nothing else (game.js pointerTarget): true when it was the farmer.
  const pick=raycaster=>raycaster.intersectObject(hit,false).length>0;
@@ -96,6 +158,8 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  // in, so a phone's every other frame lands as late as it looks. A farmer that is not being moved (off the screen, the farm resting
  // under a window) does not hop: it settles at once. LANDED_WAIT is only a safety net for a page that stops drawing mid-hop.
  function react(){
+  // On their way somewhere: the waypoint they were walking to is taken again after the hop.
+  if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
   me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');
   me.landed?.();me.landed=null;
   if(!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY)){at0();return Promise.resolve();}
@@ -105,6 +169,6 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  const at0=()=>{me.hopping=0;root.position.y=ground(root.position.x,root.position.z);};
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
  const where=()=>{if(!seenBy)return null;const p=root.position.clone();p.y+=walk.height*.5;p.project(seenBy);return {x:p.x,y:p.y,state:me.state,world:[root.position.x,root.position.z]};};
- const result={farmer,root,hit,ground,animate,pick,react,where,camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
+ const result={farmer,root,hit,ground,animate,pick,react,where,visit,trip:()=>me.trip&&{leg:me.trip.leg,at:me.trip.trip.at},camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
  FARM_WALKERS.add(result);return result;
 }

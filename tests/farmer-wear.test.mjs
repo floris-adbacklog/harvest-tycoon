@@ -115,7 +115,7 @@ test('My farmer opens from Settings › Profile (under the avatar, which stays) 
  assert.match(game,/\$\('farmer-settings-open'\)\.onclick=\(\)=>void openMyFarmer\(\);/);
  assert.match(game,/if\(!adminView\)window\.harvestMyFarmer=\{open:openMyFarmer\};/,'not in the admin view');
  assert.match(game,/await runAction\(\{type:'farmer_wear',farmer:config\}\);/);
- assert.match(game,/farmerNews\(\);medalToast\(newMedals\(medalsBefore,state\)\);return result;\}/,'a goal reached: one toast after the action, as a new medal');
+ assert.match(game,/farmerNews\(\);farmerJoins\(action\);medalToast\(newMedals\(medalsBefore,state\)\);return result;\}/,'a goal reached: one toast after the action, as a new medal');
  assert.match(profiles,/function showMyFarmer\(id\)\{\n  const mine=window\.harvestMyFarmer;if\(id!==bridge\.playerId\|\|!mine\)return;/,'only on your own profile');
  assert.match(profiles,/\$\{self\?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden><\/div>/);
  // The avatar picker is untouched.

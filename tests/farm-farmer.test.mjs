@@ -149,10 +149,10 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/void addPets\(\);void addFarmer\(\);/,'after the first picture, with the pets');
  assert.doesNotMatch(game,/^import[^\n]*farm-farmer/m,'never in the first load');
  assert.match(game,/if\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state,farmerFarm\(\)\)\}\);/,'phones every other frame, in the farmer\'s own clothes');
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state,farmerFarm\(\)\),trips:/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
  assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n return null;\n\}/,'asked last of all');
- assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)return;/,'only on screen');
+ assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{if\(me\.trip\)/,'only on screen (on a trip: only where they are)');
  assert.doesNotMatch(walker,/localStorage|runAction|state\.|client\.|track\(/,'it saves and counts nothing');
  const {FARM_WALK,VILLAGE_WALK}=await import('../public/farm-farmer.js');
  const {FARM_PETS,VILLAGE_DEER}=await import('../public/farm-pets.js');
@@ -197,4 +197,49 @@ test('a tap on your own farmer: a hop, then your own profile (the owner, 20 Oct 
  const walk=read('public/farm-farmer.js');
  assert.match(walk,/if\(me\.hopping<=0\)\{at\.y=ground\(at\.x,at\.z\);rest\(\);me\.landed\?\.\(\);me\.landed=null;\}/,'it settles when the farmer is back on the ground');
  assert.match(walk,/if\(!\(performance\.now\(\)-\(me\.steppedAt\?\?-Infinity\)<MOVED_RECENTLY\)\)\{at0\(\);return Promise\.resolve\(\);\}/,'not on the screen: at once');
+});
+
+test('your farmer joins in: a harvest, a collect or a chore takes them to a checked spot by it, on a computer\'s farm only (the owner, 21 Oct 2026: "Doe alles behalve 9")',{skip},async()=>{
+ const {FARM_TRIPS,FIELD_TRIPS,tripFor,FARM_WALK}=await import('../public/farm-farmer.js');
+ const {FARM_PETS}=await import('../public/farm-pets.js');
+ const {FIELD_BLOCK,pondBounds,outsideYardExtents,outsideFields,anchorAt}=await import('../public/farm-layout.js');
+ const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],mill:[-19.5,-13,3.2,7.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
+ const seg=([x,z],[ax,az],[bx,bz])=>{const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz,t=l?Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l)):0;return Math.hypot(x-ax-t*dx,z-az-t*dz);};
+ const pets=Object.values(FARM_PETS).flatMap(p=>p.spots.flatMap(a=>p.spots.map(b=>[a,b])));
+ const all=[...Object.entries(FARM_TRIPS),...FIELD_TRIPS.map((t,i)=>[`field ${i}`,t])];
+ assert.deepEqual(Object.keys(FARM_TRIPS).sort(),['bakery','chores','coop','dairy','mill','pigfarm','windmill']);
+ for(const [name,{at,via}] of all){
+  const [x,z]=at;
+  // Where they stand (checked in the harness for cover, trip-cover.mjs): off the fields, out of every yard, off the pond, clear of the
+  // pets' walks and of the tappable things round the Farmhouse.
+  assert.ok(outsideFields(x,z,.5),`${name}: off the fields`);assert.ok(outsideYardExtents(x,z,.3),`${name}: out of the yards`);
+  const [px0,pz0,px1,pz1]=pondBounds();assert.ok(x<px0||x>px1||z<pz0||z>pz1,name);
+  for(const [a,b] of pets)assert.ok(seg(at,a,b)>2,`${name}: clear of the pets' walks`);
+  for(const [what,[x0,x1,z0,z1]] of Object.entries(TAPPABLE))assert.ok(x<x0-1||x>x1+1||z<z0-1||z>z1+1,`${name}: clear of the ${what}`);
+  // The way there (from the loop) never crosses the fields or the tractor.
+  const way=[[-13.6,-2],...via,at];
+  for(let i=0;i+1<way.length;i++)for(let k=0;k<=20;k++){
+   const p=[way[i][0]+(way[i+1][0]-way[i][0])*k/20,way[i][1]+(way[i+1][1]-way[i][1])*k/20];
+   assert.ok(outsideFields(p[0],p[1],.3),`${name}: the way stays off the fields at ${p}`);
+   const [t0,t1,u0,u1]=TAPPABLE.tractor;assert.ok(p[0]<t0-.5||p[0]>t1+.5||p[1]<u0-.5||p[1]>u1+.5,`${name}: round the tractor at ${p}`);
+  }
+  // Near what they came for: a building's spot within 9 of it; a field's beside the crops.
+  if(!name.startsWith('field')){const [bx,bz]=anchorAt(name);assert.ok(Math.hypot(x-bx,z-bz)<9,name);}
+  else assert.ok(x>=FIELD_BLOCK.minX-3&&x<=FIELD_BLOCK.maxX&&z>=FIELD_BLOCK.minZ-3&&z<=FIELD_BLOCK.maxZ,name);
+ }
+ // The nearest field spot to the field worked on; an unknown place: none.
+ assert.deepEqual(tripFor('fields',[-2,29]).at,[-7,26.55]);assert.deepEqual(tripFor('fields',[5,1]).at,[6.1,-2.8]);
+ assert.equal(tripFor('factory'),null);assert.equal(tripFor('toString'),null);
+ assert.ok(FARM_WALK.spots.every(([x,z])=>Math.hypot(x+13.6,z+2)<3),'every trip leaves from the loop');
+ const walker=read('public/farm-farmer.js'),game=read('public/game.js');
+ // One trip at a time, a rest after it, only to a spot in the picture; off the picture they keep walking (not their arms and legs).
+ assert.match(walker,/if\(me\.trip\)\{if\(me\.trip\.trip===place&&me\.trip\.leg==='stay'\)\{me\.rest=Math\.min\(TRIP_STAY_MAX,me\.rest\+TRIP_MORE\);return true;\}return false;\}/);
+ assert.match(walker,/if\(me\.clock-me\.tripDone<TRIP_REST\|\|!inView\(place\.at\)\)return false;/);
+ assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{if\(me\.trip\)\{me\.clock\+=t;step\(t\);\}return;\}/);
+ assert.match(walker,/const TRIP_PACE=1\.6,TRIP_STAY=\[7,10\],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;/);
+ // game.js: after every farm action and after a sweep; trips on the farm on a computer only (never in lite mode: phones, tablets, apps).
+ assert.match(game,/farmerNews\(\);farmerJoins\(action\);/);
+ assert.match(game,/if\(action==='harvest'\)\{nudge\?\.harvested\(\);farmerJoins\(\{type:'field',action:'harvest',id:result\.fields\.at\(-1\)\.id\}\);\}/);
+ assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches\}\);farmerTrip=tripFor;/);
+ assert.doesNotMatch(walker,/localStorage|runAction|client\.|track\(/,'visual only');
 });

@@ -179,6 +179,17 @@ function farmerNews(){
 // The profile opens once the hop is over (the owner, 21 Oct 2026: "wacht met profiel open als die klaar is met springen"): the farmer back
 // on the ground (farm-farmer.js react, at once when they are not on the screen), then a short beat.
 const LANDED_BEAT=150;
+// Your farmer joins in (21 Oct 2026, the owner: "Doe alles behalve 9", item 1; farm-farmer.js visit): after a harvest, a collect at a
+// building or a chore, they walk over and stand by it a while. Visual only; on the farm on a computer (addFarmer's trips).
+let farmerTrip=null;
+function farmerJoins(action){
+ if(!walker||!farmerTrip||villageWorld||!action)return;
+ let place=null,look=null;
+ if(action.type==='field'&&action.action==='harvest'&&plots[action.id]){look=[plots[action.id].x,plots[action.id].z];place=farmerTrip('fields',look);}
+ else if((action.type==='collect'||action.type==='collect_all')&&Object.hasOwn(BUILDINGS,action.building)&&ANCHORS[action.building]){look=anchorAt(action.building);place=farmerTrip(action.building);}
+ else if(action.type==='chore'){look=anchorAt('chores');place=farmerTrip('chores');}
+ if(place)walker.visit(place,look);
+}
 function tapOwnFarmer(){const me=window.parent?.harvestBridge?.playerId,landed=walker?.react()??Promise.resolve();if(me&&window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(me,{back:null}));}
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
@@ -211,7 +222,7 @@ let sessionTracked=false;
 // stands (review fix: step 7's "Tap Buildings." came with it, under the card), and the guide's own pointer waits for the card (beginner-ui.js quiet).
 const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')&&!coach.active});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
-const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});farmerNews();medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
+const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
 function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
@@ -388,14 +399,14 @@ async function addFarmer(){
  try{
   const connection=navigator.connection;if(reducedMotion||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
-  const {createFarmWalker,FARM_WALK,VILLAGE_WALK}=await import('./farm-farmer.js');
+  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,tripFor}=await import('./farm-farmer.js');
   // On the farm the grass is the ground and a lane's top .085 over it, as for the pets (addPets).
   const walk=villageWorld?VILLAGE_WALK:FARM_WALK,lanes=roadRects();let ground=(x,z)=>{let y=0;for(const r of lanes){const inside=Math.min(x-r.minX,r.maxX-x,z-r.minZ,r.maxZ-z);if(inside>0)y=Math.max(y,.085*Math.min(1,inside/.3));}return y;};
   if(villageWorld){
    const {groundUnder}=await import('./village-scene.js'),xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
   }
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm())});
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm()),trips:!villageWorld&&!handheld&&!mobileLayout.matches});farmerTrip=tripFor;
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
@@ -987,7 +998,7 @@ function endSweep(){
  if(!result){if(run.handle.reason)toast(run.handle.reason);return;}
  sweepTip.swept(action,run.count);
  // As after a tap (runAction): the guide, the reminder, a level-up.
- beginner?.afterAction(result);if(action==='harvest')nudge?.harvested();
+ beginner?.afterAction(result);if(action==='harvest'){nudge?.harvested();farmerJoins({type:'field',action:'harvest',id:result.fields.at(-1).id});}
  const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});
  // The chime that closes the sweep (its snips played on the way), or the level-up's own.
  try{const cue=soundForAction({type:'fields',action},result,run.level,levelProgress(state).level);if(cue){farmAudio.play(cue);if(cue==='levelup')haptic('levelup');}}catch{}
