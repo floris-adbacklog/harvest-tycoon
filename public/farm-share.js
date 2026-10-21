@@ -15,7 +15,7 @@ export const PHOTO=Object.freeze({x:40,y:220,width:1000,height:860});   // where
 // The shared link is the invite link with ?src=farm-photo, so sign-ups that came from a picture can be counted apart.
 export const SHARE_SOURCE='farm-photo';
 export const SHARE_FILE='harvest-tycoon-farm.jpg';
-const SITE='https://www.harvesttycoon.com/',LOGO='/assets/harvest-tycoon-logo.webp?v=20261018';
+const SITE='https://www.harvesttycoon.com/',LOGO='/assets/harvest-tycoon-logo.webp?v=20261021';
 // Outfit and DM Sans only have Latin letters: Arabic, Hindi, Japanese, Chinese, Russian and Ukrainian fall back to the device's font.
 const TITLE_FONT="Outfit,'DM Sans',system-ui,sans-serif",TEXT_FONT="'DM Sans',system-ui,sans-serif";
 const font=(weight,size,family=TEXT_FONT)=>`${weight} ${size}px ${family}`;
