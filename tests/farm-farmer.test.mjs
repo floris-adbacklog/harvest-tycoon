@@ -135,7 +135,7 @@ test('My farmer: a tab for every slot it offers, with words that are in every la
  assert.doesNotMatch(creator,/ · /);
  const catalog=JSON.parse(read('i18n/catalog.json')),texts=new Set(Array.isArray(catalog)?catalog:Object.keys(catalog));
  for(const t of ['My farmer','Skin','Face','Hair','Hat','Glasses','Beard','Top','Trousers','Outfit','Costume','Mascot','Shoes','Socks','Gloves','Random','Save','Saving…','None','Close',
-  'Earn these by playing. Each one has its own goal.','Your farmer could not be saved. Please try again.','Earn this first to wear it.','The farmer who walks on your farm and in the village.',
+  'Your farmer could not be saved. Please try again.','Earn this first to wear it.','The farmer who walks on your farm and in the village.',
   'Something new to wear in My farmer.'])assert.ok(texts.has(t),t);
  // Every goal's words are a text of the catalog (with its number as {0}).
  const goals=[...creator.matchAll(/:n=>`([^`]+)`/g)].map(m=>m[1].replace('${number(n)}','{0}'));

@@ -32,6 +32,7 @@ export const GOAL_TEXTS=Object.freeze({
 // A part's goal in words ('' for a free part), and how far a farm is with it.
 export function rewardText(id){const p=rewardProgress(id,{});return p?GOAL_TEXTS[p.goal](p.target):'';}
 const LOCK='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.2" fill="currentColor"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+const DONE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const NONE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M6.5 17.5l11-11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const CLOSE='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -58,7 +59,6 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  dialog.innerHTML=`<div class="dialog-top"><div class="dialog-heading">${art('my-farmer','dialog-badge')}<div class="dialog-titles"><h2 id="farmer-maker-title">My farmer</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">${CLOSE}</button></div></div>
 <div class="farmer-maker-stage"><canvas class="farmer-maker-preview" width="360" height="360" aria-hidden="true"></canvas></div>
 <div class="market-tabs farmer-maker-tabs" role="tablist" aria-label="My farmer">${tabs.map(([slot,name])=>`<button type="button" role="tab" data-slot="${slot}" aria-selected="false"><span class="farmer-tab-thumb" aria-hidden="true"></span><span>${name}</span></button>`).join('')}</div>
-<p class="farmer-maker-rule" hidden>Earn these by playing. Each one has its own goal.</p>
 <p class="farmer-maker-note" role="status" aria-live="polite" hidden></p>
 <div class="farmer-maker-grid" role="group"></div>
 <div class="dialog-actions farmer-maker-actions"><button type="button" class="secondary-button farmer-maker-random">Random</button><button type="button" class="primary-button farmer-maker-save" disabled>Save</button></div>`;
@@ -74,7 +74,6 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
    button.querySelector('.farmer-tab-thumb').setAttribute('style',thumbStyle(slot,worn));
    button.classList.toggle('is-empty',!current[slot]);
   }
-  dialog.querySelector('.farmer-maker-rule').hidden=!EARNED_TABS.has(tab);
  }
  function drawGrid(){
   // The farm's own look first (a straw hat before a crown), then plain and fun; the pictures keep their sheet's cell.
@@ -83,12 +82,19 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
   grid.setAttribute('aria-label',TAB_NAMES[tab]);
   grid.innerHTML=none+parts.map(p=>{const open=isOwned(p);return `<button type="button" class="farmer-part${open?'':' is-locked'}" data-part="${p.id}" aria-pressed="${current[tab]===p.id}" aria-label="${esc(open?TAB_NAMES[tab]:rewardText(p.id))}" style="${thumbStyle(tab,p.id)}">${open?'':`<span class="farmer-part-lock">${LOCK}</span>`}</button>`;}).join('');
  }
- // Above the pictures: how to earn what is tried on, or why the save failed. Save waits for a change and for everything to be yours.
+ // Above the pictures, a goal and how far you are (the owner, 21 Oct 2026: the goal there, not a general line): what is tried on and
+ // still locked; else, on a tab with things to earn, the one worn there (done) or the closest one still to earn. Or why the save failed.
+ function tabGoal(){
+  if(!EARNED_TABS.has(tab))return null;
+  const worn=farmerPart(current[tab]);if(worn?.earned&&isOwned(worn))return {part:worn,done:true};
+  const next=creatorParts(tab).filter(p=>!isOwned(p)).map(p=>{const r=rewardProgress(p.id,state);return {part:p,share:r?r.count/r.target:0};}).sort((a,b)=>b.share-a.share)[0];
+  return next?{part:next.part,done:false}:null;
+ }
  function drawState(message=''){
-  const locked=lockedWorn()[0];
-  const text=message||(locked?rewardText(locked.id):''),progress=!message&&locked?rewardProgress(locked.id,state):null;
-  note.hidden=!text;note.classList.toggle('is-locked',Boolean(progress));
-  note.innerHTML=text?`${progress?LOCK:''}<span>${esc(text)}</span>${progress?`<b>${number(progress.count)} / ${number(progress.target)}</b>`:''}`:'';
+  const locked=lockedWorn()[0],goal=message?null:locked?{part:locked,done:false}:tabGoal();
+  const text=message||(goal?rewardText(goal.part.id):''),progress=goal&&!goal.done?rewardProgress(goal.part.id,state):null;
+  note.hidden=!text;note.classList.toggle('is-locked',Boolean(progress));note.classList.toggle('is-done',Boolean(goal?.done));
+  note.innerHTML=text?`${progress?LOCK:goal?.done?DONE:''}<span>${esc(text)}</span>${progress?`<b>${number(progress.count)} / ${number(progress.target)}</b>`:''}`:'';
   save.disabled=busy||!changed()||Boolean(locked);save.textContent=busy?'Saving…':'Save';
  }
  // The 3D preview: its own small renderer, the farmer breathing and turning slowly (standing still with reduced motion).

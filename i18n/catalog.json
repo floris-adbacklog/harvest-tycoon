@@ -1603,7 +1603,6 @@
 "Earn coins at the market, with orders and with chores.":"public/event-goals.js",
 "Earn daily":"public/farm.html",
 "Earn diamonds with the daily gift, daily challenges, quests, level-ups and events.":"public/farm.html",
-"Earn these by playing. Each one has its own goal.":"public/farmer-creator.js",
 "Earn this first to wear it.":"public/farm-state.js",
 "Earn twice the XP from farm actions.":"public/farm-state.js",
 "Earn {0} crop medals for this project.":"public/farm-state.js",
