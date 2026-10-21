@@ -41,9 +41,9 @@ test('Your look window: a tab per kind with what is worn on it, the open kind\'s
  assert.match(five,/--look-columns:3/);
 });
 
-test('Settings › Profile: the heading, the avatar card, then the Your look card; the window is a game dialog with its own picture',()=>{
+test('Settings › Appearance (the owner, 21 Oct 2026: "Noem het uiterlijk"): the heading, the avatar card, then the Your look card; the window is a game dialog with its own picture',()=>{
  const farm=read('public/farm.html'),avatar=read('public/avatar-settings.js'),css=read('public/settings.css'),season=read('public/season.css');
- assert.match(avatar,/<h3 class="settings-heading" id="avatar-settings-title">Profile<\/h3><div class="avatar-settings-header">.*<h3 id="avatar-card-title">Avatar<\/h3>/);
+ assert.match(avatar,/<h3 class="settings-heading" id="avatar-settings-title">Appearance<\/h3><div class="avatar-settings-header">.*<h3 id="avatar-card-title">Avatar<\/h3>/);
  assert.match(farm,/<section id="avatar-settings" aria-labelledby="avatar-settings-title"><\/section>/);
  assert.match(farm,/<section id="look-settings" class="look-settings-card" aria-label="Your look" hidden><\/section>/);
  assert.ok(farm.indexOf('id="avatar-settings"')<farm.indexOf('id="look-settings"'));

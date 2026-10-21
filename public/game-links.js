@@ -16,7 +16,7 @@ export const APP_STORE_URL='https://apps.apple.com/nl/app/harvest-tycoon/id68188
 // The app page in a language (scripts/build-languages.mjs writes /es/app, ...; the chat's chip opens the farmer's own, 4 Oct 2026).
 export const appPath=code=>!code||code==='en'?'/app':`/${code}/app`;
 export const SETTINGS_PARTS=Object.freeze({
- avatar:{id:'avatar-settings',title:'Profile'},
+ avatar:{id:'avatar-settings',title:'Appearance'},
  email:{id:'email-settings',title:'Email address'},
  sound:{id:'sound-settings',title:'Sound'},
  chat:{id:'chat-settings',title:'Chat'},

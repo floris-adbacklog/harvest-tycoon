@@ -22,7 +22,7 @@ test('the Settings parts: one slug each, the section id and title the game has, 
  const farm=read('public/farm.html');
  for(const slug of SETTINGS_SLUGS){
   const {id,title}=SETTINGS_PARTS[slug];
-  if(id==='avatar-settings'){assert.match(farm,/<section id="avatar-settings"/);assert.match(read('public/avatar-settings.js'),new RegExp(`<h3 class="settings-heading" id="avatar-settings-title">${title}<\\/h3>`));assert.equal(title,'Profile');continue;}
+  if(id==='avatar-settings'){assert.match(farm,/<section id="avatar-settings"/);assert.match(read('public/avatar-settings.js'),new RegExp(`<h3 class="settings-heading" id="avatar-settings-title">${title}<\\/h3>`));assert.equal(title,'Appearance');continue;}
   assert.match(farm,new RegExp(`<section id="${id}" class="settings-section"[^>]*><h3 class="settings-heading"[^>]*><i [^>]*><\\/i>${title}<\\/h3>`),slug);
  }
  assert.equal(settingsSlug('app-settings'),'farm-app');assert.equal(settingsSlug('nope'),null);

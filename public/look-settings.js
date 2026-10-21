@@ -1,10 +1,12 @@
 import {SEASON_LOOKS,SEASON_LOOK_SOURCE,LOOK_SLOTS,LOOK_FARM_SLOTS,seasonLook,seasonLooksOwned,currentSeason,seasonPhase,seasonById} from './farm-state.js';
 import {lookArt,lookKindName,worn,seasonSellsHere} from './season-ui.js';
+// A tab's short name: "Profile background" broke over two lines on a phone in Dutch (the owner, 21 Oct 2026: "doe achtergrond").
+const tabName=slot=>slot==='bg'?'Background':lookKindName(slot);
 import {refreshArt} from './visual-icons.js';
 
 // Your look (Oct 2026, the Season Pass). Since 21 Oct 2026 (the owner: "Je look staat nu heel lelijk onder instellingen, kan het niet
 // onder een nieuw kopje", then "Doe je look ook onder avatar, en verander het kopje mijn avatar in iets breders zodat het fit"):
-// - in Settings › Profile, under the avatar card, a card of its own: what you wear now as small pictures, how many of the looks are
+// - in Settings › Appearance, under the avatar card, a card of its own: what you wear now as small pictures, how many of the looks are
 //   yours, and one button that opens the Your look window (#look-dialog in farm.html);
 // - that window: one tab per kind of look (the picture on a tab is what you wear now) and that kind's tiles, "None" first. With one
 //   kind there are no tabs.
@@ -25,7 +27,7 @@ const lookRows=(state,now,sells)=>ROWS.map(slot=>({slot,choices:lookChoices(stat
 // A look's small picture on a tile or a tab: a title as quote marks (its words are the tile's caption), "None" as an empty dashed ring.
 const mark=id=>!id?'<span class="look-none"></span>':seasonLook(id)?.kind==='title'?'<span class="look-title-mark">“ ”</span>':lookArt(id);
 const countLine=rows=>{const all=rows.flatMap(r=>r.choices);return `<span class="look-count">${all.filter(c=>c.owned).length} of ${all.length} collected</span>`;};
-// The card in Settings › Profile: what is worn now (one small picture per kind, with its name for a screen reader), the count, the button.
+// The card in Settings › Appearance: what is worn now (one small picture per kind, with its name for a screen reader), the count, the button.
 export function lookSummaryMarkup(state,now,wearing,{sells=true}={}){
  const rows=lookRows(state,now,sells);if(!rows.length)return '';
  const on=rows.map(({slot})=>wearing[slot]??null).filter(id=>seasonLook(id));
@@ -40,7 +42,7 @@ export function lookSettingsMarkup(state,now,wearing,{sells=true,tab=null}={}){
  const columns=Math.min(rows.length,Math.ceil(rows.length/Math.ceil(rows.length/4)));
  const tabs=rows.length<2?'':`<div class="market-tabs look-tabs" role="tablist" aria-label="Your look" style="--look-columns:${columns}">${rows.map(({slot})=>{
   const id=wearing[slot]??null,here=slot===open.slot;
-  return `<button type="button" role="tab" id="look-tab-${slot}" aria-controls="look-panel" aria-selected="${here}" tabindex="${here?0:-1}" data-look-tab="${slot}"><span class="look-tab-art">${mark(seasonLook(id)?.kind===slot?id:null)}</span><span>${esc(lookKindName(slot))}</span></button>`;
+  return `<button type="button" role="tab" id="look-tab-${slot}" aria-controls="look-panel" aria-selected="${here}" tabindex="${here?0:-1}" data-look-tab="${slot}"><span class="look-tab-art">${mark(seasonLook(id)?.kind===slot?id:null)}</span><span>${esc(tabName(slot))}</span></button>`;
  }).join('')}</div>`;
  const chip=(id,label,locked=false,where='')=>`<button type="button" class="look-chip${on===id?' is-on':''}${locked?' is-locked':''}" data-look-slot="${open.slot}" data-look-id="${id??''}" aria-pressed="${on===id}" ${locked?'aria-disabled="true"':''} title="${esc(where||label)}">${mark(id)}<span>${esc(label)}</span>${where?`<small>${esc(where)}</small>`:''}</button>`;
  return `<p class="look-settings-rule">${countLine(rows)}<span>What you collect stays yours.</span></p>`
