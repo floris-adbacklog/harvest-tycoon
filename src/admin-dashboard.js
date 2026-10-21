@@ -10,6 +10,8 @@ import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
 import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerShownCents,offerProblem,offerFill,offerDiscountOf,offerVipFits,APPLE_SELLS_OFFER} from '../game/payments.js';
+// An offer's worth as players see it (21 Oct 2026, the owner: "€50, €10 of €7.50"): whole euros without cents.
+const offerEuro=cents=>cents%100===0?`€${cents/100}`:`€${(cents/100).toFixed(2)}`;
 import {avatarImage} from '../public/player-avatars.js';
 import {LANGUAGES} from '../public/languages.js';
 import {chosenLanguage} from '../public/i18n.js';
@@ -23,7 +25,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const number=n=>Number(n??0).toLocaleString('en-US');
 // The staff see what the database really said (Oct 2026: the chat shows farmers the general text instead, src/chat-client.js).
 const why=error=>error?.raw??error?.message;
-// Every time is Amsterdam time on a 24-hour clock (admin-players.js); a retention day is already an Amsterdam date ("2026-09-25").
+// Every time is UTC on a 24-hour clock (admin-players.js); a retention day is already a UTC date ("2026-09-25").
 const fmtDate=dateTime;
 const fmtDay=day=>{const time=Date.parse(`${day}T00:00:00Z`);return Number.isFinite(time)?new Date(time).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric'}):day;};
 const initials=name=>String(name??'?').trim().split(/\s+/).slice(0,2).map(part=>part[0]??'').join('').toUpperCase()||'?';
@@ -75,7 +77,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   // of one of the three. VIP that is worth more than the whole offer cannot be picked (offerVipFits). One offer at a time: a new one
   // ends the one running now.
   +'<section class="admin-card" id="admin-offers"><h3>'+art('diamonds')+'Special offer</h3><form id="admin-offer-form" class="admin-news admin-offer">'
-  +'<div class="admin-offer-kinds"><label>Discount<select id="admin-offer-discount">'+OFFER_DISCOUNTS.map(d=>`<option value="${d}"${d===OFFER.defaultDiscount?' selected':''}>${d}% off, worth €${(OFFER.discounts[d].valueCents/100).toFixed(2)}</option>`).join('')+'</select></label>'
+  +'<div class="admin-offer-kinds"><label>Discount<select id="admin-offer-discount">'+OFFER_DISCOUNTS.map(d=>`<option value="${d}"${d===OFFER.defaultDiscount?' selected':''}>${d}% off, worth ${offerEuro(OFFER.discounts[d].shownCents)}</option>`).join('')+'</select></label>'
   +'<label><input type="checkbox" id="admin-offer-has-diamonds" checked> Diamonds</label><label><input type="checkbox" id="admin-offer-has-coins"> Coins</label>'
   +'<label>VIP<select id="admin-offer-vip"><option value="0">None</option><option value="7">7 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></label></div>'
   +'<div class="admin-popup-fields"><label>Diamonds<input id="admin-offer-diamonds" type="number" min="0" max="'+OFFER.maxDiamonds+'" step="50" inputmode="numeric"></label>'
@@ -201,7 +203,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  function renderRetention(data){
   const columns=data.columns??Array.from({length:8},(_,i)=>i),period=data.period??7;
-  dialog.querySelector('#admin-retention-hint').textContent=data.weekly?'Share of each week’s signups (from Monday, Amsterdam time) still active N days after their own signup day. A farmer counts once N days have passed. Approximate: based on last activity.':'Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.';
+  dialog.querySelector('#admin-retention-hint').textContent=data.weekly?'Share of each week’s signups (from Monday, UTC) still active N days after their own signup day. A farmer counts once N days have passed. Approximate: based on last activity.':'Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.';
   dialog.querySelector('#admin-retention-head').innerHTML=`<tr><th>Signed up</th><th>Farmers</th>${columns.map(n=>`<th>Day ${n}</th>`).join('')}</tr>`;
   dialog.querySelector('#admin-retention-body').innerHTML=data.rows.length?data.rows.map(row=>`<tr><td>${data.weekly?`Week of ${fmtDay(row.day)}`:fmtDay(row.day)}</td><td>${number(row.size)}</td>${row.days.map(d=>d?`<td class="${heat(d.pct)}" title="${d.retained} / ${d.total} still active">${d.pct}%</td>`:'<td class="admin-pending">—</td>').join('')}</tr>`).join(''):`<tr><td colspan="${columns.length+2}" class="admin-empty">No signups in the last ${period===7?'week':`${period} days`}.</td></tr>`;
  }
@@ -271,10 +273,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(online&&retention)renderKpis(online,retention);
   if(invites)renderInvites(invites);
   const missing=PARTS.filter((_,i)=>![online,players,retention,invites][i]).map(([,name])=>name);
-  status.textContent=missing.length?`${missing.join(', ')} could not be loaded. Please try again.`:`Updated ${clock(new Date().toISOString())} (Amsterdam time)`;
+  status.textContent=missing.length?`${missing.join(', ')} could not be loaded. Please try again.`:`Updated ${clock(new Date().toISOString())} (UTC)`;
  }
  // Feedback & bugs: the open messages (the count on the tab), or the ones marked done; each with the farmer's name, the time
- // (Amsterdam), level, device and game language, and a Google Translate link like the chat's.
+ // (UTC), level, device and game language, and a Google Translate link like the chat's.
  let feedbackView='open';
  const FEEDBACK_KINDS={feedback:'Feedback',bug:'Bug',feature:'Feature request'};
  const languageName=code=>code?LANGUAGES.find(l=>l.code===code)?.name??code:null;
@@ -532,7 +534,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  showNewsLanguage();
  // The welcome message: its setting, and how many new farmers got it.
  function welcomeStatus(w){
-  const last=w.lastSentAt?` · last one ${new Date(w.lastSentAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
+  const last=w.lastSentAt?` · last one ${new Date(w.lastSentAt).toLocaleString('en-GB',{timeZone:'UTC',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
   return `${w.enabled?'On':'Off'} · sent to ${Number(w.sent??0).toLocaleString('en-US')} new farmer${w.sent===1?'':'s'}${last}`;
  }
  // Per language: English is the text for everyone whose language has none of its own. The list marks which have one.
@@ -588,7 +590,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const o=offerDraft(),problem=offerProblem(o),line=$o('worth');
   $o('diamonds').disabled=!$o('has-diamonds').checked;$o('coins').disabled=!$o('has-coins').checked;
   const value=offerShownCents(o);
-  line.textContent=problem??`${offerText(o)}, worth ${euro(value)}, sells for ${euro(OFFER.cents)} (${offerDiscountOf(value)}% off)`;line.classList.toggle('is-wrong',Boolean(problem));
+  line.textContent=problem??`${offerText(o)}, worth ${offerEuro(value)}, sells for ${euro(OFFER.cents)} (${offerDiscountOf(value)}% off)`;line.classList.toggle('is-wrong',Boolean(problem));
   dialog.querySelector('#admin-offer-form [type="submit"]').disabled=Boolean(problem);$o('preview').disabled=Boolean(problem);
  }
  function offerRefill(){
@@ -606,7 +608,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const list=$o('list');if(!bridge.chat?.offerList)return;
   try{
    const offers=await bridge.chat.offerList();list.hidden=!offers.length;
-   list.innerHTML=offers.map(o=>`<li><span class="admin-recent-copy"><strong>${esc(offerText(o))}, worth ${euro(offerShownCents(o))}</strong><small>${esc(POPUP_AUDIENCES[o.audience]??o.audience)} · from level ${o.minLevel} · ${o.active?`until ${fmtDate(o.endsAt)}`:'ended'} · bought by ${number(o.bought)} farmer${o.bought===1?'':'s'}</small></span>${o.active?`<button type="button" class="small-button" data-offer-stop="${esc(o.id)}">Stop</button>`:''}</li>`).join('');
+   list.innerHTML=offers.map(o=>`<li><span class="admin-recent-copy"><strong>${esc(offerText(o))}, worth ${offerEuro(offerShownCents(o))}</strong><small>${esc(POPUP_AUDIENCES[o.audience]??o.audience)} · from level ${o.minLevel} · ${o.active?`until ${fmtDate(o.endsAt)}`:'ended'} · bought by ${number(o.bought)} farmer${o.bought===1?'':'s'}</small></span>${o.active?`<button type="button" class="small-button" data-offer-stop="${esc(o.id)}">Stop</button>`:''}</li>`).join('');
   }catch{list.hidden=true;}
  }
  $o('list').addEventListener('click',async event=>{
@@ -618,7 +620,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  $o('form').addEventListener('submit',async event=>{
   event.preventDefault();const o=offerDraft();if(offerProblem(o))return;
   const hours=Number($o('hours').value),time=$o('hours').options[$o('hours').selectedIndex].text;
-  if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} (worth ${euro(offerShownCents(o))}) for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
+  if(!await confirmAction({title:'Start this offer?',description:`${offerText(o)} (worth ${offerEuro(offerShownCents(o))}) for ${euro(OFFER.cents)}, for ${time}, from level ${$o('level').value}. It replaces the offer running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
   try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||OFFER.defaultLevel,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
   catch(error){$o('status').textContent=why(error);}
   void showOffers();

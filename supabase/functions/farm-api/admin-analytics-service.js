@@ -8,9 +8,10 @@ import {zoneCountry} from './time-zones.js';
 // not any of the farmers this dashboard reports on.
 const respond=(user,data,status=200)=>({status,data:{...data,profile:{player_id:user?.id}}});
 const DAY_MS=86400000,RETENTION_DAYS=7;
-// The staff are in the Netherlands: the dashboard's days run from midnight to midnight Amsterdam time (src/admin-players.js shows
-// every time in it too). zoneDay gives "2026-09-25" for an instant; dayStart the instant that day began, summer or winter time.
-export const ADMIN_ZONE='Europe/Amsterdam';
+// The dashboard's days run from midnight to midnight UTC (21 Oct 2026, the owner: "Zet admin panel op UTC ipv CEST"; Amsterdam time
+// before), and src/admin-players.js shows every time in it in UTC too. zoneDay gives "2026-09-25" for an instant; dayStart the instant
+// that day began.
+export const ADMIN_ZONE='UTC';
 const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:ADMIN_ZONE,year:'numeric',month:'2-digit',day:'2-digit'});
 const partsFormat=new Intl.DateTimeFormat('en-US',{timeZone:ADMIN_ZONE,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'});
 export const zoneDay=ms=>dayFormat.format(ms);
@@ -55,7 +56,7 @@ export async function handleAdminRecentPlayers({admin,user,limit=14,now=Date.now
  return respond(user,{players});
 }
 
-// A simplified retention cohort: for every day in the last week (Amsterdam time), the % of that day's real (non-anonymous)
+// A simplified retention cohort: for every day in the last week (UTC), the % of that day's real (non-anonymous)
 // signups whose most recent activity is at or after "signup day + N days", for N = 0..7. This is a "still
 // around by day N" cohort (a rolling floor on their one last-activity timestamp), not exact day-N-active
 // retention — the game keeps no daily activity log, so exact day-by-day presence cannot be reconstructed after

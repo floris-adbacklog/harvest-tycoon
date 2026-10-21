@@ -85,12 +85,12 @@ test('admin_recent_players: the limit is clamped to a sane range',async()=>{
  }
 });
 
-test('admin_retention: grouped by signup day in Amsterdam time, retained means last_active_at at or after signup-day + N days',async()=>{
+test('admin_retention: grouped by signup day in UTC, retained means last_active_at at or after signup-day + N days',async()=>{
  const day='2026-09-15',utcStart=Date.parse(`${day}T00:00:00Z`);
  const signups=[
-  {player_id:'a',created_at:iso(utcStart+3600000)},    // 03:00 in Amsterdam that day
-  {player_id:'b',created_at:iso(utcStart+20*3600000)}, // 22:00 in Amsterdam: same day
-  {player_id:'c',created_at:iso(utcStart+22.5*3600000)} // 22:30 UTC is 00:30 the next day in Amsterdam: the next cohort
+  {player_id:'a',created_at:iso(utcStart+3600000)},    // 01:00 UTC that day
+  {player_id:'b',created_at:iso(utcStart+23*3600000)}, // 23:00 UTC: same day (in Amsterdam it was already the next)
+  {player_id:'c',created_at:iso(utcStart+24.5*3600000)} // 00:30 UTC the next day: the next cohort
  ];
  const stats=[
   {player_id:'a',last_active_at:iso(utcStart+3*86400000)},  // still active on day 3
@@ -103,10 +103,10 @@ test('admin_retention: grouped by signup day in Amsterdam time, retained means l
  assert.deepEqual(row.days[0],{retained:2,total:2,pct:100},'day 0: both had at least signed up');
  assert.deepEqual(row.days[3],{retained:1,total:2,pct:50},'day 3: only a is still active by then');
 });
-test('the dashboard\'s days run midnight to midnight in Amsterdam, summer and winter time',()=>{
- assert.equal(zoneDay(Date.UTC(2026,8,24,21,59)),'2026-09-24');assert.equal(zoneDay(Date.UTC(2026,8,24,22,0)),'2026-09-25','midnight in Amsterdam is 22:00 UTC in summer');
- assert.equal(dayStart('2026-09-25'),Date.UTC(2026,8,24,22));assert.equal(dayStart('2026-01-06'),Date.UTC(2026,0,5,23),'and 23:00 UTC in winter');
- assert.equal(dayStart('2026-10-25'),Date.UTC(2026,9,24,22),'the day the clocks go back still starts in summer time');
+test('the dashboard\'s days run midnight to midnight UTC, summer and winter alike (the owner, 21 Oct 2026)',()=>{
+ assert.equal(zoneDay(Date.UTC(2026,8,24,23,59)),'2026-09-24');assert.equal(zoneDay(Date.UTC(2026,8,25,0,0)),'2026-09-25','midnight UTC, not Amsterdam');
+ assert.equal(dayStart('2026-09-25'),Date.UTC(2026,8,25));assert.equal(dayStart('2026-01-06'),Date.UTC(2026,0,6),'in winter too');
+ assert.equal(dayStart('2026-10-25'),Date.UTC(2026,9,25),'the day the clocks go back in Europe is an ordinary day');
 });
 test('admin_retention: a day-offset that has not elapsed yet is null, never a false 0%',async()=>{
  const today=zoneDay(now);

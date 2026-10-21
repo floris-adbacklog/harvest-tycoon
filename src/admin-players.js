@@ -8,16 +8,16 @@ const DAY=86400000;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
 const time=iso=>{const t=Date.parse(iso);return Number.isFinite(t)?t:null;};
-// Every time in the dashboard is Amsterdam time on a 24-hour clock, wherever the device is: the admin and the moderators are in the
-// Netherlands (farm-api counts its days the same way, admin-analytics-service.js).
-export const ADMIN_ZONE='Europe/Amsterdam';
+// Every time in the dashboard is UTC on a 24-hour clock, wherever the device is (21 Oct 2026, the owner: "Zet admin panel op UTC ipv
+// CEST"; it was Amsterdam time). farm-api counts its days the same way (admin-analytics-service.js).
+export const ADMIN_ZONE='UTC';
 const at=(options)=>new Intl.DateTimeFormat('en-US',{timeZone:ADMIN_ZONE,hourCycle:'h23',...options});
 const DATE_TIME=at({month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),DATE=at({month:'short',day:'numeric',year:'numeric'}),CLOCK=at({hour:'2-digit',minute:'2-digit'});
 // "Sep 25, 14:32", "Sep 25, 2026" and "14:32".
 export const dateTime=iso=>{const t=time(iso);return t==null?'—':DATE_TIME.format(t);};
 const day=iso=>{const t=time(iso);return t==null?'—':DATE.format(t);};
 export const clock=iso=>{const t=time(iso);return t==null?'—':CLOCK.format(t);};
-// "2026-09-25" and the instant that day began in Amsterdam (summer or winter time), for "Today".
+// "2026-09-25" and the instant that day began in UTC, for "Today".
 const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:ADMIN_ZONE,year:'numeric',month:'2-digit',day:'2-digit'});
 const PARTS=at({year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'});
 const offset=ms=>{const p=Object.fromEntries(PARTS.formatToParts(ms).map(x=>[x.type,x.value]));return Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute,+p.second)-Math.floor(ms/1000)*1000;};
@@ -63,7 +63,7 @@ export function filterPlayers(players,{filter='all',search='',sort='active'}={},
 export function playerRow(p,{guideSteps=10,now=Date.now()}={}){
  const facts=p.everPlayed?[`Level ${number(p.level)}`,`${number(p.daysPlayed)} day${p.daysPlayed===1?'':'s'} played`,p.guide>=guideSteps?'Guide done':`Guide ${number(p.guide)}/${guideSteps}`,p.family&&esc(p.family)]:['Never opened a farm'];
  const where=[`Joined ${esc(dateTime(p.createdAt))}`,provider(p.provider),country(p.country),p.language&&`Plays in ${esc(gameLanguage(p.language))}`,p.ip&&`IP ${esc(p.ip)}`].filter(Boolean);
- return `<li><button type="button" class="admin-player-row" data-player="${esc(p.playerId)}">${face(p)}<span class="admin-recent-copy"><strong>${esc(name(p))}${p.vip?' <b class="admin-chip is-vip">VIP</b>':''}</strong><small>${facts.filter(Boolean).join(' · ')}</small><small>${where.join(' · ')}</small></span><span class="admin-last-active${p.online?' is-online':''}"><b>${p.online?'Online':esc(ago(p.lastActiveAt,now))}</b><time datetime="${esc(p.lastActiveAt??'')}" title="Last action (Amsterdam time)">${p.online?`Last action ${esc(clock(p.lastActiveAt))} (${esc(ago(p.lastActiveAt,now))})`:esc(dateTime(p.lastActiveAt))}</time></span></button></li>`;
+ return `<li><button type="button" class="admin-player-row" data-player="${esc(p.playerId)}">${face(p)}<span class="admin-recent-copy"><strong>${esc(name(p))}${p.vip?' <b class="admin-chip is-vip">VIP</b>':''}</strong><small>${facts.filter(Boolean).join(' · ')}</small><small>${where.join(' · ')}</small></span><span class="admin-last-active${p.online?' is-online':''}"><b>${p.online?'Online':esc(ago(p.lastActiveAt,now))}</b><time datetime="${esc(p.lastActiveAt??'')}" title="Last action (UTC)">${p.online?`Last action ${esc(clock(p.lastActiveAt))} (${esc(ago(p.lastActiveAt,now))})`:esc(dateTime(p.lastActiveAt))}</time></span></button></li>`;
 }
 
 // One farmer. The other accounts that last played from the same IP address are listed for the staff (a shared home, school or phone
@@ -115,7 +115,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
   +(p.purchases?`<h4>Purchases</h4><ul class="admin-recent-list admin-purchases">${purchases}</ul>`:'')
   +`<h4>Events, chat and friends</h4><dl class="admin-facts">${social}</dl>`
-  +'<p class="admin-hint">Times are Amsterdam time. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for the chat buttons.</p>';
+  +'<p class="admin-hint">Times are UTC. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for the chat buttons.</p>';
 }
 
 // Where new players stop: of everyone who made an account in the period, how many got how far. The guide steps follow
