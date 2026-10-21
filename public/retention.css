@@ -429,6 +429,15 @@
 .tractor-tile:disabled{cursor:default;background:#f6f3ee;border-color:#ece6dc;box-shadow:none}
 .tractor-tile:disabled .tractor-tile-art{filter:grayscale(1);opacity:.45}
 .tractor-tile:disabled strong{color:#a49c8c}
+/* Fertilize (21 Oct 2026): one wide tile under the four jobs, the picture at the start, what it does and what it uses in the middle,
+   the price at the end. */
+.tractor-tile.is-wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:12px}
+.tractor-tile.is-wide .tractor-tile-art{flex:none;margin-bottom:0}
+.tractor-tile-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.tractor-tile.is-wide .tractor-job-cost{position:static;flex:none;align-self:flex-start}
+.tractor-tile .tractor-tile-count{color:#6b5f4c;font-weight:700}
+.tractor-tile .tractor-tile-count.is-reason{color:#807463;font-weight:400}
+.tractor-tile:disabled .tractor-tile-count{color:#a49c8c}
 /* Plant asks first (17 Oct 2026, tractor-ask.js): the tile itself holds the question, edged in gold like an open choice, with Plant and
    Other crop under it (side by side when they fit). The other tiles stay where they are. */
 .tractor-tile.is-asking{cursor:default;border-color:#c9a45a;background:#fff8e1;box-shadow:0 2px 0 #ecdcae}

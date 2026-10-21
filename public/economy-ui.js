@@ -287,9 +287,10 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    }
    // From level 128 the Lumber Camp packs builder's crates (Oct 2026): its window says what they are for.
    if(key==='lumbercamp'&&recipeUnlocked(state,'builderscrate'))content+=`<p class="milling-note crate-note">${CRATE_RULE}</p>`;
+   // The tractor's Fertilize job (21 Oct 2026) named here too, once the tractor is open: the same work on every growing field at once.
    if(key==='windmill'){
     const eligible=state.plots.filter(p=>p.crop&&p.readyAt>farmNow()&&!p.fertilized);
-    content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per growing cycle; watering and extra care still work.</p>${fieldPicker({id:'fertilizer-field-picker',plots:eligible,selected:[...fertilizerFields].filter(id=>eligible.some(p=>p.id===id)),multiple:true,now:farmNow(),available:state.inventory.fertilizer})}<div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;
+    content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per growing cycle; watering and extra care still work.${featureUnlocked(state,'tractor')?' <span>Or let the tractor do it: its Fertilize job does every growing field at once.</span>':''}</p>${fieldPicker({id:'fertilizer-field-picker',plots:eligible,selected:[...fertilizerFields].filter(id=>eligible.some(p=>p.id===id)),multiple:true,now:farmNow(),available:state.inventory.fertilizer})}<div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;
    }
    const cost=upgradeCost(state,key),estate=upgradeRequirements(state,key),next=bs.level+1;
    const estateLevelOk=!estate||levelOf(state)>=estate.level,estateSupplies=!estate||Object.entries(estate.materials).every(([item,n])=>(state.inventory[item]??0)>=n);

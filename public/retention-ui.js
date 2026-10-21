@@ -115,17 +115,19 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    $('utility-title').textContent='Tractor';setDialogBadge($('utility-dialog'),'tractor');
    lastFieldStatus=fieldStatus();
    const crop=getCrop();
-   const quotes=Object.fromEntries(['plant','water','tend','harvest'].map(mode=>[mode,tractorQuote(state,mode,crop,farmNow())]));
+   const quotes=Object.fromEntries(['plant','water','tend','harvest','fertilize'].map(mode=>[mode,tractorQuote(state,mode,crop,farmNow())]));
    // Plant asks first, in its own tile (tractor-ask.js); a question nothing can answer any more (no empty field, too few coins) goes.
    const asking=ask.open(Date.now())&&quotes.plant.count>0&&state.coins>=quotes.plant.total;if(!asking)ask.stop();
    // The crop you plant as a tappable chip, the four coin jobs as tiles (picture, price, fields), the fuel rule in one
    // small line, then the diamond work (5 Oct 2026: everything on one phone screen, in the game's own colours).
    const empty={plant:state.plots.some(p=>!p.crop)?'Not enough coins':'No empty fields',water:'Nothing to water · water right after planting',tend:'Nothing ready for care yet · it opens after 30% of the growing time',harvest:'Nothing ready yet'};
    // The fuel's formula in a fold (18 Oct 2026, the window shell); the rule that matters shows: by hand is free. The fold stays open.
-   keepFolds($('utility-content'),`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant',crop,`Plant ${CROPS[crop].name}`],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];if(mode==='plant'&&asking)return askTile(crop,CROPS[crop].name,q);return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}</div><details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free.</span><span class="fold-more">How it works</span></summary><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${Math.round(TRACTOR_FUEL_SHARE*100)}% of the crop's usual price per field, at least ${TRACTOR_FUEL_PER_FIELD}.</p></details>${diamondWork(crop)}`);
+   keepFolds($('utility-content'),`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant',crop,`Plant ${CROPS[crop].name}`],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];if(mode==='plant'&&asking)return askTile(crop,CROPS[crop].name,q);return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}${fertilizeTile(quotes.fertilize)}</div><details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free.</span><span class="fold-more">How it works</span></summary><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${Math.round(TRACTOR_FUEL_SHARE*100)}% of the crop's usual price per field, at least ${TRACTOR_FUEL_PER_FIELD}.</p></details>${diamondWork(crop)}`);
    document.querySelector('[data-tractor-crop]').onclick=()=>toSeeds(false);
    // The price on the tile goes along (17 Oct 2026: fuel follows each field's crop): never more is charged, and a refused job shows the new price.
-   const work=mode=>act({type:'tractor',mode,crop:getCrop(),expectedCost:quotes[mode].total},r=>`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`).then(r=>{if(!r)renderUtility();});
+   // The Fertilize job's toast in whole words, no middle dot: a translated toast is not undotted (21 Oct 2026).
+   const done=r=>r.mode==='fertilize'?(r.count===1?`The tractor fertilized 1 field with 1 fertilizer for ${r.cost} coins! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer for ${r.cost} coins! +${r.xp} XP.`):`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`;
+   const work=mode=>act({type:'tractor',mode,crop:getCrop(),expectedCost:quotes[mode].total},done).then(r=>{if(!r)renderUtility();});
    document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>b.dataset.tractor==='plant'?askPlant():work(b.dataset.tractor));
    const go=document.querySelector('[data-tractor-go]');
    if(go)go.onclick=()=>{if(!ask.answers(Date.now()))return;ask.stop();work('plant');};
@@ -222,6 +224,15 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   if(taken)return `${taken} of your ${q.fields} fields stay full until after the shift, so the tractor can't plant there. The price counts every field.`;
   return q.low?`${name} brings in about ${Math.round(q.forecast.value).toLocaleString('en-US')} coins in this shift, less than the lowest price (1 diamond a field). A crop that sells for more is a better deal.`:'';
  }
+ // Fertilize (21 Oct 2026, the owner: players kept asking how to fertilize; farm-state.js fertilizeQuote): one wide tile under the four
+ // jobs, with what it does in one line and then how many fields and how much natural fertilizer. Short of fertilizer it says it does as
+ // many as there is fertilizer for, the longest waits first. Off with the reason: nothing growing without fertilizer, or none in storage.
+ function fertilizeTile(q){
+  const reason=!q.fields?'No growing crops without fertilizer':!q.count?'Make natural fertilizer at the Windmill first.':'';
+  const uses=q.count===q.fields?(q.count===1?'1 field · Uses 1 natural fertilizer':`${q.count} fields · Uses ${q.count} natural fertilizer`)
+   :`${q.count} of ${q.fields} fields · Uses your ${q.count} natural fertilizer, longest waits first`;
+  return `<button class="tractor-tile is-wide" data-tractor="fertilize" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art('fertilizer')}</span><span class="tractor-tile-text"><strong>Fertilize</strong><small>35% off the time left on growing crops, once each</small><small class="tractor-tile-count${reason?' is-reason':''}">${reason||uses}</small></span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}</button>`;
+ }
  // The tractor's diamond work: Full care and the night shift as two cards side by side, each with its own picture and its
  // price as a diamond button, and the one rule that they count nowhere, with the way to the wiki (which has the price rule).
  function diamondWork(crop){
@@ -247,7 +258,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  }
  function waterLeft(q){return formatDuration(Math.max(0,Math.min(...q.ids.map(id=>waterUntil(state.plots[id])))-farmNow()));}
  // Redraw when a field changes state, and every minute (every second in the last minute) while water is still possible.
- function fieldStatus(){const now=farmNow(),shift=state.tractorShift;return (shift?`${shift.done}:${Math.ceil((shift.endsAt-now)/60000)}|`:'')+state.plots.map(p=>{if(!p.crop)return 'empty';if(p.readyAt<=now)return 'ready';if(p.watered)return 'watered';if(!canWater(p,now))return 'growing';const left=waterUntil(p)-now;return `water:${left<60000?Math.ceil(left/1000):Math.ceil(left/60000)}`;}).join(',');}
+ function fieldStatus(){const now=farmNow(),shift=state.tractorShift;return (shift?`${shift.done}:${Math.ceil((shift.endsAt-now)/60000)}|`:'')+state.plots.map(p=>{if(!p.crop)return 'empty';if(p.readyAt<=now)return 'ready';const f=p.fertilized?'+f':'';if(p.watered)return 'watered'+f;if(!canWater(p,now))return 'growing'+f;const left=waterUntil(p)-now;return `water:${left<60000?Math.ceil(left/1000):Math.ceil(left/60000)}${f}`;}).join(',')+`|${state.inventory?.fertilizer??0}`;}
  function tick(){
   // A night shift round that came due while the game is open: worked out here too, as the server will (settleShift is pure).
   const shift=state.tractorShift;if(shift&&shift.done<=SHIFT_ROUNDS&&shift.startedAt+shift.done*SHIFT_ROUND_MS<=farmNow()){settleShift(state,farmNow());onChange();refresh();}

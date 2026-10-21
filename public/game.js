@@ -65,6 +65,7 @@ import { guideSteps } from './guide-steps.js';
 import { guardWheel } from './wheel-guard.js';
 import { nextGoal, readyAllAt } from './next-goal.js';
 import { createWaitTip } from './wait-tip.js';
+import { createFertilizerTip } from './fertilizer-tip.js';
 import { computerWindow,timerKey,timerGroups,createFullScreenOffer } from './small-window.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
@@ -278,6 +279,11 @@ const WATER_FIRST_MINUTE="Water works in a crop's first minute: plant wheat, the
 // After planting long crops up to level 8 (16 Oct 2026, the owner): when the fields are ready and what is open meanwhile, once a day
 // (public/wait-tip.js).
 const waitTip=createWaitTip({state,now:farmNow,show:toast,quiet:()=>adminView||villageWorld});
+// The first natural fertilizer (21 Oct 2026, the owner: players kept asking how to fertilize): one toast, once on this device, how to use
+// it (the Windmill, and the tractor's Fertilize job once the tractor is open). public/fertilizer-tip.js; checked in updateUI. The toast
+// sits under a modal window, so it waits while one is open (the Windmill's own, where the fertilizer is collected) and comes when it closes.
+const fertilizerTip=createFertilizerTip({state,show:toast,quiet:()=>adminView||villageWorld||!beginnerProgress(state).every(q=>q.done)||Boolean(document.querySelector('dialog[open]'))});
+document.addEventListener('close',e=>{if(e.target instanceof HTMLDialogElement)fertilizerTip.check();},true);
 // The one short toast at the bottom for new crop medals (farm.html #medal-toast): the toast at the top stays free for the action's own.
 let medalNotice;
 // The guide's step now (11 Oct 2026, Part A A11): from the first harvest to the first sale only one line speaks, so a medal earned while
@@ -1197,7 +1203,7 @@ function updateUI(){
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  trackTotals(lvl);
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
- nudge?.check();
+ nudge?.check();fertilizerTip.check();
  $('level-name').textContent=levelTitle(lvl);
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';

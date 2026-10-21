@@ -1813,13 +1813,16 @@ export function fertilizeFields(state,ids,now=Date.now()){
  const fields=ids.map(id=>fertilizeField(state,id,now));
  return {fields,count:fields.length,cost:fields.length,xp:fields.reduce((n,f)=>n+f.xp,0)};
 }
+// Natural fertilizer takes FERTILIZER_CUT of the time a growing crop still needs, once per growing cycle (the wiki, the Windmill and the
+// tractor's Fertilize job say 35%).
+export const FERTILIZER_CUT=.35;
 export function fertilizeField(state,id,now=Date.now()){
  if(!Number.isInteger(id)||id<0||id>=state.plots.length)throw new Error('Choose an unlocked field.');
  const plot=state.plots[id];
  if(!plot.crop||plot.readyAt<=now)throw new Error('Choose a crop that is still growing.');
  if(plot.fertilized)throw new Error('This crop has already been fertilized.');
  if(state.inventory.fertilizer<1)throw new Error('Make natural fertilizer at the Windmill first.');
- const saved=Math.floor((plot.readyAt-now)*.35);
+ const saved=Math.floor((plot.readyAt-now)*FERTILIZER_CUT);
  plot.readyAt-=saved;plot.fertilized=true;state.inventory.fertilizer--;state.xp+=5;state.stats.fertilized=(state.stats.fertilized??0)+1;
  return {id,crop:plot.crop,saved,xp:5};
 }
@@ -3790,22 +3793,40 @@ export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2,TRACTOR_FUEL_SHARE=.0
 export const fieldFuel=crop=>Object.hasOwn(CROPS,crop??'')?Math.max(TRACTOR_FUEL_PER_FIELD,Math.round(reducedMarketPrice(CROPS[crop].sell)*TRACTOR_FUEL_SHARE)):TRACTOR_FUEL_PER_FIELD;
 export function tractorQuote(state,mode,crop='corn',now=Date.now()){
  // tend (4 Oct 2026): extra care for every crop whose care moment has come, as by hand.
+ // fertilize (21 Oct 2026): natural fertilizer on every growing crop that has none yet this cycle, the longest wait first (see below).
+ if(mode==='fertilize')return fertilizeQuote(state,now);
  const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):mode==='tend'?fieldTapAction(p,now,'tend')==='tend':p.crop&&p.readyAt<=now);
  const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+fieldFuel(crop))))):eligible.length;
  const worked=eligible.slice(0,count);
  const fuel=count?TRACTOR_FUEL_BASE+worked.reduce((sum,p)=>sum+fieldFuel(mode==='plant'?crop:p.crop),0):0,seeds=mode==='plant'?count*seedCost(state,crop):0;
  return {count,fuel,seeds,total:fuel+seeds,ids:worked.map(p=>p.id)};
 }
+// The tractor's Fertilize job (21 Oct 2026, the owner, after players kept asking how to fertilize a field: "2+4"). It does what the
+// Windmill's "Give a field a head start" does by hand (fertilizeField: 1 natural fertilizer a field, 35% off the time left, once per
+// growing cycle, 5 XP and stats.fertilized, so it counts for the same quests, challenges and events), on every growing crop that has
+// none yet. With less fertilizer in storage than such fields it does as many as there is fertilizer for, the longest time left first
+// (the most time saved). Fuel as Water: TRACTOR_FUEL_BASE a job + each field's crop fuel (fieldFuel). No diamonds. fields: every field it
+// could do; count: the ones it will do; fertilizer: what it uses (= count).
+export function fertilizeQuote(state,now=Date.now()){
+ const eligible=state.plots.filter(p=>p.crop&&p.readyAt>now&&!p.fertilized).sort((a,b)=>(b.readyAt-a.readyAt)||(a.id-b.id));
+ const count=Math.min(eligible.length,Math.max(0,Math.floor(state.inventory?.fertilizer??0))),worked=eligible.slice(0,count);
+ const fuel=count?TRACTOR_FUEL_BASE+worked.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
+ return {count,fuel,seeds:0,total:fuel,ids:worked.map(p=>p.id),fields:eligible.length,fertilizer:count};
+}
 // expectedCost (17 Oct 2026): the price the tile showed. Never more is charged; a farm that changed in between asks to look again. An
 // older page sends none and pays the rules' price.
 export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
- if(!['plant','water','harvest','tend'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
+ if(!['plant','water','harvest','tend','fertilize'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
  if(mode==='plant'&&!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
  const quote=tractorQuote(state,mode,crop,now);
  if(expectedCost!==undefined&&(!Number.isSafeInteger(expectedCost)||quote.total>expectedCost))throw new Error('The price has changed. Review the current price.');
- if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':'No crops are ready to harvest.');
+ if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':mode==='fertilize'?(quote.fields?'Make natural fertilizer at the Windmill first.':'No growing crops need fertilizer.'):'No crops are ready to harvest.');
  if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
  state.coins-=quote.fuel;
+ if(mode==='fertilize'){
+  const xp=quote.ids.reduce((sum,id)=>sum+fertilizeField(state,id,now).xp,0);
+  state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel,fertilizer:quote.fertilizer,fields:quote.fields,xp};
+ }
  for(const id of quote.ids)actOnPlot(state,id,mode,crop,now);
  state.stats.tractor++;return {count:quote.count,mode,cost:quote.total,fuel:quote.fuel};
 }

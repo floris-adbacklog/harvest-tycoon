@@ -53,11 +53,12 @@ export function toastParts(message,translate=translateText,names=[]){
 // The element keeps its own classes (the medal toast at the bottom is "toast medal-toast", Oct 2026), and a toast can say its tone
 // itself: a new medal is good news without a "+40 coins" in it. 16 Oct 2026: and its time, for a long note that shows once a day (the
 // note about when the fields are ready, wait-tip.js).
+// 21 Oct 2026: and its picture, for a tip about one thing (natural fertilizer, fertilizer-tip.js).
 export function createToast(el,{duration=3200}={}){
  const base=String(el.className??'').split(/\s+/).filter(c=>c&&c!=='visible'&&!c.startsWith('is-')).join(' ')||'toast';
  let timer=0;
  return function show(message,options){
-  const {tone:found,icon,html,local}=toastParts(message,translateText,options?.names),tone=options?.tone??found,ms=options?.duration??duration;
+  const {tone:found,icon:themed,html,local}=toastParts(message,translateText,options?.names),tone=options?.tone??found,ms=options?.duration??duration,icon=options?.icon??themed;
   el.className=base;el.classList.add('is-'+tone);el.style.setProperty('--toast-duration',`${ms}ms`);
   el.innerHTML=`<span class="toast-icon">${art(icon)}</span><span class="toast-text"${local?' translate="no"':''}>${html}</span><i class="toast-timer" aria-hidden="true"></i>`;
   void el.offsetWidth;el.classList.add('visible');
