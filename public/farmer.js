@@ -37,15 +37,16 @@ function texture(){
 }
 export function farmerReady(){texture();return pictureReady??(picture=null,texture(),pictureReady);}
 // The three materials of the pack: its colours (matte, like the farm's models), glass (the lenses of some glasses and helmets) and
-// glow (a few costumes' lights). One of each for every farmer on the page.
-export function farmerMaterial(kind){
- let m=materials.get(kind);
+// glow (a few costumes' lights). One of each for every farmer on the page; shade: the part carries the farm's baked shade (COLOR_0,
+// scripts/farmer-export.py), as every part built since 21 Oct 2026 does.
+export function farmerMaterial(kind,shade=false){
+ const key=`${kind}${shade?':shade':''}`;let m=materials.get(key);
  if(!m){
-  const map=texture();
-  if(kind==='farmer-glass')m=new THREE.MeshStandardMaterial({map,roughness:.25,metalness:0,transparent:true,opacity:.45,depthWrite:false});
-  else if(kind==='farmer-glow')m=new THREE.MeshStandardMaterial({map,emissiveMap:map,emissive:0xffffff,emissiveIntensity:.8,roughness:1,metalness:0});
-  else m=new THREE.MeshStandardMaterial({map,roughness:1,metalness:0});
-  m.name=kind;materials.set(kind,m);
+  const map=texture(),vertexColors=shade;
+  if(kind==='farmer-glass')m=new THREE.MeshStandardMaterial({map,vertexColors,roughness:.25,metalness:0,transparent:true,opacity:.45,depthWrite:false});
+  else if(kind==='farmer-glow')m=new THREE.MeshStandardMaterial({map,vertexColors,emissiveMap:map,emissive:0xffffff,emissiveIntensity:.8,roughness:1,metalness:0});
+  else m=new THREE.MeshStandardMaterial({map,vertexColors,roughness:1,metalness:0});
+  m.name=kind;materials.set(key,m);
  }
  return m;
 }
@@ -54,7 +55,7 @@ function wear(source,bones,parent,file){
  const meshes=[];
  source.scene.traverse(n=>{
   if(!n.isSkinnedMesh)return;
-  const mesh=new THREE.SkinnedMesh(n.geometry,farmerMaterial(n.material.name));
+  const mesh=new THREE.SkinnedMesh(n.geometry,farmerMaterial(n.material.name,Boolean(n.geometry.attributes.color)));
   mesh.name=n.name;mesh.userData.file=file;mesh.matrix.copy(n.matrixWorld);mesh.matrix.decompose(mesh.position,mesh.quaternion,mesh.scale);
   mesh.bind(new THREE.Skeleton(n.skeleton.bones.map(b=>bones.get(b.name)),n.skeleton.boneInverses),n.bindMatrix);
   mesh.castShadow=true;mesh.receiveShadow=true;

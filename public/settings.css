@@ -86,3 +86,11 @@ html[data-portal] .settings-copy{display:none!important}
 #sound-dialog.settings-one #sound-settings>.sound-switch>span{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;font:700 15px/1.3 'DM Sans',sans-serif;color:var(--ink,#453e28)}
 /* The farmer's own face as the Avatar part's picture. */
 #sound-dialog .dialog-heading img.settings-badge-face{border-radius:50%;object-fit:cover;background:#f3ece2}
+
+/* The My farmer buttons in Settings and on your own profile: the farmer's picture and the words, a chunky second button. (public/farmer-creator.js opens it) */
+.farmer-open-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 18px 6px 10px}
+.farmer-open-button .game-art{width:30px;height:30px}
+/* My farmer under the avatar in Settings › Profile (21 Oct 2026): only while that part is open. */
+#sound-dialog:not(.settings-one) #farmer-settings,#sound-dialog.settings-one #avatar-settings:not(.is-open)~#farmer-settings,#farmer-settings[hidden]{display:none}
+#farmer-settings{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:14px 0 4px}
+#farmer-settings p{margin:0;font-size:14px;color:#857660;flex:1 1 180px}

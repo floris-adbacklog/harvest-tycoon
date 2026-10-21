@@ -34,9 +34,9 @@ test('the catalog holds every part of the pack, in its groups, with its files th
  for(const p of Object.values(FARMER_PARTS)){
   assert.match(p.id,/^[a-z0-9_]+$/);assert.ok(p.name&&!p.name.includes('|'),p.id);assert.ok(['farm','plain','fun','off'].includes(p.fit),p.id);
   assert.equal(p.slot,FARMER_GROUPS[p.group].slot);assert.equal(p.earned,FARMER_GROUPS[p.group].earned);
-  for(const f of p.files){const size=statSync(file(`public/assets/farmer/parts/${f}.glb`)).size;total+=size;assert.ok(size<110_000,`${f} is ${size} bytes`);}
+  for(const f of p.files){const size=statSync(file(`public/assets/farmer/parts/${f}.glb`)).size;total+=size;assert.ok(size<125_000,`${f} is ${size} bytes`);}
  }
- assert.ok(total<6_500_000,`all parts ${total} bytes`);
+ assert.ok(total<7_200_000,`all parts ${total} bytes`);
  // Earned: hats, hoods and helmets, costumes and mascots (the owner, 20 Oct 2026); everything else is free.
  assert.deepEqual(Object.entries(FARMER_GROUPS).filter(([,g])=>g.earned).map(([k])=>k).sort(),['costume','hat','helmet','mascot']);
 });
@@ -51,10 +51,11 @@ test('a part file is a quantized, meshopt-packed skinned mesh bound to bones by 
    const json=glb(`public/assets/farmer/parts/${f}.glb`);
    assert.deepEqual([...json.extensionsRequired].sort(),['EXT_meshopt_compression','KHR_mesh_quantization'],f);
    assert.ok(!json.images&&!json.textures,`${f} carries no picture (farmer.webp is shared)`);
+   assert.ok(json.asset.extras.bakedShade&&json.meshes.every(m=>m.primitives.every(p=>p.attributes.COLOR_0!=null)),`${f} has a little of the farm's baked shade`);
    assert.equal(json.skins.length,1);for(const j of json.skins[0].joints)assert.ok(bones.has(json.nodes[j].name),`${f}: ${json.nodes[j].name} is a bone of the rig`);
   }
  }
- assert.ok(statSync(file('public/assets/farmer/farmer.webp')).size<20_000);assert.deepEqual(webpSize('public/assets/farmer/farmer.webp'),[512,512]);
+ assert.ok(statSync(file('public/assets/farmer/farmer.webp')).size<40_000);assert.deepEqual(webpSize('public/assets/farmer/farmer.webp'),[512,512]);
  const build=read('scripts/build-farmer.mjs');
  assert.match(build,/meshopt\(\{encoder:MeshoptEncoder,level:'high'\}\)/);assert.match(build,/prune\(\{keepAttributes:true,keepLeaves:true\}\)/,'the finger and toe bones stay');
  assert.match(read('ASSET-USAGE.md'),/## The farmer \(20 Oct 2026\)[^]*Creative Characters[^]*not as they are/);
@@ -108,32 +109,35 @@ test('putting a part on takes off what does not go with it; the files follow the
  // Any random farmer of the creator is a valid one.
 });
 
-test('the pictures: a sheet a slot for My farmer, a portrait layer for every part that shows from the shoulders up',async()=>{
- const {PORTRAIT_GROUPS,portraitLayers,farmerPortrait}=await import('../public/farmer-portrait.js');
+test('the pictures: a sheet a slot for My farmer (only what it offers), its own picture, and no portrait layers any more',()=>{
+ const {creatorParts}=P;
  for(const slot of FARMER_SLOTS){
-  const n=partsOfSlot(slot).length;assert.deepEqual(webpSize(`public/assets/farmer/thumbs/${slot}.webp`),[960,Math.ceil(n/10)*96],`${slot}: 10 a row, 96 px`);
+  const n=creatorParts(slot).length,sheet=`public/assets/farmer/thumbs/${slot}.webp`;
+  if(!n){assert.ok(!existsSync(file(sheet)),`${slot}: nothing offered yet, no sheet`);continue;}
+  assert.deepEqual(webpSize(sheet),[960,Math.ceil(n/10)*96],`${slot}: 10 a row, 96 px`);
  }
- const layered=Object.values(FARMER_PARTS).filter(p=>PORTRAIT_GROUPS.includes(p.group));
- assert.equal(layered.length,323);assert.deepEqual(readdirSync(file('public/assets/farmer/portrait')).sort(),layered.map(p=>`${p.id}.webp`).sort());
- let total=0;for(const p of layered){total+=statSync(file(`public/assets/farmer/portrait/${p.id}.webp`)).size;assert.deepEqual(webpSize(`public/assets/farmer/portrait/${p.id}.webp`),[160,160]);}
- assert.ok(total<500_000,`${total} bytes of layers`);
- assert.deepEqual(portraitLayers({...DEFAULT_FARMER,hat:'hat_009',faceExtra:'beard_002'}),['body_010','outfit_001','male_emotion_usual_002','beard_002','hairstyle_male_003','hat_009'],'bottom to top');
- const html=farmerPortrait({...DEFAULT_FARMER,hat:'<x>'},{size:40,label:'A "farmer" <b>'});
- assert.doesNotMatch(html,/<x>|<b>/);assert.match(html,/aria-label="A &quot;farmer&quot; &lt;b&gt;"/);assert.equal((html.match(/<img /g)??[]).length,4,'an unknown part draws nothing');
+ assert.deepEqual(readdirSync(file('public/assets/farmer/thumbs')).sort(),FARMER_SLOTS.filter(s=>creatorParts(s).length).map(s=>`${s}.webp`).sort());
+ // The painted avatars stay everyone's picture (the owner, 20 Oct 2026): the stacked portraits of phase 1 are not shipped.
+ assert.ok(!existsSync(file('public/assets/farmer/portrait'))&&!existsSync(file('public/farmer-portrait.js')));
+ assert.deepEqual(webpSize('public/assets/icons/my-farmer.webp'),[256,256]);assert.match(read('public/visual-icons.js'),/pictures\['my-farmer'\]='my-farmer';webpPictures\.add\('my-farmer'\);/);
  const build=read('scripts/build-farmer-pictures.mjs');
  assert.match(build,/'--headless=new','--mute-audio'/,'a muted headless Chrome');assert.match(build,/chrome\.kill\(\)/,'stopped by its own process');
  assert.match(build,/--host-resolver-rules=MAP \* ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127\.0\.0\.1/,'only this computer');
 });
 
-test('My farmer: a tab for every slot, with words that are in every language, and nothing saved',async()=>{
+test('My farmer: a tab for every slot it offers, with words that are in every language; Save is the farm action',async()=>{
  const creator=read('public/farmer-creator.js');
  const tabs=[...creator.matchAll(/\['([a-zA-Z]+)','([A-Za-z ]+)'\]/g)].map(m=>m[1]);
  assert.deepEqual(tabs,FARMER_SLOTS);
- assert.doesNotMatch(creator,/localStorage|sessionStorage|fetch\(|runAction|client\.|bridge/,'a prototype: it saves and sends nothing');
+ assert.match(creator,/const tabs=CREATOR_TABS\.filter\(\(\[slot\]\)=>creatorParts\(slot\)\.length\);/,'a tab with nothing to offer yet is left out');
+ assert.doesNotMatch(creator,/localStorage|sessionStorage|fetch\(|client\.|bridge/,'it saves only through onSave (the farm action)');
+ assert.match(creator,/save\.disabled=busy\|\|!changed\(\)\|\|Boolean\(locked\);/,'nothing to save, or something not earned yet: no Save');
  assert.doesNotMatch(creator,/ · /);
  const catalog=JSON.parse(read('i18n/catalog.json')),texts=new Set(Array.isArray(catalog)?catalog:Object.keys(catalog));
- for(const t of ['My farmer','Skin','Face','Hair','Hat','Glasses','Beard','Top','Trousers','Outfit','Costume','Mascot','Shoes','Socks','Gloves','Random','Done','None','Close'])assert.ok(texts.has(t),t);
- assert.match(read('scripts/i18n-extract.mjs'),/\|farmer-parts\)\\\.js\$\//,'the parts\' working names are not shown yet');
+ for(const t of ['My farmer','Skin','Face','Hair','Hat','Glasses','Beard','Top','Trousers','Outfit','Costume','Mascot','Shoes','Socks','Gloves','Random','Save','Saving…','None','Close',
+  'Earned with levels, goals and passes.','Your farmer could not be saved. Please try again.','Reach level {0}.','Earn this first to wear it.','The farmer who walks on your farm and in the village.'])assert.ok(texts.has(t),t);
+ for(const id of Object.keys(P.FARMER_REWARDS)){const t=P.rewardText(id).replace(/^Reach level \d+\.$/,'Reach level {0}.');assert.ok(texts.has(t),`${id}: ${t}`);}
+ assert.match(read('scripts/i18n-extract.mjs'),/\|farmer-parts\)\\\.js\$\//,'the parts\' working names are not shown');
 });
 
 test('your farmer on the farm and in the village: after the first picture, only with motion, clear of everything that can be tapped',{skip},async()=>{
@@ -141,7 +145,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/void addPets\(\);void addFarmer\(\);/,'after the first picture, with the pets');
  assert.doesNotMatch(game,/^import[^\n]*farm-farmer/m,'never in the first load');
  assert.match(game,/if\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches\}\);/,'phones every other frame');
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state,farmerFarm\(\)\)\}\);/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
  assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n return null;\n\}/,'asked last of all');
  assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)return;/,'only on screen');
@@ -176,7 +180,7 @@ test('the build is written down: the Blender step, the cut, the pictures; the pa
  assert.match(exp,/CLIPS = \['Idle_Breathing', 'Idle_Look_Around', 'Idle_Relaxed', 'Walk_Forward', 'Jump_Start', 'Jump_End'\]/);
  assert.match(exp,/"Frame": the pack's own showcase board/);
  assert.ok(!existsSync(file('public/assets/farmer/Creative_Characters.blend')));
- for(const f of readdirSync(file('public/assets/farmer')))assert.ok(['farmer-rig.glb','farmer.webp','parts','thumbs','portrait'].includes(f),f);
+ for(const f of readdirSync(file('public/assets/farmer')))assert.ok(['farmer-rig.glb','farmer.webp','parts','thumbs'].includes(f),f);
 });
 
 test('a tap on your own farmer: a hop, then your own profile (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat")',()=>{

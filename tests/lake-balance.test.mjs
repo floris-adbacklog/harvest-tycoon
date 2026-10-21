@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createReel,REEL,FIGHTS} from '../public/pond-reel.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+// farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
 // The village lake's balance (12 Oct 2026, plan D sections 2 and 3.5), played with the lake open as in tests/lake.test.mjs.
 const G=await import(asModule(read('game/farm-state.js').replace(/export const LAKE_OPEN=(true|false),/,'export const LAKE_OPEN=true,')));
 const now=Date.UTC(2026,9,12,9),LATER=G.POND_REFILL_MS*5;

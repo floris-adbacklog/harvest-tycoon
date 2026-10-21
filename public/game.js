@@ -72,6 +72,8 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
+// Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
+import { farmerOf,farmerOwned } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
 // The apps' Back button and the farm's rest under a window on phones, tablets and the apps (13 Oct 2026, public/windows.js).
 import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
@@ -107,6 +109,8 @@ const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 // What the farmer wears (the Season Pass's looks, Oct 2026) and their face, for the pass window and Settings › Profile (season-ui.js).
 window.harvestLook=window.harvestInitialFarm.profile?.look&&typeof window.harvestInitialFarm.profile.look==='object'?window.harvestInitialFarm.profile.look:{};
 window.harvestAvatarId=window.harvestInitialFarm.profile?.avatar_id??'default';
+// The events this farmer finished (player_stats.events_finished): the Event champion's hat for your farmer opens with them, as the avatar.
+const finishedEvents=Number(window.harvestInitialFarm.profile?.events_finished)||0;
 const adminView=document.documentElement.hasAttribute('data-admin-view');
 window.harvestInitialFarm = null;
 let selectedTool='plant', selectedCrop='wheat', ready=false;
@@ -152,6 +156,22 @@ let herd=null;   // the farm's moving animals (farm-animals.js, 20 Oct 2026), on
 let walker=null;   // your own farmer walking on the farm or in the village (farm-farmer.js, 20 Oct 2026), once they have come
 // A tap on your own farmer (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat"): it hops, then your
 // profile opens (the same as the profile button; window.harvestProfiles is the cloud script's, the player id the page's bridge).
+// What My farmer needs to know of this farm: its level and the events it finished (farmer-parts.js farmerOwned, the same on the server).
+const farmerFarm=()=>({level:levelProgress(state).level,events:finishedEvents});
+// My farmer (21 Oct 2026, the owner: "Doe alle 3"): put your own farmer together (public/farmer-creator.js, loaded when it opens). Save is
+// the farm action farmer_wear; the farmer on the farm or in the village changes at once. Opened from Settings › Profile, your own profile
+// (window.harvestMyFarmer) and the harness (?open=farmer). Not in the admin view: nothing is saved there.
+async function openMyFarmer(){
+ if(adminView)return null;
+ try{
+  const {openFarmerCreator}=await import('./farmer-creator.js'),farm=farmerFarm();
+  return await openFarmerCreator({config:farmerOf(state,farm),owned:farmerOwned(state,farm),reducedMotion,onSave:async config=>{
+   await runAction({type:'farmer_wear',farmer:config,events:finishedEvents});
+   void walker?.farmer.dress(farmerOf(state,farmerFarm()));
+  }});
+ }catch(error){console.warn('My farmer could not open.',error);toast('My farmer could not open. Please try again.');return null;}
+}
+if(!adminView)window.harvestMyFarmer={open:openMyFarmer};
 function tapOwnFarmer(){walker?.react();const me=window.parent?.harvestBridge?.playerId;if(me&&window.harvestProfiles)setTimeout(()=>window.harvestProfiles.open(me,{back:null}),450);}
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
@@ -368,7 +388,7 @@ async function addFarmer(){
    const {groundUnder}=await import('./village-scene.js'),xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
   }
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches});
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm())});
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
@@ -1656,6 +1676,8 @@ function bindUI(){
  soundUI=createSoundSettings(farmAudio,{onEmailOn:()=>{if(!emailAccount.needed)return;toast('Confirm your email address and the daily email starts.');emailCheckUI?.open();}});
  // Settings at one part (4 Oct 2026): a link to /settings/<part> (src/game-cloud.js harvestOpen) and the chat's Settings chip.
  window.harvestSettings=part=>soundUI.open(part);
+ // My farmer in Settings › Profile, under the avatar (21 Oct 2026): the avatar stays your picture, the farmer is who walks on your farm.
+ {const block=$('farmer-settings');if(block){block.hidden=adminView;$('farmer-settings-open').onclick=()=>void openMyFarmer();}}
  renderLanguageSettings();
  // Every dropdown in the game gets the game look, also the ones that are drawn later (public/pretty-select.js).
  watchSelects();

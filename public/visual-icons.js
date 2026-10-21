@@ -107,6 +107,8 @@ for(const key of ['family-rank-leader','family-rank-coleader','family-rank-honor
 for(const {icon} of FAMILY_EMBLEMS)if(icon.startsWith('family-')){pictures[icon]=icon;webpPictures.add(icon);}
 // A flag for every language in Settings (29 Sep 2026, painted, WebP): flag-en, flag-es, ...
 for(const {code} of LANGUAGES){pictures[`flag-${code}`]=`flag-${code}`;webpPictures.add(`flag-${code}`);}
+// My farmer (21 Oct 2026): the default farmer in the straw hat, drawn by scripts/build-farmer-pictures.mjs from the game's own farmer.
+pictures['my-farmer']='my-farmer';webpPictures.add('my-farmer');
 // A picture by its file name, for the screens that show one without art() (the Buildings list and a building's page).
 // The Season Pass (Oct 2026): its pictures, painted by the owner, WebP. Icons (256 px) in /assets/icons/; the badge, the frame (512 px,
 // see-through in the middle), the profile background (1024 × 640) and the window's banner (1536 × 512) in /assets/season/.

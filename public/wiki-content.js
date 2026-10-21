@@ -44,6 +44,8 @@ export const WIKI_TOPICS=Object.freeze([
 ]);
 const TOPIC=Object.fromEntries(WIKI_TOPICS.map(t=>[t.id,t]));
 // The Avatars section of Account and settings. On CrazyGames the one earned with invited friends is left out (no invites there).
+// My farmer (21 Oct 2026, the owner: "Doe alle 3"): your own 3D farmer, beside the avatar that stays your picture (public/farmer-creator.js).
+const farmerBody=()=>`<p>My farmer is the farmer who walks on your farm and in the village. Tap them: they hop and your profile opens. Open My farmer in Settings, under your avatar, or on your own profile, and tap Save.</p><p>Skin, face, hair, glasses, beards and clothes are free. Hats and costumes you earn: the straw hat at level 2, and every avatar you earn brings one too, the Ranch owner a cowboy hat, the Beekeeper a bee suit and the Lantern keeper a pumpkin head. Until then one shows a lock: you can try it on and see how to earn it. Your avatar stays your picture in the chat, on the leaderboards and in your family.</p>`;
 const avatarsBody=(portal=false)=>`<p>Pick your avatar in Settings. ${PLAYER_AVATARS.filter(a=>!a.level&&!avatarGoal(a.id)).length} are yours from the start; the others you earn by playing. Until then one shows grey with a lock: tap it to see what it needs.</p>`
  +table(['Avatar','Opens at'],PLAYER_AVATARS.filter(a=>a.level).map(a=>`<tr><td>${avatarCell(a)}</td><td>Level ${a.level}</td></tr>`))
  // The Halloween Pass face (4 Oct 2026) is a purchase: not on CrazyGames, and hidden in our apps (public/android.css .wiki-paid).
@@ -659,6 +661,7 @@ const BODIES={
   +section('Settings','<p>In Settings you change your farmer name and avatar, sound and music, private messages and the language.</p>')
   +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap More, then Feedback, choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody(true))
+  +section('My farmer',farmerBody())
   +section('Privacy',h.signedIn?signedInPrivacy():PORTAL_PRIVACY);
   // In the Android app (Oct 2026): no home screen or Farm app to point at; what the app says instead is the line Getting started already
   // has (so it is translated already). Push reminders only once the app offers its own notifications (h.appPush, src/app-push.js);
@@ -673,6 +676,7 @@ const BODIES={
   // The mailbox button (30 Sep 2026, public/feedback-ui.js); in More on every screen since 18 Oct 2026 (the window shell).
   +section('Feedback','<p>An idea, a question, something that does not work or something you would like to see? Tap More, then Feedback, choose Feedback, Report a bug or Request a feature and write a few words. Our team reads every message.</p>')
   +section('Avatars',avatarsBody())
+  +section('My farmer',farmerBody())
   +section('Confirm your email',`<p>Signed up with your email address? Confirm it once for ${EMAIL_BONUS} diamonds: tap “Confirm your email” in the menu and type the code we send you. Google and Facebook accounts get the diamonds straight away.</p>`)
   // Share my farm (Oct 2026, public/farm-share.js).
   +section('Invite a friend',`<p>Share your invite link. When your friend reaches level ${INVITE_LEVEL} within ${INVITE_DAYS} days, you both get ${INVITE_REWARD} diamonds, for up to ${INVITE_LIMIT} friends.</p><p>Or tap Share my farm on the level-up card or your own profile: a picture of your farm with your invite link.</p>`)

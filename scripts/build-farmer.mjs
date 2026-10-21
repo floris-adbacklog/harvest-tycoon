@@ -38,13 +38,41 @@ const GROUP={'Body':'body','Faces':'face','Hairstyle':'hair','Hairstyle Single':
 const partOf=name=>/^Costume_\d+_\d+$/.test(name)?name.replace(/_\d+$/,'').toLowerCase():name.toLowerCase();
 const MATERIAL={Color:'farmer',Glass:'farmer-glass',Emission:'farmer-glow'};
 
-// The colour picture, at 512 px.
+// The farm's look (21 Oct 2026, the owner: the farmer should not stand out from the farm's models): every colour of the pack's picture
+// moves FARM_PULL of the way to the nearest colour of the farm's own palette (public/assets/models/palette.png, nearest as the eye
+// sees it, in CIE Lab) and then loses CALM of its saturation. The pack's bright toy colours become the farm's softer, painted ones; a
+// skin tone stays a skin tone, a blue a blue.
+const FARM_PULL=.5,CALM=.22;
+const lin=c=>{c/=255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;};
+function lab([r,g,b]){
+ const R=lin(r),G=lin(g),B=lin(b),f=t=>t>216/24389?Math.cbrt(t):(24389/27*t+16)/116;
+ const x=f((R*.4124+G*.3576+B*.1805)/.95047),y=f(R*.2126+G*.7152+B*.0722),z=f((R*.0193+G*.1192+B*.9505)/1.08883);
+ return [116*y-16,500*(x-y),200*(y-z)];
+}
+const farmPalette=(()=>{
+ const img=PNG.sync.read(fs.readFileSync(path.join(checkout,'public/assets/models/palette.png'))),CELL=94,cells=[];
+ for(let row=0;row*CELL<img.height;row++)for(let col=0;col*CELL<img.width;col++){
+  const cx=Math.min(img.width-1,Math.floor((col*CELL+Math.min(img.width,col*CELL+CELL))/2)),cy=Math.min(img.height-1,Math.floor((row*CELL+Math.min(img.height,row*CELL+CELL))/2)),i=(cy*img.width+cx)*4;
+  const rgb=[img.data[i],img.data[i+1],img.data[i+2]];cells.push({rgb,lab:lab(rgb)});
+ }
+ return cells;
+})();
+const nearestFarm=new Map();
+export function farmLook([r,g,b]){
+ const key=(r>>2)<<12|(g>>2)<<6|(b>>2);let cell=nearestFarm.get(key);
+ if(!cell){const l=lab([r,g,b]);let best=null,d=Infinity;for(const c of farmPalette){const e=Math.hypot(l[0]-c.lab[0],l[1]-c.lab[1],l[2]-c.lab[2]);if(e<d){d=e;best=c;}}cell=best.rgb;nearestFarm.set(key,cell);}
+ const mixed=[r,g,b].map((v,k)=>v+(cell[k]-v)*FARM_PULL),grey=mixed[0]*.299+mixed[1]*.587+mixed[2]*.114;
+ return mixed.map(v=>Math.max(0,Math.min(255,Math.round(v+(grey-v)*CALM))));
+}
+// The colour picture, at 512 px, in the farm's look.
 const texture=root.listTextures()[0],full=PNG.sync.read(Buffer.from(texture.getImage()));
 {
  const half=new PNG({width:full.width/2,height:full.height/2});
- for(let y=0;y<half.height;y++)for(let x=0;x<half.width;x++)for(let c=0;c<4;c++){
-  let s=0;for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]])s+=full.data[((y*2+dy)*full.width+x*2+dx)*4+c];
-  half.data[(y*half.width+x)*4+c]=Math.round(s/4);
+ for(let y=0;y<half.height;y++)for(let x=0;x<half.width;x++){
+  const px=[0,0,0,0];
+  for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]])for(let c=0;c<4;c++)px[c]+=full.data[((y*2+dy)*full.width+x*2+dx)*4+c]/4;
+  const [r,g,b]=farmLook(px.slice(0,3).map(Math.round)),i=(y*half.width+x)*4;
+  half.data[i]=r;half.data[i+1]=g;half.data[i+2]=b;half.data[i+3]=Math.round(px[3]);
  }
  const tmp=path.join(OUT,'.farmer.png');fs.writeFileSync(tmp,PNG.sync.write(half));
  execFileSync('cwebp',['-quiet','-q','92','-m','6','-sharp_yuv',tmp,'-o',path.join(OUT,'farmer.webp')]);fs.rmSync(tmp);
@@ -104,7 +132,7 @@ for(const node of root.listNodes()){
   verts+=pos.getCount();tris+=p.getIndices().getCount()/3;
  }
  const holder=d.createNode(name).setMesh(m).setSkin(s);scene.addChild(holder);
- d.getRoot().getAsset().extras={part:partOf(name),source:'ithappy Creative Characters'};
+ d.getRoot().getAsset().extras={part:partOf(name),source:'ithappy Creative Characters',bakedShade:true};
  const file=`${name.toLowerCase()}.glb`,bytes=await finish(d,path.join(PARTS,file));
  measured.set(name,{name,group,part:partOf(name),file,bytes,verts,tris,kinds:[...kinds],shape:hash.digest('hex').slice(0,10),
   colour:count?'#'+swatch.map(x=>Math.round(x/count).toString(16).padStart(2,'0')).join(''):null,top:+maxY.toFixed(3),bottom:+minY.toFixed(3)});

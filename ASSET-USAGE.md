@@ -174,19 +174,20 @@ not loaded with reduced motion or when the browser asks to save data, and a kind
 
 ## The farmer (20 Oct 2026)
 
-Every player's own farmer (phase 1, a prototype: the picture avatars stay until the owner decides), from ithappy Studios'
-**Creative Characters** pack, bought by the owner on 20 Oct 2026 (https://ithappystudios.com/). Licence: the paid asset licence
-(https://ithappystudios.com/type-of-licenses/): use inside a finished game is allowed, commercial too, and the pack has no watermark;
-the assets may not be shared or sold on their own, not as they are. So the download (Creative_Characters.blend, its .fbx and .glb
-zips) stays out of the repository, and the game ships only copies rebuilt for it:
+Every player's own 3D farmer (since 21 Oct 2026 their own character: it walks on their farm and in the village, and the painted
+avatars stay their picture), from ithappy Studios' **Creative Characters** pack, bought by the owner on 20 Oct 2026
+(https://ithappystudios.com/). Licence: the paid asset licence (https://ithappystudios.com/type-of-licenses/): use inside a finished game
+is allowed, commercial too, and the pack has no watermark; the assets may not be shared or sold on their own, not as they are. So the
+download (Creative_Characters.blend, its .fbx and .glb zips) stays out of the repository, and the game ships only copies rebuilt for it:
 
 - `scripts/farmer-export.py` (Blender, on a copy of the .blend): the skeleton (44 bones), the 413 wearable meshes back at the
-  skeleton's own spot, and six of the pack's 31 clips, as one .glb. Left out: the pack's showcase board ("Frame": 22 empty
-  rectangles and their text labels) and the 160 unrigged "Heads" that stand behind the faces on that board.
+  skeleton's own spot, a little of the farm's baked shade on every part (how open each point is against the part itself and the bare
+  body, softer than the farm's: strength .5, floor .55), and six of the pack's 31 clips, as one .glb. Left out: the pack's showcase
+  board ("Frame": 22 empty rectangles and their text labels) and the 160 unrigged "Heads" that stand behind the faces on that board.
 - `scripts/build-farmer.mjs`: `public/assets/farmer/farmer-rig.glb` (the skeleton with idle, look, relaxed, walk on the spot and a
-  small hop for a tap, 94 KB), one meshopt-packed, quantized file a mesh in `public/assets/farmer/parts/` (413 files, 6.0 MB in all,
-  4-100 KB each; a farmer loads only the 4 to 8 it wears), and `farmer.webp` (the pack's colour picture at 512 px, 8 KB). It also
-  measures the catalog into `game/farmer-parts.js` (the parts, their groups, which go together, free or earned).
+  small hop for a tap, 94 KB), one meshopt-packed, quantized file a mesh in `public/assets/farmer/parts/` (413 files, 6.8 MB in all,
+  4-118 KB each; a farmer loads only the 4 to 8 it wears), and `farmer.webp` (the pack's colour picture at 512 px in the farm's look:
+  every colour half way to the nearest of the farm's palette.png and a little less saturated, 25 KB). It also measures the catalog into
+  `game/farmer-parts.js` (the parts, their groups, which go together, free or earned).
 - `scripts/build-farmer-pictures.mjs` (the game's own code in a muted headless Chrome): a picture sheet a slot for My farmer
-  (`thumbs/`, 14 files, 484 KB) and a transparent head-and-shoulders layer for each of the 323 parts that show in a portrait
-  (`portrait/`, 378 KB, about 1 KB each).
+  (`thumbs/`, only the parts it offers, 13 files, 356 KB) and My farmer's own picture (`public/assets/icons/my-farmer.webp`).
