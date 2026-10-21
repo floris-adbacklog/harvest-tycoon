@@ -57,7 +57,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const chest=FAMILY_CHEST_TIERS.reduce((n,t)=>n+t.diamonds,0),ev=FAMILY_EVENT_BONUS;
   const cards=[['family-chest-gold','Family Chest',`Up to ${chest} diamonds a week for everyone with ${num(FAMILY_CHEST_MIN)} points or more. Everything you do on your farm fills it.`],
    ['family-weekly-order','Family Order',`Every full line pays a quarter of its rewards. The whole order pays the full value of your goods in coins, ${Math.round((FAMILY_CONFIG.ORDER_COIN_MULTIPLIER-1)*100)}% more than the Market, plus XP and diamonds.`],
-   ['live-events','Events together',`When ${ev.finishers} of you finish the same event, each gets ${num(ev.coins)} coins and ${ev.diamonds} diamonds extra.`],
+   ['live-events','Events together',`When ${ev.finishers} of you finish the same event, each gets ${num(ev.coins)} coins and ${ev.diamonds} diamonds extra. <span>They do not have to be in the same league.</span>`],
    ['family-tournament','Weekly tournament',`The top ten families share a diamond prize. It grows with every family that joins in.`]];
   return `<div class="family-gives">${cards.map(([pic,title,text])=>`<div>${art(pic)}<strong>${title}</strong><span>${text}</span></div>`).join('')}</div><button type="button" class="family-gives-wiki" data-family-wiki>How families work</button>`;
  }

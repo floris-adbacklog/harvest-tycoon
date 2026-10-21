@@ -108,7 +108,13 @@ export function createLiveEventsUI({state,notify,refreshFarm,document:doc=global
   const bonus=!prize.hour?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(fam.coins)} and ${art('diamonds')}${num(fam.diamonds)} more.`
    :fam.coins?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.coins)} coins and ${num(fam.diamonds)} diamonds more.`
    :`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.diamonds)} diamonds more.`;
-  return `${leagueCard(league,coins)}<div class="event-podium ${coins?'':'no-coins'}"><span>What you win when you finish</span><ol>${prize.podium.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(prize.finisher,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>${bonus}</span></p></div>`;
+  // 21 Oct 2026, the owner: "Toon hier achter 1 /3. hoeveel mensen het gehaald hebben en zet erbij dat ze niet alle 3 in dezelfde
+  // liga hoeven te zitten". The count is the server's (farm-api withFamilyCounts: your family's members who finished this event,
+  // each in their own league) in the Family Order's "41 / 60" look, held at the number needed and with a ✓ once it is reached.
+  // Without a family, or from an older farm-api (no family field), no count.
+  const have=Number.isInteger(e.family?.finished)?Math.min(e.family.finished,fam.finishers):null,reached=have!=null&&have>=fam.finishers;
+  const count=have==null?'':`<b class="event-family-count ${reached?'is-done':''}">${reached?'✓ ':''}${num(have)} / ${num(fam.finishers)}</b>`;
+  return `${leagueCard(league,coins)}<div class="event-podium ${coins?'':'no-coins'}"><span>What you win when you finish</span><ol>${prize.podium.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(prize.finisher,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>${bonus} <span>They do not have to be in the same league.</span></span>${count}</p></div>`;
  };
  // Goals use the Family Order line: picture, name, "41 / 60" and a bar.
  function goals(e,{preview=false}={}){

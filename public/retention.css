@@ -1385,6 +1385,10 @@ html[data-portal] .feedback-copy{display:none!important}
 .event-family-bonus{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:8px 10px;border-radius:12px;background:#f2f6ea;font-size:12.5px;color:#4d6b3a}
 .event-family-bonus>.game-art{flex:none;width:30px;height:30px}
 .event-family-bonus .game-art:not(:first-child){width:15px;height:15px;vertical-align:-2px}
+/* The family bonus's count (21 Oct 2026): "1 / 3" as a small pill behind the sentence; green with a ✓ once enough finished. */
+.event-family-bonus>span{flex:1;min-width:0}
+.event-family-count{flex:none;padding:3px 9px;border:1px solid #d3e2c4;border-radius:999px;background:#fffdf6;font-size:13px;font-weight:700;color:#4d6b3a;white-space:nowrap;font-variant-numeric:tabular-nums}
+.event-family-count.is-done{border-color:#9cc28a;background:#e1eed5;color:#557448}
 /* Purchases (27 Sep 2026): a small status label per checkout. */
 .admin-purchase-list li{align-items:center}
 .admin-purchase-status{flex:none;padding:2px 9px;border-radius:99px;font:700 11.5px/1.6 'DM Sans',sans-serif;white-space:nowrap}

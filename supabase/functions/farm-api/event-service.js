@@ -108,6 +108,40 @@ export async function withPlayerRows(admin,user,list,now){
  const rows=new Map((mine.data??[]).map(r=>[r.event_id,r])),count=new Map(counted.map((e,i)=>[e.id,counts[i].count]));
  return events.map(e=>({...e,participants:count.get(e.id)??(e.settled_at?Number(e.participants)||0:0),player:rows.get(e.id)??null}));
 }
+// The family bonus's live count (21 Oct 2026, the owner: "Toon hier achter 1 /3. hoeveel mensen het gehaald hebben"): how many
+// members of the farmer's own Farm Family have finished each running event so far. The same rule as harvest_event_settle: every
+// goal of the member's OWN league met (coalesce(e.leagues->p.league->'objectives', e.objectives)), and members from every league
+// count; settle then gives the bonus to a family with familyFinishers or more. A row without a stored league (from before 20 Oct
+// 2026) is checked against the event's own goals here. A settled event has its qualified flags.
+export function familyFinished(event,rows){
+ return rows.filter(r=>{
+  if(event.settled_at)return r.qualified===true;
+  const goals=(Number.isInteger(r.league)?event.leagues?.[r.league]?.objectives:null)??event.objectives??[];
+  return goals.every(o=>(r.progress?.[o.stat]??0)>=o.target);
+ }).length;
+}
+// The farmer's family's current members (left_at null, the family not deleted), or null without a family. Two small round trips;
+// it runs while the events are read.
+async function familyMemberIds(admin,user){
+ const mine=await admin.from('family_members').select('family_id').eq('player_id',user.id).is('left_at',null).limit(1);
+ if(mine.error)throw mine.error;
+ const familyId=mine.data?.[0]?.family_id;if(familyId==null)return null;
+ const [family,members]=await Promise.all([admin.from('families').select('id').eq('id',familyId).is('deleted_at',null).limit(1),admin.from('family_members').select('player_id').eq('family_id',familyId).is('left_at',null)]);
+ if(family.error)throw family.error;if(members.error)throw members.error;
+ if(!family.data?.length)return null;
+ return [...new Set([user.id,...members.data.map(m=>m.player_id)])];
+}
+// e.family={finished:n} on each running event, in one more round trip. Best effort: without a family, or when a read fails, the
+// events carry no family field and the window shows no count (as with an older farm-api).
+export async function withFamilyCounts(admin,events,members,now){
+ try{
+  const ids=await members,running=events.filter(e=>!e.settled_at&&Date.parse(e.starts_at)<=now&&Date.parse(e.ends_at)>now);
+  if(!ids?.length||!running.length)return;
+  const rows=await admin.from('live_event_players').select('event_id,player_id,league,progress,qualified').in('event_id',running.map(e=>e.id)).in('player_id',ids);
+  if(rows.error)throw rows.error;
+  for(const e of running)e.family={finished:familyFinished(e,(rows.data??[]).filter(r=>r.event_id===e.id))};
+ }catch{}
+}
 // The same gate as the progress trigger (live-events-mixed.sql): level 15, so the event screen can say why a farm is not
 // taking part yet.
 async function eligibility(admin,user){
@@ -267,6 +301,8 @@ export async function handleEvents({admin,body,user,passwordOk}){
   }
   if(body.command&&body.command!=='list')throw Error('Unknown event command.');
   const now=Date.now();
+  // The family's members are read while the events are (the family bonus's count, withFamilyCounts); a failure there is no count.
+  const members=managing?null:familyMemberIds(admin,user).catch(()=>null);
   const listed=managing?await admin.from('live_events').select('*').order('starts_at',{ascending:false}).limit(50):await playerEvents(admin,user,now);
   if(listed.error)throw listed.error;
   const events=await withPlayerRows(admin,user,listed.data.filter(e=>managing||e.active||Date.parse(e.ends_at)<=now),now);
@@ -274,7 +310,7 @@ export async function handleEvents({admin,body,user,passwordOk}){
   if(!managing){
    const running=events.find(e=>e.active&&Date.parse(e.starts_at)<=now&&Date.parse(e.ends_at)>now);
    const shown=running??events.filter(e=>Date.parse(e.ends_at)<=now).sort((a,b)=>Date.parse(b.ends_at)-Date.parse(a.ends_at))[0];
-   if(shown)shown.standings=await standings(admin,shown,user,now);
+   await Promise.all([shown&&standings(admin,shown,user,now).then(s=>{shown.standings=s;}),withFamilyCounts(admin,events,members,now)]);
   }
   return respond(managing?{events,serverNow:now}:{events,serverNow:now,eligibility:await eligibility(admin,user)});
  }catch(error){if(error.code&&!['P0001','23514','23505','22P02'].includes(error.code))throw error;return respond({error:error.message},422);}
