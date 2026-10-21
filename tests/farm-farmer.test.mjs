@@ -41,9 +41,9 @@ test('the catalog holds every part of the pack, in its groups, with its files th
  assert.deepEqual(Object.entries(FARMER_GROUPS).filter(([,g])=>g.earned).map(([k])=>k).sort(),['costume','hat','helmet','mascot']);
 });
 
-test('a part file is a quantized, meshopt-packed skinned mesh bound to bones by name, with no picture; the rig has the five clips',()=>{
+test('a part file is a quantized, meshopt-packed skinned mesh bound to bones by name, with no picture; the rig has the pack\'s five clips and our own',()=>{
  const rig=glb('public/assets/farmer/farmer-rig.glb');
- assert.deepEqual(rig.animations.map(a=>a.name).sort(),['hop','idle','look','relaxed','walk']);
+ assert.deepEqual(rig.animations.map(a=>a.name).sort(),['hop','idle','look','relaxed','sit','walk']);
  assert.equal(rig.nodes.length,45,'the pack\'s 44 bones under its Skeleton node');assert.ok(!rig.meshes,'no mesh in the rig');
  const bones=new Set(rig.nodes.map(n=>n.name));
  for(const id of ['body_010','hat_009','outfit_001','costume_7','gloves_018','male_emotion_usual_002']){
@@ -240,7 +240,7 @@ test('your farmer joins in: a harvest, a collect or a chore takes them to a chec
  // game.js: after every farm action and after a sweep; trips on the farm on a computer only (never in lite mode: phones, tablets, apps).
  assert.match(game,/farmerNews\(\);farmerJoins\(action\);/);
  assert.match(game,/if\(action==='harvest'\)\{nudge\?\.harvested\(\);farmerJoins\(\{type:'field',action:'harvest',id:result\.fields\.at\(-1\)\.id\}\);\}/);
- assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches\}\);farmerTrip=tripFor;/);
+ assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches,bench\}\);farmerTrip=tripFor;/);
  assert.doesNotMatch(walker,/localStorage|runAction|client\.|track\(/,'visual only');
 });
 
@@ -260,4 +260,32 @@ test('your farmer celebrates a level-up or an event won: two happy hops and a li
  assert.match(game,/if\(modalOpen\(\)&&performance\.now\(\)-asked<CHEER_WAIT\)\{setTimeout\(now,400\);return;\}const at=walker\.celebrate\(\);if\(at\)confettiAt\(\.\.\.at\);/);
  // The confetti: the harvest's particles (under the same cap of 100), never with reduced motion.
  assert.match(game,/function confettiAt\(x,y,z,count=22\)\{\n if\(reducedMotion\)return;\n for\(let i=0;i<count&&particles\.length<100;i\+\+\)\{/);
+});
+
+test('the evening: from 20:00 to 7:00 by the player\'s clock your farmer rests on a chair by the loop, and goes back to work in the morning (the owner, 21 Oct 2026, item 3)',{skip},async()=>{
+ const {FARM_BENCH,isEvening,EVENING_FROM,MORNING_AT,FARM_WALK,FARM_TRIPS,FIELD_TRIPS}=await import('../public/farm-farmer.js');
+ const {FARM_PETS}=await import('../public/farm-pets.js');
+ const {pondBounds,outsideYardExtents,outsideFields}=await import('../public/farm-layout.js');
+ assert.equal(EVENING_FROM,20);assert.equal(MORNING_AT,7);
+ const at=(h,m=0)=>new Date(2026,9,21,h,m);
+ assert.deepEqual([at(19,59),at(20),at(23,30),at(0),at(6,59),at(7),at(12)].map(isEvening),[false,true,true,true,true,false,false]);
+ // The chair (checked in the harness on a phone and a computer's two views: it and the farmer on it cover nothing that can be tapped).
+ const {x,z}=FARM_BENCH,seg=([px,pz],[ax,az],[bx,bz])=>{const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz,t=l?Math.max(0,Math.min(1,((px-ax)*dx+(pz-az)*dz)/l)):0;return Math.hypot(px-ax-t*dx,pz-az-t*dz);};
+ assert.ok(outsideFields(x,z,2)&&outsideYardExtents(x,z,.3));const [px0,pz0,px1,pz1]=pondBounds();assert.ok(x<px0||x>px1||z<pz0||z>pz1);
+ const loop=FARM_WALK.spots;for(let i=0;i<loop.length;i++)assert.ok(seg([x,z],loop[i],loop[(i+1)%loop.length])>1,'clear of the loop');
+ for(const p of Object.values(FARM_PETS))for(const a of p.spots)for(const b of p.spots)assert.ok(seg([x,z],a,b)>2,'clear of the pets\' walks');
+ for(const t of [...Object.values(FARM_TRIPS),...FIELD_TRIPS]){const way=[[-13.6,-2],...t.via,t.at];for(let i=0;i+1<way.length;i++)assert.ok(seg([x,z],way[i],way[i+1])>1,'clear of the trips\' ways');}
+ const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],mill:[-19.5,-13,3.2,7.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
+ for(const [name,[x0,x1,z0,z1]] of Object.entries(TAPPABLE))assert.ok(x<x0-1||x>x1+1||z<z0-1||z>z1+1,name);
+ const walker=read('public/farm-farmer.js'),game=read('public/game.js');
+ // At once when the farm opens in the evening; a walk there when 20:00 comes during play; up again in the morning. No trips, no
+ // celebration and no hop from the chair (a tap opens the profile at once).
+ assert.match(walker,/if\(bench&&actions\.sit&&isEvening\(clock\(\)\)\)sitDown\(\);/);
+ assert.match(walker,/if\(late&&!me\.away&&!me\.trip&&me\.hopping<=0\)\{me\.away='going';me\.target=front;\}\n  else if\(!late&&me\.away==='sitting'\)getUp\(\);/);
+ assert.match(walker,/if\(me\.away==='sitting'\)return Promise\.resolve\(\);/);assert.match(walker,/if\(!trips\|\|!place\|\|me\.hopping>0\|\|me\.away\)return false;/);
+ // The chair is the farm's own chair_001, there only with the farmer, only on the farm (the village has none).
+ assert.match(game,/if\(!villageWorld&&models\.has\('chair_001'\)\)\{const before=currentZone\(\);zone\('fields'\);cloneModel\('chair_001',FARM_BENCH\.x,FARM_BENCH\.z,\{height:FARM_BENCH\.height,rotation:FARM_BENCH\.turn\+CHAIR_FACING\}\);zone\(before\);bench=FARM_BENCH;\}/);
+ // The sitting clip is keyframed in the Blender step (the pack has none), built into the rig with --rig-only.
+ assert.match(read('scripts/farmer-export.py'),/clip\('Farmer_Sit', \[/);assert.match(read('scripts/build-farmer.mjs'),/Farmer_Sit:'sit'/);
+ assert.match(read('scripts/build-farmer.mjs'),/RIG_ONLY=process\.argv\.includes\('--rig-only'\)/);
 });

@@ -14,6 +14,8 @@
 //   cp <pack>/Creative_Characters.blend <tmp>/work.blend
 //   blender -b --factory-startup <tmp>/work.blend --python scripts/farmer-export.py -- <tmp>/farmer-all.glb
 //   cp scripts/build-farmer.mjs <tools folder>/ && node <tools folder>/build-farmer.mjs <tmp>/farmer-all.glb <game checkout>
+// Only the rig (a new clip, 21 Oct 2026): farmer-export.py ... -- <tmp>/rig.glb --rig-only, then build-farmer.mjs <tmp>/rig.glb <game
+// checkout> --rig-only writes farmer-rig.glb alone (the parts, the picture and the catalog stay as they are).
 import {NodeIO,Document} from '@gltf-transform/core';
 import {ALL_EXTENSIONS} from '@gltf-transform/extensions';
 import {prune,dedup,resample,meshopt} from '@gltf-transform/functions';
@@ -23,12 +25,12 @@ import {execFileSync} from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-const [,,source,checkout='.']=process.argv;
+const [,,source,checkout='.']=process.argv,RIG_ONLY=process.argv.includes('--rig-only');
 const OUT=path.join(checkout,'public/assets/farmer'),PARTS=path.join(OUT,'parts'),CATALOG=path.join(checkout,'game/farmer-parts.js');
 await MeshoptEncoder.ready;await MeshoptDecoder.ready;
 const io=new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.encoder':MeshoptEncoder,'meshopt.decoder':MeshoptDecoder});
 const doc=await io.read(source),root=doc.getRoot();
-fs.rmSync(PARTS,{recursive:true,force:true});fs.mkdirSync(PARTS,{recursive:true});
+if(!RIG_ONLY){fs.rmSync(PARTS,{recursive:true,force:true});fs.mkdirSync(PARTS,{recursive:true});}
 
 // The pack's groups (its .blend's collections) as the catalog's.
 const GROUP={'Body':'body','Faces':'face','Hairstyle':'hair','Hairstyle Single':'hairFull','Hat':'hat','Hat Single':'helmet','Glasses':'glasses',
@@ -65,8 +67,8 @@ export function farmLook([r,g,b]){
  return mixed.map(v=>Math.max(0,Math.min(255,Math.round(v+(grey-v)*CALM))));
 }
 // The colour picture, at 512 px, in the farm's look.
-const texture=root.listTextures()[0],full=PNG.sync.read(Buffer.from(texture.getImage()));
-{
+const texture=root.listTextures()[0],full=RIG_ONLY?null:PNG.sync.read(Buffer.from(texture.getImage()));
+if(!RIG_ONLY){
  const half=new PNG({width:full.width/2,height:full.height/2});
  for(let y=0;y<half.height;y++)for(let x=0;x<half.width;x++){
   const px=[0,0,0,0];
@@ -139,7 +141,9 @@ for(const node of root.listNodes()){
 }
 
 // The rig: the skeleton and the clips, no mesh.
-const CLIPS={Idle_Breathing:'idle',Idle_Look_Around:'look',Idle_Relaxed:'relaxed',Walk_Forward:'walk'};
+const CLIPS={Idle_Breathing:'idle',Idle_Look_Around:'look',Idle_Relaxed:'relaxed',Walk_Forward:'walk',
+ // Keyframed in farmer-export.py (21 Oct 2026): sitting on the bench in the evening.
+ Farmer_Sit:'sit'};
 // The hop: the pack's jump goes 1.15 m up (the Root bone's height); a farmer tapped on the farm hops a fifth of that.
 const HOP_HEIGHT=.2;
 let rigBytes=0;
@@ -181,6 +185,7 @@ let rigBytes=0;
  rigBytes=await finish(d,path.join(OUT,'farmer-rig.glb'));
 }
 
+if(RIG_ONLY){console.log(`rig ${(rigBytes/1024).toFixed(1)} KB: ${[...new Set(Object.values(CLIPS)),'hop'].join(', ')}`);process.exit(0);}
 // The measured catalog into game/farmer-parts.js, between its markers; and a short report.
 const parts=new Map();
 for(const m of measured.values()){

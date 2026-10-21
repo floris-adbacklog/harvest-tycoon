@@ -29,7 +29,7 @@ const trip=(at,via=[])=>Object.freeze({at:Object.freeze(at),via:Object.freeze(vi
 const OUT=[-13.6,-4.4],LANE=[OUT,[-9.6,-4.4],[-9.6,2],[-7.8,3]],TRUNK=[OUT,[-10,-4.4]];
 export const FARM_TRIPS=Object.freeze({
  chores:trip([-14.66,-5.7]),
- mill:trip([-14.5,.95]),
+ mill:trip([-14.5,.95],[[-15.3,-1.4]]),   // west of the evening chair
  bakery:trip([-13.79,10.6],[...LANE,[-7.8,10.6]]),
  dairy:trip([-4.8,-14.66],[OUT,[-7.8,-4.4],[-7.8,-14.66]]),
  pigfarm:trip([-28.49,-3.25],[[-16.2,-5.2],[-27.4,-5.2]]),
@@ -49,6 +49,15 @@ export function tripFor(place,[x,z]=[0,0]){
 // A trip: they walk at TRIP_PACE times their calm pace, stay TRIP_STAY seconds (a little longer with every new action there), and
 // go nowhere for TRIP_REST seconds after they are back, so a farmer harvesting all over never sees them zig-zag.
 const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
+// The evening (21 Oct 2026, item 3): from 20:00 to 7:00 by the player's own clock they rest on a chair at the edge of their loop (the
+// farm's chair_001, the one at the Farmhouse's garden table: that one stands in front of the Farmhouse, which a farmer sitting there
+// would hide); in the morning they go back to work. The chair stands on the open ground south of the loop, checked in the harness like
+// the trip spots (it and the farmer on it cover nothing that can be tapped, on open ground, clear of the loop, the pets and the trips'
+// ways). x, z: the seat; turn: the way the chair (and the farmer on it) faces: to the right of the screen, so they are seen sitting
+// (facing the camera a seated farmer looks like a standing one, and hides the chair); height: the chair's.
+export const FARM_BENCH=Object.freeze({x:-13.16,z:-.45,turn:Math.PI*3/4,height:.9});
+export const EVENING_FROM=20,MORNING_AT=7;
+export const isEvening=(date=new Date())=>{const h=date.getHours();return h>=EVENING_FROM||h<MORNING_AT;};
 // How long they stand at a spot (seconds), and what they do there: breathe, look around or rest on one leg.
 const REST=[4,10],STILL={idle:.45,look:.35,relaxed:.2};
 const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14,MOVED_RECENTLY=250,LANDED_WAIT=1500;
@@ -67,11 +76,12 @@ function blob(size){
 // For the screenshot harness: every page's walker (where it stands on the screen, to tap it).
 export const FARM_WALKERS=new Set();
 // scene: the farm's or the village's; walk: FARM_WALK or VILLAGE_WALK; ground(x, z): the height there; lite: phones (every other frame).
-// trips: whether they join in (the farm on a computer: game.js addFarmer; never on a phone, in lite mode or in the village).
-export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false}){
+// trips: whether they join in (the farm on a computer: game.js addFarmer; never on a phone, in lite mode or in the village). bench: the
+// farm's chair (FARM_BENCH, game.js places the model) for the evening, or null (the village); clock: the time now (the harness's).
+export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date()}){
  const farmer=await createFarmer(config,{height:walk.height});
  const root=farmer.root,{actions,mixer}=farmer;root.name='your-farmer';
- for(const name of ['walk','idle','look','relaxed'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
+ for(const name of ['walk','idle','look','relaxed','sit'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
  // The walk cycle covers 1.48 m of the pack's 1.83 m farmer: played at the speed that keeps the feet from sliding.
  const walkPace=actions.walk?walk.walk/(1.48*walk.height/1.83/actions.walk.getClip().duration):1;
  if(actions.walk)actions.walk.timeScale=walkPace;
@@ -89,6 +99,20 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   next.reset().play();if(me.current)me.current.crossFadeTo(next,fade,false);me.current=next;me.state=name;
  }
  play('idle');mixer.update(random()*3);
+ // The evening: they rest on the bench (at once when the farm opens in the evening), and get up in the morning. Looked at every
+ // EVENING_CHECK seconds of play. me.away: 'going' (on their way to it) or 'sitting'.
+ const EVENING_CHECK=5,front=bench?[bench.x+Math.sin(bench.turn)*.7,bench.z+Math.cos(bench.turn)*.7]:null;
+ let checked=0;
+ function sitDown(){me.away='sitting';me.target=null;root.position.set(bench.x,ground(bench.x,bench.z),bench.z);me.yaw=me.face=bench.turn;root.rotation.y=me.yaw;play('sit',.3);}
+ function getUp(){me.away=null;root.position.set(front[0],ground(front[0],front[1]),front[1]);play('idle',.3);rest();}
+ function evening(){
+  if(!bench||!actions.sit)return;
+  const late=isEvening(clock());
+  if(late&&!me.away&&!me.trip&&me.hopping<=0){me.away='going';me.target=front;}
+  else if(!late&&me.away==='sitting')getUp();
+  else if(!late&&me.away==='going'){me.away=null;rest();}
+ }
+ if(bench&&actions.sit&&isEvening(clock()))sitDown();
  // Facing the camera a little (it looks from +x, +z) while standing; the next spot of the loop when the rest is over.
  function rest(){
   // On a trip a pause (after a hop) is short, and the stay keeps the time it had left.
@@ -96,6 +120,8 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   me.target=null;me.rest=REST[0]+random()*(REST[1]-REST[0]);me.face=Math.PI/4+(random()-.5)*1.2;play(choose(STILL,random));}
  function step(dt){
   const at=root.position;
+  if((checked+=dt)>=EVENING_CHECK){checked=0;evening();}
+  if(me.away==='sitting')return;
   if(me.hopping>0){
    // The hop (21 Oct 2026, the owner: the pack's jump, made small, sank into the ground: its legs still tucked a full jump's worth):
    // the whole farmer goes up and down once, standing as they are; the ground is never crossed.
@@ -106,7 +132,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   }
   else if(me.target){
    const dx=me.target[0]-at.x,dz=me.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
-   if(d<.05){if(me.trip)tripStep();else rest();}
+   if(d<.05){if(me.trip)tripStep();else if(me.away==='going')sitDown();else rest();}
    else{
     me.yaw=turnTowards(me.yaw,want,TURN*(me.trip?1.6:1)*dt);
     // It turns first, then walks: no sliding sideways. On a trip a brisker step (the walk played faster to match).
@@ -165,6 +191,9 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  // in, so a phone's every other frame lands as late as it looks. A farmer that is not being moved (off the screen, the farm resting
  // under a window) does not hop: it settles at once. LANDED_WAIT is only a safety net for a page that stops drawing mid-hop.
  function react(){
+  // On the bench they stay seated (no hop from a chair): the profile opens at once. On their way to it: the hop, then the bench again.
+  if(me.away==='sitting')return Promise.resolve();
+  if(me.away==='going')me.away=null;
   // On their way somewhere: the waypoint they were walking to is taken again after the hop.
   if(me.trip&&me.trip.leg!=='stay')me.trip.i=Math.max(0,me.trip.i-1);
   me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');

@@ -395,18 +395,23 @@ async function addPets(){
 // Your own farmer (20 Oct 2026, public/farm-farmer.js; phase 1: everyone's is the default farmer): calm loops round the Farmhouse yard,
 // or in the village round the farm road, after the farm or the village is on screen and the pets have started. The same rules as the
 // farm's animals: not with reduced motion, Save-Data or a 2g line, and if it fails the farm simply has no farmer.
+// chair_001's seat faces its own -x: turned this much more, it faces the way FARM_BENCH says.
+const CHAIR_FACING=0;
 async function addFarmer(){
  try{
   const connection=navigator.connection;if(reducedMotion||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
-  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,tripFor}=await import('./farm-farmer.js');
+  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,tripFor,FARM_BENCH}=await import('./farm-farmer.js');
   // On the farm the grass is the ground and a lane's top .085 over it, as for the pets (addPets).
   const walk=villageWorld?VILLAGE_WALK:FARM_WALK,lanes=roadRects();let ground=(x,z)=>{let y=0;for(const r of lanes){const inside=Math.min(x-r.minX,r.maxX-x,z-r.minZ,r.maxZ-z);if(inside>0)y=Math.max(y,.085*Math.min(1,inside/.3));}return y;};
   if(villageWorld){
    const {groundUnder}=await import('./village-scene.js'),xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
    ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
   }
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm()),trips:!villageWorld&&!handheld&&!mobileLayout.matches});farmerTrip=tripFor;
+  // The evening bench (item 3): the farm's chair at the edge of the loop, there once the farmer is (farm-farmer.js FARM_BENCH).
+  let bench=null;
+  if(!villageWorld&&models.has('chair_001')){const before=currentZone();zone('fields');cloneModel('chair_001',FARM_BENCH.x,FARM_BENCH.z,{height:FARM_BENCH.height,rotation:FARM_BENCH.turn+CHAIR_FACING});zone(before);bench=FARM_BENCH;}
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm()),trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench});farmerTrip=tripFor;
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
