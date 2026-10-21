@@ -15,8 +15,12 @@
 .farmer-part[aria-pressed="true"]{border-color:var(--btn-main);box-shadow:0 3px 0 var(--btn-main-edge),0 0 0 2px #3f8a4a40}
 .farmer-part.is-none{display:grid;place-items:center;color:var(--btn-second-text)}
 .farmer-part.is-none svg{width:30px;height:30px;opacity:.7}
-.farmer-part-lock{position:absolute;right:4px;top:4px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--btn-gold);color:var(--btn-gold-text);box-shadow:0 1px 0 var(--btn-gold-edge)}
-.farmer-part-lock svg{width:12px;height:12px}
+/* Not earned yet (21 Oct 2026: nearly everything is earned now): the picture faded under a cream veil and a bigger gold lock, so a locked
+   one reads as locked at a glance; it can still be tapped to try it on. */
+.farmer-part.is-locked::after{content:'';position:absolute;inset:0;border-radius:12px;background:#fffaf0;opacity:.45;pointer-events:none}
+.farmer-part.is-locked[aria-pressed="true"]::after{opacity:.15}
+.farmer-part-lock{position:absolute;z-index:1;right:4px;top:4px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--btn-gold);color:var(--btn-gold-text);box-shadow:0 1px 0 var(--btn-gold-edge)}
+.farmer-part-lock svg{width:14px;height:14px}
 .farmer-maker-note{display:flex;align-items:center;gap:8px;margin:0 2px 10px;padding:8px 12px;border-radius:12px;background:#fff6e1;border:1px solid #edd9ac;color:#5b4520;font-weight:700;font-size:14px}
 .farmer-maker-note svg{flex:none;width:18px;height:18px;color:var(--btn-gold-edge)}
 .farmer-maker-note b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--btn-gold-edge)}

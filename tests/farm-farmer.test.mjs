@@ -33,7 +33,7 @@ test('the catalog holds every part of the pack, in its groups, with its files th
  let total=0;
  for(const p of Object.values(FARMER_PARTS)){
   assert.match(p.id,/^[a-z0-9_]+$/);assert.ok(p.name&&!p.name.includes('|'),p.id);assert.ok(['farm','plain','fun','off'].includes(p.fit),p.id);
-  assert.equal(p.slot,FARMER_GROUPS[p.group].slot);assert.equal(p.earned,FARMER_GROUPS[p.group].earned);
+  assert.equal(p.slot,FARMER_GROUPS[p.group].slot);assert.equal(p.earned,FARMER_GROUPS[p.group].earned||Object.hasOwn(P.FARMER_REWARDS,p.id),p.id);
   for(const f of p.files){const size=statSync(file(`public/assets/farmer/parts/${f}.glb`)).size;total+=size;assert.ok(size<125_000,`${f} is ${size} bytes`);}
  }
  assert.ok(total<7_200_000,`all parts ${total} bytes`);
@@ -149,7 +149,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/void addPets\(\);void addFarmer\(\);/,'after the first picture, with the pets');
  assert.doesNotMatch(game,/^import[^\n]*farm-farmer/m,'never in the first load');
  assert.match(game,/if\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/);
- assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state\)\}\);/,'phones every other frame, in the farmer\'s own clothes');
+ assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state,farmerFarm\(\)\)\}\);/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
  assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n return null;\n\}/,'asked last of all');
  assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)return;/,'only on screen');
@@ -190,5 +190,11 @@ test('the build is written down: the Blender step, the cut, the pictures; the pa
 test('a tap on your own farmer: a hop, then your own profile (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat")',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
  assert.match(game,/else if\(target\.type==='farmer'\)tapOwnFarmer\(\);/);
- assert.match(game,/function tapOwnFarmer\(\)\{walker\?\.react\(\);const me=window\.parent\?\.harvestBridge\?\.playerId;if\(me&&window\.harvestProfiles\)setTimeout\(\(\)=>window\.harvestProfiles\.open\(me,\{back:null\}\),\d+\);\}/);
+ // The profile waits until the hop is over (the owner, 21 Oct 2026: "wacht met profiel open als die klaar is met springen"): the walker's
+ // landing, then a short beat; at once when the farmer is not on the screen.
+ assert.match(game,/function tapOwnFarmer\(\)\{const me=window\.parent\?\.harvestBridge\?\.playerId,landed=walker\?\.react\(\)\?\?Promise\.resolve\(\);if\(me&&window\.harvestProfiles\)void Promise\.resolve\(landed\)\.then\(\(\)=>new Promise\(beat=>setTimeout\(beat,LANDED_BEAT\)\)\)\.then\(\(\)=>window\.harvestProfiles\.open\(me,\{back:null\}\)\);\}/);
+ assert.match(game,/const LANDED_BEAT=150;/);assert.doesNotMatch(game,/harvestProfiles\.open\(me,\{back:null\}\),\d+\)/,'no fixed wait any more');
+ const walk=read('public/farm-farmer.js');
+ assert.match(walk,/if\(me\.hopping<=0\)\{at\.y=ground\(at\.x,at\.z\);rest\(\);me\.landed\?\.\(\);me\.landed=null;\}/,'it settles when the farmer is back on the ground');
+ assert.match(walk,/if\(!\(performance\.now\(\)-\(me\.steppedAt\?\?-Infinity\)<MOVED_RECENTLY\)\)\{at0\(\);return Promise\.resolve\(\);\}/,'not on the screen: at once');
 });

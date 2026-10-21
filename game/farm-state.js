@@ -4174,10 +4174,10 @@ function normalizePets(state){
 // Your own farmer (21 Oct 2026, the owner: "Doe alle 3"): what they wear is kept in state.farmer, one part id per slot (game/farmer-parts.js).
 // A farm that never dressed its farmer has no farmer key and shows the default farmer (farmerOf); older rules keep the key as it is
 // (normalizeFarm keeps keys it does not know). Only farmer_wear writes it, after the same check the page makes: known parts that go
-// together, only parts My farmer offers, and of the earned ones (hats, two costumes) only those whose own goal this farm reached, read
-// from its own counters (farmerOwned). Nothing is paid, counted or given (NO_EVENT_ACTIONS).
+// together, only parts My farmer offers, and of the earned ones (nearly all but the skin tones and the basics) only those whose own goal
+// this farm reached, read from its own counters and its level (farmerOwned). Nothing is paid, counted or given (NO_EVENT_ACTIONS).
 function wearFarmer(state,config){
- const check=validFarmerConfig(config,{owned:farmerOwned(state),offered:true});
+ const check=validFarmerConfig(config,{owned:farmerOwned(state,{level:levelOf(state)}),offered:true});
  if(!check.ok)throw new Error(/not earned/.test(check.error)?'Earn this first to wear it.':'Choose a farmer.');
  state.farmer=cleanFarmer(config);
  return {farmer:{...state.farmer}};

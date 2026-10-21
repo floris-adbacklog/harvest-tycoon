@@ -552,9 +552,43 @@ function faceName(id){
 }
 const FIT={f:'farm',p:'plain',u:'fun',o:'off'};
 // The catalog: every part by id. files: the part's files in /assets/farmer/parts/ (a costume has several). earned: see FARMER_GROUPS.
+// Each earned part's goal: [counter of FARMER_GOALS, how many] (FARMER_REWARDS, below; here first, as FARMER_PARTS marks them earned).
+const REWARD_TABLE=Object.freeze({
+ // Faces: the first hour.
+ male_emotion_usual_001:['harvested',25],male_emotion_usual_003:['tended',5],male_emotion_happy_001:['sold',25],male_emotion_happy_003:['visits',3],
+ female_emotion_usual_002:['watered',10],female_emotion_happy_001:['eggs',10],female_emotion_happy_002:['level',5],
+ // Hair.
+ hairstyle_male_001:['harvested',50],hairstyle_male_002:['deliveries',1],hairstyle_male_004:['visits',20],hairstyle_male_005:['fish',5],
+ hairstyle_female_002:['dailies',3],hairstyle_female_003:['produced',10],hairstyle_female_004:['upgrades',5],
+ hairstyle_female_single_003:['rounds',3],hairstyle_female_single_007:['level',15],
+ // Glasses.
+ glasses_002:['fish',100],glasses_003:['streak',3],glasses_007:['tractor',250],glasses_009:['milk',10],glasses_012:['watered',100],
+ // Beards and mustaches.
+ beard_001:['chores',5],beard_003:['level',75],mustache_001:['harvested',100],mustache_003:['produced',50],mustache_006:['cheese',10],
+ mustache_008:['chores',100],mustache_012:['tended',25],
+ // Tops.
+ outwear_005:['bread',5],outwear_020:['harvested',250],outwear_035:['dailies',10],outwear_022:['wool',50],outwear_039:['streak',7],
+ outwear_040:['fish',50],outwear_042:['wool',250],outwear_032:['level',50],
+ // Trousers and shorts.
+ pants_009:['harvested',500],pants_010:['tended',100],pants_005:['upgrades',50],pants_001:['sold',500],pants_007:['produced',250],
+ shorts_005:['pets',50],shorts_001:['honey',25],
+ // Outfits.
+ outfit_004:['sold',1000],outfit_006:['deliveries',15],outfit_007:['cheese',50],outfit_008:['level',30],outfit_009:['deliveries',30],
+ // Shoes.
+ shoe_sneakers_001:['watered',500],shoe_sneakers_002:['rounds',50],shoe_sneakers_008:['dailies',25],shoe_sneakers_011:['harvested',1000],
+ shoe_sneakers_012:['produced',1000],shoe_sneakers_014:['watered',2000],shoe_sneakers_015:['chores',250],
+ // Gloves.
+ gloves_018:['milk',500],gloves_022:['harvested',2500],gloves_008:['tended',500],gloves_009:['eggs',1000],gloves_010:['bread',100],
+ // Hats (the goals of 21 Oct 2026 kept).
+ hat_009:['harvested',10],hat_002:['watered',25],hat_008:['eggs',50],hat_005:['sold',100],hat_028:['pets',10],hat_010:['deliveries',5],
+ hat_036:['fish',25],hat_023:['bread',25],hat_001:['milk',100],hat_003:['rounds',15],hat_007:['chores',25],hat_037:['visits',7],
+ hat_single_001:['eggs',250],hat_040:['upgrades',20],hat_single_013:['tractor',25],hat_016:['streak',14],hat_034:['sold',2000],
+ // Costumes: the long run.
+ costume_7:['honey',100],costume_11:['harvested',5000]
+});
 export const FARMER_PARTS=Object.freeze(Object.fromEntries(MEASURED.map(([id,group,style,files,bytes,colour,materials])=>{
  const [name,fit,flags='']=group==='face'?faceName(id):group==='body'?[BODY_NAMES[id],Number(id.slice(-3))>=9&&Number(id.slice(-3))<=13?'p':'u']:(NAMES[id]??`${id}|p`).split('|');
- return [id,Object.freeze({id,group,slot:FARMER_GROUPS[group].slot,name,fit:FIT[fit],earned:FARMER_GROUPS[group].earned,coversFace:flags.includes('c'),
+ return [id,Object.freeze({id,group,slot:FARMER_GROUPS[group].slot,name,fit:FIT[fit],earned:FARMER_GROUPS[group].earned||Object.hasOwn(REWARD_TABLE,id),coversFace:flags.includes('c'),
   files:Object.freeze(files.split('+')),bytes,colour,style:style||id,glass:materials.includes('farmer-glass'),glow:materials.includes('farmer-glow')})];
 })));
 export const farmerPart=id=>typeof id==='string'&&Object.hasOwn(FARMER_PARTS,id)?FARMER_PARTS[id]:null;
@@ -610,88 +644,52 @@ export const partTakesOff=(config,id)=>{const part=farmerPart(id);return part?FA
 // The files a farmer wears, body first (farmer.js loads only these).
 export const farmerFiles=config=>FARMER_SLOTS.flatMap(slot=>farmerPart(config?.[slot])?.files??[]);
 
-// What My farmer offers (21 Oct 2026, the owner: "Maak minder opties in mijn boer, met neutrale huidskleuren"): a short, calm choice
-// that suits a farmer, about 6 to 12 a tab: natural skin tones, friendly faces, hair in natural colours, work clothes and plain
-// clothes, boots. Everything else in the pack stays in the catalog (and its files), but is not shown or saved (farmerOffered).
-// Socks and mascots are not offered (a tab with nothing is left out).
-export const FARMER_OFFER=Object.freeze(new Set([
- // Skin: the five skin tones.
- 'body_009','body_010','body_011','body_012','body_013',
- // Faces: smiling, happy and calm, both sets.
- 'male_emotion_usual_001','male_emotion_usual_002','male_emotion_usual_003','male_emotion_usual_004','male_emotion_happy_001','male_emotion_happy_003',
- 'female_emotion_usual_001','female_emotion_usual_002','female_emotion_happy_001','female_emotion_happy_002','female_emotion_neutral_001',
- // Hair in natural colours.
- 'hairstyle_male_001','hairstyle_male_002','hairstyle_male_003','hairstyle_male_004','hairstyle_male_005','hairstyle_female_001','hairstyle_female_002',
- 'hairstyle_female_003','hairstyle_female_004','hairstyle_female_single_002','hairstyle_female_single_003','hairstyle_female_single_007',
- // Glasses: plain ones and sunglasses.
- 'glasses_002','glasses_003','glasses_004','glasses_007','glasses_009','glasses_012',
- // Beards and mustaches.
- 'beard_001','beard_002','beard_003','mustache_001','mustache_003','mustache_006','mustache_008','mustache_012',
- // Tops: work shirts and warm farm jackets first, then plain everyday tops.
- 'outwear_010','outwear_020','outwear_035','outwear_022','outwear_039','outwear_040','outwear_042','outwear_032','outwear_001','outwear_005','outwear_023','outwear_047',
- // Trousers: jeans and work trousers, two plain shorts.
- 'pants_002','pants_009','pants_010','pants_005','pants_006','pants_001','pants_007','shorts_005','shorts_001',
- // Outfits: the dungarees, a skirt and blouse, plain dresses.
- 'outfit_001','outfit_004','outfit_006','outfit_007','outfit_008','outfit_009',
- // Shoes: boots and plain shoes.
- 'shoe_sneakers_010','shoe_sneakers_011','shoe_sneakers_012','shoe_sneakers_014','shoe_sneakers_002','shoe_sneakers_015','shoe_sneakers_001','shoe_sneakers_008',
- // Gloves: work gloves.
- 'gloves_021','gloves_022','gloves_018','gloves_008','gloves_009','gloves_010'
+// What My farmer offers for free (21 Oct 2026, the owner: "maak bijna alle mijn boer items lockable, behalve huidskleuren en de basic
+// items"): the five skin tones and the basics, about the default farmer and one or two plain others a tab. Everything else My farmer
+// shows is earned (FARMER_REWARDS, below). The rest of the pack stays in the catalog (and its files), but is not shown or saved
+// (farmerOffered). Socks and mascots are not offered (a tab with nothing is left out).
+export const FARMER_FREE=Object.freeze(new Set([
+ 'body_009','body_010','body_011','body_012','body_013',                                 // the five skin tones
+ 'male_emotion_usual_002','female_emotion_usual_001',                                     // two smiling faces
+ 'hairstyle_male_003','hairstyle_female_001','hairstyle_female_single_002',               // brown side parting, short bob, long brown hair
+ 'glasses_004','beard_002',                                                               // red glasses, a full beard
+ 'outwear_001','outwear_010','pants_002','outfit_001',                                    // a T-shirt, the work shirt, jeans, the dungarees
+ 'shoe_sneakers_010','gloves_021'                                                         // brown boots, work gloves
 ]));
-// What a farmer earns (21 Oct 2026, the owner: "maak de rewards niet identiek aan de avatars, want die zijn nu gescheiden, dus totaal
-// andere doelen"): hats and two costumes, each with a goal of its own, read from the farm's own counters (state.stats, state.login), so
-// nothing is written or moved and a farm that already did it has the part at once. From the first minutes (the straw hat: harvest 10
-// crops) to the long run (the bee suit: 100 honey; the knight: 5,000 crops). The numbers were checked against the live farms on 21 Oct
-// 2026 (percentiles per level band, see the commit). The words of each goal are My farmer's own (public/farmer-creator.js GOAL_TEXTS).
+// Every other part My farmer offers is earned (hats and costumes always are), each with a goal of its own on the farm's own counters
+// (FARMER_GOALS): ladders from the first hour to the long run, so there is always a next one close by. No two share a goal. The numbers
+// were checked against the live farms on 21 Oct 2026 (percentiles per level band, see the commits).
+export const FARMER_REWARDS=Object.freeze(Object.fromEntries(Object.entries(REWARD_TABLE).map(([id,[goal,target]])=>[id,Object.freeze({goal,target})])));
+export const FARMER_OFFER=Object.freeze(new Set([...FARMER_FREE,...Object.keys(REWARD_TABLE)]));
+// The farm's counters a goal reads (farm: {level}, the farm's level, from farm-state.js levelOf, the same on the page and the server).
 const whole=v=>Math.max(0,Math.floor(Number(v)||0));
 export const FARMER_GOALS=Object.freeze({
- harvested:s=>s.stats?.harvested,watered:s=>s.stats?.watered,sold:s=>s.stats?.sold,eggs:s=>s.stats?.made_eggs,milk:s=>s.stats?.made_milk,
- bread:s=>s.stats?.made_bread,honey:s=>s.stats?.made_honey,pets:s=>s.stats?.pets_patted,fish:s=>s.stats?.fish,deliveries:s=>s.stats?.deliveries,
+ harvested:s=>s.stats?.harvested,watered:s=>s.stats?.watered,tended:s=>s.stats?.tended,sold:s=>s.stats?.sold,produced:s=>s.stats?.produced,
+ eggs:s=>s.stats?.made_eggs,milk:s=>s.stats?.made_milk,cheese:s=>s.stats?.made_cheese,bread:s=>s.stats?.made_bread,honey:s=>s.stats?.made_honey,
+ wool:s=>s.stats?.made_wool,pets:s=>s.stats?.pets_patted,fish:s=>s.stats?.fish,deliveries:s=>s.stats?.deliveries,dailies:s=>s.stats?.dailies,
  rounds:s=>s.stats?.activity_rounds,chores:s=>s.stats?.chores,upgrades:s=>s.stats?.upgrades,tractor:s=>s.stats?.tractor,
- visits:s=>s.login?.visits,streak:s=>s.login?.best
+ visits:s=>s.login?.visits,streak:s=>s.login?.best,level:(s,farm)=>farm.level
 });
-// part -> its goal: a counter of FARMER_GOALS and how many.
-export const FARMER_REWARDS=Object.freeze(Object.fromEntries(Object.entries({
- hat_009:['harvested',10],          // Straw hat: the first harvests
- hat_002:['watered',25],            // Orange bucket hat
- hat_008:['eggs',50],               // Brown beanie
- hat_005:['sold',100],              // Grey beanie
- hat_028:['pets',10],               // Green feathered cap: pat Rex and Mimi
- hat_010:['deliveries',5],          // Yellow sun hat
- hat_036:['fish',25],               // Sailor cap: fishing
- hat_023:['bread',25],              // Chef's hat: the Bakery
- hat_001:['milk',100],              // Cowboy hat: the dairy cows
- hat_003:['rounds',15],             // Brown trilby: the helping hand
- hat_007:['chores',25],             // Red beanie
- hat_037:['visits',7],              // Peaked cap
- hat_single_001:['eggs',250],       // Chicken hood
- hat_040:['upgrades',20],           // Red beret
- hat_single_013:['tractor',25],     // Flying helmet with goggles: the tractor
- hat_016:['streak',14],             // Rainbow top hat: two weeks in a row
- hat_034:['sold',2000],             // Top hat
- costume_7:['honey',100],           // Bee suit: the Bee Yard
- costume_11:['harvested',5000]      // Knight's armour: the long run
-}).map(([id,[goal,target]])=>[id,Object.freeze({goal,target})])));
 // How far a farm is with a part's goal: {goal, count, target} (count never over target); null for a part that is no reward.
-export function rewardProgress(id,state){
+export function rewardProgress(id,state,farm={}){
  const r=Object.hasOwn(FARMER_REWARDS,id)?FARMER_REWARDS[id]:null;if(!r)return null;
- const count=whole(FARMER_GOALS[r.goal](state&&typeof state==='object'?state:{}));
+ const count=whole(FARMER_GOALS[r.goal](state&&typeof state==='object'?state:{},farm&&typeof farm==='object'?farm:{}));
  return {goal:r.goal,count:Math.min(count,r.target),target:r.target};
 }
-export const rewardOpen=(id,state)=>{const p=rewardProgress(id,state);return Boolean(p)&&p.count>=p.target;};
-// The earned parts a farm has: validFarmerConfig's owned, the same on the farm's page and on the server.
-export const farmerOwned=state=>Object.keys(FARMER_REWARDS).filter(id=>rewardOpen(id,state));
-// The parts My farmer offers: the curated free ones and the rewards.
-export const farmerOffered=p=>Boolean(p)&&(p.earned?Object.hasOwn(FARMER_REWARDS,p.id):FARMER_OFFER.has(p.id));
+export const rewardOpen=(id,state,farm={})=>{const p=rewardProgress(id,state,farm);return Boolean(p)&&p.count>=p.target;};
+// The earned parts a farm has: validFarmerConfig's owned, the same on the farm's page and on the server (farm: {level}).
+export const farmerOwned=(state,farm={})=>Object.keys(FARMER_REWARDS).filter(id=>rewardOpen(id,state,farm));
+// The parts My farmer offers: the free ones and the rewards.
+export const farmerOffered=p=>Boolean(p)&&FARMER_OFFER.has(p.id);
 export const creatorParts=slot=>partsOfSlot(slot).filter(farmerOffered);
 // A saved farmer as stored: only its worn slots, as plain ids.
 export const cleanFarmer=config=>Object.fromEntries(FARMER_SLOTS.filter(slot=>typeof config?.[slot]==='string').map(slot=>[slot,config[slot]]));
 // The farmer a farm shows: its own (state.farmer, written by the farm action farmer_wear) or, for a farm that never made one, the
 // default farmer. A part it no longer has (a refunded season) or no longer offered comes off; anything broken is the default farmer.
-export function farmerOf(state){
+export function farmerOf(state,farm={}){
  const saved=state?.farmer;
  if(!saved||typeof saved!=='object'||Array.isArray(saved)||!validFarmerConfig(saved).ok)return {...DEFAULT_FARMER};
- const owned=new Set(farmerOwned(state));let config=cleanFarmer(saved);
+ const owned=new Set(farmerOwned(state,farm));let config=cleanFarmer(saved);
  for(const slot of FARMER_SLOTS){const p=farmerPart(config[slot]);if(p&&(!farmerOffered(p)||p.earned&&!owned.has(p.id)))config=wearPart(config,slot,null);}
  return validFarmerConfig(config).ok?config:{...DEFAULT_FARMER};
 }

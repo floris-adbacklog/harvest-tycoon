@@ -18,12 +18,12 @@ export const CREATOR_TABS=Object.freeze([
  ['outfit','Outfit'],['costume','Costume'],['mascot','Mascot'],['shoes','Shoes'],['socks','Socks'],['gloves','Gloves']
 ].map(Object.freeze));
 const TAB_NAMES=Object.fromEntries(CREATOR_TABS),FIT_ORDER=['farm','plain','fun','off'];
-// The slots whose parts are earned: their tab says so, in one line.
-const EARNED_TABS=new Set(['hat','costume','mascot']);
 const number=n=>Number(n).toLocaleString('en-US');
 // Each goal in words (farmer-parts.js FARMER_GOALS counts it).
 export const GOAL_TEXTS=Object.freeze({
- harvested:n=>`Harvest ${number(n)} crops`,watered:n=>`Water ${number(n)} crops`,sold:n=>`Sell ${number(n)} crops`,eggs:n=>`Collect ${number(n)} eggs`,
+ harvested:n=>`Harvest ${number(n)} crops`,watered:n=>`Water ${number(n)} crops`,tended:n=>`Give ${number(n)} crops extra care`,sold:n=>`Sell ${number(n)} crops`,
+ produced:n=>`Make ${number(n)} goods`,eggs:n=>`Collect ${number(n)} eggs`,cheese:n=>`Make ${number(n)} cheese`,wool:n=>`Collect ${number(n)} wool`,
+ dailies:n=>`Finish ${number(n)} daily challenges`,level:n=>`Reach level ${number(n)}`,
  milk:n=>`Collect ${number(n)} milk`,bread:n=>`Bake ${number(n)} bread`,honey:n=>`Collect ${number(n)} honey`,pets:n=>`Pat Rex and Mimi ${number(n)} times`,
  fish:n=>`Catch ${number(n)} fish`,deliveries:n=>`Complete ${number(n)} delivery orders`,rounds:n=>`Finish ${number(n)} helping-hand rounds`,
  chores:n=>`Do ${number(n)} chores`,upgrades:n=>`Upgrade buildings ${number(n)} times`,tractor:n=>`Use the tractor ${number(n)} times`,
@@ -50,7 +50,7 @@ function addStylesheet(){
 // Opens the window. config: the farmer as it is now; owned: the earned parts the farm has (farmer-parts.js farmerOwned); state: the farm
 // (for how far a goal is); onSave(config):
 // saves it (a promise; a refusal's message is shown). Returns {dialog, close, config()}.
-export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},onSave=async()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
+export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={},farm={},onSave=async()=>{},reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches}={}){
  addStylesheet();
  const saved=validFarmerConfig(config).ok?{...config}:{...DEFAULT_FARMER};
  let current={...saved},tab='body',busy=false;
@@ -85,14 +85,13 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  // Above the pictures, a goal and how far you are (the owner, 21 Oct 2026: the goal there, not a general line): what is tried on and
  // still locked; else, on a tab with things to earn, the one worn there (done) or the closest one still to earn. Or why the save failed.
  function tabGoal(){
-  if(!EARNED_TABS.has(tab))return null;
   const worn=farmerPart(current[tab]);if(worn?.earned&&isOwned(worn))return {part:worn,done:true};
-  const next=creatorParts(tab).filter(p=>!isOwned(p)).map(p=>{const r=rewardProgress(p.id,state);return {part:p,share:r?r.count/r.target:0};}).sort((a,b)=>b.share-a.share)[0];
+  const next=creatorParts(tab).filter(p=>!isOwned(p)).map(p=>{const r=rewardProgress(p.id,state,farm);return {part:p,share:r?r.count/r.target:0};}).sort((a,b)=>b.share-a.share)[0];
   return next?{part:next.part,done:false}:null;
  }
  function drawState(message=''){
   const locked=lockedWorn()[0],goal=message?null:locked?{part:locked,done:false}:tabGoal();
-  const text=message||(goal?rewardText(goal.part.id):''),progress=goal&&!goal.done?rewardProgress(goal.part.id,state):null;
+  const text=message||(goal?rewardText(goal.part.id):''),progress=goal&&!goal.done?rewardProgress(goal.part.id,state,farm):null;
   note.hidden=!text;note.classList.toggle('is-locked',Boolean(progress));note.classList.toggle('is-done',Boolean(goal?.done));
   note.innerHTML=text?`${progress?LOCK:goal?.done?DONE:''}<span>${esc(text)}</span>${progress?`<b>${number(progress.count)} / ${number(progress.target)}</b>`:''}`:'';
   save.disabled=busy||!changed()||Boolean(locked);save.textContent=busy?'Saving…':'Save';
@@ -119,7 +118,7 @@ export async function openFarmerCreator({config=DEFAULT_FARMER,owned=[],state={}
  }
  dialog.addEventListener('click',event=>{
   const t=event.target.closest('button');if(!t||busy)return;
-  if(t.dataset.slot){tab=t.dataset.slot;drawTabs();drawGrid();grid.scrollTop=0;return;}
+  if(t.dataset.slot){tab=t.dataset.slot;drawTabs();drawGrid();drawState();grid.scrollTop=0;return;}
   if(t.dataset.part!==undefined){current=wearPart(current,tab,t.dataset.part||null);redraw();return;}
   if(t.classList.contains('farmer-maker-random')){current=randomFarmer(Math.random);redraw();return;}
   if(t.classList.contains('farmer-maker-save')){void saveNow();return;}

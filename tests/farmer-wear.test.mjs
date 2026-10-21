@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,NO_EVENT_ACTIONS} from '../game/farm-state.js';
-import {FARMER_PARTS,FARMER_REWARDS,FARMER_GOALS,FARMER_OFFER,FARMER_SLOTS,DEFAULT_FARMER,farmerOwned,farmerOf,rewardOpen,rewardProgress,farmerOffered,creatorParts,farmerPart,validFarmerConfig} from '../game/farmer-parts.js';
+import {FARMER_PARTS,FARMER_REWARDS,FARMER_GOALS,FARMER_OFFER,FARMER_FREE,FARMER_SLOTS,DEFAULT_FARMER,farmerOwned,farmerOf,rewardOpen,rewardProgress,farmerOffered,creatorParts,farmerPart,validFarmerConfig} from '../game/farmer-parts.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<26,stdio:['ignore','pipe','ignore']});}catch{return null;}};
@@ -16,20 +16,27 @@ const now=Date.UTC(2026,9,21,12),HOUR=3600000;
 function farm(level=20){const s=createFarm(now-2*HOUR);s.xp=xpForLevel(level);s.coins=1000;s.boosts={...s.boosts,xpUntil:0,coinsUntil:0};return normalizeFarm(s,now);}
 const wear=(s,farmer)=>applyFarmAction(s,{type:'farmer_wear',farmer},now);
 
-test('My farmer offers a short, calm choice: natural skin tones, friendly faces, about 6 to 12 a tab',()=>{
+test('My farmer offers a short, calm choice, nearly all of it earned: free are the skin tones and the basics',()=>{
  const counts=Object.fromEntries(FARMER_SLOTS.map(slot=>[slot,creatorParts(slot).length]));
- assert.deepEqual(counts,{body:5,face:11,hair:12,hat:17,glasses:6,faceExtra:8,top:12,bottom:9,outfit:6,costume:2,mascot:0,shoes:8,socks:0,gloves:6});
+ assert.deepEqual(counts,{body:5,face:9,hair:12,hat:17,glasses:6,faceExtra:8,top:10,bottom:8,outfit:6,costume:2,mascot:0,shoes:8,socks:0,gloves:6});
+ const free=Object.fromEntries(FARMER_SLOTS.map(slot=>[slot,creatorParts(slot).filter(p=>!p.earned).length]));
+ assert.deepEqual(free,{body:5,face:2,hair:3,hat:0,glasses:1,faceExtra:1,top:2,bottom:1,outfit:1,costume:0,mascot:0,shoes:1,socks:0,gloves:1},
+  'the owner, 21 Oct 2026: "maak bijna alle mijn boer items lockable, behalve huidskleuren en de basic items"');
  assert.deepEqual(creatorParts('body').map(p=>p.name),['Skin tone 1','Skin tone 2','Skin tone 3','Skin tone 4','Skin tone 5'],'no blue, green or grey skin');
+ assert.ok(creatorParts('body').every(p=>!p.earned),'every skin tone is free');
  assert.ok(creatorParts('face').every(p=>/^(Smiling|Happy|Calm) face/.test(p.name)),'no cross, sad or sly faces');
- for(const id of FARMER_OFFER){const p=farmerPart(id);assert.ok(p&&!p.earned&&p.fit!=='off',id);}
- assert.ok(Object.values(DEFAULT_FARMER).every(id=>farmerOffered(farmerPart(id))),'the default farmer wears only offered parts');
+ for(const id of FARMER_OFFER){const p=farmerPart(id);assert.ok(p&&p.fit!=='off',id);}
+ for(const id of FARMER_FREE)assert.ok(!farmerPart(id).earned,id);
+ assert.ok(Object.values(DEFAULT_FARMER).every(id=>FARMER_FREE.has(id)),'a new farmer wears only free parts');
  // Data only: every part file is still there, the ones not offered are just not shown or saved.
  assert.equal(Object.keys(FARMER_PARTS).length,395);
 });
 
 test('every reward has a goal of its own on the farm\'s own counters, from the first minutes to the long run; no avatar, no pass',()=>{
  const rewards=Object.entries(FARMER_REWARDS);
- assert.ok(rewards.length>=15&&rewards.length<=20,`${rewards.length} earned parts`);
+ assert.ok(rewards.length>=70&&rewards.length<=80,`${rewards.length} earned parts`);
+ const goals=rewards.map(([,r])=>`${r.goal}:${r.target}`);assert.equal(new Set(goals).size,goals.length,'no two share a goal');
+ assert.ok(rewards.filter(([,r])=>r.target<=25&&r.goal!=='level'||r.goal==='level'&&r.target<=5).length>=12,'plenty within the first hours');
  for(const [id,{goal,target}] of rewards){
   const p=farmerPart(id);assert.ok(p&&p.earned&&farmerOffered(p)&&p.fit!=='off',id);assert.ok(Object.hasOwn(FARMER_GOALS,goal),goal);
   assert.ok(Number.isSafeInteger(target)&&target>0);
@@ -43,14 +50,16 @@ test('every reward has a goal of its own on the farm\'s own counters, from the f
  assert.deepEqual(rewardProgress('hat_036',s),{goal:'fish',count:12,target:25});assert.deepEqual(rewardProgress('costume_7',s),{goal:'honey',count:100,target:100});
  assert.equal(rewardOpen('hat_009',s),false);assert.equal(rewardOpen('costume_7',s),true);assert.equal(rewardProgress('outwear_010',s),null);
  assert.deepEqual(farmerOwned({}),[]);assert.deepEqual(farmerOwned({stats:{harvested:10}}),['hat_009']);
+ assert.deepEqual(farmerOwned({},{level:5}),['female_emotion_happy_002'],'a level goal reads the farm\'s level');
  // A farm that already did it has the part at once (nothing written).
  const old=farm(60);old.stats.made_bread=40;old.stats.harvested=7000;
  assert.ok(farmerOwned(old).includes('hat_023')&&farmerOwned(old).includes('costume_11'));
+ assert.ok(farmerOwned(old,{level:60}).includes('outwear_032')&&!farmerOwned(old,{level:60}).includes('beard_003'),'levels 50 and 75');
 });
 
 test('farmer_wear saves what My farmer shows, only parts the farm has, and counts for nothing',()=>{
  const s=farm(45);s.stats.harvested=20;s.stats.fish=3;const before=structuredClone(s);
- const outfit={body:'body_011',face:'female_emotion_happy_002',hair:'hairstyle_female_003',hat:'hat_009',top:'outwear_010',bottom:'pants_002',shoes:'shoe_sneakers_010'};
+ const outfit={body:'body_011',face:'female_emotion_happy_002',hair:'hairstyle_female_001',hat:'hat_009',top:'outwear_010',bottom:'pants_002',shoes:'shoe_sneakers_010'};
  assert.deepEqual(wear(s,{...outfit,glasses:null}),{farmer:outfit});assert.deepEqual(s.farmer,outfit,'only the worn slots, as plain ids');
  assert.equal(s.coins,before.coins);assert.equal(s.xp,before.xp);assert.deepEqual(s.stats,before.stats,'no coins, no XP, no stat');
  assert.ok(NO_EVENT_ACTIONS.has('farmer_wear'),'no event, challenge or Family Chest');
@@ -64,6 +73,8 @@ test('farmer_wear saves what My farmer shows, only parts the farm has, and count
  refused({...outfit,body:'body_007'},'Choose a farmer.');                                 // a green body: not offered
  refused({...outfit,face:'male_emotion_angry_001'},'Choose a farmer.');                   // a cross face: not offered
  refused({...outfit,top:'outwear_029'},'Choose a farmer.');                               // a track top: not offered
+ refused({...outfit,hair:'hairstyle_male_004'},'Earn this first to wear it.');           // grey curls: play on 20 days
+ refused({...outfit,face:'male_emotion_usual_004'},'Choose a farmer.');                  // no longer offered
  refused({...outfit,outfit:'outfit_001'},'Choose a farmer.');                             // does not go with the top and trousers
  refused({body:'body_010'},'Choose a farmer.');refused('body_010','Choose a farmer.');refused(null,'Choose a farmer.');
  assert.doesNotMatch(read('supabase/functions/farm-api/index.ts'),/farmer_wear/,'farm-api needs nothing of its own: the farm holds every counter');

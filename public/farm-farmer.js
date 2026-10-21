@@ -19,7 +19,7 @@ export const FARM_WALK=Object.freeze({height:1.9,walk:1.05,spots:Object.freeze([
 export const VILLAGE_WALK=Object.freeze({height:.95,walk:.5,spots:Object.freeze([[17,-7.6],[16.4,-9.2],[17.6,-9.4],[18.6,-8.2],[18,-8.3]])});
 // How long they stand at a spot (seconds), and what they do there: breathe, look around or rest on one leg.
 const REST=[4,10],STILL={idle:.45,look:.35,relaxed:.2};
-const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14;
+const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14,MOVED_RECENTLY=250,LANDED_WAIT=1500;
 const turnOf=(from,to)=>((to-from+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 const turnTowards=(from,to,step)=>{const d=turnOf(from,to);return Math.abs(d)<=step?from+d:from+Math.sign(d)*step;};
 const choose=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,0);for(const [k,w] of Object.entries(odds)){r-=w;if(r<=0)return k;}return 'idle';};
@@ -61,7 +61,7 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
    // The hop (21 Oct 2026, the owner: the pack's jump, made small, sank into the ground: its legs still tucked a full jump's worth):
    // the whole farmer goes up and down once, standing as they are; the ground is never crossed.
    me.hopping=Math.max(0,me.hopping-dt);at.y=ground(at.x,at.z)+Math.sin(Math.PI*(1-me.hopping/HOP_TIME))*HOP_UP*walk.height;
-   if(me.hopping<=0){at.y=ground(at.x,at.z);rest();}
+   if(me.hopping<=0){at.y=ground(at.x,at.z);rest();me.landed?.();me.landed=null;}
   }
   else if(me.target){
    const dx=me.target[0]-at.x,dz=me.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
@@ -87,16 +87,22 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
   matrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(matrix);
   sphere.center.copy(root.position);sphere.center.y+=walk.height/2;sphere.radius=walk.height;
   if(!frustum.intersectsSphere(sphere))return;
-  step(t);mixer.update(t);
+  me.steppedAt=performance.now();step(t);mixer.update(t);
  }
  // A tap that found nothing else (game.js pointerTarget): true when it was the farmer.
  const pick=raycaster=>raycaster.intersectObject(hit,false).length>0;
- // A tap: they stop, turn to you and hop once, then stand a while before walking on.
+ // A tap: they stop, turn to you and hop once, then stand a while before walking on. Returns a promise that settles when they are back on
+ // the ground (the owner, 21 Oct 2026: "wacht met profiel open als die klaar is met springen"), counted in the frames they are moved
+ // in, so a phone's every other frame lands as late as it looks. A farmer that is not being moved (off the screen, the farm resting
+ // under a window) does not hop: it settles at once. LANDED_WAIT is only a safety net for a page that stops drawing mid-hop.
  function react(){
-  me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;
-  play('idle');me.hopping=HOP_TIME;
-  return true;
+  me.target=null;me.yaw=me.face=Math.PI/4;root.rotation.y=me.yaw;play('idle');
+  me.landed?.();me.landed=null;
+  if(!(performance.now()-(me.steppedAt??-Infinity)<MOVED_RECENTLY)){at0();return Promise.resolve();}
+  me.hopping=HOP_TIME;
+  return new Promise(done=>{const timer=setTimeout(()=>{me.landed=null;done();},LANDED_WAIT);me.landed=()=>{clearTimeout(timer);done();};});
  }
+ const at0=()=>{me.hopping=0;root.position.y=ground(root.position.x,root.position.z);};
  // Where the farmer stands on the screen, -1 to 1 across and up (as the camera saw it last), and what they are doing.
  const where=()=>{if(!seenBy)return null;const p=root.position.clone();p.y+=walk.height*.5;p.project(seenBy);return {x:p.x,y:p.y,state:me.state,world:[root.position.x,root.position.z]};};
  const result={farmer,root,hit,ground,animate,pick,react,where,camera:()=>seenBy,dispose(){farmer.dispose();FARM_WALKERS.delete(result);}};
