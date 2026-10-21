@@ -58,6 +58,16 @@ const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
 export const FARM_BENCH=Object.freeze({x:-13.16,z:-.45,turn:Math.PI*3/4,height:.9});
 export const EVENING_FROM=20,MORNING_AT=7;
 export const isEvening=(date=new Date())=>{const h=date.getHours();return h>=EVENING_FROM||h<MORNING_AT;};
+// The family's farmers in the village (21 Oct 2026, item 5): up to six members of your Farm Family walk there too, each in their own
+// look, each round a small loop of their own: in the village's units like VILLAGE_WALK, on the grass and lanes between the Pier, the
+// Village Fields, the canteen and the lumber camp, checked in the harness on a phone and a computer's two views (nobody covers a
+// place, a pin, a name or the deer; open ground under their feet, also on the way between the spots), 4 away from every place, off
+// the Village Fields, clear of the deer and of your own farmer's loop.
+const villageLoop=spots=>Object.freeze({height:VILLAGE_WALK.height,walk:VILLAGE_WALK.walk,spots:Object.freeze(spots.map(p=>Object.freeze(p)))});
+export const VILLAGE_FAMILY_WALKS=Object.freeze([
+ villageLoop([[11,-6],[12,-6],[11.5,-5.5]]),villageLoop([[18.5,-5],[19.5,-4],[19,-4.5]]),villageLoop([[19,-2],[20,-1.5],[19,-1]]),
+ villageLoop([[9,-9.5],[9.5,-8.5],[9,-8]]),villageLoop([[9.5,1],[10.5,2],[10,.5]]),villageLoop([[20,6],[21,5.5],[20.5,5]])
+]);
 // How long they stand at a spot (seconds), and what they do there: breathe, look around or rest on one leg.
 const REST=[4,10],STILL={idle:.45,look:.35,relaxed:.2};
 const TURN=3,FADE=.4,HOP_TIME=.45,HOP_UP=.14,MOVED_RECENTLY=250,LANDED_WAIT=1500;
@@ -78,9 +88,10 @@ export const FARM_WALKERS=new Set();
 // scene: the farm's or the village's; walk: FARM_WALK or VILLAGE_WALK; ground(x, z): the height there; lite: phones (every other frame).
 // trips: whether they join in (the farm on a computer: game.js addFarmer; never on a phone, in lite mode or in the village). bench: the
 // farm's chair (FARM_BENCH, game.js places the model) for the evening, or null (the village); clock: the time now (the harness's).
-export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date()}){
+// name: 'your-farmer', or 'family-farmer' for a member's in the village.
+export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date(),name='your-farmer'}){
  const farmer=await createFarmer(config,{height:walk.height});
- const root=farmer.root,{actions,mixer}=farmer;root.name='your-farmer';
+ const root=farmer.root,{actions,mixer}=farmer;root.name=name;
  for(const name of ['walk','idle','look','relaxed','sit'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
  // The walk cycle covers 1.48 m of the pack's 1.83 m farmer: played at the speed that keeps the feet from sliding.
  const walkPace=actions.walk?walk.walk/(1.48*walk.height/1.83/actions.walk.getClip().duration):1;

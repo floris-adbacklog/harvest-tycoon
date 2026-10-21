@@ -73,7 +73,7 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
-import { farmerOf,farmerOwned } from './farmer-parts.js';
+import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
 // The apps' Back button and the farm's rest under a window on phones, tablets and the apps (13 Oct 2026, public/windows.js).
 import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
@@ -403,7 +403,7 @@ async function addFarmer(){
  try{
   const connection=navigator.connection;if(reducedMotion||adminView||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
-  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,tripFor,FARM_BENCH}=await import('./farm-farmer.js');
+  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,tripFor,FARM_BENCH}=await import('./farm-farmer.js');
   // On the farm the grass is the ground and a lane's top .085 over it, as for the pets (addPets).
   const walk=villageWorld?VILLAGE_WALK:FARM_WALK,lanes=roadRects();let ground=(x,z)=>{let y=0;for(const r of lanes){const inside=Math.min(x-r.minX,r.maxX-x,z-r.minZ,r.maxZ-z);if(inside>0)y=Math.max(y,.085*Math.min(1,inside/.3));}return y;};
   if(villageWorld){
@@ -414,8 +414,38 @@ async function addFarmer(){
   let bench=null;
   if(!villageWorld&&models.has('chair_001')){const before=currentZone();zone('fields');cloneModel('chair_001',FARM_BENCH.x,FARM_BENCH.z,{height:FARM_BENCH.height,rotation:FARM_BENCH.turn+CHAIR_FACING});zone(before);bench=FARM_BENCH;}
   walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:farmerOf(state,farmerFarm()),trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench});farmerTrip=tripFor;
+  if(villageWorld)void addFamilyFarmers(createFarmWalker,VILLAGE_FAMILY_WALKS);
  }catch(error){console.warn('Your farmer was skipped.',error);}
 }
+// Your Farm Family's farmers in the village (21 Oct 2026, the owner: "Doe alles behalve 9", item 5): up to six members walk there too,
+// each in their own look (their saved farmer, or the default one), each round a small loop of their own (farm-farmer.js
+// VILLAGE_FAMILY_WALKS); a tap: a hop, then that member's profile. Who: the Family read with farmers (farm-api family-service.js
+// familyFarmers), once a visit and kept 10 minutes (sessionStorage, for travelling back and forth); online members first, then the
+// ones seen most lately. One farmer at a time, each after a quiet moment, as your own; only moved while in the picture.
+const familyWalkers=[];
+const FAMILY_FARMERS_KEY='harvest-tycoon:family-farmers',FAMILY_FARMERS_KEEP=10*60000;
+async function familyFarmers(){
+ const familyId=state.family?.familyId,bridge=window.parent?.harvestBridge;if(!familyId||!bridge?.request)return [];
+ try{const kept=JSON.parse(sessionStorage.getItem(FAMILY_FARMERS_KEY)??'null');if(kept?.familyId===familyId&&Date.now()-kept.at<FAMILY_FARMERS_KEEP&&Array.isArray(kept.list))return kept.list;}catch{}
+ const data=await bridge.request({operation:'family',farmers:true});
+ const list=(data?.family?.members??[]).filter(m=>!m.isSelf&&typeof m.playerId==='string').sort((a,b)=>Number(b.online===true)-Number(a.online===true)||(a.daysAway??0)-(b.daysAway??0))
+  .slice(0,6).map(m=>({playerId:m.playerId,farmer:m.farmer&&validFarmerConfig(m.farmer).ok?cleanFarmer(m.farmer):null}));
+ try{sessionStorage.setItem(FAMILY_FARMERS_KEY,JSON.stringify({familyId,at:Date.now(),list}));}catch{}
+ return list;
+}
+async function addFamilyFarmers(createFarmWalker,walks){
+ try{
+  const list=await familyFarmers(),{groundUnder}=await import('./village-scene.js');
+  for(const [i,member] of list.slice(0,walks.length).entries()){
+   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1200));
+   const walk=walks[i],xs=walk.spots.map(s=>s[0]),zs=walk.spots.map(s=>s[1]);
+   const ground=groundUnder(villageGroup,{x:Math.min(...xs),z:Math.min(...zs),width:Math.max(...xs)-Math.min(...xs),depth:Math.max(...zs)-Math.min(...zs)});
+   const other=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config:member.farmer??undefined,name:'family-farmer'});
+   other.playerId=member.playerId;familyWalkers.push(other);
+  }
+ }catch(error){console.warn('The family\'s farmers were skipped.',error);}
+}
+function tapFamilyFarmer(id){const other=familyWalkers.find(w=>w.playerId===id),landed=other?.react()??Promise.resolve();if(window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(id,{back:null}));}
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
 // tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
 const roadMaterials=new Map();
@@ -1418,6 +1448,8 @@ function pointerTarget(event){
  const pet=pets?.pick(raycaster);if(pet)return {type:'pet',id:pet};
  // Your farmer (20 Oct 2026) last of all: a hop, then your own profile (tapOwnFarmer).
  if(walker?.pick(raycaster))return {type:'farmer'};
+ // Then your family's farmers in the village (item 5): their profile.
+ for(const other of familyWalkers)if(other.pick(raycaster))return {type:'familyFarmer',id:other.playerId};
  return null;
 }
 function addUtility(key,model,x,z,options){
@@ -1800,7 +1832,7 @@ function frame(now){
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -1948,7 +1980,7 @@ async function init(){
    // Over a field the cursor is the tool its sweep would use: a sickle over a ripe crop, a watering can, a seed bag, gloves for care
    // (sweep-tools.js).
    if(target?.type==='plot')world.style.cursor=toolCursor(sweepAction(target))||'pointer';
-   if(!target||e.pointerType==='touch'||target.type==='pet'||target.type==='farmer'){tooltip.hidden=true;return;}
+   if(!target||e.pointerType==='touch'||target.type==='pet'||target.type==='farmer'||target.type==='familyFarmer'){tooltip.hidden=true;return;}
    tooltip.hidden=false;
    if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
@@ -1960,7 +1992,7 @@ async function init(){
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
   const canvas=renderer.domElement;
   bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);

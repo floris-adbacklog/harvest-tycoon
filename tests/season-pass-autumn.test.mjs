@@ -293,7 +293,7 @@ test('farm-api look: only looks the farm owns, in their own slot, written as one
 test('family-service reads the members\' looks and season emblems only for the farmer\'s own family, and never fails the read',()=>{
  const svc=read('supabase/functions/farm-api/family-service.js');
  assert.match(svc,/admin\.from\('player_stats'\)\.select\('player_id,look'\)\.in\('player_id',ids\)/);
- assert.match(svc,/admin\.from\('player_farms'\)\.select\('player_id,looks:state->looks'\)\.in\('player_id',ids\)/);
+ assert.match(svc,/admin\.from\('player_farms'\)\.select\('player_id,looks:state->looks(,farmer:state->farmer)?'\)\.in\('player_id',ids\)/);
  assert.match(svc,/familyMutate\(before,state,player,reading\?\{type:'family_read'\}:body\.action,now,\{seasonEmblems:before\.seasonEmblems\?\?\[\]\}\)/);
 });
 test('the window: the rule in one sentence, the value line without a euro beside diamonds, the iPhone app shows the free row only',async()=>{

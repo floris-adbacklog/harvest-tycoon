@@ -1,5 +1,6 @@
 import {familyMutate,familyPublicView,familyProfile,familyWeek,levelOf,familyRejoinOffer,familyStanding,familyManager,familyShareState,familyCards,FAMILY_CARDS_MAX,SEASON_EMBLEMS,SEASON_LOOKS} from './farm-state.js';
 import {isRecentlyActive} from './presence.js';
+import {validFarmerConfig,cleanFarmer} from './farmer-parts.js';
 const keys={families:['id'],members:['player_id'],invitations:['id'],requests:['id'],orders:['family_id','week'],contributions:['player_id','week'],results:['week','family_id'],rewards:['id'],attempts:['player_id'],weeks:['week']};
 export function familyChanges(before,after){
  const changed={};
@@ -33,18 +34,30 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // The Season Pass (Oct 2026): what the farmer's own family members wear (a frame, a badge and a title beside their name in the member
 // list) and which season emblems one of them collected ("If someone in your family has this emblem, your leader can pick it"). One
 // extra read of the members' rows, both at once, only for the farmer's own family; a problem here only leaves the looks out.
+// Their own 3D farmers too (21 Oct 2026, item 5: the family's farmers walk in the village): state->farmer from the same read of their
+// farms (no query of its own), sent only when the page asks for them (familyFarmers below).
 async function addMemberLooks(admin,context,player){
  const me=(context.members??[]).find(m=>m.player_id===player&&!m.left_at&&m.family_id);if(!me)return context;
  const ids=[...new Set(context.members.filter(m=>m.family_id===me.family_id&&!m.left_at).map(m=>m.player_id))].slice(0,20);
  try{
-  const [stats,farms]=await Promise.all([admin.from('player_stats').select('player_id,look').in('player_id',ids),admin.from('player_farms').select('player_id,looks:state->looks').in('player_id',ids)]);
+  const [stats,farms]=await Promise.all([admin.from('player_stats').select('player_id,look').in('player_id',ids),admin.from('player_farms').select('player_id,looks:state->looks,farmer:state->farmer').in('player_id',ids)]);
   if(stats.error||farms.error)return context;
   const looks=new Map((stats.data??[]).map(r=>[r.player_id,r.look]));
   context.players=(context.players??[]).map(p=>looks.has(p.player_id)?{...p,look:looks.get(p.player_id)}:p);
+  const farmers=new Map((farms.data??[]).map(f=>[f.player_id,f.farmer]));
+  context.players=context.players.map(p=>farmers.has(p.player_id)?{...p,farmer:farmers.get(p.player_id)}:p);
   const emblems=Object.entries(SEASON_EMBLEMS).filter(([,look])=>(farms.data??[]).some(f=>Array.isArray(f.looks)&&f.looks.includes(look)&&SEASON_LOOKS[look])).map(([id])=>id);
   context.seasonEmblems=emblems;
  }catch{}
  return context;
+}
+// The members' farmers on the Family read, only when the page asks (farmers: true: the village, once a visit, cached there): each one's
+// saved farmer (state.farmer) as it is stored, or null for a farm that never made one or a broken one (the page then shows the default
+// farmer). Earned parts are not checked again: farmer_wear checked them when they were put on.
+export function familyFarmers(view,context,body){
+ if(body?.farmers!==true||!Array.isArray(view?.members))return view;
+ const saved=new Map((context.players??[]).map(p=>[p.player_id,p.farmer]));
+ return {...view,members:view.members.map(m=>{const f=saved.get(m.playerId);return {...m,farmer:f&&typeof f==='object'&&!Array.isArray(f)&&validFarmerConfig(f).ok?cleanFarmer(f):null};})};
 }
 async function readContext(admin,player,family=null){
  let fetched=await admin.rpc('harvest_family_read',{p_player:player,p_family:family});
@@ -118,7 +131,7 @@ export async function handleFamily({admin,body,row,state,player,username}){
  else{const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:body.requestId});if(fetched.error)throw fetched.error;before=fetched.data;
   if(body.action.type==='family_emblem'&&Object.hasOwn(SEASON_EMBLEMS,String(body.action.emblem)))before=await addMemberLooks(admin,before,player);}
  const now=before.now;
- const response=(context,result,failed,written=false)=>({status:failed?422:200,data:failed?{error:result.error,code:'ACTION_REJECTED'}:reading?{profile:{player_id:player},family:publicView(context,player,state,now),serverNow:now}:{state,profile:{player_id:player,username,currency:state.coins,level:levelOf(state)},result:{...result,family:publicView(context,player,state,now)},revision:row.revision+(written?1:0),serverNow:now}});
+ const response=(context,result,failed,written=false)=>({status:failed?422:200,data:failed?{error:result.error,code:'ACTION_REJECTED'}:reading?{profile:{player_id:player},family:familyFarmers(publicView(context,player,state,now),context,body),serverNow:now}:{state,profile:{player_id:player,username,currency:state.coins,level:levelOf(state)},result:{...result,family:publicView(context,player,state,now)},revision:row.revision+(written?1:0),serverNow:now}});
  if(before.receipt)return response(before,before.receipt.result,before.receipt.failed);
  if(!reading&&body.action.type==='family_invite'){
   const target=body.action.playerId;

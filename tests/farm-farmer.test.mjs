@@ -151,7 +151,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  assert.match(game,/if\(reducedMotion\|\|adminView\|\|connection\?\.saveData\|\|\/2g\/\.test\(connection\?\.effectiveType\?\?''\)\)return;/);
  assert.match(game,/lite:handheld\|\|mobileLayout\.matches,config:farmerOf\(state,farmerFarm\(\)\),trips:/,'phones every other frame, in the farmer\'s own clothes');
  assert.match(game,/herd\?\.animate\(dt,camera\);walker\?\.animate\(dt,camera\);/);
- assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n return null;\n\}/,'asked last of all');
+ assert.match(game,/if\(walker\?\.pick\(raycaster\)\)return \{type:'farmer'\};\n \/\/ Then your family's farmers in the village \(item 5\): their profile\.\n for\(const other of familyWalkers\)if\(other\.pick\(raycaster\)\)return \{type:'familyFarmer',id:other\.playerId\};\n return null;\n\}/,'asked last of all (then the family\'s)');
  assert.match(walker,/if\(!frustum\.intersectsSphere\(sphere\)\)\{if\(me\.trip\)/,'only on screen (on a trip: only where they are)');
  assert.doesNotMatch(walker,/localStorage|runAction|state\.|client\.|track\(/,'it saves and counts nothing');
  const {FARM_WALK,VILLAGE_WALK}=await import('../public/farm-farmer.js');
