@@ -39,7 +39,10 @@ test('chores remain repeatable but do not pay twice during cooldown',()=>{
 });
 test('mastery counts field harvests, claims once and old crop counts receive credit',()=>{
  // Medals open at level 14 on every farm since 19 Oct 2026 (older farms had them from level 1).
- const s=createFarm(now,{level:14});s.version=3;delete s.mastery;s.stats.harvest_wheat=100;normalizeFarm(s,now);assert.equal(masteryStatus(s,'wheat')[1].progress,100);
+ const s=createFarm(now,{level:14});s.version=3;delete s.mastery;s.stats.harvest_wheat=100;normalizeFarm(s,now);
+ // 100 harvests reached Bronze and Silver with the numbers before one crop a harvest (25 / 100): both stay reached (state.mastery.kept)
+ // although the numbers doubled on 22 Oct 2026 (50 / 200 / 600 / 2,000).
+ assert.equal(s.mastery.kept.wheat,2);assert.equal(masteryStatus(s,'wheat')[1].progress,200);assert.equal(masteryStatus(s,'wheat')[2].progress,100);
  act(s,{type:'mastery',crop:'wheat',tier:0},now);act(s,{type:'mastery',crop:'wheat',tier:1},now);assert.equal(s.stats.mastery_medals,2);
  assert.throws(()=>act(s,{type:'mastery',crop:'wheat',tier:1},now),/already/);assert.throws(()=>act(s,{type:'mastery',crop:'wheat',tier:2},now),/Keep harvesting/);
 });

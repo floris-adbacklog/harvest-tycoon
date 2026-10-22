@@ -65,7 +65,7 @@ test('existing farms retain regular progress, money, plots and jobs on tutorial 
  assert.equal(state.onboarding.milestones.harvest,undefined,'old normal-quest counters do not complete beginner steps');
 });
 test('regular quest claims never claim tutorial steps or diamond reward',()=>{
- const state=createFarm(now);state.stats.harvested=3;
+ const state=createFarm(now);state.stats.harvested=6;
  act(state,{type:'quest',id:0});assert.deepEqual(state.claimed,[0]);
  assert.equal(state.onboarding.completed,0);assert.equal(state.diamonds,levelReward(2).diamonds,'only the level-up pays diamonds, never the guide reward');
 });

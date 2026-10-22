@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {EVENT_LEAGUES,eventLeague,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,RECIPES,RECIPE_LEVELS,itemUnlockLevel,WORLD_TWO_LEVEL,LAKE_LEVEL} from '../public/farm-state.js';
-import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES} from '../public/event-goals.js';
+import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES,EVENT_GOAL_TITLES_BEFORE_ONE_CROP} from '../public/event-goals.js';
 import {EVENT_GOALS} from '../public/live-events-ui.js';
 import {eventStandings} from '../supabase/functions/farm-api/event-service.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -65,7 +65,7 @@ test('every league draws its own goals, open from its first level, with bigger n
 
 test('the database draws exactly these goals per league, counts the league\'s own and settles per league',()=>{
  const goals=read('supabase/live-event-league-goals.sql'),leagues=read('supabase/live-event-leagues.sql');
- const json=JSON.stringify(EVENT_GOAL_POOLS.map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES[stat]}))))).replaceAll("'","''");
+ const json=JSON.stringify(EVENT_GOAL_POOLS.map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES_BEFORE_ONE_CROP[stat]}))))).replaceAll("'","''");
  assert.ok(goals.includes(`pools constant jsonb:='${json}';`),'run node scripts/event-goals-sql.mjs after changing public/event-goals.js');
  assert.match(goals,/insert into public\.live_events\(id,title,description,starts_at,ends_at,active,objectives,rewards,created_by,leagues\)/);
  // 4 Oct 2026: the check on new events refused the leagues' new goals, and the schedule skipped those events without a word.

@@ -32,8 +32,8 @@ test('at the start crops, batches and Care take 50% less time; after the first d
  const a=emptyPlot(s),b=a+1;
  act(s,{type:'field',id:a,action:'plant',crop:'corn'},now);act(s,{type:'field',id:b,action:'plant',crop:'wheat'},now);
  assert.equal(s.plots[a].readyAt-now,450000,'corn 15 min -> 7.5 min');assert.equal(s.plots[a].careAt-now,67500,'Care (15% since 22 Oct 2026) 135 s -> 67.5 s');
- assert.equal(s.plots[b].readyAt-now,60000);assert.equal(s.plots[b].careAt-now,15000,'wheat Care comes at 15 s (the 30 s minimum, halved), well inside its 60 s');
- act(s,{type:'field',id:b,action:'tend'},now+16000);assert.equal(s.plots[b].tended,true);
+ assert.equal(s.plots[b].readyAt-now,60000);assert.equal(s.plots[b].careAt-now,9000,'wheat Care comes at 9 s (15% of its 60 s; the 15 s minimum halved is 7.5 s)');
+ act(s,{type:'field',id:b,action:'tend'},now+10000);assert.equal(s.plots[b].tended,true);
  // After the first day: the normal 15 minutes and 135 seconds. The corn planted at the start keeps its 7.5 minutes.
  const late=now+DAY+MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
  assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,135000);
@@ -94,7 +94,8 @@ test('twenty starter quests are appended after the old ones: small, unique and b
  assert.equal(starters.reduce((n,q)=>n+q.reward,0),710);
  // Every older quest still pays the usual 15 XP.
  assert(QUESTS.slice(0,STARTER_QUESTS.first).every(q=>q.xp===undefined));assert.equal(QUEST_XP,15);
- const old=createFarm(now);old.stats.harvested=3;assert.equal(act(old,{type:'quest',id:0},now).xp,15);
+ const old=createFarm(now);old.stats.harvested=6;   // Harvest 6 crops since 22 Oct 2026 (3 before)
+assert.equal(act(old,{type:'quest',id:0},now).xp,15);
  assert.match(readFileSync(new URL('../game/farm-state.js',import.meta.url),'utf8'),/state\.stats\['made_'\+k\]/,'every collected item has its own made_ counter');
 });
 

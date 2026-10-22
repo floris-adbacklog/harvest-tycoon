@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {QUESTS,DAILY_POOLS,MASTERY_TIERS,MASTERY_TARGETS_BEFORE_ONE_CROP,masteryStatus,medalsWaiting,FAMILY_CHEST_POINTS} from '../game/farm-state.js';
+import {EVENT_HOUR_POOLS,EVENT_HOUR_POOLS_BEFORE_ONE_CROP,EVENT_GOAL_TITLES,HARVEST_GOAL_FACTOR} from '../public/event-goals.js';
+import {oneCropSql,LIVE_MD5,NEW_MD5,CHEST_BODY} from '../scripts/one-crop-sql.mjs';
+import {createHash} from 'node:crypto';
 import {applyFarmAction as act,normalizeFarm,xpForLevel,CROPS,CARE_AT,WATER_CUT,WATER_TOWER_CUT,CARE_CUT,oneCropPlot,harvestYield,harvestXp,
  caredDuration,cropDuration,seedCost,waterCut,careCut,createFarm as createNewFarm,DAY_MS} from '../game/farm-state.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -62,11 +66,11 @@ test('a new farm\'s starter crops, the tractor, Full care and the night shift al
  const r=act(s,{type:'tractor',mode:'harvest'},s.plots[0].readyAt);assert.equal(s.inventory.corn,r.count+((farm().inventory.corn)),'one corn a field');
 });
 
-test('seeds cost a third (trees and bushes kept their price) and a harvest gives two thirds of its old XP (wheat stays 2)',()=>{
+test('seeds cost a third (trees and bushes kept their price) and a harvest gives two thirds of its old XP, wheat too (option b)',()=>{
  for(const [key,old] of Object.entries(OLD)){
   const c=CROPS[key];
   if(c.perennial)assert.equal(c.cost,old.cost,`${key}: planted once, same price`);else assert.equal(c.cost,Math.max(1,Math.round(old.cost/3)),key);
-  assert.equal(c.xp,key==='wheat'?2:Math.max(1,Math.round(old.xp*2/3)),key);
+  assert.equal(c.xp,Math.max(1,Math.round(old.xp*2/3)),key);
  }
  for(const key of ['cranberries','sprouts'])assert.equal(CROPS[key].xp,18);
  const s=farm();assert.equal(seedCost(s,'corn'),3);
@@ -97,7 +101,7 @@ test('the seed shop and the seed picker show a crop\'s time with water and care,
  assert.match(html,/<p class="seed-yield-line"><span class="cared-time"><i data-game-art="water"><\/i><i data-game-art="care"><\/i><\/span>Times with water and care\. Every harvest gives 1 crop\.<\/p>/);
  assert.match(read('public/retention.css'),/\.cared-time\{display:inline-flex/);
  assert.doesNotMatch(read('public/game.js'),/\+1 crop/,'no "+1 crop" for water or care any more');
- const s=farm();assert.equal(caredDuration(s,'wheat',false,now),Math.round(30000+(48000-30000)*.4),'wheat: care opens at the 30-second minimum');
+ const s=farm();assert.equal(caredDuration(s,'wheat',false,now),30000,'wheat: 2 minutes, 30 seconds with water and care (care opens at 18 s, above the 15-second minimum)');
  assert.ok(caredDuration(s,'apples',true,now)<cropDuration(s,'apples',true,now)*.26);
 });
 
@@ -109,4 +113,49 @@ test('the texts say the new rule: one crop a harvest, water and care make it rip
  assert.match(read('public/loading-screen.js'),/Water and care for a field: it is ready in about a quarter of the time\./);
  assert.match(read('public/retention-ui.js'),/it opens after 15% of the growing time/);
  for(const lang of ['nl','de','es','fr','ja']){const t=JSON.parse(read(`public/i18n/${lang}.json`));assert.ok(t['Times with water and care. Every harvest gives 1 crop.'],lang);assert.ok(t['{0} sooner'],lang);}
+});
+
+// "Verdubbel de doelen, ook de medailles" (22 Oct 2026): harvests come about twice as often, so every goal that counts harvests asks twice as many.
+test('harvest goals ask twice as many: quests, daily challenges, season weeks and the hourly events',()=>{
+ assert.deepEqual(QUESTS.filter(q=>q.stat==='harvested').map(q=>q.target),[6,200,2000,5000,10000,20000,20]);
+ for(const q of QUESTS.filter(q=>q.stat==='harvested'))assert.match(q.description,new RegExp(q.target.toLocaleString('en-US')),q.title);
+ assert.deepEqual(DAILY_POOLS.flat().filter(q=>q.stat==='harvested').map(q=>[q.target,q.description]),[[16,'Harvest 16 crops.'],[80,'Harvest 80 crops.']]);
+ const src=read('game/farm-state.js');
+ for(const [kind,target] of [['harvest',300],['festival',200],['sprouts',200]])assert.ok(src.includes(`goal:{kind:'${kind}',target:${target}}`),kind);
+ assert.doesNotMatch(src,/goal:\{kind:'(harvest|festival|sprouts)',target:(150|100)\}/);
+ assert.equal(HARVEST_GOAL_FACTOR,2);
+ EVENT_HOUR_POOLS.forEach((league,i)=>league.flat().forEach(g=>{const was=EVENT_HOUR_POOLS_BEFORE_ONE_CROP[i].flat().find(x=>x.stat===g.stat).target;assert.equal(g.target,g.stat==='harvested'?was*2:was,g.stat);}));
+ assert.equal(EVENT_GOAL_TITLES.tended[0][1],'A little care brings every harvest in sooner.');
+});
+
+test('medals ask 50 / 200 / 600 / 2,000 harvests; a medal reached with the old numbers stays, collected or not',()=>{
+ assert.deepEqual(MASTERY_TIERS.map(t=>t.target),[50,200,600,2000]);assert.deepEqual([...MASTERY_TARGETS_BEFORE_ONE_CROP],[25,100,300,1000]);
+ // A farm from before: 150 corn harvests (Bronze collected, Silver reached but not collected), 30 wheat (Bronze reached), 10 lettuce.
+ const s=farm(40);delete s.mastery.kept;Object.assign(s.mastery.harvests,{corn:150,wheat:30,lettuce:10});s.mastery.claimed=['corn:0'];
+ normalizeFarm(s,now);assert.deepEqual(s.mastery.kept,{corn:2,wheat:1},'what the old numbers gave, once');
+ assert.deepEqual(masteryStatus(s,'corn').map(t=>[t.progress,t.target,t.claimed]),[[50,50,true],[200,200,false],[150,600,false],[150,2000,false]],'Silver stays; Gold counts 150 of 600');
+ assert.ok(medalsWaiting(s).includes('corn:1')&&medalsWaiting(s).includes('wheat:0')&&!medalsWaiting(s).some(id=>id.startsWith('lettuce')));
+ act(s,{type:'mastery',crop:'corn',tier:1},now);act(s,{type:'mastery',crop:'wheat',tier:0},now);
+ assert.throws(()=>act(s,{type:'mastery',crop:'corn',tier:2},now),/Keep harvesting/);
+ // Kept once: later loads never add tiers from new harvests; the new numbers count from here.
+ s.mastery.harvests.lettuce=60;normalizeFarm(s,now+1);assert.equal(s.mastery.kept.lettuce,undefined);assert.ok(medalsWaiting(s).includes('lettuce:0'),'50 now');
+ s.mastery.harvests.wheat=150;normalizeFarm(s,now+2);assert.equal(s.mastery.kept.wheat,1);assert.ok(!medalsWaiting(s).includes('wheat:1'),'Silver now needs 200');
+ // A broken value is dropped; a new farm keeps nothing.
+ s.mastery.kept.corn=9;s.mastery.kept.nope=1;normalizeFarm(s,now+3);assert.deepEqual(Object.keys(s.mastery.kept).sort(),['wheat']);
+ assert.deepEqual(createNewFarm(now).mastery.kept,{});
+});
+
+test('the Family Chest counts two harvests a point; supabase/one-crop.sql is generated, guarded and checked',()=>{
+ assert.equal(FAMILY_CHEST_POINTS.harvested,.5);
+ const sql=read('supabase/one-crop.sql'),md5=t=>createHash('md5').update(t).digest('hex');
+ assert.equal(sql,oneCropSql(),'run node scripts/one-crop-sql.mjs');
+ assert.deepEqual(LIVE_MD5,{'harvest_family_chest()':'b2935aa9acdcab783a7b943463607ad6','harvest_event_pick(bigint)':'a4354b4070af10908e1e609720cba26d'});
+ assert.equal(NEW_MD5['harvest_family_chest()'],md5(CHEST_BODY));
+ for(const hash of [...Object.values(LIVE_MD5),...Object.values(NEW_MD5)])assert.ok(sql.includes(`if m is distinct from '${hash}'`),hash);
+ assert.match(sql,/^begin;$/m);assert.match(sql,/^commit;\n$/m);assert.doesNotMatch(sql,/grant |create table|drop /i,'no new function, grant or table');
+ assert.match(sql,/create or replace function public\.harvest_family_chest\(\)\n returns trigger language plpgsql security definer set search_path to '' as \$function\$/);
+ assert.match(sql,/create or replace function public\.harvest_event_pick\(n bigint\)\n returns jsonb language plpgsql stable set search_path to '' as \$function\$/);
+ assert.ok(sql.split('A little care brings every harvest in sooner.').length>2,'in the new pick (and the header)');assert.equal(sql.split('every harvest bigger.').length,2,'only in the header comment');
+ // floor(new/2) - floor(old/2): every second harvest is a point, however the saves split them.
+ const half=n=>Math.floor(n/2);let points=0,total=0;for(const step of [1,1,3,1,2,5,1])points+=half(total+step)-half(total),total+=step;assert.equal(points,half(total));
 });

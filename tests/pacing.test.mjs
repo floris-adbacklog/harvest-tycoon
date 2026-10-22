@@ -58,8 +58,8 @@ test('farms saved with an earlier curve keep their level and share of progress, 
 });
 const xpForLevelOld=level=>60*(level-1)+20*(level-1)*(level-2);
 test('slow crops pay more XP so hours of waiting still feel like progress; one crop a harvest keeps a carer\'s XP an hour',()=>{
- // One crop a harvest (22 Oct 2026): two thirds of the old XP (wheat stays 2), no doubling for water and care.
- assert.deepEqual([CROPS.wheat.xp,CROPS.lettuce.xp,CROPS.corn.xp],[2,2,3]);
+ // One crop a harvest (22 Oct 2026): two thirds of the old XP (wheat too: 2 -> 1, the owner's option b), no doubling for water and care.
+ assert.deepEqual([CROPS.wheat.xp,CROPS.lettuce.xp,CROPS.corn.xp],[1,2,3]);
  assert.deepEqual([CROPS.barley.xp,CROPS.greenbeans.xp,CROPS.cabbage.xp,CROPS.cauliflower.xp,CROPS.pumpkin.xp,CROPS.redcabbage.xp,CROPS.sunflower.xp],[8,14,12,18,24,32,45]);
  // XP per hour of growing for a farmer who waters and cares: before, twice the XP in 72.5% of the time; now the XP in 25% of it.
  const old={lettuce:3,corn:5,barley:12,greenbeans:21,cabbage:18,cauliflower:27,pumpkin:36,redcabbage:48,sunflower:68,apples:33,berries:27,squash:60,polebeans:30,ciderapples:40,cherries:46};

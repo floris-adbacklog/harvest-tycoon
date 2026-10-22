@@ -26,10 +26,12 @@ test('a new family is open, so anyone can join straight away',()=>{
 test('the chest has four tiers that a busier family fills further; points per action match the database trigger',async()=>{
  // Diamonds 2 / 3 / 6 / 12 since 7 Oct 2026 (3 / 6 / 12 / 25 before).
  assert.deepEqual(FAMILY_CHEST_TIERS.map(t=>[t.id,t.points,t.diamonds,t.coinsPerLevel]),[['wood',1500,2,20],['iron',5000,3,50],['silver',12000,6,100],['gold',25000,12,200]]);
- assert.deepEqual(FAMILY_CHEST_POINTS,{harvested:1,produced:2,deliveries:10,chores:3,activities:2});
+ // Two harvests make a point since one crop a harvest (22 Oct 2026, supabase/one-crop.sql); a harvest was a point before.
+ assert.deepEqual(FAMILY_CHEST_POINTS,{harvested:.5,produced:2,deliveries:10,chores:3,activities:2});
  assert.deepEqual([0,1499,1500,4999,5000,12000,25000,99999].map(familyChestTiers),[0,0,1,1,2,3,4,4]);
- const sql=(await import('node:fs')).readFileSync(new URL('../supabase/family-chest.sql',import.meta.url),'utf8');
- for(const [stat,points] of Object.entries(FAMILY_CHEST_POINTS))assert.match(sql,new RegExp(`'${stat}'\\)::bigint,0\\)\\)\\*${points}\\b`),stat);
+ const fs=await import('node:fs'),sql=fs.readFileSync(new URL('../supabase/family-chest.sql',import.meta.url),'utf8'),now=fs.readFileSync(new URL('../supabase/one-crop.sql',import.meta.url),'utf8');
+ for(const [stat,points] of Object.entries(FAMILY_CHEST_POINTS))if(stat!=='harvested'){assert.match(sql,new RegExp(`'${stat}'\\)::bigint,0\\)\\)\\*${points}\\b`),stat);assert.match(now,new RegExp(`'${stat}'\\)::bigint,0\\)\\)\\*${points}\\b`),stat);}
+ assert.match(now,/pts:=greatest\(0,coalesce\(\(new\.state->'stats'->>'harvested'\)::bigint,0\)\/2-coalesce\(\(old\.state->'stats'->>'harvested'\)::bigint,0\)\/2\)\n/,'two harvests a point');
  assert.match(sql,new RegExp(`floor\\(\\(extract\\(epoch from now\\(\\)\\)\\*1000-4\\*86400000\\)/\\(7\\*86400000\\)\\)`),'the same week as familyWeek');
 });
 
