@@ -651,7 +651,10 @@ function decorate(){
  // The Warehouse (22 Oct 2026): the Sheep Barn's old red barn at its own proportions, where the Feed Mill stood and a little to the right
  // (it is longer), its doors towards the lane and the fields, with crates by them. Every crop and good of the farm goes in here.
  zone('warehouse');addUtility('warehouse','hangar_006',-11.5,4.6,{width:8.5,rotation:Math.PI/2});fresh.push(utilityViews.get('warehouse').object);
- fresh.push(cloneModel('case_002',-6.5,5.7,{width:.95,rotation:.2}),cloneModel('case_003',-6.6,6.6,{width:.8,rotation:-.35}),cloneModel('case_002',-6.45,5.75,{width:.8,y:.82,rotation:.6}));
+ // The crates by its doors stand apart and on each other (22 Oct 2026, the owner: "achterste krat gaat voor de middelste"): the vegetable
+ // crate stood 17 cm into the fish crate beside it and now has 4 cm between them, and the top crate floated 39 cm above the one under it
+ // (a crate is 0.43 high at this size, not 0.82) and now rests on it, turned a little less so all its corners stand on it.
+ fresh.push(cloneModel('case_002',-6.5,5.7,{width:.95,rotation:.2}),cloneModel('case_003',-6.6,6.82,{width:.8,rotation:-.35}),cloneModel('case_002',-6.5,5.7,{width:.8,y:.433,rotation:.3}));
  zone('bakery');addBuilding('bakery',-10.8,12,{width:6.8,rotation:Math.PI/2});
  zone('packing');addBuilding('packing',11.5,-17.2,{width:5.1,rotation:Math.PI/2});   // its front with the windows towards the camera (26 Sep 2026)
  zone('windmill');
