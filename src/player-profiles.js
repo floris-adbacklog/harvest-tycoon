@@ -5,7 +5,7 @@ import {confirmAction} from '../public/confirm-dialog.js';
 import {ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
 import {skeleton} from '../public/skeleton.js';
-import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook} from '../game/farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook,GIFT_PASSES,giftPass} from '../game/farm-state.js';
 import {framed,lookBadge,lookTitle,lookBackground} from '../public/look-marks.js';
 
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -111,9 +111,9 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
   </div><p class="admin-grant-hint">A minus in Diamonds takes them back (−50): never below 0, and without a notification.</p><div class="admin-grant-item-row">
    <label class="admin-grant-field admin-grant-item-select"><span class="admin-grant-field-label">${art('seeds')}Crop or good</span><select id="admin-grant-item">${adminGrantItemOptions}</select></label>
    <label class="admin-grant-field admin-grant-item-count"><span class="admin-grant-field-label">Quantity</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="0" id="admin-grant-item-count"></label>
-  </div><label class="admin-grant-notify"><input type="checkbox" id="admin-grant-notify"><span>Notify the player — they see a "Donation!" popup with these amounts</span></label><textarea id="admin-grant-message" maxlength="200" rows="2" placeholder="Optional message, shown with the notification" hidden></textarea><button type="button" class="primary-button admin-grant-give" id="admin-grant-give">${art('gift')}Give</button><p id="admin-grant-status" role="status"></p>`;
+  </div><label class="admin-grant-field admin-grant-pass"><span class="admin-grant-field-label">${art('season-pass-autumn')}Season Pass</span><select id="admin-grant-pass"><option value="">None</option>${GIFT_PASSES.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></label><label class="admin-grant-notify"><input type="checkbox" id="admin-grant-notify"><span>Notify the player — they see a "Donation!" popup with these amounts</span></label><textarea id="admin-grant-message" maxlength="200" rows="2" placeholder="Optional message, shown with the notification" hidden></textarea><button type="button" class="primary-button admin-grant-give" id="admin-grant-give">${art('gift')}Give</button><p id="admin-grant-status" role="status"></p>`;
   const coinsInput=adminGrant.querySelector('#admin-grant-coins'),xpInput=adminGrant.querySelector('#admin-grant-xp'),diamondsInput=adminGrant.querySelector('#admin-grant-diamonds');
-  const itemSelect=adminGrant.querySelector('#admin-grant-item'),itemCountInput=adminGrant.querySelector('#admin-grant-item-count');
+  const itemSelect=adminGrant.querySelector('#admin-grant-item'),itemCountInput=adminGrant.querySelector('#admin-grant-item-count'),passSelect=adminGrant.querySelector('#admin-grant-pass');
   const notifyInput=adminGrant.querySelector('#admin-grant-notify'),messageInput=adminGrant.querySelector('#admin-grant-message');
   const give=adminGrant.querySelector('#admin-grant-give'),grantStatus=adminGrant.querySelector('#admin-grant-status');
   // The message field only makes sense once notify is on; it stays out of the way otherwise.
@@ -122,18 +122,20 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
    // Diamonds may have a minus (17 Oct 2026, the owner: farmers cheat with Invite a friend): that takes them back, on its own and unnotified.
    const coins=Math.max(0,Math.floor(Number(coinsInput.value)||0)),xp=Math.max(0,Math.floor(Number(xpInput.value)||0)),diamonds=Math.trunc(Number(diamondsInput.value)||0);
    const item=itemSelect.value||null,itemCount=item?Math.max(0,Math.floor(Number(itemCountInput.value)||0)):0;
-   if(!coins&&!xp&&!diamonds&&!(item&&itemCount)){grantStatus.textContent='Enter at least one amount.';return;}
+   // A pass (22 Oct 2026): the Halloween Pass or a Season Pass, as if bought.
+   const pass=passSelect.value||null;
+   if(!coins&&!xp&&!diamonds&&!(item&&itemCount)&&!pass){grantStatus.textContent='Enter at least one amount.';return;}
    const notify=notifyInput.checked,message=notify?messageInput.value.trim():'';
-   if(diamonds<0)return takeBack({diamonds,other:coins||xp||(item&&itemCount)||notify});
-   const parts=[coins&&`${coins} coins`,xp&&`${xp} XP`,diamonds&&`${diamonds} diamonds`,item&&itemCount&&`${itemCount} ${ITEMS[item].name}`].filter(Boolean).join(', ');
+   if(diamonds<0)return takeBack({diamonds,other:coins||xp||(item&&itemCount)||notify||pass});
+   const parts=[pass&&giftPass(pass).name,coins&&`${coins} coins`,xp&&`${xp} XP`,diamonds&&`${diamonds} diamonds`,item&&itemCount&&`${itemCount} ${ITEMS[item].name}`].filter(Boolean).join(', ');
    const sure=await confirmAction({names:[profileUsername],title:`Give ${profileUsername??'this farmer'}?`,description:`${parts}.${notify?' They will be notified.':''}`,confirmLabel:'Give',cancelLabel:'Cancel',picture:'gift'});
    if(!sure)return;
    give.disabled=true;grantStatus.textContent='Giving…';
    try{
-    const data=await bridge.request({operation:'admin_grant',playerId,coins,xp,diamonds,item,itemCount,notify,message});
-    const itemPart=data.granted.item?` · +${data.granted.itemCount} ${ITEMS[data.granted.item].name}`:'';
+    const data=await bridge.request({operation:'admin_grant',playerId,coins,xp,diamonds,item,itemCount,notify,message,...(pass?{pass}:{})});
+    const itemPart=(data.granted.item?` · +${data.granted.itemCount} ${ITEMS[data.granted.item].name}`:'')+(data.granted.pass?` · ${giftPass(data.granted.pass)?.name??''}`:'');
     grantStatus.textContent=`Given: +${data.granted.coins} coins · +${data.granted.xp} XP · +${data.granted.diamonds} diamonds${itemPart}. New level: ${data.totals.level}.${notify?' Notified.':''}`;
-    coinsInput.value='';xpInput.value='';diamondsInput.value='';itemSelect.value='';itemCountInput.value='';messageInput.value='';
+    coinsInput.value='';xpInput.value='';diamondsInput.value='';itemSelect.value='';itemCountInput.value='';passSelect.value='';messageInput.value='';
     // Gifting yourself: your own running farm (same window, farm.html's own script) still has the old balance
     // in memory and no reason of its own to refetch — force the same reload a reconnect would do, so the coin
     // counter catches up and, if notify was on, the "Donation!" popup actually shows instead of silently waiting

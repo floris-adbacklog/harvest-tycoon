@@ -3490,6 +3490,12 @@ const WINTER_2026=Object.freeze({id:'winter-2026',name:'Winter',title:'Winter 20
 });
 const SEASON_LIST=Object.freeze([AUTUMN_2026,WINTER_2026]);
 export const SEASON_IDS=Object.freeze(SEASON_LIST.map(s=>s.id));
+// The passes the admin can give from a farmer's Edit (22 Oct 2026, the owner: "dat ik ook Seizoenspas of Halloween pas kan geven"): the
+// same as buying one, its id in passPremium (supabase/functions/farm-api/admin-service.js), shown in the "Donation!" window by name.
+// Their names as the game already shows them (Autumn's is the plain "Season Pass" of the shop).
+export const GIFT_PASSES=Object.freeze([{id:SEASON_PASS.id,name:SEASON_PASS.name,art:'giant-small'},
+ ...SEASON_LIST.map(s=>({id:s.id,name:s.passName??'Season Pass',art:s.art}))].map(p=>Object.freeze(p)));
+export const giftPass=id=>GIFT_PASSES.find(p=>p.id===id)??null;
 // 1.4 × the season's days (from its start to its end), rounded to 5: 65 for a start on 6 November.
 export const seasonPerTier=(startsAt,endsAt)=>Math.max(5,Math.round(1.4*Math.round((endsAt-startsAt)/DAY_MS)/5)*5);
 // A season's start can only be set in this file (the owner's go). scheduleSeason is for the tests and the local harness only: it puts

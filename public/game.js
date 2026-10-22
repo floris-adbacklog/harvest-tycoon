@@ -77,6 +77,7 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
 import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
+import { giftPass } from './farm-state.js';
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
@@ -333,6 +334,8 @@ function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',
  if(actions&&go){actions.hidden=!action;document.querySelector('#gift-dialog .gift-done').hidden=Boolean(action);go.textContent=action?.label??'';go.onclick=action?()=>{$('gift-dialog').close();action.run();}:null;}
  $('gift-icon').innerHTML=art(icon);const kicker=document.querySelector('#gift-dialog .eyebrow');if(kicker)kicker.textContent=eyebrow;setOwnText($('gift-title'),title,names);
  const rewards=[];
+ // A pass from the admin (22 Oct 2026, game/farm-state.js GIFT_PASSES): its ticket and name first.
+ if(gift.pass&&giftPass(gift.pass))rewards.push(`<strong class="reward-item">${art(giftPass(gift.pass).art)}${giftPass(gift.pass).name}</strong>`);
  if(gift.coins)rewards.push(`<strong class="reward-coins">${art('coins')}+${gift.coins.toLocaleString('en-US')} coins</strong>`);
  if(gift.xp)rewards.push(`<strong class="reward-xp">${art('xp')}+${gift.xp.toLocaleString('en-US')} XP</strong>`);
  if(gift.diamonds)rewards.push(`<strong class="reward-diamonds">${art('diamonds')}+${gift.diamonds.toLocaleString('en-US')} diamonds</strong>`);

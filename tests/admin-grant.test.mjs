@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {handleAdminGrant,isSuperadmin,validGrantAmount,validGrant,validItem,sanitizeGiftMessage} from '../supabase/functions/farm-api/admin-service.js';
 import {createFarm,levelOf} from '../game/farm-state.js';
+const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const id='11111111-1111-4111-8111-111111111111',adminId='22222222-2222-4222-8222-222222222222';
 const now=Date.UTC(2026,8,22,12);
 const admin={id:adminId,email:'floris@millstone.nl',email_confirmed_at:'2026-09-16T21:12:00Z',signInMethods:['oauth']};
@@ -205,4 +206,32 @@ test('a waiting gift is picked up and cleared on the farmer\'s own next load, al
  assert.match(load,/let gift=state\.pendingGift\?\?null;if\(gift\)delete state\.pendingGift;/,'read once, then removed from the state that gets committed');
  assert.match(load,/if\(welcome\|\|levelReward\.levels\.length\|\|chapterReward\.chapters\.length\|\|gift\|\|inviteReward\|\|friends\.length\|\|emailBonusPaid\)\{/,'a waiting gift alone is enough to trigger the commit, like a level or chapter reward (or an invite reward)');
  assert.match(load,/return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins\},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck\(state\),revision:row\.revision\+1,serverNow:now,reloadAfter:await reloadAt\}\);/);
+});
+
+// A pass from the admin (22 Oct 2026, the owner: "dat ik ook Seizoenspas of Halloween pas kan geven").
+test('the admin can give the Halloween Pass or a Season Pass: into passPremium as if bought, never twice, shown and logged by name',async()=>{
+ const {GIFT_PASSES}=await import('../game/farm-state.js');
+ assert.deepEqual(GIFT_PASSES.map(p=>p.id),['halloween-2026','autumn-2026','winter-2026']);
+ assert.deepEqual(GIFT_PASSES.map(p=>p.name),['Halloween Pass','Season Pass','Winter Season Pass']);
+ assert.equal(validGrant({coins:0,xp:0,diamonds:0,item:null,itemCount:0,pass:'autumn-2026'}),true,'a pass on its own is a gift');
+ assert.equal(validGrant({coins:0,xp:0,diamonds:0,item:null,itemCount:0,pass:'spring-2099'}),false,'only a pass the game knows');
+ const db=database();
+ const result=await handleAdminGrant({admin:db,body:{playerId:id,coins:0,xp:0,diamonds:0,pass:'autumn-2026',notify:true},user:admin});
+ assert.equal(result.status,200);assert.equal(result.data.granted.pass,'autumn-2026');
+ const rpc=db.calls.find(c=>c.rpc==='harvest_commit_farm').args;
+ assert.deepEqual(rpc.p_state.passPremium,['autumn-2026']);assert.equal(rpc.p_state.pendingGift.pass,'autumn-2026');
+ assert.equal(db.calls.find(c=>c.insert)?.insert.pass,'autumn-2026');
+ // Already has it: refused before any save.
+ const owned=createFarm(now);owned.passPremium=['halloween-2026'];const again=database({state:owned});
+ const twice=await handleAdminGrant({admin:again,body:{playerId:id,pass:'halloween-2026'},user:admin});
+ assert.equal(twice.status,400);assert.match(twice.data.error,/already has the Halloween Pass/);assert.ok(!again.calls.some(c=>c.rpc));
+ // Never with a take-back.
+ const back=await handleAdminGrant({admin:database(),body:{playerId:id,diamonds:-10,pass:'autumn-2026'},user:admin});
+ assert.equal(back.status,400);
+ const {giftNotice}=await import('../supabase/functions/farm-api/admin-service.js');
+ assert.equal(giftNotice({coins:0,xp:0,diamonds:50,item:null,itemCount:0,message:null,pass:'winter-2026'}),'Donation: you received Winter Season Pass + 50 diamonds.');
+ const page=read('src/player-profiles.js'),game=read('public/game.js');
+ assert.match(page,/<select id="admin-grant-pass"><option value="">None<\/option>\$\{GIFT_PASSES\.map/);
+ assert.match(game,/if\(gift\.pass&&giftPass\(gift\.pass\)\)rewards\.push/);
+ assert.match(read('supabase/admin-grant-pass.sql'),/add column if not exists pass text/);
 });

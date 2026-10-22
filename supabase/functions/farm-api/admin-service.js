@@ -1,4 +1,4 @@
-import {normalizeFarm,levelOf,ITEMS,CROPS} from './farm-state.js';
+import {normalizeFarm,levelOf,ITEMS,CROPS,giftPass} from './farm-state.js';
 import {validEmail} from './account-form.js';
 import {portalOf} from './portal.js';
 import {setInviteClosed} from './invite-service.js';
@@ -38,20 +38,22 @@ export async function isStaff(admin,user){
 const MAX_GRANT=1000000,MAX_DIAMONDS=20000,MAX_ITEM=10000,MAX_MESSAGE=200;
 export const validGrantAmount=(value,max)=>Number.isInteger(value)&&value>=0&&value<=max;
 export const validItem=(item,itemCount)=>item==null?!itemCount:Object.hasOwn(ITEMS,item)&&validGrantAmount(itemCount,MAX_ITEM)&&itemCount>0;
-export function validGrant({coins,xp,diamonds,item,itemCount}){
- return validGrantAmount(coins,MAX_GRANT)&&validGrantAmount(xp,MAX_GRANT)&&validGrantAmount(Math.abs(diamonds),MAX_DIAMONDS)&&validItem(item,itemCount)&&Boolean(coins||xp||diamonds||(item&&itemCount));
+// pass (22 Oct 2026): the Halloween Pass or a Season Pass (game/farm-state.js GIFT_PASSES), on its own or with the rest.
+export function validGrant({coins,xp,diamonds,item,itemCount,pass=null}){
+ return validGrantAmount(coins,MAX_GRANT)&&validGrantAmount(xp,MAX_GRANT)&&validGrantAmount(Math.abs(diamonds),MAX_DIAMONDS)&&validItem(item,itemCount)&&(pass==null||Boolean(giftPass(pass)))
+  &&Boolean(coins||xp||diamonds||(item&&itemCount)||pass);
 }
 // Taking diamonds back (17 Oct 2026, the owner: farmers cheat with Invite a friend): a minus in the admin gift's Diamonds. It stands on
 // its own (no coins, XP or goods with it, and never notified: no "Donation!" for a removal), never takes a farm below 0 diamonds (what
 // it takes is what they had, at most), and is logged in admin_grants with the minus (supabase/admin-grants-take-back.sql).
 export const TAKE_ALONE='Take diamonds back on their own: leave the other amounts empty and notify off.';
-export const takeBackAlone=({coins,xp,diamonds,item,itemCount,notify})=>!(diamonds<0)||(!coins&&!xp&&!(item&&itemCount)&&!notify);
+export const takeBackAlone=({coins,xp,diamonds,item,itemCount,notify,pass=null})=>!(diamonds<0)||(!coins&&!xp&&!(item&&itemCount)&&!notify&&!pass);
 // A short, optional note; the player always sees the amounts once notify is on, the note is extra. Rendered as
 // plain text on the client (never HTML), so nothing here needs escaping — trimming and a length cap are enough.
 // "Donation: you received 50 diamonds + 1,000 coins + 3 Corn." and the admin's note, for the Notifications tab.
 const amount=n=>Number(n).toLocaleString('en-US');
-export function giftNotice({coins,xp,diamonds,item,itemCount,message}){
- const parts=[diamonds&&`${amount(diamonds)} diamonds`,coins&&`${amount(coins)} coins`,xp&&`${amount(xp)} XP`,item&&itemCount&&`${amount(itemCount)} ${ITEMS[item]?.name??item}`].filter(Boolean);
+export function giftNotice({coins,xp,diamonds,item,itemCount,message,pass=null}){
+ const parts=[pass&&(giftPass(pass)?.name??'Season Pass'),diamonds&&`${amount(diamonds)} diamonds`,coins&&`${amount(coins)} coins`,xp&&`${amount(xp)} XP`,item&&itemCount&&`${amount(itemCount)} ${ITEMS[item]?.name??item}`].filter(Boolean);
  return `Donation: you received ${parts.join(' + ')}.${message?` “${message}”`:''}`.slice(0,400);
 }
 export const sanitizeGiftMessage=value=>{const trimmed=String(value??'').trim().slice(0,MAX_MESSAGE);return trimmed||null;};
@@ -69,9 +71,10 @@ export async function handleAdminGrant({admin,body,user}){
  if(typeof playerId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerId))return respond({error:'Choose a valid farmer.'},400);
  const coins=Number(body.coins)||0,xp=Number(body.xp)||0,diamonds=Number(body.diamonds)||0;
  const item=typeof body.item==='string'&&body.item?body.item:null,itemCount=item?Math.max(0,Math.floor(Number(body.itemCount)||0)):0;
- if(!validGrant({coins,xp,diamonds,item,itemCount}))return respond({error:`Enter whole, non-negative amounts (at least one): per gift at most ${amount(MAX_DIAMONDS)} diamonds, ${amount(MAX_GRANT)} coins or XP and ${amount(MAX_ITEM)} of a crop or good.`},400);
+ const pass=typeof body.pass==='string'&&body.pass?body.pass:null;
+ if(!validGrant({coins,xp,diamonds,item,itemCount,pass}))return respond({error:`Enter whole, non-negative amounts (at least one): per gift at most ${amount(MAX_DIAMONDS)} diamonds, ${amount(MAX_GRANT)} coins or XP and ${amount(MAX_ITEM)} of a crop or good.`},400);
  const notify=body.notify===true,message=notify?sanitizeGiftMessage(body.message):null;
- if(!takeBackAlone({coins,xp,diamonds,item,itemCount,notify}))return respond({error:TAKE_ALONE},400);
+ if(!takeBackAlone({coins,xp,diamonds,item,itemCount,notify,pass}))return respond({error:TAKE_ALONE},400);
  // Never to an admin account (3 Oct 2026): it plays nothing and opens a showcase farm, so a gift would never be seen, and saving its real
  // farm would set its level 999 back (supabase/admin-level.sql). A lookup that fails does not stop a gift to a farmer.
  const target=await Promise.resolve().then(()=>admin.auth.admin.getUserById(playerId)).catch(()=>null);
@@ -88,6 +91,10 @@ export async function handleAdminGrant({admin,body,user}){
   // A removal takes what is there, at most: never below 0.
   const given=diamonds<0?-Math.min(-diamonds,Math.max(0,state.diamonds)):diamonds;
   if(diamonds<0&&!given)return respond({error:'This farmer has no diamonds to take back.'},400);
+  // A pass: as if bought (the database writes a bought one the same way, supabase/season-pass-engine.sql); never twice.
+  const owned=Array.isArray(state.passPremium)?state.passPremium:[];
+  if(pass&&owned.includes(pass))return respond({error:`This farmer already has the ${giftPass(pass).name}.`},400);
+  if(pass)state.passPremium=[...owned,pass];
   state.coins+=coins;state.xp+=xp;state.diamonds+=given;
   if(item&&itemCount){
    state.inventory[item]=(state.inventory[item]??0)+itemCount;
@@ -105,7 +112,7 @@ export async function handleAdminGrant({admin,body,user}){
   }
   // Picked up and cleared the next time this farmer's own client loads (index.ts, operation 'load') — works
   // whether they are online right now or come back later, with no separate push mechanism needed.
-  if(notify)state.pendingGift={coins,xp,diamonds,item,itemCount,message,at:now};
+  if(notify)state.pendingGift={coins,xp,diamonds,item,itemCount,message,...(pass?{pass}:{}),at:now};
   const level=levelOf(state);
   const saved=await admin.rpc('harvest_commit_farm',{p_player:playerId,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:foundProfile.data.username,p_currency:state.coins,p_level:level});
   if(saved.error)throw saved.error;
@@ -117,11 +124,11 @@ export async function handleAdminGrant({admin,body,user}){
    // back's time away) still moves with the gift, as before.
    const savedAt=new Date(Date.now()+5000).toISOString();
    try{await admin.from('player_stats').update({last_active_at:foundProfile.data.last_active_at??null}).eq('player_id',playerId).lte('last_active_at',savedAt);}catch{}
-   const logged=await admin.from('admin_grants').insert({player_id:playerId,granted_by:user.id,coins,xp,diamonds:given,item,item_count:itemCount,notified:notify,message});
+   const logged=await admin.from('admin_grants').insert({player_id:playerId,granted_by:user.id,coins,xp,diamonds:given,item,item_count:itemCount,notified:notify,message,...(pass?{pass}:{})});
    if(logged.error)throw logged.error;
    // With notify on, the gift also stays under Notifications in the chat (supabase/chat.sql). Best effort: the gift itself is saved.
-   if(notify)try{await admin.from('player_notices').insert({player_id:playerId,kind:'gift',body:giftNotice({coins,xp,diamonds,item,itemCount,message})});}catch{}
-   return respond({granted:{coins,xp,diamonds:given,item,itemCount},totals:{coins:state.coins,xp:state.xp,diamonds:state.diamonds,level}});
+   if(notify)try{await admin.from('player_notices').insert({player_id:playerId,kind:'gift',body:giftNotice({coins,xp,diamonds,item,itemCount,message,pass})});}catch{}
+   return respond({granted:{coins,xp,diamonds:given,item,itemCount,...(pass?{pass}:{})},totals:{coins:state.coins,xp:state.xp,diamonds:state.diamonds,level}});
   }
  }
  return respond({error:'This farmer changed at the same moment. Please try again.'},409);

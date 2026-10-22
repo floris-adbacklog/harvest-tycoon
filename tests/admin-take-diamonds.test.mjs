@@ -76,7 +76,7 @@ test('Edit on a farmer: the Diamonds field takes a minus; a removal asks in red 
  const ui=read('src/player-profiles.js');
  assert.match(ui,/<input type="number" min="-20000" step="1" placeholder="0" id="admin-grant-diamonds">/,'no inputmode=numeric: the iPhone keyboard then has a minus');
  assert.match(ui,/diamonds=Math\.trunc\(Number\(diamondsInput\.value\)\|\|0\);/);
- assert.match(ui,/if\(diamonds<0\)return takeBack\(\{diamonds,other:coins\|\|xp\|\|\(item&&itemCount\)\|\|notify\}\);/);
+ assert.match(ui,/if\(diamonds<0\)return takeBack\(\{diamonds,other:coins\|\|xp\|\|\(item&&itemCount\)\|\|notify\|\|pass\}\);/);
  assert.match(ui,/A minus in Diamonds takes them back \(−50\): never below 0, and without a notification\./);
  assert.ok(ui.includes(`'${TAKE_ALONE}'`),'the page says the server\'s rule in the same words');
  assert.match(ui,/confirmLabel:'Take back',cancelLabel:'Cancel',picture:'diamonds',tone:'danger'\}/);
