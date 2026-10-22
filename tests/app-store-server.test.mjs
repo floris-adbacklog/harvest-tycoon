@@ -148,7 +148,7 @@ function fakeDb(tables,{fail}={}){
    return {data:hit.map(r=>({...r})),error:null};
   };
   Object.assign(q,{select(){return q;},eq(k,v){q.filters.push(r=>r[k]===v);return q;},neq(k,v){q.filters.push(r=>r[k]!==v);return q;},in(k,v){q.filters.push(r=>v.includes(r[k]));return q;},
-   is(k,v){q.filters.push(r=>(r[k]??null)===v);return q;},lte(){return q;},gt(){return q;},order(){return q;},limit(){return q;},
+   is(k,v){q.filters.push(r=>(r[k]??null)===v);return q;},lte(){return q;},gt(){return q;},or(){return q;},order(){return q;},limit(){return q;},
    insert(v){q.op='insert';q.value=v;return q;},update(v){q.op='update';q.value=v;return q;},
    async maybeSingle(){const r=run();return r.error?r:{data:r.data[0]??null,error:null};},
    async single(){const r=run();return r.error?r:r.data.length===1?{data:r.data[0],error:null}:{data:null,error:{code:'PGRST116'}};},

@@ -201,3 +201,11 @@ test('the database values the coins in an offer at 500 a diamond too (supabase/o
   const o=offerFill({...kinds,vipDays});assert.ok(Math.abs(sqlWorth(o.diamonds,o.coins,o.vipDays)-4999)<=4999*0.02,JSON.stringify(o));assert.equal(sqlWorth(o.diamonds,o.coins,o.vipDays),offerValueCents(o));
  }
 });
+
+test('an offer for one farmer comes before the offer for everyone, and posting a new offer stops only offers for everyone (22 Oct 2026, App Review)',()=>{
+ const fn=read('supabase/functions/diamond-checkout/index.ts');
+ assert.match(fn,/\.or\(`player_id\.is\.null,player_id\.eq\.\$\{player\}`\)\.order\('player_id',\{ascending:true,nullsFirst:false\}\)\.order\('created_at',\{ascending:false\}\)\.limit\(1\)/);
+ const sql=read('supabase/offer-for-one-player.sql');
+ assert.match(sql,/add column if not exists player_id uuid references auth\.users\(id\) on delete cascade/);
+ assert.match(sql,/'where stopped_at is null and ends_at>now\(\);','where stopped_at is null and ends_at>now\(\) and player_id is null;'/);
+});

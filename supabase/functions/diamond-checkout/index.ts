@@ -31,7 +31,9 @@ async function currentOffer(player:string){
  const now=new Date().toISOString();
  // The three look-ups at once (30 Sep 2026: one after the other they made the catalogue ~150 ms slower).
  const [found,stats,bought]=await Promise.all([
-  admin.from('harvest_offers').select('*').is('stopped_at',null).lte('starts_at',now).gt('ends_at',now).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+  // An offer for one farmer (player_id, 22 Oct 2026: App Review's demo account, so Apple finds special_offer while nobody else sees it)
+  // comes before the offer for everyone.
+  admin.from('harvest_offers').select('*').is('stopped_at',null).lte('starts_at',now).gt('ends_at',now).or(`player_id.is.null,player_id.eq.${player}`).order('player_id',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false}).limit(1).maybeSingle(),
   admin.from('player_stats').select('level').eq('player_id',player).maybeSingle(),
   admin.from('harvest_purchases').select('offer_id').eq('player_id',player).eq('pack','offer').in('status',['credited','test_paid'])]);
  if(found.error){console.error('Offer unavailable',found.error.code);return null;}const o=found.data;if(!o)return null;
