@@ -50,7 +50,7 @@ test('a toast in another language is translated whole, its rewards chips again, 
  const nl=text=>({'Job well done! +12 coins and +5 XP.':'Goed gedaan! +12 munten en +5 XP.','Sold! +1,250 coins':'Verkocht! +1.250 munten','Harvested 3 wheat':'3 tarwe geoogst'})[text]??null;
  let parts=toastParts('Job well done! +12 coins and +5 XP.',nl);
  assert.equal(parts.local,true);assert.equal(parts.icon,'xp','tone and picture still come from the English');assert.equal(parts.tone,'reward');
- assert.match(parts.html,/^Goed gedaan! <b class="toast-chip is-coins">[\s\S]*\+12<\/b> munten en <b class="toast-chip is-xp">[\s\S]*\+5<\/b> XP\.$/);
+ assert.match(parts.html,/^Goed gedaan! <b class="toast-chip is-coins">[\s\S]*\+12<\/b> munten en <b class="toast-chip is-xp">[\s\S]*\+5 XP<\/b>$/,'the XP in its chip, no full stop after it (22 Oct 2026)');
  assert.match(toastParts('Sold! +1,250 coins',nl).html,/Verkocht! <b class="toast-chip is-coins">[\s\S]*\+1\.250<\/b> munten/,'the number as the language writes it');
  assert.equal(toastParts('Harvested 3 wheat',nl).html,'3 tarwe geoogst','goods stay words');
  assert.equal(toastParts('Something new',nl).local,false,'a text no translation knows: as before');
@@ -60,13 +60,21 @@ test('a toast in another language is translated whole, its rewards chips again, 
  assert.match(src,/<span class="toast-text"\$\{local\?' translate="no"':''\}>/);assert.match(center,/<p class="toast-text"\$\{local\?' translate="no"':''\}>/);
 });
 // 16 Oct 2026: a long note can ask for more time (the note about when the fields are ready, wait-tip.js); the timer bar runs as long.
-test('a toast can ask for more time: the timer bar and the hiding follow it, every other toast keeps 3.2 seconds',t=>{
+test('a toast can ask for more time: the timer bar and the hiding follow it, every other toast keeps 4.2 seconds (3.2 before 22 Oct 2026)',t=>{
  t.mock.timers.enable({apis:['setTimeout']});
  const classes=new Set(),props={},el={className:'toast',classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)},style:{setProperty:(k,v)=>{props[k]=v;}},innerHTML:'',offsetWidth:0};
  const show=createToast(el);
- show('Wheat selected. Choose an empty field to plant.');assert.equal(props['--toast-duration'],'3200ms');
- t.mock.timers.tick(3199);assert.ok(classes.has('visible'));t.mock.timers.tick(1);assert.ok(!classes.has('visible'));
+ show('Wheat selected. Choose an empty field to plant.');assert.equal(props['--toast-duration'],'4200ms');
+ t.mock.timers.tick(4199);assert.ok(classes.has('visible'));t.mock.timers.tick(1);assert.ok(!classes.has('visible'));
  show('Your fields are ready at 14:35.',{duration:6000});assert.equal(props['--toast-duration'],'6000ms');
- t.mock.timers.tick(5999);assert.ok(classes.has('visible'),'still there after 3.2 seconds');t.mock.timers.tick(1);assert.ok(!classes.has('visible'));
- show('Sold 12 Wheat for 84 coins.',{tone:'reward'});assert.equal(props['--toast-duration'],'3200ms','a tone alone keeps the time');
+ t.mock.timers.tick(5999);assert.ok(classes.has('visible'),'still there after 4.2 seconds');t.mock.timers.tick(1);assert.ok(!classes.has('visible'));
+ show('Sold 12 Wheat for 84 coins.',{tone:'reward'});assert.equal(props['--toast-duration'],'4200ms','a tone alone keeps the time');
+});
+
+test('a translated toast keeps XP in its chip, and no dot or full stop between the pieces (22 Oct 2026)',async()=>{
+ const {toastParts}=await import('../public/toast-ui.js');
+ const tr=t=>t==='Collected 1 Animal feed · +3 XP.'?'1 Veevoer opgehaald · +3 XP.':null;
+ const {html}=toastParts('Collected 1 Animal feed · +3 XP.',tr);
+ assert.match(html,/^1 Veevoer opgehaald <b class="toast-chip is-xp">.*\+3 XP<\/b>$/);
+ assert.doesNotMatch(html,/·/);
 });

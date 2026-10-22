@@ -20,7 +20,7 @@ const ITEM_KEYS=new Map(Object.entries(ITEMS).map(([key,item])=>[item.name.toLow
 const ITEM=new RegExp(`\\+?([\\d,]+)\\s(${[...ITEM_KEYS.keys()].sort((a,b)=>b.length-a.length).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})\\b`,'gi');
 // A reward's amount in a translated message: a plus and a number written the language's way ("+1.250", "+1 250"), maybe held
 // left to right in Arabic.
-const LOCAL_AMOUNT=/\u2066?\+\d(?:[.,\u00a0\u202f]?\d)*\u2069?/g;
+const LOCAL_AMOUNT=/\u2066?\+\d(?:[.,\u00a0\u202f]?\d)*\u2069?/g,LOCAL_REWARD=/(\u2066?\+\d(?:[.,\u00a0\u202f]?\d)*\u2069?)(\s?XP\b)?/g;
 // translate: the farmer's language (public/i18n.js translateText); null for English. names: players' own words in the message (a farmer,
 // a family, 17 Oct 2026), held out of the translation and shown as typed; such a message is always kept from the page's translation,
 // which would look a name up again ("Sunny Acres" is also a music track).
@@ -39,7 +39,10 @@ export function toastParts(message,translate=translateText,names=[]){
  const local=translate?.(text,names);
  if(local!=null&&local!==text){
   const kinds=[...text.matchAll(REWARD)].map(m=>kind(m[2]));let html=esc(local),i=0;
-  if(kinds.length&&[...html.matchAll(LOCAL_AMOUNT)].length===kinds.length)html=html.replace(LOCAL_AMOUNT,amount=>{const k=kinds[i++];return `<b class="toast-chip is-${k}">${art(k)}${amount}</b>`;});
+  // The XP after its amount goes into the chip (22 Oct 2026: "+3" in a chip and "XP." after it), and as in English no dots between
+  // the pieces and no stray full stop after a chip.
+  if(kinds.length&&[...html.matchAll(LOCAL_AMOUNT)].length===kinds.length)html=html.replace(LOCAL_REWARD,(_,amount,xp)=>{const k=kinds[i++];return `<b class="toast-chip is-${k}">${art(k)}${amount}${k==='xp'?' XP':''}</b>`+(xp&&k!=='xp'?xp:'');});
+  html=html.replace(/\s·\s/g,' ').replace(/<\/b>[.!](?=\s|$)/g,'</b>');
   return {tone,icon,html,local:true};
  }
  const html=esc(text)
@@ -54,7 +57,8 @@ export function toastParts(message,translate=translateText,names=[]){
 // itself: a new medal is good news without a "+40 coins" in it. 16 Oct 2026: and its time, for a long note that shows once a day (the
 // note about when the fields are ready, wait-tip.js).
 // 21 Oct 2026: and its picture, for a tip about one thing (natural fertilizer, fertilizer-tip.js).
-export function createToast(el,{duration=3200}={}){
+// 22 Oct 2026 (the owner: "iets langer in beeld"): 4.2 s by default, 3.2 s before.
+export function createToast(el,{duration=4200}={}){
  const base=String(el.className??'').split(/\s+/).filter(c=>c&&c!=='visible'&&!c.startsWith('is-')).join(' ')||'toast';
  let timer=0;
  return function show(message,options){

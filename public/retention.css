@@ -305,7 +305,7 @@
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#boost-dialog{max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 8px)}}
 
 /* Toasts: a painted icon in a tinted circle, reward chips, a soft spring in and a thin timer that runs out. */
-.toast{display:flex;align-items:center;gap:10px;min-width:220px;max-width:min(440px,calc(100% - 24px));padding:9px 16px 11px 9px;border:1px solid #e3d8c6;border-radius:18px;background:#fffdf5;box-shadow:0 10px 30px #3a301c26,0 2px 0 #e8dcc4;overflow:hidden;text-align:start;line-height:1.4}
+.toast{display:flex;align-items:center;gap:10px;min-width:220px;max-width:min(440px,calc(100% - 24px));padding:9px 16px 11px 9px;border:1.5px solid #e3d8c6;border-radius:18px;background:#fffdf5;box-shadow:0 4px 0 #e2d4ba,0 12px 30px #3a301c2e;overflow:hidden;text-align:start;line-height:1.4}
 .toast.visible{animation:toast-in .38s cubic-bezier(.2,1.4,.4,1)}
 @keyframes toast-in{from{opacity:0;transform:translate(-50%,-14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 .toast-icon{flex-shrink:0;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#efe8dc}
@@ -315,7 +315,7 @@
 .toast.is-warn .toast-icon{background:#f8ead2}
 .toast-text{min-width:0;font-weight:600;color:#453e28}
 .toast-chip{display:inline-flex;align-items:center;gap:3px;margin:0 1px;padding:1px 7px 1px 3px;border-radius:999px;font-weight:700;white-space:nowrap;vertical-align:1px}
-.toast-chip .game-art{width:16px;height:16px}
+.toast-chip .game-art{width:18px;height:18px}
 .toast-chip.is-coins{background:#f7e9b8;color:#6b4f0f}
 .toast-chip.is-xp{background:#e6ecfa;color:#39518f}
 .toast-chip.is-diamonds{background:#dff0f8;color:#2f6a8b}
