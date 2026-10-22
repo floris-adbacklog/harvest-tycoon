@@ -110,17 +110,15 @@ test('always arrives above the line: a running night shift, a pet’s find and a
  assert.equal(checks.length,places.length);for(const [i,line] of checks.entries())assert.ok(line.startsWith(places[i]),line);
 });
 
-test('the grandfather rule: a farm starts on the lowest level that holds its stock and a quarter more, as high as its level allows',()=>{
+test('every farm starts on Warehouse level 1, whatever its stock (the owner, 22 Oct 2026: "zet iedereen op lvl 1")',()=>{
  const at=(level,stock)=>{const s=farm(level);fill(s,stock);delete s.warehouse;return normalizeFarm(s,now).warehouse.level;};
- assert.equal(at(1,32),1);assert.equal(at(5,400),1);assert.equal(at(30,401),2);assert.equal(at(30,520),2);assert.equal(at(30,521),3);
- assert.equal(at(70,1840),10);assert.equal(at(70,1841),10,'never above 10 below farm level 108');assert.equal(at(70,25000),10);
- assert.equal(at(108,2000),11);assert.equal(at(119,3000),11);assert.equal(at(125,2500),12);assert.equal(at(200,30000),15);
+ for(const [level,stock] of [[1,32],[5,400],[30,521],[70,1841],[108,2000],[200,30000]])assert.equal(at(level,stock),1);
  // A new farm starts on level 1 and a saved level stays as it is, also when the stock changes.
  assert.equal(createFarm(now).warehouse.level,1);
  const s=farm(70);s.warehouse={level:3};fill(s,4000);normalizeFarm(s,now);assert.equal(s.warehouse.level,3);
  // Nobody loses anything: a farm over even its top keeps all its stock and only brings nothing in.
  const big=farm(85);fill(big,15198);delete big.warehouse;normalizeFarm(big,now);
- assert.equal(big.inventory.wheat,15198);assert.equal(big.warehouse.level,10);assert.equal(warehouseFull(big),true);
+ assert.equal(big.inventory.wheat,15198);assert.equal(big.warehouse.level,1);assert.equal(warehouseFull(big),true);
  // Bad saved values are mended.
  for(const bad of [{level:0},{level:'3'},{level:99},null,{}]){const t=farm(40);fill(t,100);t.warehouse=bad;normalizeFarm(t,now);assert.ok(t.warehouse.level>=1&&t.warehouse.level<=15,JSON.stringify(bad));}
  assert.equal(warehouseTopFor(farm(107)),10);assert.equal(warehouseTopFor(farm(108)),11);assert.equal(warehouseTopFor(farm(180)),15);

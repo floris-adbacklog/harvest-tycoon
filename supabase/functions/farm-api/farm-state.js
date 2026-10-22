@@ -4033,12 +4033,9 @@ export const warehouseFull=state=>storedCount(state)>=warehouseCapacity(state);
 export const warehouseNearFull=state=>storedCount(state)>=Math.ceil(warehouseCapacity(state)*WAREHOUSE_NEAR_FULL);
 // The highest level this farm's level allows: 10, and one more at each master step's farm level.
 export const warehouseTopFor=state=>WAREHOUSE_MAX_LEVEL+WAREHOUSE_MASTER.filter(step=>levelOf(state)>=step.level).length;
-// The level a farm starts on (grandfather rule): the lowest that holds its stock and a quarter more, at most what its level allows.
-export function warehouseStartLevel(state){
- const top=warehouseTopFor(state),need=Math.ceil(storedCount(state)*WAREHOUSE_START_ROOM);
- for(let level=1;level<=top;level++)if(WAREHOUSE_CAPACITY[level-1]>=need)return level;
- return top;
-}
+// The level a farm starts on: 1 for every farm (22 Oct 2026, the owner: "zet iedereen op lvl 1"; the first release started each farm on
+// the lowest level that held its stock and a quarter more). A farm with more than level 1 holds keeps it all, but sells before it brings in.
+export function warehouseStartLevel(state){return 1;}
 export function warehouseFullText(state){return `Warehouse full (${storedCount(state)} / ${warehouseCapacity(state)}). Sell or use something to bring in more.`;}
 function assertWarehouseRoom(state){if(warehouseFull(state))throw new Error(warehouseFullText(state));}
 // The next upgrade: {level (the one it reaches), capacity, coins, materials, farmLevel (needed), voucher}, or null at the top.
