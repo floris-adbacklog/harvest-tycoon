@@ -109,8 +109,8 @@ test('admin_players and admin_player: the IP address, country and device are for
  const one=await handleAdminPlayer({admin:database(tables),user:moderator,playerId:P1,now});
  assert.equal(one.status,200);for(const key of ['ip','country','device','userAgent','seenAt','purchases','starter'])assert.ok(!(key in one.data.player),`a moderator never gets ${key}`);
  assert.equal(one.data.player.language,'nl');
- assert.deepEqual(one.data.player.sameNetwork,[{playerId:P2,username:'Idle',everPlayed:true}],'but does see which accounts share the network, for a second account dodging a ban');
- assert.match(playerDetail(one.data.player,{now}),/Same network as<\/dt><dd><button type="button" class="admin-link" data-player="[^"]+">Idle<\/button>/);
+ assert.ok(!('sameNetwork' in one.data.player),'nor which accounts share the network (22 Oct 2026, the owner)');
+ assert.doesNotMatch(playerDetail(one.data.player,{now}),/Same network/);
  const farmer=await handleAdminPlayers({admin:database(tables),user:{id:'x',email:'someone@example.com'},now});
  assert.equal(farmer.status,403);
 });
@@ -231,7 +231,7 @@ test('one farmer\'s page lists the other accounts on the same network, and leave
  assert.match(html,/Game language<\/dt><dd>Dutch/);
  assert.match(html,/Same network as<\/dt><dd><button[^>]*data-player="b">Bram<\/button>/);assert.match(html,/IP address<\/dt><dd>1\.1\.1\.1/);assert.match(html,/<h4>Purchases<\/h4>/);assert.match(html,/next: Start production/);assert.match(html,/email not confirmed/);
  const {purchases,...forModerator}=detail,mod=playerDetail(forModerator,{guideSteps:GUIDE_STEPS,now});
- assert.doesNotMatch(mod,/<dt>(IP address|Country|Device)<\/dt>|<h4>Purchases/);assert.match(mod,/Same network as<\/dt><dd>Not known/);assert.match(mod,/Game language<\/dt><dd>Not known yet/);
+ assert.doesNotMatch(mod,/<dt>(IP address|Country|Device)<\/dt>|<h4>Purchases/);assert.doesNotMatch(mod,/Same network/);assert.match(mod,/Game language<\/dt><dd>Not known yet/);
 });
 test('the dashboard: the list replaces the newest players, the funnel and countries sit in Growth, the policy names what is kept',()=>{
  const dash=read('src/admin-dashboard.js');

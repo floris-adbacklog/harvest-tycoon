@@ -242,7 +242,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  const [familyRow,inviterRow,network]=await Promise.all([
   member?quiet(admin.from('families').select('name').eq('id',member.family_id).maybeSingle()):null,
   inviter?quiet(admin.from('player_stats').select('username').eq('player_id',inviter).maybeSingle()):null,
-  a.ip?quiet(admin.rpc('admin_player_accounts',{p_ip:a.ip}).range(0,20)):null
+  owner&&a.ip?quiet(admin.rpc('admin_player_accounts',{p_ip:a.ip}).range(0,20)):null
  ]);
  const shared=(network?.data??[]).filter(row=>row.player_id!==id).slice(0,20);
  const finishedEvents=eventsFinished?.data??[],friends=invited?.data??[],muted=Date.parse(sanction?.data?.muted_until)>now;
@@ -260,8 +260,8 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
   invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length,closed:inviteCode?.data?.closed_at!=null},
   language:a.language??null,
-  sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),
-  ...(owner?{email:authUser?.data?.user?.email??null,country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
+  // Which accounts share the network: the admin only (22 Oct 2026, the owner: moderators must not see second accounts).
+  ...(owner?{sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),email:authUser?.data?.user?.email??null,country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
    starter:{offeredAt:num(state?.starterOffer?.unlockedAt)||null,bought:state?.starterPackClaimed===true},
    purchases:(purchases?.data??[]).map(p=>({pack:p.pack,status:p.status,euros:num(p.amount_cents)/100,diamonds:num(p.diamonds),test:!p.livemode,createdAt:p.created_at}))}:{})};
  return respond(user,{player,owner});

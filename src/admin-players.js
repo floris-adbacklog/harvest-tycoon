@@ -87,7 +87,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   fact('Days played',`${number(p.daysPlayed)} <small>(streak ${number(p.streak)}, best ${number(p.bestStreak)})</small>`),
   ...('ip' in p?[fact('Country',esc(country(p.country)??'Not known yet')),fact('IP address',p.ip?esc(p.ip):'—'),
    fact('Device',p.device?`<span title="${esc(p.userAgent??'')}">${esc(p.device)}</span>`:'—')]:[]),
-  fact('Same network as',!sameNetwork?'Not known':sameNetwork.length?sameNetwork.map(o=>`<button type="button" class="admin-link" data-player="${esc(o.playerId)}">${esc(name(o))}</button>`).join(', '):'Nobody else')
+  ...!('sameNetwork' in p)?[]:[fact('Same network as',!sameNetwork?'Not known':sameNetwork.length?sameNetwork.map(o=>`<button type="button" class="admin-link" data-player="${esc(o.playerId)}">${esc(name(o))}</button>`).join(', '):'Nobody else')]
  ].join('');
  const progress=[
   fact('Level',`${number(p.level)} <small>(${number(p.xp)} XP)</small>`),fact('Coins',number(p.coins)),fact('Diamonds',number(p.diamonds)),
@@ -115,7 +115,7 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   +`<h4>What they do</h4><ul class="admin-bars">${activity}</ul>`
   +(p.purchases?`<h4>Purchases</h4><ul class="admin-recent-list admin-purchases">${purchases}</ul>`:'')
   +`<h4>Events, chat and friends</h4><dl class="admin-facts">${social}</dl>`
-  +'<p class="admin-hint">Times are UTC. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. Open profile for the chat buttons.</p>';
+  +`<p class="admin-hint">Times are UTC. Last action is the last time the farm saved. Days played counts the days the daily gift was opened. ${'sameNetwork' in p?'Same network: the accounts that last played from the same IP address; a home, school or phone network is often shared, so it is a hint, not proof. ':''}Open profile for the chat buttons.</p>`;
 }
 
 // Where new players stop: of everyone who made an account in the period, how many got how far. The guide steps follow
