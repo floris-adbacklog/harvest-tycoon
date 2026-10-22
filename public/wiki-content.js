@@ -455,7 +455,7 @@ const BODIES={
   +section('Warehouse levels',`<p>Upgrades cost coins.${village?` From level ${WAREHOUSE_MAX_LEVEL+1} (farm level ${WAREHOUSE_MASTER[0].level} and up) they also ask for master tools, planks and stone from the village, like the buildings past level ${WAREHOUSE_MAX_LEVEL}.`:''} The Buildings discount boost halves the coins${village?' and goods':''} of your next Warehouse upgrade too.</p>`
    +table(['Level','Places','Upgrade cost'],WAREHOUSE_CAPACITY.slice(0,village?undefined:WAREHOUSE_MAX_LEVEL).map((places,i)=>{const level=i+1,master=WAREHOUSE_MASTER[level-WAREHOUSE_MAX_LEVEL-1];
     return `<tr><td>${level}</td><td>${number(places)}</td><td>${level===1?'Every farm starts here':master?`${art('coins')}${number(master.coins)}, ${Object.entries(master.materials).map(([k,n])=>`${number(n)} ${ITEMS[k].name.toLowerCase()}`).join(', ')} (level ${master.level})`:`${art('coins')}${number(WAREHOUSE_COSTS[level-2])}`}</td></tr>`;}))
-   +`<p>A farm that was already growing when the Warehouse came started on the level that holds its stock and a quarter more (${Math.round((WAREHOUSE_START_ROOM-1)*100)}%), as high as its farm level allowed. Nobody lost anything.</p>`);
+);
  },
  quests(h){
   // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app
