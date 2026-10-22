@@ -252,15 +252,15 @@ test('the sale: €19.99 once per season from level 20, the dates the game\'s ow
  assert.match(checkout,/eq\('pack','season'\)\.eq\('pass_id',open\.id\)\.in\('status',\['credited','test_paid'\]\)/,'a paid row for this season');
  assert.match(checkout,/const inFarm=Array\.isArray\(farmPasses\.data\?\.passes\)&&farmPasses\.data\.passes\.includes\(open\.id\);/,'or the season in the farm already');
 });
-test('the iPhone app: the App Store path is built but switched off (APPLE_SELLS_SEASON_PASS); both states',()=>{
- assert.equal(P.APPLE_SELLS_SEASON_PASS,false);assert.equal(G.APPLE_SELLS_SEASON_PASS,P.APPLE_SELLS_SEASON_PASS,'one switch: the page reads the same in farm-state.js');
+test('the iPhone app: the App Store path, switched on with the app 1.5 (APPLE_SELLS_SEASON_PASS, 22 Oct 2026); both states',()=>{
+ assert.equal(P.APPLE_SELLS_SEASON_PASS,true);assert.equal(G.APPLE_SELLS_SEASON_PASS,P.APPLE_SELLS_SEASON_PASS,'one switch: the page reads the same in farm-state.js');
  // Off: no product, the checkout refused, never credited.
- assert.equal(P.appleProduct('season'),null);assert.equal(P.appleProduct('pass'),'halloween_pass_2026','the Halloween Pass as before');
- assert.deepEqual(P.seasonStoreProblem('app_store'),{error:'The Season Pass is not sold in the iPhone app.',status:409});
+ assert.equal(P.appleProduct('season',false),null);assert.equal(P.appleProduct('pass'),'halloween_pass_2026','the Halloween Pass as before');
+ assert.deepEqual(P.seasonStoreProblem('app_store',false),{error:'The Season Pass is not sold in the iPhone app.',status:409});
  for(const store of ['stripe','google_play','kongregate'])assert.equal(P.seasonStoreProblem(store),null,store);
  const purchase={id:'00000000-0000-4000-8000-000000000001',pack:'season',pass_id:ID,diamonds:0,coins:0,amount_cents:1999,player_id:'p'};
  const apple={bundleId:P.APPLE_BUNDLE,transactionId:'1',originalTransactionId:'1',environment:'Production',type:'Consumable',productId:'season_pass',appAccountToken:purchase.id,quantity:1};
- assert.throws(()=>P.checkApplePurchase(apple,purchase,{product:'season_pass',player:'p'}),/Product mismatch/,'off: never credited');
+ assert.doesNotThrow(()=>P.checkApplePurchase(apple,purchase,{product:'season_pass',player:'p'}),'on since 1.5: credited');
  // On: the same product id as Google Play, nothing refused.
  assert.equal(P.appleProduct('season',true),'season_pass');assert.equal(P.seasonStoreProblem('app_store',true),null);
  assert.equal(P.APPLE_PRODUCTS,P.PLAY_PRODUCTS,'the App Store keeps Google Play\'s ids');
@@ -311,7 +311,7 @@ test('the window: the rule in one sentence, the value line without a euro beside
  assert.equal(worth,'What you can buy of it in the shop costs more than 8,800 diamonds there. You get it by reaching tiers.');
  assert.ok(!/€/.test(holds+worth),'no euro beside diamonds');
  const ios={documentElement:{getAttribute:name=>name==='data-app-os'?'ios':null}},web={documentElement:{getAttribute:()=>null}};
- assert.equal(ui.seasonSellsHere(ios),false,'not in the iPhone app while Apple does not sell it');assert.equal(ui.seasonSellsHere(ios,true),true);assert.equal(ui.seasonSellsHere(web),true);
+ assert.equal(ui.seasonSellsHere(ios,false),false,'not in the iPhone app while Apple does not sell it');assert.equal(ui.seasonSellsHere(ios),true,'on since the app 1.5');assert.equal(ui.seasonSellsHere(ios,true),true);assert.equal(ui.seasonSellsHere(web),true);
  assert.match(ui.leafChip(s,'gift',now),/\+30 leaves/);assert.match(ui.leafChip(s,'daily',at(11,23)),/\+30 leaves/,'doubled in the Harvest festival');
  assert.equal(ui.weekGoalText('festival',100),'Harvest 100 crops. Cranberries count double.');
  const source=read('public/season-ui.js');

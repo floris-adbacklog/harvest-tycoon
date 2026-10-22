@@ -165,7 +165,7 @@ test('the Starter Pack keeps its own level 14',()=>{
  assert.doesNotMatch(read('supabase/offer-level-10.sql').replace(/^--.*$/gm,''),/starter/i,'the patch touches nothing of it');
 });
 test('the iPhone app never shows or sells a special offer until Apple sells special_offer, also an offer from level 10',()=>{
- assert.equal(APPLE_SELLS_OFFER,false,'special_offer is not in App Review with the app 1.1');
+ assert.equal(APPLE_SELLS_OFFER,true,'special_offer goes to App Review with the app 1.5 (22 Oct 2026)');
  assert.equal(APPLE_PRODUCTS.offer,'special_offer');assert.equal(PLAY_PRODUCTS.offer,'special_offer','Google Play sells it as before');
  // The server: no offer in the iPhone app's catalogue, and its offer checkout finds none ('This offer has ended.').
  const fn=read('supabase/functions/diamond-checkout/index.ts');

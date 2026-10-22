@@ -200,7 +200,8 @@ export const APPLE_PRODUCTS=PLAY_PRODUCTS;
 // (site and diamond-checkout) once season_pass is an approved consumable in App Store Connect: then StoreKit sells it like the Halloween
 // Pass, apple_confirm checks Apple's signed transaction, the purchase is credited to the season it was bought in
 // (supabase/season-pass-engine.sql) and a refund comes back through app-store-notify.
-export const APPLE_SELLS_SEASON_PASS=false;
+// 22 Oct 2026, the owner: on, with the iPhone app 1.5 (season_pass goes to App Review with it).
+export const APPLE_SELLS_SEASON_PASS=true;
 // Why a Season Pass checkout cannot start in this store, or null.
 export const seasonStoreProblem=(store,sellsSeason=APPLE_SELLS_SEASON_PASS)=>store==='app_store'&&!sellsSeason?{error:'The Season Pass is not sold in the iPhone app.',status:409}:null;
 // The special offer in the iPhone app (13 Oct 2026): not yet. The app 1.1 went to App Review with the diamond packs and the Halloween
@@ -209,7 +210,8 @@ export const seasonStoreProblem=(store,sellsSeason=APPLE_SELLS_SEASON_PASS)=>sto
 // the iPhone app is never shown a special offer (diamond-checkout gives it none and refuses its checkout; src/main.js shows none), also
 // an offer from level 10, the level of App Review's demo account. Set it to true (site and diamond-checkout) when special_offer goes to
 // Apple's review as an in-app purchase. The Starter Pack (level 14) is not affected.
-export const APPLE_SELLS_OFFER=false;
+// 22 Oct 2026, the owner ("Doe 1"): on, with the iPhone app 1.5 (special_offer goes to App Review with it).
+export const APPLE_SELLS_OFFER=true;
 // Kreds on Kongregate (15 Oct 2026, the owner: built now, switched on once Kongregate allows the game its Virtual Goods API). The same
 // packs as Kongregate's own items (its developer portal, Manage Items: consumables of 1 use) with the Google Play product ids as their
 // identifiers, at prices in Kreds the owner sets there; the game shows only Kongregate's own prices (src/kongregate-kreds.js). A purchase

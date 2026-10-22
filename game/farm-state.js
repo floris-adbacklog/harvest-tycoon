@@ -3160,7 +3160,7 @@ export const SEASON_TIERS=100,SEASON_LEVEL=10,SEASON_BUY_LEVEL=20,SEASON_SKIP_CO
 // the pond or the lake; hand: a helping-hand job; chore: a chore.
 // The iPhone app sells the Season Pass only once this is true: the same switch as game/payments.js APPLE_SELLS_SEASON_PASS, for the page
 // (public/season-ui.js shows the free row only there); a test keeps the two equal.
-export const APPLE_SELLS_SEASON_PASS=false;
+export const APPLE_SELLS_SEASON_PASS=true;   // on since the iPhone app 1.5 (22 Oct 2026)
 export const SEASON_POINTS=Object.freeze({gift:30,daily:15,delivery:15,event:15,quest:5,fish:3,hand:3,chore:3});
 const whole=v=>Number.isSafeInteger(v)&&v>0?v:0;
 export function seasonCounts(state){
