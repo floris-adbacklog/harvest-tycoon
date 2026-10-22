@@ -206,7 +206,7 @@ export const BUILDINGS = Object.freeze({
  preserves:{"name": "Preserves Workshop", "tagline": "Berries and honey, saved for something special.", "icon": "amphora", "model": "hangar_002", "type": "production", "upgradeCost": 850, "minLevel": 10, "buildCost": 10000},
  // The midgame expansion: four new production buildings, each on its own model from the farm pack.
  beeyard:{"name": "Bee Yard", "tagline": "Busy hives: honey for the pantry and golden beeswax to sell.", "icon": "hexagon", "model": "apiary_002", "type": "production", "upgradeCost": 950, "minLevel": 34, "buildCost": 18000},
- sheepbarn:{"name": "Sheep Barn", "tagline": "A friendly flock and soft wool, shorn with care.", "icon": "cloud", "model": "hangar_006", "type": "production", "upgradeCost": 1050, "minLevel": 37, "buildCost": 26000},
+ sheepbarn:{"name": "Sheep Barn", "tagline": "A friendly flock and soft wool, shorn with care.", "icon": "cloud", "model": "hangar_015", "type": "production", "upgradeCost": 1050, "minLevel": 37, "buildCost": 26000},
  glasshouse:{"name": "Glasshouse", "tagline": "Warm beds under glass: a crate of vegetables or sunflowers from fertilizer, no field needed.", "icon": "sprout", "model": "greenhouse_004", "type": "production", "upgradeCost": 1200, "minLevel": 40, "buildCost": 40000},
  weaving:{"name": "Weaving Shed", "tagline": "Spin wool into yarn and weave it into fine cloth.", "icon": "package-check", "model": "house_018", "type": "production", "upgradeCost": 1300, "minLevel": 43, "buildCost": 55000},
  // Wave 2: goats beside the sheep, and a workshop for the Bee Yard's wax and the Weaving Shed's cloth.
@@ -1392,15 +1392,19 @@ export function workFields(state,action,ids,now=Date.now(),crop='corn'){
  if(!Array.isArray(ids)||!ids.length||ids.length>SWIPE_MAX_FIELDS)throw new Error('Choose some fields.');
  const packet=action==='plant'&&seasonCrop(crop);
  if(action==='plant'){if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a valid crop.');if(packet){const problem=seasonPlantProblem(state,crop,now);if(problem)throw new Error(problem);}else if(!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));}
- const fields=[],seen=new Set();let short=false;
+ const fields=[],seen=new Set();let short=false,full=false;
  for(const id of ids){
   if(!Number.isInteger(id)||id<0||id>=state.plots.length||seen.has(id))continue;seen.add(id);
   if(fieldTapAction(state.plots[id],now,action)!==action)continue;
   if(action==='plant'&&(packet?seasonSeedsOf(state,crop)<1:state.coins<seedCost(state,crop))){short=true;break;}
+  // The Warehouse (22 Oct 2026): a sweep's harvest stops when it is full; the fields harvested so far stay harvested (each field is
+  // checked before it is harvested, so the last one may go over the line).
+  if(action==='harvest'&&warehouseFull(state)){full=true;break;}
   fields.push({id,...actOnPlot(state,id,action,crop,now)});
  }
+ if(!fields.length&&full)throw new Error(warehouseFullText(state));
  if(!fields.length)throw new Error(action==='harvest'?'No crops are ready to harvest there yet.':action==='plant'?(short?(packet?'You have no seed packets left for this crop.':'Not enough coins. Sell some produce at the market.'):'These fields are already planted.'):'Nothing to do on these fields right now.');
- return {action,fields,count:fields.length,...(action==='plant'?{crop,cost:fields.reduce((sum,f)=>sum+f.cost,0),short}:{})};
+ return {action,fields,count:fields.length,...(action==='plant'?{crop,cost:fields.reduce((sum,f)=>sum+f.cost,0),short}:{}),...(full?{full:true}:{})};
 }
 export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
@@ -2858,7 +2862,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3818,6 +3822,8 @@ export function fertilizeQuote(state,now=Date.now()){
 export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
  if(!['plant','water','harvest','tend','fertilize'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
  if(mode==='plant'&&!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
+ // The Warehouse (22 Oct 2026): the Harvest job waits while it is full (once it runs it harvests every ripe field, also over the line).
+ if(mode==='harvest')assertWarehouseRoom(state);
  const quote=tractorQuote(state,mode,crop,now);
  if(expectedCost!==undefined&&(!Number.isSafeInteger(expectedCost)||quote.total>expectedCost))throw new Error('The price has changed. Review the current price.');
  if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':mode==='fertilize'?(quote.fields?'Make natural fertilizer at the Windmill first.':'No growing crops need fertilizer.'):'No crops are ready to harvest.');
@@ -3911,6 +3917,8 @@ export function startNightShift(state,crop,expectedCost,now=Date.now()){
  const quote=nightShiftQuote(state,crop,now);
  if(quote.running)throw new Error('The night shift is already running.');
  if(quote.doneToday)throw new Error('One night shift a day: the next one can start tomorrow.');
+ // The Warehouse (22 Oct 2026): a shift harvests, so it cannot start while the Warehouse is full; one that runs goes on to its end.
+ assertWarehouseRoom(state);
  if(!Number.isSafeInteger(expectedCost)||expectedCost<quote.cost)throw new Error('The price has changed. Review the current price.');
  if(state.diamonds<quote.cost)throw new Error(`You need ${quote.cost} diamonds.`);
  spendDiamonds(state,quote.cost);
@@ -3954,6 +3962,71 @@ function normalizeShift(state){
  const count=v=>Number.isSafeInteger(v)?Math.max(0,v):0;
  s.log={rounds:(Array.isArray(s.log.rounds)?s.log.rounds:[]).slice(0,SHIFT_ROUNDS+1).map(count),items:Object.fromEntries(Object.entries(s.log.items&&typeof s.log.items==='object'?s.log.items:{}).filter(([k])=>Object.hasOwn(CROPS,k)).map(([k,v])=>[k,count(v)])),
   planted:count(s.log.planted),watered:count(s.log.watered),tended:count(s.log.tended)};
+}
+// The Warehouse (22 Oct 2026, the owner's plan: plan-warehouse/voorstel.md with his choices). Everything a farm keeps in storage takes one
+// place a piece: crops, goods, village goods, heirlooms and season crops (every key of ITEMS in state.inventory). Coins, diamonds, seed
+// packets, boosts, fish, looks and pets are no items and take no place. The rule, as the screen says it: when the Warehouse is full,
+// bringing things in waits (a ripe crop stays on its field, a finished batch waits in its building); nothing is ever lost, and selling and
+// using goods always work, so the Market is the way out.
+// - What waits while it is full: a harvest by hand ('field' harvest), a sweep's harvest ('fields': it stops at full, the fields harvested
+//   so far stay harvested), 'collect' and 'collect_all' (also the village's places and the Village Fields), the Seed Lab's 'lab_collect',
+//   and starting the tractor jobs that bring crops in (its Harvest job and the night shift). The check is made once, before the action:
+//   one action may go over the line (a harvest of 3, a Factory batch of 20, a collect-all), so a field or batch is never split.
+// - What always arrives, also above the line: rewards (quests, challenges, the passes, level rewards, events, family orders), purchases,
+//   family and admin gifts, chores, a helping hand, pets, the village carts and a night shift already running (settleShift).
+// - Capacity (option C, the tight one): levels 1-10 with coins only, then levels 11-15 from farm level 108/120/140/160/180 with coins and
+//   the master steps' tools, planks and stone (as the farm's buildings past 10). The Buildings discount voucher halves an upgrade.
+// - Saved as state.warehouse = {level}, not in BUILDINGS (old pages throw on a building key they do not know). A farm without one (every
+//   farm from before, and a new one) starts on the lowest level that holds its stock and a quarter more, as high as its farm level
+//   allows: nobody loses anything, and a farm that holds more than even that keeps it all but brings nothing in before it sells.
+export const WAREHOUSE_CAPACITY=Object.freeze([500,650,800,950,1100,1300,1500,1750,2000,2300,2700,3100,3500,4000,4500]);
+export const WAREHOUSE_MAX_LEVEL=10,WAREHOUSE_TOP_LEVEL=WAREHOUSE_CAPACITY.length,WAREHOUSE_START_ROOM=1.25,WAREHOUSE_NEAR_FULL=.9,WAREHOUSE_XP=15;
+// What the upgrade TO each level costs: index 0 is the upgrade to level 2.
+export const WAREHOUSE_COSTS=Object.freeze([20000,48000,80000,140000,220000,340000,520000,800000,1200000]);
+// Levels 11-15: the farm level each needs, its coins and the master steps' goods (MASTER_UPGRADES).
+export const WAREHOUSE_MASTER=Object.freeze([3000000,4000000,5200000,6800000,8800000].map((coins,i)=>Object.freeze({level:MASTER_UPGRADES[i].level,coins,materials:MASTER_UPGRADES[i].materials})));
+export const storedCount=state=>Object.keys(ITEMS).reduce((sum,key)=>{const n=state.inventory?.[key];return sum+(Number.isFinite(n)&&n>0?Math.floor(n):0);},0);
+const warehouseLevelOf=state=>{const n=state.warehouse?.level;return Number.isInteger(n)?Math.max(1,Math.min(WAREHOUSE_TOP_LEVEL,n)):1;};
+export const warehouseLevel=warehouseLevelOf;
+export const warehouseCapacity=(state,level=warehouseLevelOf(state))=>WAREHOUSE_CAPACITY[Math.max(1,Math.min(WAREHOUSE_TOP_LEVEL,level))-1];
+export const warehouseFull=state=>storedCount(state)>=warehouseCapacity(state);
+export const warehouseNearFull=state=>storedCount(state)>=Math.ceil(warehouseCapacity(state)*WAREHOUSE_NEAR_FULL);
+// The highest level this farm's level allows: 10, and one more at each master step's farm level.
+export const warehouseTopFor=state=>WAREHOUSE_MAX_LEVEL+WAREHOUSE_MASTER.filter(step=>levelOf(state)>=step.level).length;
+// The level a farm starts on (grandfather rule): the lowest that holds its stock and a quarter more, at most what its level allows.
+export function warehouseStartLevel(state){
+ const top=warehouseTopFor(state),need=Math.ceil(storedCount(state)*WAREHOUSE_START_ROOM);
+ for(let level=1;level<=top;level++)if(WAREHOUSE_CAPACITY[level-1]>=need)return level;
+ return top;
+}
+export function warehouseFullText(state){return `Warehouse full (${storedCount(state)} / ${warehouseCapacity(state)}). Sell or use something to bring in more.`;}
+function assertWarehouseRoom(state){if(warehouseFull(state))throw new Error(warehouseFullText(state));}
+// The next upgrade: {level (the one it reaches), capacity, coins, materials, farmLevel (needed), voucher}, or null at the top.
+export function warehouseUpgrade(state){
+ const level=warehouseLevelOf(state);if(level>=WAREHOUSE_TOP_LEVEL)return null;
+ const voucher=state.boosts?.upgradeCredits>0,half=n=>voucher?Math.ceil(n/2):n,master=level>=WAREHOUSE_MAX_LEVEL?WAREHOUSE_MASTER[level-WAREHOUSE_MAX_LEVEL]:null;
+ return {level:level+1,capacity:WAREHOUSE_CAPACITY[level],added:WAREHOUSE_CAPACITY[level]-WAREHOUSE_CAPACITY[level-1],coins:half(master?master.coins:WAREHOUSE_COSTS[level-1]),
+  materials:Object.fromEntries(Object.entries(master?.materials??{}).map(([k,n])=>[k,half(n)])),farmLevel:master?.level??1,voucher};
+}
+// expectedCost: the coins the card showed (an older page sends none). Never more is charged; a price that changed asks to look again.
+export function upgradeWarehouse(state,expectedCost){
+ const next=warehouseUpgrade(state);
+ if(!next)throw new Error('Your Warehouse is fully upgraded.');
+ if(expectedCost!==undefined&&expectedCost!==next.coins)throw new Error('The price has changed. Look at the upgrade again.');
+ if(levelOf(state)<next.farmLevel)throw new Error(`Reach level ${next.farmLevel} to upgrade your Warehouse to level ${next.level}.`);
+ if(state.coins<next.coins)throw new Error(`You need ${next.coins} coins for this upgrade.`);
+ const missing=Object.entries(next.materials).filter(([key,n])=>(state.inventory[key]??0)<n);
+ if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
+ state.coins-=next.coins;for(const [key,n] of Object.entries(next.materials))state.inventory[key]-=n;
+ state.warehouse={level:next.level};
+ state.stats.upgrades++;state.stats.warehouse_upgrades=(state.stats.warehouse_upgrades??0)+1;state.xp+=WAREHOUSE_XP;
+ if(next.voucher)state.boosts.upgradeCredits--;
+ return {level:next.level,capacity:next.capacity,cost:next.coins,materials:next.materials};
+}
+// A saved Warehouse as the rules expect it; a farm without one starts on its level (above).
+function normalizeWarehouse(state){
+ const level=state.warehouse?.level;
+ state.warehouse={level:Number.isInteger(level)&&level>=1?Math.min(WAREHOUSE_TOP_LEVEL,level):warehouseStartLevel(state)};
 }
 export function upgradeSilo(state){
  if(state.siloLevel>=5)throw new Error('Your silo research is complete.');const cost=SILO_COSTS[state.siloLevel];if(state.coins<cost)throw new Error(`You need ${cost} coins for this research.`);
@@ -4453,12 +4526,13 @@ function dispatchFarmAction(state,action,now,random){
   case 'mastery':return claimMastery(state,action.crop,action.tier);
   case 'project_start':return startProject(state,now);
   case 'project_collect':return completeProject(state,now);
-  case 'field':return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
+  // The Warehouse (22 Oct 2026): a harvest by hand, a collect and the Seed Lab's collect wait while it is full (assertWarehouseRoom).
+  case 'field':if(action.action==='harvest')assertWarehouseRoom(state);return actOnPlot(state,action.id,action.action,action.crop??'corn',now);
   case 'fields':return workFields(state,action.action,action.ids,now,action.crop??'corn');
   case 'sell':return sellCrops(state,action.item??'all',now,action.day,action.category,action.quantity);
   case 'produce':return startProduction(state,action.recipe,now,action.count,random);
-  case 'collect':return collectProduction(state,action.building,now,action.jobId);
-  case 'collect_all':return collectAllProduction(state,action.building,now);
+  case 'collect':assertWarehouseRoom(state);return collectProduction(state,action.building,now,action.jobId);
+  case 'collect_all':assertWarehouseRoom(state);return collectAllProduction(state,action.building,now);
   case 'upgrade':return upgradeBuilding(state,action.building,action.currency,action.expectedCost,action.expectedLevel,action.crates);
   case 'expand':return expandFarm(state);
   case 'quest':return claimQuest(state,action.id);
@@ -4480,6 +4554,8 @@ function dispatchFarmAction(state,action,now,random){
   case 'tractor_care':return fullCare(state,action.expectedCost,now);
   case 'tractor_shift':return startNightShift(state,action.crop,action.expectedCost,now);
   case 'silo_upgrade':return upgradeSilo(state);
+  // The Warehouse's upgrade (22 Oct 2026): no feature gate, every farm has its Warehouse from the start.
+  case 'warehouse_upgrade':return upgradeWarehouse(state,action.expectedCost);
   case 'valley_sell':return valleySell(state,action.stall,action.basket,now);
   case 'valley_skip':return valleySkip(state,action.stall,action.basket,now);
   // World II's market square (Oct 2026): no feature gate, the level check is their own (nothing of it may show below level 100).
@@ -4505,7 +4581,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'fair_enter':return fairEnter(state,action.entry,action.week,now);
   case 'master_spend':return masterSpend(state,action.branch);
   case 'lab_cross':return labCross(state,action.bed,action.heirloom,now);
-  case 'lab_collect':return labCollect(state,action.bed,now);
+  case 'lab_collect':assertWarehouseRoom(state);return labCollect(state,action.bed,now);
   case 'visitor_serve':return visitorServe(state,action.visitor,now);
   case 'visitor_decline':return visitorDecline(state,action.visitor,now);
   case 'giant_tend':return giantTend(state,action.feed===true,now);

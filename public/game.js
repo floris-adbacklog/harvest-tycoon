@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil, normalizeFarm } from './farm-state.js';
 import { createReminderNudge,harvestAction } from './reminder-nudge.js';
-import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds } from './farm-layout.js';
+import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds, asBeforeLayout } from './farm-layout.js';
 import { createMinimap } from './minimap.js';
 import { scatterProps, seeded } from './farm-props.js';
 import { createEconomyUI,marketWorth } from './economy-ui.js?v=familyhall-model-2';
@@ -42,7 +42,7 @@ import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDa
 import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
-import { createScenePolish } from './scene-polish.js';
+import { createScenePolish, hideClippedScenery } from './scene-polish.js';
 import { shareAtlas,sharePalette,download } from './model-atlas.js';
 import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
@@ -50,6 +50,7 @@ import { flyHarvest, bump } from './harvest-fly.js';
 import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
 import { createSweepTip } from './sweep-tip.js';
 import { createActivitiesUI } from './activities-ui.js';
+import { createWarehouseUI,isWarehouseFull,warehouseTone,fillText } from './warehouse-ui.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
 import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
@@ -75,6 +76,7 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
+import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
@@ -159,12 +161,20 @@ const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],s
 const coach=createCoach();
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
 guardWheel();
-let liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
+let warehouse=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
 let herd=null;   // the farm's moving animals (farm-animals.js, 20 Oct 2026), once they have come
-let dairyBefore=[];   // the Dairy Barn's yard as it stood until 22 Oct 2026: [piece, x, z] (asBefore)
+// The farm as it stood until 22 Oct 2026 (asBefore): the pieces that moved since, as [piece, x, z, how it stood] (how: its turn, size and
+// height where those changed too: the Feed Mill turned, the Sheep Barn's other model); the pieces that stood then and are gone now, each
+// with the piece before it in the scene (gone); and the pieces that are new (fresh). The Dairy Barn's yard went back on 22 Oct 2026, the
+// Warehouse came the same day where the Feed Mill stood (the owner's plan), with the Feed Mill across the road, the silo a little back,
+// the Animal paddock by the pond, the chickens' pen a segment narrower and the Sheep Barn in the Goat Shed's barn.
+const movedBefore=[],gone=[],fresh=[],dairyYard=[],dairyEntries=new Set(),outlineBefore=new Map();
+// The Warehouse's barn is longer than the Feed Mill was: three of the old yard's pieces stand beside it now, and the bucket by the lane
+// made way for a family member's walk (where they stood: asBefore).
+const WAREHOUSE_PROPS_BEFORE=Object.freeze({barrel_002:[-15.7,6.5],bag_001:[-10.2,6.4],bag_002:[-10.8,6.7],bucket_001:[-7.7,1]});
 let walker=null;   // your own farmer walking on the farm or in the village (farm-farmer.js, 20 Oct 2026), once they have come
 // A tap on your own farmer (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat"): it hops, then your
 // profile opens (the same as the profile button; window.harvestProfiles is the cloud script's, the player id the page's bridge).
@@ -212,7 +222,7 @@ function farmerJoins(action){
  if(place)walker.visit(place,look);
 }
 function tapOwnFarmer(){const me=window.parent?.harvestBridge?.playerId,landed=walker?.react()??Promise.resolve();if(me&&window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(me,{back:null}));}
-const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
+const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},warehouse:{name:'Warehouse',icon:'warehouse',hint:'All your crops and goods'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
 Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
@@ -246,7 +256,7 @@ const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,noti
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(key==='warehouse'){warehouse?.open();return;}if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -618,17 +628,27 @@ function decorate(){
  zone('exact');
  for(const road of ROADS.slice(0,3))cloneModel('road_001',road.x,road.z,{...roadSize(road),height:road.height,y:road.y});
  zone('fields');patch(2.575,14.4,12.8,31.7,0xa3be65,.004).name='Crop meadow';
- zone('coop');patch(13,-9.5,15.8,11.6,0xa4b472,.007);
- zone('mill');patch(-12.5,5.3,8.7,13,0xa8b676,.004);
+ zone('coop');patch(14.1,-9.5,13.6,11.6,0xa4b472,.007);
+ zone('warehouse');patch(-12.5,5.3,8.7,13,0xa8b676,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  // The Dairy Barn faces its cows' pasture, its doors opening into it like the Goat Shed's (15 Oct 2026, the owner); the pasture is
  // further down in this file, after the chickens (animalAt). It stands one rail segment further back since 22 Oct 2026 (the owner:
  // "geef dieren desnoods wat meer ruimte in hun veld, zoals Koeien door de Koeienstal meer naar achteren plaatsen").
  zone('dairy');addBuilding('dairy',-.3,-16.1,{width:6.8});
- zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
+ // The silo stands behind the Feed Mill since 22 Oct 2026 (farm-layout.js HOMES), so the Feed Mill fits in front of it.
+ zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});movedBefore.push([utilityViews.get('silo').object,...asBeforeLayout(()=>place(5.6,-11.8))]);
  zone('farmhouse');addBuilding('farmhouse',-13.8,-10.2,{width:6.5,rotation:Math.PI/2});
- zone('mill');addBuilding('mill',-12.5,4,{width:6.2,rotation:Math.PI/2});
- cloneModel('tower_005',-17,3,{height:4.5});
+ // The Feed Mill (22 Oct 2026, the owner's Warehouse plan, M1): across the main road between the cows and the chickens, right above the
+ // first fields, its long side along the road's way (north-south) and its doors towards the road and the fields; the Warehouse has its
+ // old spot. It stood turned across, where the Warehouse is now (asBefore), with a little pump tower beside it (gone).
+ zone('mill');addBuilding('mill',-12.5,4,{width:6.2});
+ {const mill=buildingViews.get('mill'),[ox,oz]=asBeforeLayout(()=>place(-12.5,4)),dx=ox-mill.object.position.x,dz=oz-mill.object.position.z;
+  movedBefore.push([mill.object,ox,oz,{ry:Math.PI/2}],[mill.hit,mill.hit.position.x+dx,mill.hit.position.z+dz,{ry:Math.PI/2}]);
+  const [tx,tz]=asBeforeLayout(()=>place(-17,3));zone('fields');goneNow(cloneModel('tower_005',tx,tz,{height:4.5}));zone('mill');}
+ // The Warehouse (22 Oct 2026): the Sheep Barn's old red barn at its own proportions, where the Feed Mill stood and a little to the right
+ // (it is longer), its doors towards the lane and the fields, with crates by them. Every crop and good of the farm goes in here.
+ zone('warehouse');addUtility('warehouse','hangar_006',-11.5,4.6,{width:8.5,rotation:Math.PI/2});fresh.push(utilityViews.get('warehouse').object);
+ fresh.push(cloneModel('case_002',-6.5,5.7,{width:.95,rotation:.2}),cloneModel('case_003',-6.6,6.6,{width:.8,rotation:-.35}),cloneModel('case_002',-6.45,5.75,{width:.8,y:.82,rotation:.6}));
  zone('bakery');addBuilding('bakery',-10.8,12,{width:6.8,rotation:Math.PI/2});
  zone('packing');addBuilding('packing',11.5,-17.2,{width:5.1,rotation:Math.PI/2});   // its front with the windows towards the camera (26 Sep 2026)
  zone('windmill');
@@ -683,12 +703,11 @@ function decorate(){
  const hive=cloneModel('apiary_001',10.1,13.8,{height:1.35,rotation:.15});
  cloneModel('apiary_001',11.4,14.2,{height:1.25,rotation:-.2});
  zone('farmhouse');
- zone('silo');
- // The hay stack stands in front of the silo by the road, with the horse of the Animal paddock behind it (15 Oct 2026).
- cloneModel('hay_001',3.32,-4.86,{width:1.9});
- cloneModel('hay_001',4.92,-5.16,{width:1.7,rotation:.4});
- cloneModel('hay_001',4.12,-4.96,{width:1.5,y:1.2});
- cloneModel('hay_002',6.12,-4.46,{width:1.45,rotation:.2});
+ // The Animal paddock's hay beside its horse (farm-life.js), on the green east of the fields by the pond since 22 Oct 2026; it stood in
+ // front of the silo by the road (15 Oct 2026), where the Feed Mill is now.
+ zone('paddock');
+ for(const [[x,z,options],[wx,wz]] of [[[19.12,-7.86,{model:'hay_001',width:1.9}],[3.32,-4.86]],[[20.72,-8.16,{model:'hay_001',width:1.7,rotation:.4}],[4.92,-5.16]],[[19.92,-7.96,{model:'hay_001',width:1.5,y:1.2}],[4.12,-4.96]],[[21.92,-7.46,{model:'hay_002',width:1.45,rotation:.2}],[6.12,-4.46]]])
+  movedBefore.push([cloneModel(options.model,x,z,options),...asBeforeLayout(()=>placeIn('silo',wx,wz))]);
  zone('chores');
  // By the farmhouse, in front on its east side by the crossroads, where they are seen at once (farm-layout.js HOMES, 15 Oct 2026).
  addUtility('chores','barrel_001',-3.4,-10.7,{height:1.1});
@@ -702,7 +721,13 @@ function decorate(){
  // The pen is roomy, with the coop in the middle: 15.4 wide and 11 deep around it.
  // A pen's fences carry its yard's name (pen), so its animals keep inside them (farm-animals.js) and loose props keep out of a pasture.
  const penned=(id,pieces)=>{for(const piece of pieces)piece.userData.pen=id;return pieces;};
- penned('coop',[...fenceLine(6.4,-15,7),...fenceLine(6.4,-4,7),...fenceLine(5.3,-13.9,5,'z'),...fenceLine(20.7,-13.9,5,'z')]);
+ // Since 22 Oct 2026 one rail segment narrower on its west side, so the Feed Mill beside it has room (the owner: "maak de chicken coop ruimte
+ // iets kleiner zodat er meer ruimte is voor de feed mill"): the first segment of the back (and front) rail is gone and the west rail
+ // stands a segment further east (asBefore).
+ {const back=fenceLine(6.4,-15,7),front=fenceLine(6.4,-4,7),side=fenceLine(5.3,-13.9,5,'z'),cut=placeIn('coop',7.5,0)[0];
+  for(const o of side){movedBefore.push([o,o.position.x,o.position.z]);o.position.x+=2.2;}
+  for(const o of [...back,...front].filter(o=>o.position.x<cut))goneNow(o);
+  penned('coop',[...back,...front,...side,...fenceLine(20.7,-13.9,5,'z')].filter(o=>o.parent));}
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  zone('farmhouse');fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);
  zone(null);fenceLine(-19,-9,8,'z');   // (the short rail by the Bakery is gone: it fenced nothing)
@@ -718,7 +743,8 @@ function decorate(){
  // tap on one opened the Dairy Barn, which a player found confusing). The pen round the coop is the chickens' own.
  // None at the pen's front left, under the Windmill's tall tap box or its pin, none under the coop's own pin (where a tap collects)
  // and none at the back right behind the trees (checked by tapping on a phone and a computer at zoom 1).
- for(const [x,z,r] of [[11.9,-5.75,.2],[15.9,-8.15,2.1],[14.6,-6.4,-.7],[17.2,-6.4,2.3],[6.7,-14.05,2.4],[17.4,-11.8,-.9]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
+ // The hen at the back left moved in with the pen's west side (22 Oct 2026; it stood at 6.7, -14.05).
+ for(const [x,z,r] of [[11.9,-5.75,.2],[15.9,-8.15,2.1],[14.6,-6.4,-.7],[17.2,-6.4,2.3],[8.4,-13.9,2.4],[17.4,-11.8,-.9]]){const hen=animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);if(x===8.4)movedBefore.push([hen,...place(6.7,-14.05)]);}
  // The Dairy Barn's three cows (two black and white, one brown and white, grazing) graze in their own pasture in front of its doors:
  // four rail segments wide and, since 22 Oct 2026, four deep (it was three, as the Goat Shed's: the owner, "geef dieren desnoods wat
  // meer ruimte in hun veld", a cow is two units long), the barn's front between the two short pieces at the back. To make room the
@@ -730,10 +756,11 @@ function decorate(){
  yardDecor.dairy.push(...cows,...penned('dairy',[...fenceLine(-3.6,-3.9,4),...west,...east,...back]));
  // How it stood until 22 Oct 2026 (asBefore): the barn, its tap box and the back fence one segment nearer, the sides one segment
  // shorter (their new first pieces out of the way), the cows on their old spots. The bucket by the doors follows below.
- {const barn=buildingViews.get('dairy'),was=(o,x,z)=>{const [wx,wz]=place(x,z);dairyBefore.push([o,wx,wz]);};
-  for(const o of [barn.object,barn.hit,...back])dairyBefore.push([o,o.position.x,o.position.z+2.2]);
-  for(const o of [west[0],east[0]])dairyBefore.push([o,o.position.x+1e4,o.position.z]);
-  [[-2.6,-8.2],[2.2,-8],[-.3,-5.4]].forEach(([x,z],i)=>was(cows[i],x,z));}
+ {const barn=buildingViews.get('dairy'),was=(o,x,z)=>{const [wx,wz]=place(x,z);movedBefore.push([o,wx,wz]);};
+  for(const o of [barn.object,barn.hit,...back])movedBefore.push([o,o.position.x,o.position.z+2.2]);
+  for(const o of [west[0],east[0]])movedBefore.push([o,o.position.x+1e4,o.position.z]);
+  dairyYard.push(barn.object,barn.hit,...back,west[0],east[0]);
+  [[-2.6,-8.2],[2.2,-8],[-.3,-5.4]].forEach(([x,z],i)=>was(cows[i],x,z));for(const cow of cows)dairyEntries.add(cow);}
  // The midgame yards, on the new ground east of the coop and the Family Hall. Like every building that is still to come they
  // stand there from the start, greyed out, with everything that belongs to them (yardDecor).
  // The Bee Yard: a cluster of hives among sunflowers, tapped and greyed as one piece.
@@ -743,7 +770,13 @@ function decorate(){
  for(const [x,z,h] of [[24.6,.4,1.45],[25.4,1.6,1.3],[19.8,2.2,1.4],[20.3,4.1,1.25],[24.9,4.4,1.35]])yardDecor.beeyard.push(cloneModel('plant_007',x,z,{height:h,rotation:-.55+x*.1}));
  // The Sheep Barn faces its pasture, which runs down to the trunk road; the flock grazes in front of the doors.
  zone('sheepbarn');
- addBuilding('sheepbarn',23.8,-15.4,{width:5.4,height:4.4,depth:9});
+ // In the Goat Shed's barn since 22 Oct 2026, at the Goat Shed's size (its own red barn became the Warehouse). The two stand at the
+ // valley's two ends, never in one picture. Until then (asBefore) the old barn's size: 5.4 wide, 4.4 high and 9 deep.
+ addBuilding('sheepbarn',23.8,-15.4,{width:5,height:4.6,depth:8});
+ // The old barn itself stands in for it then, every part of it, so what is placed round it by chance does not change.
+ {const {object:barn,hit}=buildingViews.get('sheepbarn'),was=cloneModel('hangar_006',23.8,-15.4,{width:5.4,height:4.4,depth:9});was.userData.building='sheepbarn';
+  scene.remove(was);gone.push([was,scene.children[scene.children.indexOf(barn)-1]]);fresh.push(barn);outlineBefore.set('sheepbarn',was);
+  movedBefore.push([hit,hit.position.x,hit.position.z,{scale:[5.8/5.4,4.7/4.9,9.4/8.4],y:2.2}]);}
  yardDecor.sheepbarn.push(...penned('sheepbarn',[...fenceLine(20.5,-3.6,4),...fenceLine(19.4,-9.1,3,'z'),...fenceLine(28.2,-9.1,3,'z'),...fenceLine(20.5,-10.2,1),...fenceLine(27.1,-10.2,1)]));
  for(const [model,x,z,r] of [['sheep_002',21.6,-7.9,2.2],['sheep_003',24.4,-5.3,2.4],['sheep_002',26.5,-8.3,-1],['sheep_003',22.4,-5,2],['sheep_001',25.6,-6.9,-.6]])yardDecor.sheepbarn.push(animalAt(model,x,z,{width:1.5,rotation:r},'sheepbarn',r));
  yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}));
@@ -814,18 +847,18 @@ function decorate(){
  zone('tradedepot');addUtility('villageroad','pointer_002',53.5,-5.3,{height:2.4,rotation:-.5});
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
- zone('mill');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
+ zone('warehouse');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
  zone('bakery');groundPatch('ground_007',-10.8,12,7,6.9,0xbaaf8b);
  zone('packing');groundPatch('ground_006',11.5,-17.2,6.8,6.4,0xb9af8a);
  for(const [yard,list] of Object.entries({
   packing:[['case_002',9,-14.2,{width:1.1,rotation:.12}],['bag_003',10.25,-14.2,{height:.82,rotation:-.25}],['cart_004',14.7,-17.3,{width:1.7,rotation:Math.PI/2}],['prop_029',8.4,-13.6,{width:.55,rotation:.6}],['bush_003',8.9,-19.6,{width:1.2}]],
-  mill:[['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],['bag_002',-10.8,6.7,{height:.7}],['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],['grass_004',-8.2,8.9,{height:.3}]],
+  warehouse:[['barrel_002',-16.85,6.3,{height:.95}],['bag_001',-6.75,7.4,{height:.8}],['bag_002',-7.35,7.75,{height:.7}],['bucket_001',-9.15,1.95,{height:.65}],['bush_003',-8.4,8,{width:1.1}],['grass_004',-8.2,8.9,{height:.3}]],
   bakery:[['firewood_003',-14.1,10.5,{width:1.3}],['case_003',-8.1,13.5,{width:.9,rotation:.35}]],
   farmhouse:[['table_001',-13.9,-5.9,{width:1.6}],['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}]],
   dairy:[['bucket_003',-1.8,-11.3,{height:.65}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
   factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
-})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);else if(yard==='dairy'){yardDecor.dairy.push(piece);dairyBefore.push([piece,piece.position.x,piece.position.z+2.2]);}}}
+})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options),was=WAREHOUSE_PROPS_BEFORE[yard==='warehouse'?name:''];if(was)movedBefore.push([piece,...place(...was)]);if(yard==='factory')factoryDecor.push(piece);else if(yard==='dairy'){yardDecor.dairy.push(piece);movedBefore.push([piece,piece.position.x,piece.position.z+2.2]);dairyYard.push(piece);}}}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
  zone('packing');lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
@@ -854,8 +887,14 @@ function decorate(){
  }
  for(const [x,z,r] of [[9.5,13.2,.3],[9.5,11.1,1.8],[-11.2,14.5,.7],[-14.7,14.8,2.1],[15.5,4.5,.4],[17.1,4.9,2.4]])cloneModel('grass_004',x,z,{height:.38,rotation:r});
  farmLife=createFarmLife({scene,cloneModel,patch,state,onOpen:id=>activities.open(id),reducedMotion,simple:graphicsSimple});
+ // The Animal paddock's horse and its tap box stood in front of the silo until 22 Oct 2026 (asBefore), where the Feed Mill is now.
+ {const horse=farmLife.views.get('paddock')?.object;if(horse){const [ox,oz]=asBeforeLayout(()=>placeIn('paddock',18.62,-9.92)),dx=ox-horse.position.x,dz=oz-horse.position.z;
+  for(const o of scene.children.filter(o=>o.userData.activity==='paddock'))movedBefore.push([o,o.position.x+dx,o.position.z+dz]);}}
  zone('fields');
- farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);farmLife.watchProduction(buildingViews);
+ farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);
+ // The Feed Mill's smoke puffs came with it (asBefore: they rose from where it stood).
+ {const from=scene.children.length;farmLife.watchProduction(buildingViews);const mill=buildingViews.get('mill').object,[ox,oz]=asBeforeLayout(()=>placeIn('mill',-12.5,4));
+  for(const o of scene.children.slice(from).slice(3,6))movedBefore.push([o,p=>p.position.x||p.position.z?[p.position.x+ox-mill.position.x,p.position.z+oz-mill.position.z]:[0,0]]);}
  addExtraProps();
 }
 // Small props from the model pack fill the room between the yards. Spots are taken only where nothing stands: not on a
@@ -874,24 +913,47 @@ function penBoxes(){
 // The pastures: every pen but the chickens' (whose props stand among them), where the cows, sheep, goats, pigs and horses walk all over.
 const pastures=()=>[...penBoxes()].filter(([id])=>id!=='coop').map(([,p])=>p);
 // The loose props (below) and the scenery's flowers, bushes and tufts (scenery.js) are placed by seeded chance, every spot depending on
-// all the ones before it: moving one yard would move them all over the farm. So they are placed as the Dairy Barn's yard stood until
-// 22 Oct 2026 (the owner moved it back for the cows: "zoals Koeien door de Koeienstal meer naar achteren plaatsen"), and what then
-// stands on the barn, its fences or a pasture is left out (keptOff); everything else stays where it always stood.
-function asBefore(place){
- const now=dairyBefore.map(([o])=>[o,o.position.x,o.position.z]),outline=buildingViews.get('dairy')?.outline;
- const put=list=>{for(const [o,x,z] of list){o.position.x=x;o.position.z=z;o.updateMatrixWorld(true);}if(outline){outline.update();outline.geometry.computeBoundingBox();}};
- put(dairyBefore);
- try{return place();}finally{put(now);}
+// all the ones before it (and on the order of the farm's pieces): moving one yard would move them all over the farm. So they are placed
+// as the farm stood until 22 Oct 2026, every piece where it stood then, in its place in the scene, and the yards where they were
+// (farm-layout.js asBeforeLayout): the Dairy Barn's yard before the owner moved it back for the cows ("zoals Koeien door de Koeienstal meer
+// naar achteren plaatsen"), the Feed Mill, the silo, the paddock, the chickens' pen and the Sheep Barn before the Warehouse came. What
+// then stands on something that moved or is new, or in a pasture, is left out (keptOff); everything else stays where it always stood.
+// A piece that is gone now (the pump tower by the old Feed Mill, two rails of the chickens' pen) is out of the scene, kept with the piece
+// it came after.
+function goneNow(o){gone.push([o,scene.children[scene.children.indexOf(o)-1]]);scene.remove(o);}
+const atIndex=(o,i)=>{scene.add(o);scene.children.pop();scene.children.splice(i,0,o);};
+// dairy:false: as the farm stood just before the Warehouse came, the Dairy Barn's yard where it is now (the grass, the flowers and the
+// mountains of scene-polish.js were placed round that). A piece that a building only covers since then (clipNow) is shown meanwhile.
+function asBefore(place,{dairy=true}={}){
+ const pose=o=>[o,o.position.x,o.position.z,{ry:o.rotation.y,scale:o.scale.toArray(),y:o.position.y}],moved=dairy?movedBefore:movedBefore.filter(([o])=>!dairyEntries.has(o)&&!dairyYard.includes(o));
+ for(const o of clippedNow)o.visible=true;
+ const now=moved.map(([o])=>pose(o)),views=['dairy','mill','sheepbarn'].map(key=>[key,buildingViews.get(key)]).filter(([,v])=>v),outlines=views.map(([,v])=>v.outline);
+ const frame=then=>{for(const [key,v] of views)v.outline.object=then?outlineBefore.get(key)??v.object:v.object;};
+ const put=list=>{frame(list===moved);
+  for(const [o,x,z,how] of list){[o.position.x,o.position.z]=typeof x==='function'?x(o):[x,z];if(how?.ry!==undefined)o.rotation.y=how.ry;if(how?.scale)o.scale.fromArray(how.scale);if(how?.y!==undefined)o.position.y=how.y;o.updateMatrixWorld(true);}
+  for(const outline of outlines){outline.update();outline.geometry.computeBoundingBox();}
+ };
+ const out=fresh.map(o=>[o,scene.children.indexOf(o)]).filter(([,i])=>i>=0).sort((a,b)=>b[1]-a[1]);
+ for(const [o] of out)scene.remove(o);
+ for(const [o,after] of gone)atIndex(o,scene.children.indexOf(after)+1);
+ put(moved);
+ try{return asBeforeLayout(place);}finally{put(now);for(const [o] of gone)scene.remove(o);for(const [o,i] of out.reverse())atIndex(o,i);for(const o of clippedNow)o.visible=false;}
 }
-// What the props and the scenery keep off since then: the pastures, and the boxes of the Dairy Barn's yard where it stands now.
-function keptOff(){
+// What a building covers only since the Warehouse came (scene-polish.js hides what clips a building), hidden from then on.
+const clippedNow=[];
+function clipNow(){const shown=scene.children.filter(o=>o.visible);hideClippedScenery(scene);clippedNow.push(...shown.filter(o=>!o.visible));}
+// What the props and the scenery keep off since then: the pastures, and the boxes of every piece that moved or is new, where it stands now
+// (the animals keep their own room: the scenery and the props leave space round every animal). dairy: only what the Dairy Barn's yard
+// kept off from 22 Oct 2026 until the Warehouse came the same day.
+function keptOff(dairy=false){
  const box=new THREE.Box3(),rects=pastures();
- for(const [o] of dairyBefore)if(!ANIMAL.test(o.userData.model??'')){box.setFromObject(o);rects.push([box.min.x,box.max.x,box.min.z,box.max.z]);}
+ for(const o of dairy?dairyYard:[...movedBefore.map(([o])=>o),...fresh])if(!ANIMAL.test(o.userData.model??'')){box.setFromObject(o);rects.push([box.min.x,box.max.x,box.min.z,box.max.z]);}
  return rects;
 }
 function addExtraProps(){
- const props=asBefore(placeExtraProps),off=keptOff();
- for(const p of props)if(off.every(([a,b,c,d])=>p.x<a-1||p.x>b+1||p.z<c-1||p.z>d+1))extraProps.push(cloneModel(p.name,p.x,p.z,p.options));
+ const props=asBefore(placeExtraProps),off=keptOff(),dairyOff=keptOff(true),clear=rects=>p=>rects.every(([a,b,c,d])=>p.x<a-1||p.x>b+1||p.z<c-1||p.z>d+1);
+ // One the Warehouse's changes left out is still there while the scenery is placed (asBefore), where it stood then.
+ for(const p of props.filter(clear(dairyOff))){const o=cloneModel(p.name,p.x,p.z,p.options);if(clear(off)(p))extraProps.push(o);else goneNow(o);}
 }
 function placeExtraProps(){
  scene.updateMatrixWorld(true);
@@ -1179,6 +1241,8 @@ function endSweep(){
  const result=run.handle.end(),action=run.action;
  if(!result){if(run.handle.reason)toast(run.handle.reason);return;}
  sweepTip.swept(action,run.count);
+ // A harvest sweep that stopped because the Warehouse is full (22 Oct 2026): the note says how many fields it harvested.
+ if(run.handle.full&&warehouse)warehouse.note(run.handle.full,{count:result.count});
  // As after a tap (runAction): the guide, the reminder, a level-up.
  beginner?.afterAction(result);if(action==='harvest'){nudge?.harvested();farmerJoins({type:'field',action:'harvest',id:result.fields.at(-1).id});}
  const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();
@@ -1237,12 +1301,16 @@ function hudNumbers(){
  const worth=guideAt('sell')?marketWorth(state,'crops',farmNow()):0,badge=$('stock-count'),market=$('market-button');
  // Otherwise no badge (18 Oct 2026, the owner, the window shell): a red badge means something waits for you, and the count of goods in the
  // barn is no task; the Market's heading says it ("N in your barn").
+ // The Warehouse (22 Oct 2026): from 90% full the badge shows how full it is (amber), and Full (red) once bringing in waits; the Market is
+ // the way out, so the Market button is where it shows on every screen (phone, computer and the small window).
+ const tone=worth?'ok':warehouseTone(state),filled=tone!=='ok';badge.classList.toggle('is-near',tone==='near');badge.classList.toggle('is-full',tone==='full');
+ if(filled){badge.hidden=false;badge.classList.remove('is-worth');delete badge.dataset.worth;const text=tone==='full'?'Full':`${Math.min(99,Math.floor(storedCount(state)/warehouseCapacity(state)*100))}%`;if(badge.textContent!==text)badge.textContent=text;market.setAttribute('aria-label',`Market: Warehouse ${tone==='full'?'full ':''}${fillText(state)}`);return;}
  badge.hidden=!worth;badge.classList.toggle('is-worth',worth>0);
  if(worth){const text=worth.toLocaleString('en-US');if(badge.dataset.worth!==text){badge.dataset.worth=text;badge.innerHTML=`${art('coins')}${text}`;}market.setAttribute('aria-label',`Market: your basket is worth ${text} coins`);}
  else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent='';market.removeAttribute('aria-label');}
 }
 function updateUI(){
- hudNumbers();
+ hudNumbers();warehouse?.refresh();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
  // batch ready, and the market square when the golden brief or a landmark can be built (Oct 2026; no pop-up). Not a villager you could
@@ -1708,6 +1776,8 @@ function pinLight(key){
  if(key==='stall'){const now=farmNow(),s=stallStatus(state,now);return s.balance>=s.capacity?'full':stallNotice(state,now)?'ready':'';}
  if(key==='chores'){const now=farmNow(),open=Object.keys(CHORES).map(id=>choreStatus(state,id,now)).filter(s=>!s.locked);return open.length&&open.every(s=>!s.remaining)?'ready':'';}
  // The village's market square: a villager you can help or a golden brief you can build.
+ // The Warehouse (22 Oct 2026): red while it is full and bringing in waits.
+ if(key==='warehouse')return warehouseFull(state)?'full':'';
  if(key==='villagemarket')return villageSquareReady(state)?'ready':'';
  return economy.placeReady(key)?'ready':'';
 }
@@ -1915,7 +1985,11 @@ function bindUI(){
  lookSettings=createLookSettings(document.getElementById('look-settings'),{state,runAction,clock:farmNow});
  // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
  window.harvestStock=key=>Number(state.inventory?.[key])||0;
- economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),village:villageWorld});
+ economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),onWarehouse:()=>warehouse?.open(),village:villageWorld});
+ // The Warehouse's window and its full note (22 Oct 2026, public/warehouse-ui.js). A refusal because it is full is that note, with the Market
+ // and Upgrade, over any open window (the toast sits under a modal window); every other message stays the toast.
+ warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI});
+ {const plain=showToast??createToast($('toast'));showToast=(message,options)=>{if(isWarehouseFull(message))warehouse.note(message);else plain(message,options);};}
  let savedCrop=null;try{savedCrop=localStorage.getItem(CROP_KEY);}catch{}
  if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);
  // Every seventh day of a streak (7, 14 ...) is celebrated with the gift popup, after a level-up if one is showing.
@@ -2131,7 +2205,7 @@ async function init(){
   // now fails the start (src/game-cloud.js): the page opens once more by itself, a second time it shows Try again.
   if(missingModels*2>modelNames.length)throw Object.assign(new Error('missing-models'),{reopen:true});
   markRun(gfxStore,{step:'scene',percent:Number($('load-progress')?.value)||0});
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy()});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy(),asBefore:place=>asBefore(place,{dairy:false})});clipNow();atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
   // spot, and a held first field is not tipped over by an earlier drag.

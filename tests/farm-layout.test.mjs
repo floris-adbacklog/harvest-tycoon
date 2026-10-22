@@ -46,7 +46,7 @@ test('the fields keep their place and every yard stays clear of them and within 
 });
 test('the scene is laid out through the zones, and the default is restored afterwards',()=>{
  const game=read('public/game.js'),life=read('public/farm-life.js'),polish=read('public/scene-polish.js');
- assert.match(game,/import \{ zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds \} from '\.\/farm-layout\.js';/);assert.match(game,/import \{ scatterProps, seeded \} from '\.\/farm-props\.js';/);
+ assert.match(game,/import \{ zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds, asBeforeLayout \} from '\.\/farm-layout\.js';/);assert.match(game,/import \{ scatterProps, seeded \} from '\.\/farm-props\.js';/);
  const scene=game.slice(game.indexOf('function decorate(){'),game.indexOf('function createPlots(){'));
  assert(scene.trimEnd().endsWith("farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);farmLife.watchProduction(buildingViews);\n}")||/zone\('fields'\);\s*farmLife\.attach/.test(scene),'back to the default before the fields are drawn');
  assert(!/(cloneModel|scenery)\('road_001',-?\d/.test(scene+life),'no road with typed-in numbers: they come from the shared list');assert.match(scene,/for\(const road of ROADS\.slice\(0,3\)\)cloneModel\('road_001'/);assert.match(life,/for\(const road of ROADS\.slice\(3\)\)\{const size=roadSize\(road\);scenery\('road_001'/);

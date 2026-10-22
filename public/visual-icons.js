@@ -18,6 +18,9 @@ for(const id of ["orchardjuice", "berrysmoothie", "applecompote", "applevinegar"
 // The midgame expansion: painted crop and goods icons (WebP) and renders of the four new buildings' models (PNG).
 const MIDGAME_ITEM_ART=['squash','polebeans','ciderapples','squashsoup','beeswax','wool','yarn','cloth','cider'];
 for(const id of [...MIDGAME_ITEM_ART,'beeyard','sheepbarn','glasshouse','weaving'])pictures[id]=id;
+// The Warehouse (22 Oct 2026): a render of its barn (the Sheep Barn's old red barn) with crates by the doors, WebP; the Sheep Barn's
+// picture is a render of its new barn (the Goat Shed's) with two of its sheep since the same day.
+pictures.warehouse='warehouse';
 // Wave 2: the new goods and cherries (WebP), the Valley Market and the Ranch (painted, WebP), renders of the two new buildings (PNG).
 const VALLEY_ITEM_ART=['cherries','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','valley-market','ranch'];
 for(const id of [...VALLEY_ITEM_ART,'goatshed','craftshop'])pictures[id]=id;
@@ -92,6 +95,7 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 for(const key of VILLAGE_ART)webpPictures.add(key);
 webpPictures.add('feedback');
+webpPictures.add('warehouse');
 for(const key of TOOL_PICTURES)webpPictures.add(key);
 for(const key of JOB_PICTURES)webpPictures.add(key);
 // The farm app (30 Sep 2026, painted by the user): a golden phone with the barn, for installing the game and the admin's devices.

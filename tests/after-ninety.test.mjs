@@ -42,7 +42,7 @@ test('Seed Lab: 20 heirlooms from two crops each; the first cross takes a day an
  assert.equal(r.discovered,true);assert.equal(s.inventory.savoycabbage,LAB_YIELD);assert.equal(s.diamonds-d-(r.levelReward?.diamonds??0),LAB_DISCOVER_DIAMONDS);assert.equal(itemAvailable(s,'savoycabbage'),true);
  const again=act(s,{type:'lab_cross',bed:1,heirloom:'savoycabbage'},now+LAB_DISCOVER_MS);assert.equal(again.discover,false);assert.equal(s.lab.beds[1].readyAt,now+LAB_DISCOVER_MS+LAB_GROW_MS);
  // All twenty: +100 diamonds on the last discovery (200 until 7 Oct 2026).
- const t=farm(99);for(const k of Object.keys(CROPS))t.inventory[k]=100000;t.lab.found=Object.keys(HEIRLOOMS).slice(1);
+ const t=farm(99);t.warehouse={level:10};for(const k of Object.keys(HEIRLOOMS.savoycabbage.input))t.inventory[k]=1000;t.lab.found=Object.keys(HEIRLOOMS).slice(1);   // (every crop 100,000 until the Warehouse, 22 Oct 2026: the lab's collect waits while it is full)
  act(t,{type:'lab_cross',bed:0,heirloom:'savoycabbage'},now);const last=act(t,{type:'lab_collect',bed:0},now+LAB_DISCOVER_MS);
  assert.equal(last.complete,true);assert.equal(last.diamonds,LAB_DISCOVER_DIAMONDS+LAB_COMPLETE_DIAMONDS);
 });

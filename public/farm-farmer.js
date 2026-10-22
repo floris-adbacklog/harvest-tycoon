@@ -29,7 +29,9 @@ const trip=(at,via=[])=>Object.freeze({at:Object.freeze(at),via:Object.freeze(vi
 const OUT=[-13.6,-4.4],LANE=[OUT,[-9.6,-4.4],[-9.6,2],[-7.8,3]],TRUNK=[OUT,[-10,-4.4]];
 export const FARM_TRIPS=Object.freeze({
  chores:trip([-14.66,-5.7]),
- mill:trip([-14.5,.95],[[-15.3,-1.4]]),   // west of the evening chair
+ // The Feed Mill across the main road since 22 Oct 2026 (the Warehouse stands where it was): on the road in front of the cows' pasture,
+ // left of the Mill's doors, along the trunk road like the Windmill's.
+ mill:trip([4,-5.2],[...TRUNK,[4,-4.4]]),
  bakery:trip([-13.79,10.6],[...LANE,[-7.8,10.6]]),
  dairy:trip([-4.8,-16.86],[OUT,[-7.8,-4.4],[-7.8,-16.86]]),   // by the barn's front corner, behind the pasture's fence (moved back with the barn, 22 Oct 2026)
  pigfarm:trip([-28.49,-3.25],[[-16.2,-5.2],[-27.4,-5.2]]),
@@ -68,13 +70,15 @@ const farmLoop=spots=>Object.freeze({height:FARM_WALK.height,walk:.9,spots:Objec
 export const FARM_FAMILY_WALKS=Object.freeze([
  // Between the Farmhouse yard and the lane, south of the cart and east of the chores.
  farmLoop([[-9.5,-10.3],[-9.6,-9.1],[-10.6,-8.9],[-10.7,-10.3]]),
- // By the lane south of the crossroads, between the Mill and the fields (north of the lamp post, which would hide them).
- farmLoop([[-10.8,3.5],[-9.7,4],[-9.6,4.8],[-10.3,4.3]]),
+ // By the lane south of the crossroads, between the evening chair and the Warehouse's corner (22 Oct 2026: it was between the Mill and
+ // the fields, where the Warehouse's longer barn and its doors stand now).
+ farmLoop([[-11.3,1.4],[-11.2,2.5],[-12,1.9]]),
  // Along the trunk road east of the crossroads, by the cows' pasture fence (two stretches).
  farmLoop([[-5.2,-6],[-3.4,-6.05]]),
  farmLoop([[-1.6,-6],[.4,-6.05]]),
- // West of the Mill, by the west road; and across the west road from the Farmhouse.
- farmLoop([[-23.8,4.3],[-22.6,6],[-22.6,5.1]]),
+ // West of the Warehouse (the Mill until 22 Oct 2026), by the west road; and across the west road from the Farmhouse.
+ // A step nearer the camera since 22 Oct 2026, so the Warehouse's taller barn in front of them never hides them.
+ farmLoop([[-23.8,5.8],[-22.6,6.9]]),
  farmLoop([[-27.6,-8.1],[-26.2,-7.6],[-26.5,-8.5]])
 ]);
 // On a phone (lite) at most this many, the ones seen most lately: each farmer is a few skinned meshes more to draw.

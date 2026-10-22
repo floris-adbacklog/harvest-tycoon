@@ -121,7 +121,7 @@ test('the Dairy Barn stands one segment further back, its cows\' pasture four se
  assert.match(game,/const west=fenceLine\(-4\.7,-11\.6,4,'z'\),east=fenceLine\(4\.1,-11\.6,4,'z'\),back=\[\.\.\.fenceLine\(-3\.6,-12\.7,1\),\.\.\.fenceLine\(3,-12\.7,1\)\];/);
  assert.match(farmer,/dairy:trip\(\[-4\.8,-16\.86\],\[OUT,\[-7\.8,-4\.4\],\[-7\.8,-16\.86\]\]\)/,'the farmer stands by the barn\'s front corner, behind the fence, as before');
  // The seeded props and scenery are placed as the yard stood before (else every one of them moves farm-wide), then kept off it.
- assert.match(game,/function addExtraProps\(\)\{\n const props=asBefore\(placeExtraProps\),off=keptOff\(\);/);
+ assert.match(game,/function addExtraProps\(\)\{\n const props=asBefore\(placeExtraProps\),off=keptOff\(\),dairyOff=keptOff\(true\),/);
  assert.match(game,/\[\[-2\.6,-8\.2\],\[2\.2,-8\],\[-\.3,-5\.4\]\]\.forEach/,'the cows\' spots of before');
  assert.match(scenery,/list=list\.filter\(\(\[x,z\]\)=>!keptOff\(x,z,\.3\)\);/);
 });

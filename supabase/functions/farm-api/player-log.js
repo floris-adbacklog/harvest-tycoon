@@ -33,6 +33,7 @@ const FARM_ACTIONS={
  upgrade:['farm',(a,s,r)=>r?.crates?`Upgraded the ${building(a.building)} to level ${s.buildings[a.building]?.level??''} with ${number(r.crates)} builder’s ${r.crates===1?'crate':'crates'}`:`Upgraded the ${building(a.building)} to level ${s.buildings[a.building]?.level??''}${a.currency==='diamonds'?' with diamonds':''}`],
  expand:['farm',(a,s)=>`Unlocked field ${s.plots.length}`],
  silo_upgrade:['farm',(a,s)=>`Silo research step ${s.siloLevel}`],
+ warehouse_upgrade:['farm',(a,s)=>`Upgraded the Warehouse to level ${s.warehouse?.level??''}`],
  improve:['farm',(a)=>`Built ${IMPROVEMENTS[a.id]?.name??'an estate improvement'}`],
  clear_planting:['farm',()=>'Removed a crop from a field'],
  clear_plantings:['farm',(a,s,r)=>`Removed ${r?.cleared?.length??''} crops from the fields`],

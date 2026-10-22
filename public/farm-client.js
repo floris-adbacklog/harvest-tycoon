@@ -16,7 +16,7 @@ export const bridgeClock=bridge=>Number.isFinite(bridge?.serverNow)?bridge.serve
 // (Oct 2026) shows at once too: a claim like the others, worked out from the farm alone. So does a fish (11 Oct 2026, the Fishing pond):
 // every fish is fixed in advance from the farm itself (farm-state.js pondFish), so the catch shows the fish the server pays. A fish at the
 // village lake too (12 Oct 2026, lake_fish): fixed the same way, from the farm's seed with the lake's own salt.
-export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish']));
+export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','warehouse_upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish']));
 // No lucky double batch on the screen before the server has rolled for it (its answer shows it when it comes).
 const noLuck=()=>1;
 // Whether a tap can show at once: an everyday action that the rules accept. A level-up shows at once too (the rules pay its reward
@@ -136,7 +136,9 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
     if(adminView()){handle.reason||=ADMIN_LOCKED;return null;}
     let instant;
     try{instant=instantResult(state,{type:'fields',action,ids:[id],crop},farmNow());}
-    catch(error){if(action==='plant'&&!state.plots?.[id]?.crop)try{short||=state.coins<seedCost(state,crop);}catch{}handle.reason||=error.message;return null;}
+    catch(error){if(action==='plant'&&!state.plots?.[id]?.crop)try{short||=state.coins<seedCost(state,crop);}catch{}handle.reason||=error.message;
+     // The Warehouse (22 Oct 2026): a harvest sweep that reaches a full Warehouse stops there; the game says so with its own note.
+     if(/^Warehouse full \(/.test(error.message))handle.full=handle.reason=error.message;return null;}
     // An invited friend's level-10 reward is only the server's to add: that field waits for a tap of its own.
     if(!instant)return null;
     if(!entry.action.ids.length)pending.push(entry);

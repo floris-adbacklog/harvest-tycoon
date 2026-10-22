@@ -44,7 +44,7 @@ test('nothing is placed where the scene says there is no room',()=>{
 });
 test('the scene adds the props last, from the real free space',()=>{
  const game=read('public/game.js');
- assert.match(game,/farmLife\.watchProduction\(buildingViews\);\s*addExtraProps\(\);/);
+ assert.match(game,/farmLife\.watchProduction\(buildingViews\);[^\n]*\n[^\n]*\}\n addExtraProps\(\);\n\}/,'the props come last, once the Feed Mill\'s smoke is there');
  assert.match(game,/scatterProps\(\{anchors,roads,free,rand:seeded\(20260921\)\}\)/);
  assert.match(game,/\.\.\.\[-5\.6,-3,10\.4,23\.6\]|fields=\[-5\.6,-3,10\.4,33\.6\]/,'the crops are kept clear, with room for 40 fields');
 });

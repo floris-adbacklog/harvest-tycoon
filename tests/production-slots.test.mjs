@@ -8,6 +8,7 @@ const now=1789690000000;
 function farm(){const s=createFarm(now);s.xp=xpForLevel(150);   // World II's places open at 100-150, each with its first recipe (Oct 2026)
  for(const b of Object.values(s.buildings))b.built=true;s.coins=1000000;s.diamonds=500;for(const k of Object.keys(s.inventory))s.inventory[k]=1000;return s;}
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
+import {roomFor} from './warehouse-room.mjs';
 test('every production building permits exactly one simultaneous batch per level',()=>{
  for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'))for(let level=1;level<=10;level++){
   const s=farm();s.buildings[id].level=level;const recipe=Object.keys(RECIPES).find(k=>RECIPES[k].building===id);
@@ -17,7 +18,7 @@ test('every production building permits exactly one simultaneous batch per level
  }
 });
 test('mixed recipes finish independently, targeted collection and replay cannot steal another batch',()=>{
- const s=farm();s.buildings.mill.level=3;const oil=act(s,{type:'produce',recipe:'oil'}),feed=act(s,{type:'produce',recipe:'feed'}),barley=act(s,{type:'produce',recipe:'barleyfeed'});
+ const s=roomFor(farm(),['oil','feed','barleyfeed']);s.buildings.mill.level=3;const oil=act(s,{type:'produce',recipe:'oil'}),feed=act(s,{type:'produce',recipe:'feed'}),barley=act(s,{type:'produce',recipe:'barleyfeed'});
  assert.throws(()=>act(s,{type:'collect',building:'mill',jobId:oil.jobId},feed.readyAt),/still/);
  const before=s.inventory.feed;act(s,{type:'collect',building:'mill',jobId:feed.jobId},feed.readyAt);assert.equal(s.inventory.feed,before+2,'2 corn make 2 feed (26 Sep 2026)');assert.equal(s.stats.produced,1);
  const snapshot=structuredClone(s);assert.throws(()=>act(s,{type:'collect',building:'mill',jobId:feed.jobId},feed.readyAt),/Nothing/);assert.deepEqual(s,snapshot);
@@ -28,7 +29,7 @@ test('mixed recipes finish independently, targeted collection and replay cannot 
  const summary=farmSummary(s,feed.readyAt).buildings.find(b=>b.id==='mill');assert.equal(summary.jobs.length,3);assert.equal(summary.status,'ready');
 });
 test('ready goods occupy a slot; old clients collect ready jobs; promotion and reload preserve jobs',()=>{
- const s=farm();s.buildings.mill.level=2;const first=act(s,{type:'produce',recipe:'oil'}),second=act(s,{type:'produce',recipe:'feed'});
+ const s=roomFor(farm(),['oil','feed','barleyfeed']);s.buildings.mill.level=2;const first=act(s,{type:'produce',recipe:'oil'}),second=act(s,{type:'produce',recipe:'feed'});
  assert.throws(()=>act(s,{type:'produce',recipe:'feed'},second.readyAt),/slots/);
  act(s,{type:'collect',building:'mill'},second.readyAt);assert.equal(s.buildings.mill.job.id,first.jobId);
  const third=act(s,{type:'produce',recipe:'feed'},second.readyAt);act(s,{type:'collect',building:'mill',jobId:first.jobId},first.readyAt);
@@ -36,13 +37,13 @@ test('ready goods occupy a slot; old clients collect ready jobs; promotion and r
  assert.deepEqual(normalizeFarm(structuredClone(s),now),s);
 });
 test('old saves migrate in place, keeping paid-for output, timers, rewards and balances',()=>{
- const s=farm();s.version=7;const job={recipe:'oil',startedAt:now-100,readyAt:now+100,output:{oil:3},xp:99};s.buildings.mill.job=structuredClone(job);delete s.buildings.mill.extraJobs;delete s.buildings.mill.batchSequence;
+ const s=roomFor(farm(),['oil','feed','barleyfeed']);s.version=7;const job={recipe:'oil',startedAt:now-100,readyAt:now+100,output:{oil:3},xp:99};s.buildings.mill.job=structuredClone(job);delete s.buildings.mill.extraJobs;delete s.buildings.mill.batchSequence;
  s.onboarding={completed:10,rewardClaimed:true,milestones:{}};const before=structuredClone(s);normalizeFarm(s,now);
  assert.equal(s.coins,before.coins);assert.equal(s.diamonds,before.diamonds);assert.deepEqual(s.onboarding,before.onboarding);
  const {id,...saved}=s.buildings.mill.job;assert(id);assert.deepEqual(saved,job);const output=act(s,{type:'collect',building:'mill',jobId:id},now+100);assert.deepEqual(output.items,{oil:3});assert.equal(output.xp,99);
 });
 test('instant production finishes every parallel job and grants nothing until collection',()=>{
- const s=farm();s.buildings.mill.level=3;for(let i=0;i<3;i++)act(s,{type:'produce',recipe:'oil'});const before=s.inventory.oil;
+ const s=roomFor(farm(),['oil','feed','barleyfeed']);s.buildings.mill.level=3;for(let i=0;i<3;i++)act(s,{type:'produce',recipe:'oil'});const before=s.inventory.oil;
  const result=act(s,{type:'buy_boost',boost:'production',expectedCost:BOOSTS.production.cost},now+10);assert.equal(result.affected,3);assert.equal(s.inventory.oil,before);
  for(const j of [...productionJobs(s.buildings.mill)])act(s,{type:'collect',building:'mill',jobId:j.id},now+10);
  assert.equal(s.inventory.oil,before+3);assert.equal(s.stats.produced,3);assert.equal(s.buildings.mill.job,null);
