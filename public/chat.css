@@ -154,10 +154,30 @@ span.chat-avatar{cursor:default}
 .farmer-mod-badge .game-art{width:18px;height:18px}
 .farmer-chat{display:grid;gap:10px;margin:0 0 18px}
 .farmer-chat[hidden]{display:none}
-.farmer-chat-row{display:flex;gap:8px}
-.farmer-chat-row .small-button{min-height:46px;padding:0 16px}
+/* Each button keeps its own height and its words on one line (22 Oct 2026, the owner: "knoppen zoals bericht versturen zijn
+   uitgerekt"): on a phone Send message stood on two lines, in Dutch on four ("Be-richt stu-ren"), 68 to 110 px high, and Report and
+   Block were pulled up to the same height, the row 6 px wider than the window. What does not fit goes to the next row. */
+.farmer-chat-row{display:flex;flex-wrap:wrap;gap:8px}
+.farmer-chat-row>button{white-space:nowrap;hyphens:manual}
+.farmer-chat-row .small-button{flex:none;min-height:46px;padding:0 16px}
 .farmer-chat-send{flex:1;width:auto}
 .farmer-chat-send .game-art{width:22px;height:22px}
+/* A phone or a tablet: three buttons of one height side by side (Send message no wider than its words, not a bar across a phone
+   turned sideways); where they do not fit (a phone held upright) Send message gets the first row and Report and Block share the
+   second, half and half. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .farmer-chat{container-type:inline-size}
+ .farmer-chat-row{align-items:center}
+ .farmer-chat-row>button{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+ .farmer-chat-row .small-button{min-height:48px;padding:0 14px;font-size:14px}
+ .farmer-chat-row .small-button>.game-art{width:22px;height:22px}
+ .farmer-chat-send{flex:0 1 auto;padding:0 22px}
+ @container (max-width:440px){
+  .farmer-chat-row{gap:10px}
+  .farmer-chat-send{flex:1 1 100%}
+  .farmer-chat-row .small-button{flex:1 1 0;min-width:0}
+ }
+}
 .farmer-mod-tools{display:grid;gap:10px;padding:12px;border-radius:14px;background:#f6f1ea;text-align:start}
 .farmer-mod-title{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:#5e523a;font:700 13px 'DM Sans',sans-serif}
 .farmer-mod-title .game-art{width:18px;height:18px}
