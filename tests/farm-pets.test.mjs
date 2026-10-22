@@ -67,8 +67,8 @@ test('where they walk: open ground by the Farmhouse and on the village\'s lake s
  const walk=spots=>spots.flatMap(a=>spots.flatMap(b=>Array.from({length:11},(_,i)=>[a[0]+(b[0]-a[0])*i/10,a[1]+(b[1]-a[1])*i/10])));
  const [fx,fz]=anchorAt('farmhouse');
  // The tappable things round the Farmhouse as they stand on the farm (measured in the game, 20 Oct 2026): the Farmhouse, the chores
- // barrels, the Feed Mill, the delivery cart and the tractor, each with the pet's half length round it.
- const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],mill:[-19.5,-13,3.2,7.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
+ // barrels, the Warehouse (the Feed Mill until 22 Oct 2026), the delivery cart and the tractor, each with the pet's half length round it.
+ const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],warehouse:[-19.6,-10.9,3.4,8.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
  for(const [id,{length,spots}] of Object.entries(FARM_PETS)){
   assert.ok(Math.hypot(spots[0][0]-fx,spots[0][1]-fz)<12,`${id} is near the Farmhouse`);
   for(const [x,z] of walk(spots)){

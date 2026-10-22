@@ -206,7 +206,7 @@ export const BUILDINGS = Object.freeze({
  preserves:{"name": "Preserves Workshop", "tagline": "Berries and honey, saved for something special.", "icon": "amphora", "model": "hangar_002", "type": "production", "upgradeCost": 850, "minLevel": 10, "buildCost": 10000},
  // The midgame expansion: four new production buildings, each on its own model from the farm pack.
  beeyard:{"name": "Bee Yard", "tagline": "Busy hives: honey for the pantry and golden beeswax to sell.", "icon": "hexagon", "model": "apiary_002", "type": "production", "upgradeCost": 950, "minLevel": 34, "buildCost": 18000},
- sheepbarn:{"name": "Sheep Barn", "tagline": "A friendly flock and soft wool, shorn with care.", "icon": "cloud", "model": "hangar_006", "type": "production", "upgradeCost": 1050, "minLevel": 37, "buildCost": 26000},
+ sheepbarn:{"name": "Sheep Barn", "tagline": "A friendly flock and soft wool, shorn with care.", "icon": "cloud", "model": "hangar_015", "type": "production", "upgradeCost": 1050, "minLevel": 37, "buildCost": 26000},
  glasshouse:{"name": "Glasshouse", "tagline": "Warm beds under glass: a crate of vegetables or sunflowers from fertilizer, no field needed.", "icon": "sprout", "model": "greenhouse_004", "type": "production", "upgradeCost": 1200, "minLevel": 40, "buildCost": 40000},
  weaving:{"name": "Weaving Shed", "tagline": "Spin wool into yarn and weave it into fine cloth.", "icon": "package-check", "model": "house_018", "type": "production", "upgradeCost": 1300, "minLevel": 43, "buildCost": 55000},
  // Wave 2: goats beside the sheep, and a workshop for the Bee Yard's wax and the Weaving Shed's cloth.

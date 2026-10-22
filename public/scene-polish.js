@@ -140,7 +140,7 @@ const CLIPPABLE=/^(fence|stone_fence|bush|grass|barrel|bag|case|bucket|firewood|
 // generous (porches, sails), so the test is exact: rays are dropped from above at a few
 // points of each object, and a point counts as "inside" only when real building geometry
 // is above it. Placement is hand-tuned, so this keeps every present and future building clean.
-function hideClippedScenery(scene){
+export function hideClippedScenery(scene){
  const buildings=scene.children.filter(o=>o.userData.building&&o.userData.model);
  if(!buildings.length)return 0;
  const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),origin=new THREE.Vector3(),size=new THREE.Vector3(),hidden=[];
@@ -182,7 +182,10 @@ function mountainRing({cloneModel,group,rand,mobile}){
  }
 }
 
-export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false,mobile=false,anisotropy=4}){
+// asBefore (22 Oct 2026, game.js): the grass, the flowers and the mountain ring are placed by seeded chance round what stands on the farm,
+// every spot depending on all the ones before it, so that is measured as the farm stood before the Warehouse came (what is clipped by a
+// building, and where plants may grow); the dirt yards lie under the buildings where they stand now.
+export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false,mobile=false,anisotropy=4,asBefore=place=>place()}){
  const rand=mulberry(20260919),group=new THREE.Group();group.name='Scene polish';group.userData.polish=true;scene.add(group);
  scene.updateMatrixWorld(true);
 
@@ -201,16 +204,18 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
   meadowPatch.material.map=stripes;meadowPatch.material.needsUpdate=true;
  }
 
- hideClippedScenery(scene);
-
  // 2. Where plants may grow: everything that is not a flat decal, road-sized clearing or the pond.
- const blocked=[];
- for(const o of scene.children){
-  if(o===group||o===ground||o.isLight||o.isCamera)continue;
-  const box=new THREE.Box3().setFromObject(o);if(box.isEmpty())continue;
-  if(box.getSize(new THREE.Vector3()).y<.03)continue;
-  blocked.push(box.expandByVector(new THREE.Vector3(.45,0,.45)));
- }
+ const blocked=asBefore(()=>{
+  hideClippedScenery(scene);
+  const list=[];
+  for(const o of scene.children){
+   if(o===group||o===ground||o.isLight||o.isCamera)continue;
+   const box=new THREE.Box3().setFromObject(o);if(box.isEmpty())continue;
+   if(box.getSize(new THREE.Vector3()).y<.03)continue;
+   list.push(box.expandByVector(new THREE.Vector3(.45,0,.45)));
+  }
+  return list;
+ });
  const fieldRect=[-4.6,-2,9.4,32],pondRect=pondBounds();
  const free=(x,z)=>!blocked.some(b=>x>b.min.x&&x<b.max.x&&z>b.min.z&&z<b.max.z)
   &&!(x>fieldRect[0]&&x<fieldRect[2]&&z>fieldRect[1]&&z<fieldRect[3])

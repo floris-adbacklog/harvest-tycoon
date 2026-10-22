@@ -99,12 +99,11 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  station('workshop',cloneModel('lawn_mower_001',-9.1,-14.7,{width:1.25,rotation:.5}),-9.1,-14.7);
  zone(null);scenery('trailer_001',-19,-20,{width:2.2,rotation:.25});zone('paddock');
  // The existing glasshouse and hives receive real activities through attach().
- // The horse has the open grass in front of the silo to itself (15 Oct 2026, the owner: no pig, more room): the dairy cows' pasture
- // fence on one side, the chickens' pen on the other, the silo just behind it and the silo's hay stack in front by the road. It stands
- // back and to the right, so on a phone at zoom 1 its pin floats over the silo's foot, not over the cows, and the Windmill's pin
- // stays off it.
- const horse=station('paddock',cloneModel('horse_002',18.62,-9.92,{width:2.2,rotation:-.7}),18.62,-9.92);
- {const [hx,hz]=place(18.62,-9.92);moving.push({obj:horse,x:hx,z:hz,kind:'animal',phase:0});}
+ // The horse has the open green east of the fields by the pond to itself since 22 Oct 2026 (the Feed Mill took its grass in front of
+ // the silo, between the cows and the chickens: the owner's Warehouse plan), on its yard's own spot (farm-layout.js HOMES), with its hay
+ // beside it (game.js): the fields on one side, the Windmill's yard behind and the pond in front, none of them hidden by it.
+ const horse=station('paddock',cloneModel('horse_002',17.9,-7,{width:2.2,rotation:-.7}),17.9,-7);
+ {const [hx,hz]=place(17.9,-7);moving.push({obj:horse,x:hx,z:hz,kind:'animal',phase:0});}
  zone(null);
  // A few bees, kept away from the crop labels.
  const beeHome=placeIn('apiary',10.4,13.7);

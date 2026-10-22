@@ -166,7 +166,7 @@ test('your farmer on the farm and in the village: after the first picture, only 
  const loop=spots=>spots.flatMap((a,i)=>{const b=spots[(i+1)%spots.length];return Array.from({length:11},(_,k)=>[a[0]+(b[0]-a[0])*k/10,a[1]+(b[1]-a[1])*k/10]);});
  const walk=spots=>spots.flatMap(a=>spots.flatMap(b=>Array.from({length:11},(_,i)=>[a[0]+(b[0]-a[0])*i/10,a[1]+(b[1]-a[1])*i/10])));
  // The tappable things round the Farmhouse (tests/farm-pets.test.mjs) and the pets' walks.
- const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],mill:[-19.5,-13,3.2,7.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
+ const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],warehouse:[-19.6,-10.9,3.4,8.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
  const pets=Object.values(FARM_PETS).flatMap(p=>walk(p.spots));
  for(const [x,z] of loop(FARM_WALK.spots)){
   assert.ok(x<FIELD_BLOCK.minX-2||x>FIELD_BLOCK.maxX+2||z<FIELD_BLOCK.minZ-2||z>FIELD_BLOCK.maxZ+2,`off the fields at ${x},${z}`);
@@ -208,7 +208,7 @@ test('your farmer joins in: a harvest, a collect or a chore takes them to a chec
  const {FARM_TRIPS,FIELD_TRIPS,tripFor,FARM_WALK}=await import('../public/farm-farmer.js');
  const {FARM_PETS}=await import('../public/farm-pets.js');
  const {FIELD_BLOCK,pondBounds,outsideYardExtents,outsideFields,anchorAt}=await import('../public/farm-layout.js');
- const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],mill:[-19.5,-13,3.2,7.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
+ const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],warehouse:[-19.6,-10.9,3.4,8.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
  const seg=([x,z],[ax,az],[bx,bz])=>{const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz,t=l?Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/l)):0;return Math.hypot(x-ax-t*dx,z-az-t*dz);};
  const pets=Object.values(FARM_PETS).flatMap(p=>p.spots.flatMap(a=>p.spots.map(b=>[a,b])));
  const all=[...Object.entries(FARM_TRIPS),...FIELD_TRIPS.map((t,i)=>[`field ${i}`,t])];
@@ -280,7 +280,7 @@ test('the evening: from 20:00 to 7:00 by the player\'s clock your farmer rests o
  const loop=FARM_WALK.spots;for(let i=0;i<loop.length;i++)assert.ok(seg([x,z],loop[i],loop[(i+1)%loop.length])>1,'clear of the loop');
  for(const p of Object.values(FARM_PETS))for(const a of p.spots)for(const b of p.spots)assert.ok(seg([x,z],a,b)>2,'clear of the pets\' walks');
  for(const t of [...Object.values(FARM_TRIPS),...FIELD_TRIPS]){const way=[[-13.6,-2],...t.via,t.at];for(let i=0;i+1<way.length;i++)assert.ok(seg([x,z],way[i],way[i+1])>1,'clear of the trips\' ways');}
- const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],mill:[-19.5,-13,3.2,7.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
+ const TAPPABLE={farmhouse:[-21.4,-14.5,-16.6,-9.9],chores:[-14.6,-13.5,-8.8,-7.7],warehouse:[-19.6,-10.9,3.4,8.2],cart:[-13.7,-11.5,-14.1,-13.1],tractor:[-8.3,-5.2,-1.1,.6]};
  for(const [name,[x0,x1,z0,z1]] of Object.entries(TAPPABLE))assert.ok(x<x0-1||x>x1+1||z<z0-1||z>z1+1,name);
  const walker=read('public/farm-farmer.js'),game=read('public/game.js');
  // At once when the farm opens in the evening; a walk there when 20:00 comes during play; up again in the morning. No trips, no
