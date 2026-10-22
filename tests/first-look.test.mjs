@@ -91,7 +91,7 @@ test('timers under 2 minutes keep their seconds, and step 10 says how long the e
  s.buildings.coop.batchSequence=1;
  assert.equal(eggs(now),'Collect a finished batch from a building. Chicken feed becomes eggs in 3m.','the beginner boost (40% since 9 Oct 2026)');
  assert.equal(eggs(now+3*DAY_MS),'Collect a finished batch from a building. Chicken feed becomes eggs in 5m.');
- assert.equal(beginnerProgress(s,now).find(q=>q.id==='water').description,'Plant wheat and water it within a minute. It grows faster and gives an extra crop.');
+ assert.equal(beginnerProgress(s,now).find(q=>q.id==='water').description,'Plant wheat and water it within a minute. It ripens much sooner.');
 });
 
 test('the phone banner says when the eggs are ready, and what to do at step 7, in one short line',()=>{

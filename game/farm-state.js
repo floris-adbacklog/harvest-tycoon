@@ -11,31 +11,33 @@ export const FAMILY_MIN_LEVEL=10;
 // Brussels sprouts (Winter 2026 on, 21 Oct 2026): the same rules, on the cabbage plant plant_004 in a fresh sprout green and a little
 // taller, so a field of them reads as sprout stalks rather than cabbages. The item key is 'sprouts'; its pictures are brussels-sprouts.
 export const SEASON_CROPS=Object.freeze({
- cranberries:Object.freeze({name:'Cranberries',seedName:'Cranberry seeds',cost:0,sell:500,duration:14400000,xp:27,model:'bush_003',height:.72,use:'Sell at the market',tint:0xb0283c,season:'autumn',seedOnly:true,fixedPrice:true}),
- sprouts:Object.freeze({name:'Brussels sprouts',seedName:'Brussels sprout seeds',cost:0,sell:500,duration:14400000,xp:27,model:'plant_004',height:.62,use:'Sell at the market',tint:0x6fa83a,season:'winter',seedOnly:true,fixedPrice:true})
+ cranberries:Object.freeze({name:'Cranberries',seedName:'Cranberry seeds',cost:0,sell:500,duration:14400000,xp:18,model:'bush_003',height:.72,use:'Sell at the market',tint:0xb0283c,season:'autumn',seedOnly:true,fixedPrice:true}),
+ sprouts:Object.freeze({name:'Brussels sprouts',seedName:'Brussels sprout seeds',cost:0,sell:500,duration:14400000,xp:18,model:'plant_004',height:.62,use:'Sell at the market',tint:0x6fa83a,season:'winter',seedOnly:true,fixedPrice:true})
 });
 export const seasonCrop=key=>typeof key==='string'&&Object.hasOwn(SEASON_CROPS,key);
 const withSeasonCrops=crops=>{for(const [key,crop] of Object.entries(SEASON_CROPS))Object.defineProperty(crops,key,{value:crop,enumerable:false});return crops;};
+// Seeds cost a third and a harvest gives two thirds of the XP since 22 Oct 2026 (one crop a harvest, see CARE_AT): a farmer who waters
+// and cares harvests four times as often for the same crops. The trees and bushes, planted once, kept their price.
 export const CROPS = Object.freeze(withSeasonCrops({
- corn:       {name:'Corn',cost:10,sell:40,duration:900000,xp:5,model:'plant_001',height:1.55,use:'Animal feed'},
- wheat:      {name:'Wheat',cost:3,sell:8,duration:120000,xp:2,model:'plant_011',height:.85,use:'Flour & bread'},
- cabbage:    {name:'Cabbage',cost:40,sell:110,duration:7200000,xp:18,model:'plant_004',height:.48,use:'Vegetable boxes'},
- pumpkin:    {name:'Pumpkin',cost:95,sell:250,duration:28800000,xp:36,model:'plant_003',height:.8,use:'Pumpkin pies'},
- sunflower:  {name:'Sunflower',cost:180,sell:480,duration:86400000,xp:68,model:'plant_007',height:1.65,use:'Sunflower oil'},
- barley: {name:'Barley',cost:20,sell:85,duration:2700000,xp:12,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
- lettuce:{name:'Lettuce',cost:7,sell:20,duration:300000,xp:3,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg'},
- redcabbage:{name:'Red cabbage',cost:130,sell:340,duration:43200000,xp:48,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
- cauliflower:{name:'Cauliflower',cost:65,sell:175,duration:14400000,xp:27,model:'plant_005',height:.5,use:'Vegetable boxes'},
- greenbeans:{"name": "Green beans", "cost": 45, "sell": 90, "duration": 5400000, "xp": 21, "model": "plant_006", "height": 1.25, "use": "Vegetable stew", "minLevel": 6},
- apples:{"name": "Apples", "cost": 700, "sell": 100, "duration": 43200000, "regrow": 21600000, "xp": 33, "model": "tree_009", "height": 1.8, "use": "Apple juice & apple pie", "minLevel": 8, "perennial": true},
- berries:{"name": "Berries", "cost": 1000, "sell": 130, "duration": 28800000, "regrow": 14400000, "xp": 27, "model": "bush_003", "height": 0.95, "use": "Berry preserves & berry tart", "minLevel": 10, "perennial": true},
+ corn:       {name:'Corn',cost:3,sell:40,duration:900000,xp:3,model:'plant_001',height:1.55,use:'Animal feed'},
+ wheat:      {name:'Wheat',cost:1,sell:8,duration:120000,xp:2,model:'plant_011',height:.85,use:'Flour & bread'},
+ cabbage:    {name:'Cabbage',cost:13,sell:110,duration:7200000,xp:12,model:'plant_004',height:.48,use:'Vegetable boxes'},
+ pumpkin:    {name:'Pumpkin',cost:32,sell:250,duration:28800000,xp:24,model:'plant_003',height:.8,use:'Pumpkin pies'},
+ sunflower:  {name:'Sunflower',cost:60,sell:480,duration:86400000,xp:45,model:'plant_007',height:1.65,use:'Sunflower oil'},
+ barley: {name:'Barley',cost:7,sell:85,duration:2700000,xp:8,model:'plant_010',height:1.05,use:'Animal feed',art:'/assets/icons/barley.svg'},
+ lettuce:{name:'Lettuce',cost:2,sell:20,duration:300000,xp:2,model:'plant_005',height:.47,use:'Fresh salads',art:'/assets/icons/lettuce.svg'},
+ redcabbage:{name:'Red cabbage',cost:43,sell:340,duration:43200000,xp:32,model:'plant_004',height:.6,use:'Pickled vegetables',art:'/assets/icons/redcabbage.svg',tint:0xb66cce},
+ cauliflower:{name:'Cauliflower',cost:22,sell:175,duration:14400000,xp:18,model:'plant_005',height:.5,use:'Vegetable boxes'},
+ greenbeans:{"name": "Green beans", "cost": 15, "sell": 90, "duration": 5400000, "xp": 14, "model": "plant_006", "height": 1.25, "use": "Vegetable stew", "minLevel": 6},
+ apples:{"name": "Apples", "cost": 700, "sell": 100, "duration": 43200000, "regrow": 21600000, "xp": 22, "model": "tree_009", "height": 1.8, "use": "Apple juice & apple pie", "minLevel": 8, "perennial": true},
+ berries:{"name": "Berries", "cost": 1000, "sell": 130, "duration": 28800000, "regrow": 14400000, "xp": 18, "model": "bush_003", "height": 0.95, "use": "Berry preserves & berry tart", "minLevel": 10, "perennial": true},
  // The midgame expansion (levels 28-46). Each crop grows on its own model from the farm pack: a squash vine, climbing beans on a
  // pole and a second, bigger apple tree. Prices follow the crops just below them; the two perennials regrow like the berries.
- squash:{"name": "Squash", "cost": 220, "sell": 560, "duration": 57600000, "xp": 60, "model": "plant_002", "height": 0.8, "use": "Squash soup & the glasshouse", "minLevel": 28},
- polebeans:{"name": "Pole beans", "cost": 1400, "sell": 160, "duration": 21600000, "regrow": 10800000, "xp": 30, "model": "plant_009", "height": 1.7, "use": "Squash soup", "minLevel": 31, "perennial": true},
- ciderapples:{"name": "Cider apples", "cost": 1600, "sell": 180, "duration": 50400000, "regrow": 25200000, "xp": 40, "model": "tree_010", "height": 1.9, "use": "Sparkling cider", "minLevel": 46, "perennial": true},
+ squash:{"name": "Squash", "cost": 73, "sell": 560, "duration": 57600000, "xp": 40, "model": "plant_002", "height": 0.8, "use": "Squash soup & the glasshouse", "minLevel": 28},
+ polebeans:{"name": "Pole beans", "cost": 1400, "sell": 160, "duration": 21600000, "regrow": 10800000, "xp": 20, "model": "plant_009", "height": 1.7, "use": "Squash soup", "minLevel": 31, "perennial": true},
+ ciderapples:{"name": "Cider apples", "cost": 1600, "sell": 180, "duration": 50400000, "regrow": 25200000, "xp": 27, "model": "tree_010", "height": 1.9, "use": "Sparkling cider", "minLevel": 46, "perennial": true},
  // Wave 2 (levels 54-70): a cherry tree that regrows like the other orchard trees.
- cherries:{"name": "Cherries", "cost": 2000, "sell": 220, "duration": 57600000, "regrow": 28800000, "xp": 46, "model": "tree_011", "height": 1.9, "use": "Cherry jam & cherry pie", "minLevel": 66, "perennial": true}
+ cherries:{"name": "Cherries", "cost": 2000, "sell": 220, "duration": 57600000, "regrow": 28800000, "xp": 31, "model": "tree_011", "height": 1.9, "use": "Cherry jam & cherry pie", "minLevel": 66, "perennial": true}
 }));
 export const PRODUCTS = Object.freeze({
  honey:{name:'Honey',sell:35,icon:'hexagon',color:'gold'},
@@ -377,7 +379,7 @@ export const BEGINNER_QUESTS=Object.freeze([
  {id:'sell',title:'Your first market sale',description:'Open Market and sell your corn. Your first sale pays double.',guide:'market',icon:'store'},
  {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
  // 7 Oct 2026: water works only in a crop's first minute, and the starter wheat is past it (9 of 38 new farmers who planted never watered).
- {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It grows faster and gives an extra crop.',guide:'water',icon:'droplets'},
+ {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It ripens much sooner.',guide:'water',icon:'droplets'},
  {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
  {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow for the next one and 30 minutes of double harvest.',guide:'today',icon:'gift'},
  {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
@@ -1177,14 +1179,43 @@ export function clearPlantings(state,fields){
  }
  return {cleared:fields.map(f=>clearPlanting(state,f.id,f.expectedPlantedAt).id)};
 }
-// The care marker shows up after 30 seconds or 30% of the growing time. The beginner boost shortens both: the growing time is
-// already shorter, and the 30-second minimum shrinks with it (6 seconds), so Care fits inside a 24-second wheat field.
-const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*.3);
+// One crop a harvest (22 Oct 2026, the owner: "niet meer twee of drie crops van water/care, maar 1 per keer, en water/care verlaagt
+// productietijd aanzienlijk"). Every harvest gives 1 crop, whatever water and care; both make the crop ripen much sooner instead:
+// - Water takes WATER_CUT (60%) off the time the crop still needs (the Water tower WATER_TOWER_CUT, 65%: the same relative extra as its
+//   old 30% against 20%, 0.35 / 0.4 = 0.7 / 0.8).
+// - Extra care opens at CARE_AT (15%) of the growing time and takes CARE_CUT (60%) off what is left then.
+// So a crop watered at planting is ready at 40% of its time, watered and cared for at 15% + 25% × 40% = 25%: four times the harvests.
+// That keeps the crops an hour the same as before for a farmer who waters and cares (3 crops in 72.5% of the time = 4.1 an hour of
+// growing time; now 1 in 25% = 4.0), and the same for one who only waters (2 in 80% = 1 in 40%) or does neither, so the buildings, the
+// Factory, the orders and the market get as many crops as before. More harvests means more seeds: seeds cost a third of what they did,
+// and a harvest gives two thirds of its old XP without the old doubling (the old 2× XP for 3 crops = 2/3 of the XP per crop). The owner's
+// proposal (water and care to about 40% of the time) gave 40% fewer crops an hour to carers, with 78-99% of the crops of farms from
+// level 20 going into the buildings; the cuts above reach the same rule with the same supply. Balance tables: plan-een-gewas/balans.md.
+// Crops planted before this (plots without oneCrop) keep the old rule for that cycle: 1 crop + 1 for water + 1 for care, the old cuts
+// (water 20%, 30% with the Water tower; care 15%) and the old XP (LEGACY_HARVEST_XP, doubled with both).
+export const CARE_AT=.15,WATER_CUT=.6,WATER_TOWER_CUT=.65,CARE_CUT=.6;
+export const oneCropPlot=plot=>plot?.oneCrop===true;
+const LEGACY_HARVEST_XP=Object.freeze({corn:5,wheat:2,cabbage:18,pumpkin:36,sunflower:68,barley:12,lettuce:3,redcabbage:48,cauliflower:27,greenbeans:21,apples:33,berries:27,squash:60,polebeans:30,ciderapples:40,cherries:46,cranberries:27,sprouts:27});
+export function waterCut(state,plot){const tower=hasImprovement(state,'watertower');return oneCropPlot(plot)?(tower?WATER_TOWER_CUT:WATER_CUT):(tower?.3:.2);}
+export const careCut=plot=>oneCropPlot(plot)?CARE_CUT:.15;
+// Water and care on a growing crop (by hand, the tractor, Full care and the night shift): what they take off its time, in ms.
+function waterPlot(state,p,now){const before=p.readyAt;p.readyAt=now+(p.readyAt-now)*(1-waterCut(state,p));p.watered=true;return before-p.readyAt;}
+function carePlot(p,now){const before=p.readyAt;p.readyAt=now+(p.readyAt-now)*(1-careCut(p));p.tended=true;return before-p.readyAt;}
+// The care marker shows up after 30 seconds or CARE_AT of the growing time. The beginner boost shortens both: the growing time is
+// already shorter, and the 30-second minimum shrinks with it, so Care fits inside a short wheat field.
+const careDelay=(state,duration,now)=>Math.max(30000*(1-rookieBoost(state,now)),duration*CARE_AT);
 export function cropDuration(state,crop,regrowing=false,now=Date.now()){return Math.round((regrowing?(CROPS[crop].regrow??CROPS[crop].duration):CROPS[crop].duration)*(1-siloBonus(state.siloLevel??0).growth)*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(regrowing&&hasImprovement(state,'ladders')?.8:1)*(1-masterBonus(state,'growth'))*(1-valleyProjectBonus(state,'canal'))*(regrowing?1-valleyProjectBonus(state,'terraces'):1));}
+// How long a crop takes when it is watered at planting and cared for as soon as care opens: what the seed shop and the seed picker show
+// (22 Oct 2026, the owner: "zet bij Zaden de tijd die het zou kosten met water en care"). The same cuts as on a field, with the farm's
+// own growth bonuses, the Water tower and the boosts that run now.
+export function caredDuration(state,crop,regrowing=false,now=Date.now()){
+ const d=cropDuration(state,crop,regrowing,now),care=careDelay(state,d,now),watered=d*(1-waterCut(state,{oneCrop:true}));
+ return Math.round(watered>care?care+(watered-care)*(1-CARE_CUT):watered);
+}
 // What a tap on a field does: plant an empty one, harvest a ripe one, and give a growing crop what it can use now, extra care
 // first once it is ready (it has its own moment), then water. A tool the farmer picked on purpose (Water or Care) goes
 // first when it fits this field. null: nothing to do yet (the crop is watered and cared for, or care is not ready).
-// Water belongs to planting: a crop takes water until its extra care opens (30% of the growing time) and at least in its first
+// Water belongs to planting: a crop takes water until its extra care opens (CARE_AT of the growing time) and at least in its first
 // minute (so new farmers, whose crops grow in seconds, can still follow the guide). Care comes after that, until harvest.
 export const WATER_MIN_MS=60000;
 export function waterUntil(plot){return Math.max(plot.careAt??plot.plantedAt??0,(plot.plantedAt??0)+WATER_MIN_MS);}
@@ -1200,7 +1231,9 @@ export function fieldTapAction(plot,now=Date.now(),tool='plant',picked=false){
  if(tool==='tend'&&canTend)return 'tend';
  return canTend?'tend':watering?'water':null;
 }
-export function harvestYield(plot){return 1+(plot.watered?1:0)+(plot.tended?1:0);}
+export function harvestYield(plot){return oneCropPlot(plot)?1:1+(plot.watered?1:0)+(plot.tended?1:0);}
+// The XP a harvest gives (before Double XP): the crop's XP; a crop planted before one crop a harvest its old XP, doubled with both.
+export function harvestXp(plot){const crop=plot.crop;return oneCropPlot(plot)?CROPS[crop].xp:(LEGACY_HARVEST_XP[crop]??CROPS[crop].xp)*(plot.watered&&plot.tended?2:1);}
 // What a harvest gives right now: Double harvest doubles every harvest while it runs (also a crop that ripened before it started).
 export function harvestBoostActive(state,now=Date.now()){return state.boosts?.harvestUntil>now;}
 export function harvestQuantity(state,plot,now=Date.now()){return harvestYield(plot)*(harvestBoostActive(state,now)?2:1);}
@@ -1324,8 +1357,8 @@ function createBaseFarm(now=Date.now()) {
  // Three ripe corn for the first basket, three wheat that ripen one by one while you take the first steps (30, 60 and 90
  // seconds), and two empty fields to plant.
  const plots=Array.from({length:STARTER_FIELDS},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
- for(const id of [0,1,2])plots[id]={id,crop:'corn',plantedAt:now-CROPS.corn.duration*1.1,readyAt:now-1000,watered:false};
- [30000,60000,90000].forEach((left,i)=>{plots[3+i]={id:3+i,crop:'wheat',plantedAt:now+left-CROPS.wheat.duration,readyAt:now+left,watered:false};});
+ for(const id of [0,1,2])plots[id]={id,crop:'corn',plantedAt:now-CROPS.corn.duration*1.1,readyAt:now-1000,watered:false,oneCrop:true};
+ [30000,60000,90000].forEach((left,i)=>{plots[3+i]={id:3+i,crop:'wheat',plantedAt:now+left-CROPS.wheat.duration,readyAt:now+left,watered:false,oneCrop:true};});
  return {version:14,progression:{mode:'guided',version:6,fields:STARTER_FIELDS},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
@@ -1346,7 +1379,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   if(!packet&&state.coins<seedCost(state,crop))throw new Error('Not enough coins. Sell some produce at the market.');
   if(packet)state.seasonSeeds[crop]--;else state.coins-=seedCost(state,crop);
   state.stats.planted++;
-  const duration=cropDuration(state,crop,false,now);Object.assign(p,{crop,harvestCycles:0,plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false});
+  const duration=cropDuration(state,crop,false,now);Object.assign(p,{crop,harvestCycles:0,plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false,oneCrop:true});
   return {action,crop,cost:packet?0:seedCost(state,crop),...(packet?{packets:1}:{})};
  }
  if(!p.crop)throw new Error('Plant a crop in this field first.');
@@ -1354,19 +1387,19 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
   if(now>=p.readyAt)throw new Error('This crop is ready to harvest!');
   if(p.watered)throw new Error('Already watered. Your crop is growing nicely.');
   if(!canWater(p,now))throw new Error('Water right after planting. This crop is past that; give it extra care instead.');
-  p.readyAt=now+(p.readyAt-now)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;state.stats.watered++;
-  return {action,crop:p.crop};
+  const saved=waterPlot(state,p,now);state.stats.watered++;
+  return {action,crop:p.crop,saved};
  }
  if(action==='tend'){
   if(now>=p.readyAt)throw new Error('This crop is ready to harvest!');
   if(p.tended)throw new Error('This crop has already had extra care.');
   if(now<(p.careAt??p.plantedAt))throw new Error(`Extra care will be available in ${formatDuration(p.careAt-now)}.`);
-  p.readyAt=now+(p.readyAt-now)*.85;p.tended=true;state.stats.tended++;
-  return {action,crop:p.crop,yield:harvestYield(p)};
+  const saved=carePlot(p,now);state.stats.tended++;
+  return {action,crop:p.crop,yield:harvestYield(p),saved};
  }
  if(now<p.readyAt)throw new Error('Still growing. Give it a little more time.');
  // The very first harvest on a farm is a golden one: three times the crop, a first "wow" worth a few coins.
- const first=guidedFarm(state)&&state.stats.harvested===0,harvested=p.crop,quantity=harvestQuantity(state,p,now)*(first?FIRST_HARVEST_BONUS:1),xp=CROPS[harvested].xp*(p.watered&&p.tended?2:1);
+ const first=guidedFarm(state)&&state.stats.harvested===0,harvested=p.crop,quantity=harvestQuantity(state,p,now)*(first?FIRST_HARVEST_BONUS:1),xp=harvestXp(p);
  state.inventory[harvested]=(state.inventory[harvested]??0)+quantity;state.stats.harvested++;
  // A season crop counts as a harvest (quests, challenges, the weekly goals; the Harvest festival's goal twice), never for a medal, a
  // leaderboard or the crop kinds grown.
@@ -1379,7 +1412,7 @@ export function actOnPlot(state,id,action,crop='corn',now=Date.now()) {
  state.stats.varieties=state.discovered.length;state.xp+=xp;
  const regrowing=!!CROPS[harvested].perennial;
  // One waiting harvest only. A new cycle starts at collection, never at the old deadline.
- if(regrowing){const duration=cropDuration(state,harvested,true,now);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
+ if(regrowing){const duration=cropDuration(state,harvested,true,now);Object.assign(p,{plantedAt:now,readyAt:now+duration,careAt:now+careDelay(state,duration,now),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1,oneCrop:true});}
  else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
  return {action,crop:harvested,quantity,xp,regrowing,...(first?{firstHarvest:FIRST_HARVEST_BONUS}:{})};
 }
@@ -2077,7 +2110,7 @@ export function valleySkip(state,stall,basket,now=Date.now()){
 export const IMPROVEMENTS=Object.freeze({
  ladders:{name:'Orchard ladders',effect:'Trees, bushes and climbing plants grow back 20% faster.',art:'apples',level:75,coins:300000,materials:{cider:30,cherryjam:12,applejuice:60}},
  heating:{name:'Glasshouse heating',effect:'Glasshouse batches take 25% less time.',art:'glasshouse',level:76,coins:350000,materials:{beeswax:120,oil:50,cloth:15}},
- watertower:{name:'Water tower',effect:'Watering takes 30% off the growing time instead of 20%.',art:'water',level:78,coins:420000,materials:{goatcheese:25,blanket:5,stew:80}},
+ watertower:{name:'Water tower',effect:'Watering takes 65% off the time a crop still needs instead of 60%.',art:'water',level:78,coins:420000,materials:{goatcheese:25,blanket:5,stew:80}},
  hayloft:{name:'Big hay loft',effect:'Your ranch herd works 35% faster instead of 25%.',art:'ranch',level:80,coins:500000,materials:{wool:300,goatmilk:200,cheese:120}},
  wagon:{name:'Market wagon',effect:'Valley Market customers come back after 2 hours instead of 4.',art:'valley-market',level:82,coins:600000,materials:{candles:40,cherrypie:20,prizeproduce:3}},
  crane:{name:'Loading crane',effect:'A new export contract comes 6 hours after a trailer leaves instead of 12.',art:'trade-depot',level:86,coins:750000,materials:{blanket:10,cloth:40,prizeproduce:6}},
@@ -2846,7 +2879,7 @@ export function normalizeFarm(state,now=Date.now()){
  state.activities??={jobs:{},cooldowns:{},completed:{},round:[],rounds:0};
  state.ranch??={focus:null,changes:0};state.valley??={serial:0,sold:0,stalls:[]};
  if(!Array.isArray(state.improvements))state.improvements=[];state.depot??={serial:0,shipped:0,contract:null,readyAt:0};state.fair??={week:null,classes:[],entered:[]};
- for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*.3);}
+ for(const p of state.plots){p.tended??=false;p.fertilized??=false;p.careAt??=p.plantedAt+Math.max(0,(p.readyAt-p.plantedAt)*(oneCropPlot(p)?CARE_AT:.3));}
  const day=utcDay(now);
  const existingDay=state.daily?.date===day;
  if(!existingDay)state.daily={date:day,baseline:{...state.stats},claimed:[],orders:[],bonusClaimed:false};
@@ -3840,7 +3873,8 @@ export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
 // Dressing your own farmer (21 Oct 2026, farmer_wear) counts for nothing at all: no coins, no XP, no stat.
 export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','pet_pat','farmer_wear']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
-// opens at 30% of the growing time), so each gives 3 times the crop and double XP at harvest. Per growing crop that still misses
+// opens at CARE_AT of the growing time), so each ripens much sooner (a crop planted before one crop a harvest still gets its old 3 crops
+// and double XP). Per growing crop that still misses
 // either: FULL_CARE_COST diamonds.
 export const FULL_CARE_COST=2;
 export function fullCareQuote(state,now=Date.now()){
@@ -3855,8 +3889,8 @@ export function fullCare(state,expectedCost,now=Date.now()){
  spendDiamonds(state,quote.cost);
  for(const id of quote.ids){
   const p=state.plots[id];
-  if(!p.watered){p.readyAt=now+(p.readyAt-now)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;}
-  if(!p.tended){p.readyAt=now+(p.readyAt-now)*.85;p.tended=true;}
+  if(!p.watered)waterPlot(state,p,now);
+  if(!p.tended)carePlot(p,now);
  }
  state.stats.full_care=(state.stats.full_care??0)+quote.count;
  return {count:quote.count,cost:quote.cost};
@@ -3926,17 +3960,17 @@ function shiftRound(state,shift,t){
   if(p.crop&&p.readyAt<=t){
    const crop=p.crop,quantity=harvestQuantity(state,p,t);
    state.inventory[crop]=(state.inventory[crop]??0)+quantity;shift.log.items[crop]=(shift.log.items[crop]??0)+quantity;harvests++;
-   if(CROPS[crop].perennial){const duration=cropDuration(state,crop,true,t);Object.assign(p,{plantedAt:t,readyAt:t+duration,careAt:t+careDelay(state,duration,t),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1});}
+   if(CROPS[crop].perennial){const duration=cropDuration(state,crop,true,t);Object.assign(p,{plantedAt:t,readyAt:t+duration,careAt:t+careDelay(state,duration,t),watered:false,tended:false,fertilized:false,harvestCycles:(p.harvestCycles??0)+1,oneCrop:true});}
    else Object.assign(p,{crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false,harvestCycles:0});
   }
   if(!p.crop&&cropUnlocked(state,shift.crop)&&state.coins>=seedCost(state,shift.crop)){
    state.coins-=seedCost(state,shift.crop);
    const duration=cropDuration(state,shift.crop,false,t);
-   Object.assign(p,{crop:shift.crop,harvestCycles:0,plantedAt:t,readyAt:t+duration,careAt:t+careDelay(state,duration,t),watered:false,tended:false,fertilized:false});
+   Object.assign(p,{crop:shift.crop,harvestCycles:0,plantedAt:t,readyAt:t+duration,careAt:t+careDelay(state,duration,t),watered:false,tended:false,fertilized:false,oneCrop:true});
    shift.log.planted++;
   }
-  if(canWater(p,t)){p.readyAt=t+(p.readyAt-t)*(hasImprovement(state,'watertower')?.7:.8);p.watered=true;shift.log.watered++;}
-  if(p.crop&&!p.tended&&t>=(p.careAt??p.plantedAt)&&t<p.readyAt){p.readyAt=t+(p.readyAt-t)*.85;p.tended=true;shift.log.tended++;}
+  if(canWater(p,t)){waterPlot(state,p,t);shift.log.watered++;}
+  if(p.crop&&!p.tended&&t>=(p.careAt??p.plantedAt)&&t<p.readyAt){carePlot(p,t);shift.log.tended++;}
  }
  shift.log.rounds.push(harvests);
  state.stats.shift_harvests=(state.stats.shift_harvests??0)+harvests;

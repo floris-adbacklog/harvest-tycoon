@@ -31,12 +31,12 @@ test('at the start crops, batches and Care take 50% less time; after the first d
  assert.equal(recipeDuration(s,'eggs',now+DAY),recipeDuration(legacy,'eggs',now));
  const a=emptyPlot(s),b=a+1;
  act(s,{type:'field',id:a,action:'plant',crop:'corn'},now);act(s,{type:'field',id:b,action:'plant',crop:'wheat'},now);
- assert.equal(s.plots[a].readyAt-now,450000,'corn 15 min -> 7.5 min');assert.equal(s.plots[a].careAt-now,135000,'Care 270 s -> 135 s');
- assert.equal(s.plots[b].readyAt-now,60000);assert.equal(s.plots[b].careAt-now,18000,'wheat Care comes at 18 s, well inside its 60 s');
- act(s,{type:'field',id:b,action:'tend'},now+22000);assert.equal(s.plots[b].tended,true);
- // After the first day: the normal 15 minutes and 270 seconds. The corn planted at the start keeps its 7.5 minutes.
+ assert.equal(s.plots[a].readyAt-now,450000,'corn 15 min -> 7.5 min');assert.equal(s.plots[a].careAt-now,67500,'Care (15% since 22 Oct 2026) 135 s -> 67.5 s');
+ assert.equal(s.plots[b].readyAt-now,60000);assert.equal(s.plots[b].careAt-now,15000,'wheat Care comes at 15 s (the 30 s minimum, halved), well inside its 60 s');
+ act(s,{type:'field',id:b,action:'tend'},now+16000);assert.equal(s.plots[b].tended,true);
+ // After the first day: the normal 15 minutes and 135 seconds. The corn planted at the start keeps its 7.5 minutes.
  const late=now+DAY+MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
- assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,270000);
+ assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,135000);
  assert.equal(s.plots[a].readyAt,now+450000);
  // Care never comes after the crop is ready, not even with the boost.
  for(const key of Object.keys(CROPS))assert(cropDuration(s,key,false,now)*.3>=6000&&Math.max(6000,cropDuration(s,key,false,now)*.3)<cropDuration(s,key,false,now),key);

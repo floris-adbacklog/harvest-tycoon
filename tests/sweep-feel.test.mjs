@@ -59,10 +59,10 @@ test('what a sweep shows field by field is exactly what its one request does on 
 
 test('a planting sweep spends per field and stops where the coins run out; a sweep that took no field sends nothing and says why',async()=>{
  let asked=0;
- const {state,client}=farmSetup(()=>{asked++;return new Promise(()=>{});},s=>{s.coins=seedCost(s,'wheat')+1;});await client.load();
+ const {state,client}=farmSetup(()=>{asked++;return new Promise(()=>{});},s=>{s.coins=seedCost(s,'wheat')*2-1;});await client.load();
  const empty=state.plots.map((p,i)=>p.crop?-1:i).filter(i=>i>=0),cost=seedCost(state,'wheat');
  const sweep=client.sweep('plant','wheat');
- assert.ok(sweep.add(empty[0]));assert.equal(state.coins,1);assert.equal(state.plots[empty[0]].crop,'wheat');
+ assert.ok(sweep.add(empty[0]));assert.equal(state.coins,cost-1);assert.equal(state.plots[empty[0]].crop,'wheat');
  assert.equal(sweep.add(empty[1]),null,'out of coins: that field stays empty');assert.match(sweep.reason,/Not enough coins/);
  const total=sweep.end();assert.equal(total.count,1);assert.equal(total.cost,cost);assert.equal(total.short,true,'the game says the coins ran out');assert.equal(total.crop,'wheat');
  const none=client.sweep('plant','wheat');assert.equal(none.add(empty[1]),null);assert.equal(none.end(),null);

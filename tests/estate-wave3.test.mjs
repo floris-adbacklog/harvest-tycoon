@@ -56,7 +56,7 @@ test('every improvement does what its card says',()=>{
  assert.equal(ranchSpeedup(s),.35);assert.equal(valleyRestock(s),VALLEY_RESTOCK/2);assert.equal(depotRestock(s),DEPOT_RESTOCK/2);
  assert.equal(marketSaleValue(s,1000,now),Math.floor(before.sale*1.1));
  const plot=s.plots.findIndex(p=>!p.crop);act(s,{type:'field',id:plot,action:'plant',crop:'cabbage'},now);
- const p=s.plots[plot],left=p.readyAt-now;act(s,{type:'field',id:plot,action:'water'},now);assert.equal(p.readyAt,now+left*.7,'watering takes 30% off');
+ const p=s.plots[plot],left=p.readyAt-now;act(s,{type:'field',id:plot,action:'water'},now);assert.equal(p.readyAt,now+left*(1-.65),'watering takes 65% off (60% without it, since 22 Oct 2026)');
 });
 
 test('the Trade Depot: load a trailer bit by bit; a full one leaves at once and pays 1.6× plus diamonds',()=>{
