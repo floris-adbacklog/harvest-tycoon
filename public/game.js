@@ -164,6 +164,7 @@ const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
 let herd=null;   // the farm's moving animals (farm-animals.js, 20 Oct 2026), once they have come
+let dairyBefore=[];   // the Dairy Barn's yard as it stood until 22 Oct 2026: [piece, x, z] (asBefore)
 let walker=null;   // your own farmer walking on the farm or in the village (farm-farmer.js, 20 Oct 2026), once they have come
 // A tap on your own farmer (the owner, 20 Oct 2026: "als je op jezelf klikt dat je dan naar je profiel gaat"): it hops, then your
 // profile opens (the same as the profile button; window.harvestProfiles is the cloud script's, the player id the page's bridge).
@@ -385,7 +386,7 @@ async function addScenery(){
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
   const [farmerSpots]=await Promise.all([walking,loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4)]);
   if(farmerSpots)placeBench(farmerSpots.FARM_BENCH);
-  buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null});clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
+  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff}));clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
  void addAnimals();
 }
@@ -399,7 +400,16 @@ async function addAnimals(){
   const {createHerd,ANIMATED}=await import('./farm-animals.js');
   // The still animals: the pens' (animalAt), the Ranch's horses, the Animal paddock's horse (a stop with a pin: it stays on its spot)
   // and the scenery's white hen by the coop (stays on its spot too).
-  const list=[];scene.traverse(o=>{const name=o.userData.model??o.userData.scenery;if(name&&ANIMATED[name]&&!o.userData.animal){o.userData.animal=true;list.push({obj:o,still:Boolean(o.userData.activity||o.userData.scenery)});}});
+  // A penned one keeps inside its pen's fences and clear of what stands in it (the barn, the coop, a bucket, hay; 22 Oct 2026,
+  // farm-animals.js): the box round its pen's fences and the boxes of everything at least 0.3 tall standing in it.
+  const pens=penBoxes(),box=new THREE.Box3(),size=new THREE.Vector3(),standing=[];
+  for(const o of scene.children){
+   if(o.isLight||o.isCamera||o.userData.pen||ANIMAL.test(o.userData.model??o.userData.scenery??''))continue;
+   box.setFromObject(o);if(box.isEmpty())continue;box.getSize(size);if(size.y<.3||size.x>12||size.z>12)continue;
+   standing.push([box.min.x,box.max.x,box.min.z,box.max.z]);
+  }
+  const penOf=o=>{const p=pens.get(o.userData.pen);return p?{box:p,keepOut:standing.filter(([a,b,c,d])=>b>p[0]&&a<p[1]&&d>p[2]&&c<p[3])}:null;};
+  const list=[];scene.traverse(o=>{const name=o.userData.model??o.userData.scenery;if(name&&ANIMATED[name]&&!o.userData.animal){o.userData.animal=true;list.push({obj:o,still:Boolean(o.userData.activity||o.userData.scenery),pen:penOf(o)});}});
   herd=createHerd({list,relock:o=>{if(o.userData.locked){o.userData.locked=false;setLocked(o,true);}},lite:handheld||mobileLayout.matches,onKind:()=>{renderer.shadowMap.needsUpdate=true;}});
   await herd.ready;
  }catch(error){console.warn('The animals were left standing.',error);}
@@ -612,8 +622,9 @@ function decorate(){
  zone('mill');patch(-12.5,5.3,8.7,13,0xa8b676,.004);
  // Buildings, vehicles and all plants below come from the supplied GLB pack.
  // The Dairy Barn faces its cows' pasture, its doors opening into it like the Goat Shed's (15 Oct 2026, the owner); the pasture is
- // further down in this file, after the chickens (animalAt).
- zone('dairy');addBuilding('dairy',-.3,-13.9,{width:6.8});
+ // further down in this file, after the chickens (animalAt). It stands one rail segment further back since 22 Oct 2026 (the owner:
+ // "geef dieren desnoods wat meer ruimte in hun veld, zoals Koeien door de Koeienstal meer naar achteren plaatsen").
+ zone('dairy');addBuilding('dairy',-.3,-16.1,{width:6.8});
  zone('silo');addUtility('silo','tower_002',5.6,-11.8,{height:6.6});
  zone('farmhouse');addBuilding('farmhouse',-13.8,-10.2,{width:6.5,rotation:Math.PI/2});
  zone('mill');addBuilding('mill',-12.5,4,{width:6.2,rotation:Math.PI/2});
@@ -689,7 +700,9 @@ function decorate(){
  addBuilding('coop',13,-9.5,{width:4.25,rotation:-Math.PI/2});
  {const pen=buildingViews.get('coop').object,house=cloneModel('coop_002',13,-9.5,{width:1.8});pen.attach(house);}
  // The pen is roomy, with the coop in the middle: 15.4 wide and 11 deep around it.
- fenceLine(6.4,-15,7);fenceLine(6.4,-4,7);fenceLine(5.3,-13.9,5,'z');fenceLine(20.7,-13.9,5,'z');
+ // A pen's fences carry its yard's name (pen), so its animals keep inside them (farm-animals.js) and loose props keep out of a pasture.
+ const penned=(id,pieces)=>{for(const piece of pieces)piece.userData.pen=id;return pieces;};
+ penned('coop',[...fenceLine(6.4,-15,7),...fenceLine(6.4,-4,7),...fenceLine(5.3,-13.9,5,'z'),...fenceLine(20.7,-13.9,5,'z')]);
  // The farmhouse dooryard gets a white picket fence; the rest stay practical rail fencing.
  zone('farmhouse');fenceLine(-16.6,-13.2,4,'x',2.2,'fence_015',0xf2e2bd);
  zone(null);fenceLine(-19,-9,8,'z');   // (the short rail by the Bakery is gone: it fenced nothing)
@@ -697,7 +710,7 @@ function decorate(){
  zone('fields');
  fenceLine(-4.4,-.3,15,'z',2.2,'fence_008',0xf2e2bd);fenceLine(9.55,-.3,15,'z',2.2,'fence_008',0xf2e2bd);
  zone('coop');
- const animalAt=(model,x,z,options,building,seed)=>{const o=cloneModel(model,x,z,options);o.userData.building=building;const [ax,az]=place(x,z);animals.push({obj:o,x:ax,z:az,seed});return o;};
+ const animalAt=(model,x,z,options,building,seed)=>{const o=cloneModel(model,x,z,options);o.userData.building=building;o.userData.pen=building;const [ax,az]=place(x,z);animals.push({obj:o,x:ax,z:az,seed});return o;};
  // The animals stand sideways to the camera (which looks from +x,+z): at about -0.8 they face left, at 2.4 right. Seen head-on or
  // from behind, a low-poly animal looks twisted from up here. The cow only faces right: its head is turned a little, and seen from
  // its left side it seems to stare at the sky.
@@ -706,14 +719,21 @@ function decorate(){
  // None at the pen's front left, under the Windmill's tall tap box or its pin, none under the coop's own pin (where a tap collects)
  // and none at the back right behind the trees (checked by tapping on a phone and a computer at zoom 1).
  for(const [x,z,r] of [[11.9,-5.75,.2],[15.9,-8.15,2.1],[14.6,-6.4,-.7],[17.2,-6.4,2.3],[6.7,-14.05,2.4],[17.4,-11.8,-.9]])animalAt('chicken_001',x,z,{height:.72,rotation:r},'coop',r);
- // The Dairy Barn's three cows (two black and white, one brown and white, grazing) graze in their own pasture in front of its doors, as big as the Goat Shed's: four rail segments wide
- // and three deep, the barn's front between the two short pieces at the back. To make room the chores barrels moved to the farmhouse
- // and the Animal paddock east of it, in front of the silo (farm-layout.js HOMES, farm-life.js).
+ // The Dairy Barn's three cows (two black and white, one brown and white, grazing) graze in their own pasture in front of its doors:
+ // four rail segments wide and, since 22 Oct 2026, four deep (it was three, as the Goat Shed's: the owner, "geef dieren desnoods wat
+ // meer ruimte in hun veld", a cow is two units long), the barn's front between the two short pieces at the back. To make room the
+ // chores barrels moved to the farmhouse and the Animal paddock east of it, in front of the silo (farm-layout.js HOMES, farm-life.js).
  zone('dairy');
  // Like the Goat Shed's flock, the cows and the fence are greyed with the barn until it opens (yardDecor).
- yardDecor.dairy.push(animalAt('cow_001',-2.6,-8.2,{width:2.4,rotation:2.1},'dairy',.5),animalAt('cow_001',2.2,-8,{width:1.85,rotation:2.4},'dairy',3),
-  animalAt('cow_003',-.3,-5.4,{height:1.25,rotation:2.4},'dairy',1.7));
- yardDecor.dairy.push(...fenceLine(-3.6,-3.9,4),...fenceLine(-4.7,-9.4,3,'z'),...fenceLine(4.1,-9.4,3,'z'),...fenceLine(-3.6,-10.5,1),...fenceLine(3,-10.5,1));
+ const cows=[animalAt('cow_001',-2.4,-8.9,{width:2.4,rotation:2.1},'dairy',.5),animalAt('cow_001',2.3,-9.6,{width:1.85,rotation:2.4},'dairy',3),animalAt('cow_003',-.3,-5.6,{height:1.25,rotation:2.4},'dairy',1.7)];
+ const west=fenceLine(-4.7,-11.6,4,'z'),east=fenceLine(4.1,-11.6,4,'z'),back=[...fenceLine(-3.6,-12.7,1),...fenceLine(3,-12.7,1)];
+ yardDecor.dairy.push(...cows,...penned('dairy',[...fenceLine(-3.6,-3.9,4),...west,...east,...back]));
+ // How it stood until 22 Oct 2026 (asBefore): the barn, its tap box and the back fence one segment nearer, the sides one segment
+ // shorter (their new first pieces out of the way), the cows on their old spots. The bucket by the doors follows below.
+ {const barn=buildingViews.get('dairy'),was=(o,x,z)=>{const [wx,wz]=place(x,z);dairyBefore.push([o,wx,wz]);};
+  for(const o of [barn.object,barn.hit,...back])dairyBefore.push([o,o.position.x,o.position.z+2.2]);
+  for(const o of [west[0],east[0]])dairyBefore.push([o,o.position.x+1e4,o.position.z]);
+  [[-2.6,-8.2],[2.2,-8],[-.3,-5.4]].forEach(([x,z],i)=>was(cows[i],x,z));}
  // The midgame yards, on the new ground east of the coop and the Family Hall. Like every building that is still to come they
  // stand there from the start, greyed out, with everything that belongs to them (yardDecor).
  // The Bee Yard: a cluster of hives among sunflowers, tapped and greyed as one piece.
@@ -724,7 +744,7 @@ function decorate(){
  // The Sheep Barn faces its pasture, which runs down to the trunk road; the flock grazes in front of the doors.
  zone('sheepbarn');
  addBuilding('sheepbarn',23.8,-15.4,{width:5.4,height:4.4,depth:9});
- yardDecor.sheepbarn.push(...fenceLine(20.5,-3.6,4),...fenceLine(19.4,-9.1,3,'z'),...fenceLine(28.2,-9.1,3,'z'),...fenceLine(20.5,-10.2,1),...fenceLine(27.1,-10.2,1));
+ yardDecor.sheepbarn.push(...penned('sheepbarn',[...fenceLine(20.5,-3.6,4),...fenceLine(19.4,-9.1,3,'z'),...fenceLine(28.2,-9.1,3,'z'),...fenceLine(20.5,-10.2,1),...fenceLine(27.1,-10.2,1)]));
  for(const [model,x,z,r] of [['sheep_002',21.6,-7.9,2.2],['sheep_003',24.4,-5.3,2.4],['sheep_002',26.5,-8.3,-1],['sheep_003',22.4,-5,2],['sheep_001',25.6,-6.9,-.6]])yardDecor.sheepbarn.push(animalAt(model,x,z,{width:1.5,rotation:r},'sheepbarn',r));
  yardDecor.sheepbarn.push(cloneModel('hay_001',27,-4.7,{width:1.3,rotation:.3}));
  // The Glasshouse lies along the road, with raised beds and fertilizer beside it.
@@ -738,7 +758,7 @@ function decorate(){
  // Wave 2. The Goat Shed stands beside the Sheep Barn, its pen running down to the road like the sheep's pasture.
  zone('goatshed');
  addBuilding('goatshed',31.9,-14.6,{width:5,height:4.6,depth:8});
- yardDecor.goatshed.push(...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1));
+ yardDecor.goatshed.push(...penned('goatshed',[...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1)]));
  for(const [model,x,z,r] of [['goat_001',29.6,-8.4,2.6],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.9],['goat_001',33.9,-4.9,-1]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
  yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}));
  // The Pig Farm: the pink barn turned side-on, and in front of it a white-fenced pen, closed all round, where the pigs dig for
@@ -747,7 +767,7 @@ function decorate(){
  addBuilding('pigfarm',-24.92,-9.08,{width:8.2,rotation:Math.PI/2});
  // In front of the barn's west end (towards the camera), so the barn never hides the fence.
  const [penX,penZ]=[-33.72,-3.38];
- for(const [dx,dz,rotation] of [[-2.2,-2.6,0],[0,-2.6,0],[2.2,-2.6,0],[-2.2,2.6,0],[0,2.6,0],[2.2,2.6,0],[-3.3,-1.3,Math.PI/2],[-3.3,1.3,Math.PI/2],[3.3,-1.3,Math.PI/2],[3.3,1.3,Math.PI/2]])yardDecor.pigfarm.push(cloneModel('fence_008',penX+dx,penZ+dz,{width:2.2,rotation}));
+ for(const [dx,dz,rotation] of [[-2.2,-2.6,0],[0,-2.6,0],[2.2,-2.6,0],[-2.2,2.6,0],[0,2.6,0],[2.2,2.6,0],[-3.3,-1.3,Math.PI/2],[-3.3,1.3,Math.PI/2],[3.3,-1.3,Math.PI/2],[3.3,1.3,Math.PI/2]])yardDecor.pigfarm.push(...penned('pigfarm',[cloneModel('fence_008',penX+dx,penZ+dz,{width:2.2,rotation})]));
  for(const [model,dx,dz,height,r] of [['pig_003',-1.2,-.6,.9,2.5],['pig_002',1,.9,.85,2.6],['pig_005',.4,-1.3,.58,-.8]])yardDecor.pigfarm.push(animalAt(model,penX+dx,penZ+dz,{height,rotation:r},'pigfarm',r));
  yardDecor.pigfarm.push(cloneModel('hay_002',-26.4,-4.6,{width:1.2,rotation:.5}));
  // The Craft Workshop, a long low workshop east of the Weaving Shed, with wax and wool at the door.
@@ -757,8 +777,8 @@ function decorate(){
  // The Ranch: a big stable with its horse paddock in front, on the green by the pond.
  zone('ranch');
  addUtility('ranch','hangar_001',31.5,15.2,{width:6.9,height:4.8,depth:11.1,rotation:Math.PI/2});   // about half its own size, like the other barns
- yardDecor.ranch.push(...fenceLine(27.8,25.9,4),...fenceLine(26.7,20.4,3,'z'),...fenceLine(35.5,20.4,3,'z'));
- for(const [model,x,z,r] of [['horse_003',29.2,22.4,2.2],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]])yardDecor.ranch.push(cloneModel(model,x,z,{width:2.2,rotation:r}));
+ yardDecor.ranch.push(...penned('ranch',[...fenceLine(27.8,25.9,4),...fenceLine(26.7,20.4,3,'z'),...fenceLine(35.5,20.4,3,'z')]));
+ for(const [model,x,z,r] of [['horse_003',29.2,22.4,2.2],['horse_004',32.6,24.3,2.3],['horse_005',34,21.2,-.8]]){const horse=cloneModel(model,x,z,{width:2.2,rotation:r});horse.userData.pen='ranch';yardDecor.ranch.push(horse);}
  yardDecor.ranch.push(cloneModel('hay_001',27.9,24.6,{width:1.2,rotation:.3}));
  // The Valley Market: a striped canopy over tables of goods, with market stalls beside it, on the top road out of the valley.
  zone('valleymarket');
@@ -802,10 +822,10 @@ function decorate(){
   mill:[['barrel_002',-15.7,6.5,{height:.95}],['bag_001',-10.2,6.4,{height:.8}],['bag_002',-10.8,6.7,{height:.7}],['bucket_001',-7.7,1,{height:.65}],['bush_003',-8.4,8,{width:1.1}],['grass_004',-8.2,8.9,{height:.3}]],
   bakery:[['firewood_003',-14.1,10.5,{width:1.3}],['case_003',-8.1,13.5,{width:.9,rotation:.35}]],
   farmhouse:[['table_001',-13.9,-5.9,{width:1.6}],['chair_001',-15,-6.3,{height:.85,rotation:1.7}],['garden_bed_001',-17.3,-8,{width:1.8,rotation:Math.PI/2}],['garden_bed_001',-17.3,-5.9,{width:1.8,rotation:Math.PI/2}],['firewood_008',-16.1,-4.4,{width:1.45,rotation:.25}]],
-  dairy:[['bucket_003',-1.8,-9.1,{height:.65}]],
+  dairy:[['bucket_003',-1.8,-11.3,{height:.65}]],
   apiary:[['barrel_001',10.3,7.1,{height:.9}],['barrel_009',11.6,7.7,{height:.82,rotation:.2}]],
   factory:[['case_002',12.6,24.9,{width:1.1,rotation:.15}],['bag_003',13.8,25.1,{height:.82,rotation:-.3}],['cart_004',20.4,25,{width:1.7,rotation:Math.PI/2}],['prop_029',18.6,25.2,{width:.55,rotation:.5}]]
-})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);else if(yard==='dairy')yardDecor.dairy.push(piece);}}
+})){zone(yard);for(const [name,x,z,options] of list){const piece=cloneModel(name,x,z,options);if(yard==='factory')factoryDecor.push(piece);else if(yard==='dairy'){yardDecor.dairy.push(piece);dairyBefore.push([piece,piece.position.x,piece.position.z+2.2]);}}}
  // These sit clear of the roads (which run along x≈-6, z≈-4 and z≈20) and get a warm
  // glow since a plain color tint can only darken a texture, never lighten it.
  zone('packing');lighten(cloneModel('case_001',9.9,-15.1,{width:.95,rotation:-.4}),0x3a2a16,.28);
@@ -841,7 +861,39 @@ function decorate(){
 // Small props from the model pack fill the room between the yards. Spots are taken only where nothing stands: not on a
 // building, road, fence, field or the pond, and with room around every animal, so nothing seems to sit on its back from up here.
 const ANIMAL=/^(cow|horse|pig|sheep|goat|chicken)_/,FLAT_BLOCKS=/^(road|field)_/;
+// The pens (22 Oct 2026): the box round each pen's fences (penned() in decorate), [minX, maxX, minZ, maxZ] in the world, by yard.
+function penBoxes(){
+ const pens=new Map(),box=new THREE.Box3();
+ for(const o of scene.children){
+  const id=o.userData.pen;if(!id||ANIMAL.test(o.userData.model??''))continue;
+  box.setFromObject(o);const p=pens.get(id);
+  pens.set(id,p?[Math.min(p[0],box.min.x),Math.max(p[1],box.max.x),Math.min(p[2],box.min.z),Math.max(p[3],box.max.z)]:[box.min.x,box.max.x,box.min.z,box.max.z]);
+ }
+ return pens;
+}
+// The pastures: every pen but the chickens' (whose props stand among them), where the cows, sheep, goats, pigs and horses walk all over.
+const pastures=()=>[...penBoxes()].filter(([id])=>id!=='coop').map(([,p])=>p);
+// The loose props (below) and the scenery's flowers, bushes and tufts (scenery.js) are placed by seeded chance, every spot depending on
+// all the ones before it: moving one yard would move them all over the farm. So they are placed as the Dairy Barn's yard stood until
+// 22 Oct 2026 (the owner moved it back for the cows: "zoals Koeien door de Koeienstal meer naar achteren plaatsen"), and what then
+// stands on the barn, its fences or a pasture is left out (keptOff); everything else stays where it always stood.
+function asBefore(place){
+ const now=dairyBefore.map(([o])=>[o,o.position.x,o.position.z]),outline=buildingViews.get('dairy')?.outline;
+ const put=list=>{for(const [o,x,z] of list){o.position.x=x;o.position.z=z;o.updateMatrixWorld(true);}if(outline){outline.update();outline.geometry.computeBoundingBox();}};
+ put(dairyBefore);
+ try{return place();}finally{put(now);}
+}
+// What the props and the scenery keep off since then: the pastures, and the boxes of the Dairy Barn's yard where it stands now.
+function keptOff(){
+ const box=new THREE.Box3(),rects=pastures();
+ for(const [o] of dairyBefore)if(!ANIMAL.test(o.userData.model??'')){box.setFromObject(o);rects.push([box.min.x,box.max.x,box.min.z,box.max.z]);}
+ return rects;
+}
 function addExtraProps(){
+ const props=asBefore(placeExtraProps),off=keptOff();
+ for(const p of props)if(off.every(([a,b,c,d])=>p.x<a-1||p.x>b+1||p.z<c-1||p.z>d+1))extraProps.push(cloneModel(p.name,p.x,p.z,p.options));
+}
+function placeExtraProps(){
  scene.updateMatrixWorld(true);
  const blocked=[];
  for(const object of scene.children){
@@ -856,7 +908,7 @@ function addExtraProps(){
  const anchors=Object.fromEntries(Object.keys(ANCHORS).map(id=>[id,anchorAt(id)]));
  // The roadside props follow the roads of the layout, along their length.
  const roads=roadRects().slice(0,3).map(r=>r.horizontal?[r.minX+3,(r.minZ+r.maxZ)/2,r.maxX-3,(r.minZ+r.maxZ)/2]:[(r.minX+r.maxX)/2,r.minZ+3,(r.minX+r.maxX)/2,r.maxZ-3]);
- for(const p of scatterProps({anchors,roads,free,rand:seeded(20260921)}))extraProps.push(cloneModel(p.name,p.x,p.z,p.options));
+ return scatterProps({anchors,roads,free,rand:seeded(20260921)});
 }
 // The mountains around the valley come after the props (scene-polish.js, scenery.js): a prop that ended up where a peak now stands
 // is taken away again.

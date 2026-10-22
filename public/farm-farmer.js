@@ -31,7 +31,7 @@ export const FARM_TRIPS=Object.freeze({
  chores:trip([-14.66,-5.7]),
  mill:trip([-14.5,.95],[[-15.3,-1.4]]),   // west of the evening chair
  bakery:trip([-13.79,10.6],[...LANE,[-7.8,10.6]]),
- dairy:trip([-4.8,-14.66],[OUT,[-7.8,-4.4],[-7.8,-14.66]]),
+ dairy:trip([-4.8,-16.86],[OUT,[-7.8,-4.4],[-7.8,-16.86]]),   // by the barn's front corner, behind the pasture's fence (moved back with the barn, 22 Oct 2026)
  pigfarm:trip([-28.49,-3.25],[[-16.2,-5.2],[-27.4,-5.2]]),
  windmill:trip([11.64,-.95],[...TRUNK,[11.64,-4.4]]),
  coop:trip([21.65,-6.1],[...TRUNK,[21.65,-4.4]])

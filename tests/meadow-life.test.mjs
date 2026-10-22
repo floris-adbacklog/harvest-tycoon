@@ -14,7 +14,7 @@ const skip=!registerHooks&&'needs module.registerHooks (Node 22.15 or newer)';
 test('more life: bushes, white and yellow wildflowers, sunflowers and three bales, instanced, within a triangle budget, a phone lighter',()=>{
  const scenery=read('public/scenery.js'),polish=read('public/scene-polish.js');
  assert.match(scenery,/import \{wildflowers\} from '\.\/scene-polish\.js';/,'one wildflower for the meadow and the edges');
- assert.match(scenery,/instanced\('hay_001',bales\);\n if\(blooms\.length\)group\.add\(wildflowers\(blooms\)\);/,'one draw call for the bales, one for the flowers');
+ assert.match(scenery,/instanced\('hay_001',bales\);\n \{const kept=blooms\.filter\(\(\[x,z\]\)=>!keptOff\(x,z,\.2\)\);if\(kept\.length\)group\.add\(wildflowers\(kept\)\);\}/,'one draw call for the bales, one for the flowers');
  assert.match(scenery,/const thin=mobile\?\.7:1;/,'a phone gets about two thirds, in its narrower view');
  assert.match(scenery,/const big=!mobile&&rand\(\)<\.02,name=big\?FRONT\[1\+Math\.floor\(rand\(\)\*3\)\]:'bush_001'/,'a phone only gets the light bush');
  assert.match(scenery,/let spent=0;const budget=mobile\?21000:56000;/,'a phone spends at most 21,000 triangles on it, a computer 56,000');

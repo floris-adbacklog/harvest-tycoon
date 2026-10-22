@@ -110,7 +110,7 @@ test('every farm animal stands in the yard of the building a tap on it opens, an
  assert.ok(calls.length>=7,`found ${calls.length} animalAt calls`);
  for(const m of calls){assert.equal(zoneAt(m.index),m[2],`${m[1]??'a flock'} tagged ${m[2]} stands in zone ${zoneAt(m.index)}`);if(m[2]==='coop')assert.equal(m[1],'chicken');}
  assert.equal(calls.filter(m=>m[2]==='dairy').length,3,'three cows at the Dairy Barn');
- assert.match(game,/yardDecor=\{dairy:\[\],/);assert.match(game,/yardDecor\.dairy\.push\(animalAt\('cow_001'/);
+ assert.match(game,/yardDecor=\{dairy:\[\],/);assert.match(game,/const cows=\[animalAt\('cow_001'[^\n]*\n[^\n]*\n yardDecor\.dairy\.push\(\.\.\.cows,/);
  assert.match(game,/modelNames\.push\('cow_003'\);/,'the brown cow is loaded with the farm, not later with the scenery');
  assert.doesNotMatch(life,/pig_001/,'no pig at the Animal paddock');assert.match(life,/station\('paddock',cloneModel\('horse_002'/);
  assert.match(read('public/scenery.js'),/if\(!inPen\(x,z\)\)flowers\.push\(\[x,z,size,turn\]\);/,'no road sunflowers in the chickens\' open-fronted pen');

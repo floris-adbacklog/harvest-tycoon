@@ -25,8 +25,11 @@ const ringPoint=(degrees,a,b)=>{const phi=degrees*Math.PI/180,sx=a*Math.cos(phi)
 // clear(x, z, reach): true where a piece must not stand (game.js: your farmer's loop, chair and trip spots, farm-farmer.js
 // inFarmerWay, only on a farm where the farmer walks). Asked of the bushes, flowers, tufts and bales once all are chosen, so the rest
 // of the scenery stands where it always did; a piece in the way is simply left out.
-export function buildScenery({scene,models,mobile=false,clear=null}){
+// keepOff: [[minX, maxX, minZ, maxZ], ...] where nothing of it may stand either (game.js keptOff: the pastures, where the animals walk
+// all over, and the Dairy Barn's yard as it stands since 22 Oct 2026), also asked once all is chosen.
+export function buildScenery({scene,models,mobile=false,clear=null,keepOff=[]}){
  const rand=seeded(20260924),group=new THREE.Group();group.name='Scenery';scene.add(group);
+ const keptOff=(x,z,r)=>keepOff.some(([a,b,c,d])=>x>a-r&&x<b+r&&z>c-r&&z<d+r);
  // The trees and bushes sway in the wind (scene-polish.js): they are measured upright, or a spot beside one would be free at one
  // moment and taken the next, and the scenery would differ between visits (6 Oct 2026).
  const swaying=scene.children.filter(o=>/^(fir_tree|tree|bush)_/.test(o.userData.model??'')).map(o=>[o,o.rotation.x,o.rotation.z]);
@@ -76,6 +79,7 @@ export function buildScenery({scene,models,mobile=false,clear=null}){
  function instanced(name,list,{shadow=true}={}){
   const entry=models.get(name);if(!entry)return;
   if(clear){const d=entry.size,across=Math.max(d.x,d.z)/2/d.y;list=list.filter(([x,z,height])=>!clear(x,z,height*across));}
+  list=list.filter(([x,z])=>!keptOff(x,z,.3));
   if(!list.length)return;
   entry.object.updateMatrixWorld(true);
   entry.object.traverse(mesh=>{
@@ -330,7 +334,7 @@ export function buildScenery({scene,models,mobile=false,clear=null}){
  for(const [name,list] of Object.entries(front))instanced(name,list,{shadow:!name.startsWith('hay')});
  instanced('plant_008',flowers,{shadow:false});
  instanced('hay_001',bales);
- if(blooms.length)group.add(wildflowers(blooms));
+ {const kept=blooms.filter(([x,z])=>!keptOff(x,z,.2));if(kept.length)group.add(wildflowers(kept));}
  for(const [o,rx,rz] of swaying){o.rotation.x=rx;o.rotation.z=rz;}
  return group;
 }

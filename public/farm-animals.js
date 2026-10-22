@@ -12,6 +12,13 @@ import {sharePalette,shareAtlas,download} from './model-atlas.js';
 // animal, so a tap on an animal opens what it opened before (game.js pointerTarget), greyed and shown with its yard as before.
 // They mostly graze and stand, now and then take a few calm steps in their own pen, round the spot the layout gives them, and the
 // cows and pigs lie down for a while. No running. Each keeps its own clock, so they never move together.
+// How they walk (22 Oct 2026, the owner: "de geanimeerde dieren zoals de koeien draaien soms een beetje raar", and after two tries
+// "het gebeurt nog steeds, geef dieren desnoods wat meer ruimte in hun veld"): a cow is two units long and could wander 0.75 from its
+// spot, so about every other walk was a half turn on the spot (the walk clip playing while the body spun round) for a step shorter
+// than half its body. Now each has room for its size: a few body lengths along the screen, inside its pen's fences (game.js gives
+// each its pen and what stands in it), half a body clear of a fence or a barn. A walk goes on the way it faces, one to three body
+// lengths; only at the end of its room does it turn round, walking a wide bend to the side with room, and then walks back a good way.
+// It never turns while it stands, grazes or lies.
 // Which still model becomes which animated one: [file, its mesh in that file]. The colours follow the old ones (the build repaints
 // where the pack has no such animal: the grey goat, the all-white sheep, the brown hen).
 export const ANIMATED=Object.freeze({
@@ -24,24 +31,30 @@ export const ANIMATED=Object.freeze({
 });
 // The order they come in: the kinds round the home view first.
 export const ANIMAL_FILES=Object.freeze(['chicken_101','cow_101','horse_101','sheep_101','goat_101','pig_101','chick_101']);
-// Each kind: how far from its spot it may wander (world units, along the screen; a third of that up and down it), its stride (a walk
-// cycle's ground in body lengths, so the feet do not slide), how fast its walk plays, and how often it does what (it picks again
-// after each). The clips it has: the build keeps idle, walk and eat (the goat's gesture instead), and lie for the cow and the pig.
+// Each kind: how far from its spot it may wander, in its own body lengths along the screen (roam) and up and down it (depth, a share
+// of that; always inside its pen), its stride (a walk cycle's ground in body lengths, so the feet do not slide), how fast its walk plays, and how often it
+// does what (it picks again after each). The clips it has: the build keeps idle, walk and eat (the goat's gesture instead), and lie
+// for the cow and the pig. The chickens keep to their spots as before (0.8 along the screen, a third of that up and down): their
+// pen has the coop's pin and the Windmill's tap box, which no chicken may stand under. The others have the run of their pens.
 export const ANIMAL_KINDS=Object.freeze({
- chicken_101:{roam:.8,stride:.42,pace:.8,odds:{eat:.5,idle:.32,walk:.18}},
+ chicken_101:{roam:1.15,depth:.33,bend:.12,stride:.42,pace:.8,odds:{eat:.5,idle:.32,walk:.18}},
  // The scenery's two chicks stay on their spots (scenery.js finds them a free one), cheeping about.
- chick_101:{roam:0,stride:.4,pace:.8,odds:{idle:.6,gesture:.4}},
- cow_101:{roam:.75,stride:.36,pace:.7,odds:{eat:.45,idle:.31,walk:.14,lie:.1}},
- goat_101:{roam:.8,stride:.4,pace:.75,odds:{idle:.48,gesture:.34,walk:.18}},
- pig_101:{roam:.5,stride:.36,pace:.7,odds:{eat:.4,idle:.3,walk:.14,lie:.16}},
- sheep_101:{roam:.8,stride:.34,pace:.7,odds:{eat:.52,idle:.32,walk:.16}},
- horse_101:{roam:.9,stride:.4,pace:.7,odds:{eat:.48,idle:.38,walk:.14}}
+ chick_101:{roam:0,depth:0,stride:.4,pace:.8,odds:{idle:.6,gesture:.4}},
+ cow_101:{roam:3,depth:1,stride:.36,pace:.7,odds:{eat:.45,idle:.31,walk:.14,lie:.1}},
+ goat_101:{roam:3,depth:1,stride:.4,pace:.75,odds:{idle:.48,gesture:.34,walk:.18}},
+ pig_101:{roam:3,depth:1,stride:.36,pace:.7,odds:{eat:.4,idle:.3,walk:.14,lie:.16}},
+ sheep_101:{roam:3,depth:1,stride:.34,pace:.7,odds:{eat:.52,idle:.32,walk:.16}},
+ horse_101:{roam:3,depth:1,stride:.4,pace:.7,odds:{eat:.48,idle:.38,walk:.14}}
 });
+// A walk: three fifths of a body length to two body lengths (WALK), within 17 degrees of its line along the screen (SWAY), keeping near the line
+// through its own spot (where its pen is longest). A half turn: a bend of BEND body lengths' radius (a hen's is tighter: kind.bend),
+// walked at its walking pace (its legs keep stepping as it goes round), never a spin on the spot; and only now and then (TURN_ROUND):
+// mostly, at the end of its room, it stays and grazes a while longer.
+const WALK=[.6,2],SWAY=.3,BEND=.25,TURN_ROUND=.3,APART=.5,BY=.3;
 // How long a state lasts, in seconds (a walk lasts until it is there).
 const LASTS={idle:[5,12],eat:[6,15],gesture:[5,9],lie:[16,34]};
-const FADE=.6,LIE_FADE=1.4,TURN=1.6;
+const FADE=.6,LIE_FADE=1.4;
 const turnOf=(from,to)=>((to-from+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
-const turnTowards=(from,to,step)=>{const d=turnOf(from,to);return Math.abs(d)<=step?from+d:from+Math.sign(d)*step;};
 // Along the screen (the camera looks from +x, +z) and up and down it, on the ground.
 const ACROSS=[Math.SQRT1_2,-Math.SQRT1_2],DEPTH=[Math.SQRT1_2,Math.SQRT1_2];
 
@@ -65,16 +78,17 @@ function cloneRig(source){
 const resting=a=>({idle:1,...(a.actions.eat?{eat:1.4}:{}),...(a.actions.gesture?{gesture:.8}:{})});
 const pick=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,0);for(const [k,w] of Object.entries(odds)){r-=w;if(r<=0)return k;}return Object.keys(odds)[0];};
 
-// The animals of the farm. list: [{obj, still}] with obj a still animal on the farm (cloneModel's, or scenery.js's) and still true for
-// one that only stands (the Animal paddock's horse, whose pin and tap box stay where they are, and the white hen and the two chicks
-// of the scenery).
+// The animals of the farm. list: [{obj, still, pen}] with obj a still animal on the farm (cloneModel's, or scenery.js's), still true
+// for one that only stands (the Animal paddock's horse, whose pin and tap box stay where they are, and the white hen and the two chicks
+// of the scenery), and pen its pen (game.js): {box:[minX, maxX, minZ, maxZ] round its fences, keepOut:[[minX, maxX, minZ, maxZ], ...]
+// what stands in it}, or null.
 // relock(obj): greys the new animal with its yard if the yard is still to come (game.js setLocked). lite: phones (their animals move
 // at half the frame rate). onKind: after a kind took its place (the shadows are drawn again).
 export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=Math.random}){
  const herd=[],frustum=new THREE.Frustum(),matrix=new THREE.Matrix4(),sphere=new THREE.Sphere();let frame=0,stopped=false,seenBy=null;
  const todo=new Map();
  for(const entry of list){const [file]=ANIMATED[entry.obj.userData.model??entry.obj.userData.scenery]??[];if(file)(todo.get(file)??todo.set(file,[]).get(file)).push(entry);}
- function adopt(file,gltf,{obj,still}){
+ function adopt(file,gltf,{obj,still,pen=null}){
   const model=obj.userData.model??obj.userData.scenery,[,variant]=ANIMATED[model],kind=ANIMAL_KINDS[file];
   const rig=cloneRig(gltf.scene);
   // Only this one's colours: the kind's other meshes go.
@@ -101,7 +115,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   obj.add(rig);relock(obj);
   const home=[obj.position.x,obj.position.z];
   // It walks along the screen, the way the layout turned it or the other way (axes).
-  const a={obj,rig,mixer,actions,kind,file,still,home,length,axes:[turn,turn+Math.PI],yaw:turn,state:null,timer:0,target:null,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
+  const a={obj,rig,mixer,actions,kind,file,still,home,length,pen,axes:[turn,turn+Math.PI],yaw:turn,state:null,timer:0,target:null,bend:0,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
   // A head start of its own: a state of its own and a point of its own in its clips. The old lying pig lies.
   enter(a,model==='pig_002'&&actions.lie?'lie':pick(resting(a),random),true);
   return a;
@@ -117,40 +131,74 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   if(!a.actions[state])state='idle';
   const lying=state==='lie'||a.state==='lie';
   a.state=state;a.timer=state==='walk'?0:LASTS[state][0]+random()*(LASTS[state][1]-LASTS[state][0]);
-  if(state!=='walk')a.target=null;
+  if(state!=='walk'){a.target=null;a.bend=0;}
   play(a,state,lying?LIE_FADE:FADE);
   if(start){a.current.time=random()*a.current.getClip().duration;a.mixer.update(0);}
  }
- // A few calm steps forward (22 Oct 2026, the owner: "de geanimeerde dieren zoals de koeien draaien soms een beetje raar"): before,
- // it picked any spot round its own and turned to it, a cow up to half a turn for a step shorter than itself, and turned back after.
- // Now it walks on the way it faces, give or take 30 degrees off its line along the screen, staying within its roam round its own spot
- // (along the screen, a third of that up and down it) and never onto another animal (where it stands or where it is going). Only
- // when nothing ahead fits (it reached the end of its roam) does it turn round, walking a bend, and go back the other way.
+ // How far a spot is from where it may stand (0: it may): inside its pen, half its body clear of the fences and of what stands in the
+ // pen, and within its roam round its own spot.
+ function outside(a,x,z){
+  const m=a.length*.5,[hx,hz]=a.home,reach=a.kind.roam*a.length;
+  const u=(x-hx)*ACROSS[0]+(z-hz)*ACROSS[1],v=(x-hx)*DEPTH[0]+(z-hz)*DEPTH[1];
+  let out=Math.max(0,Math.abs(u)-reach,Math.abs(v)-reach*a.kind.depth);
+  if(a.pen){
+   const [x0,x1,z0,z1]=a.pen.box;out=Math.max(out,x0+m-x,x-x1+m,z0+m-z,z-z1+m);
+   for(const [k0,k1,l0,l1] of a.pen.keepOut)out=Math.max(out,Math.min(x-k0+m,k1+m-x,z-l0+m,l1+m-z));
+  }
+  return out;
+ }
+ // Never onto another animal (where it stands or where it is going): it stops a body apart from them (apart), and passes them with
+ // room for both (by).
+ const clearOf=(a,x,z,room)=>herd.every(b=>b===a||[[b.obj.position.x,b.obj.position.z],b.target].every(p=>!p||Math.hypot(p[0]-x,p[1]-z)>=(a.length+b.length)*room));
+ // A way it may walk: every point of it where it may stand (or, from a spot it may not, no further out), clear of the others.
+ const fine=(a,points,from)=>points.every(([x,z])=>outside(a,x,z)<=from+1e-6&&clearOf(a,x,z,BY));
+ const line=(p,q,n=8)=>Array.from({length:n},(_,i)=>[p[0]+(q[0]-p[0])*(i+1)/n,p[1]+(q[1]-p[1])*(i+1)/n]);
+ // The bend of a half turn to one side (+1 or -1) from x, z facing yaw: the points it passes, and where it ends, facing the other way.
+ function bendPath(a,side,x=a.obj.position.x,z=a.obj.position.z,yaw=a.yaw){
+  const r=a.length*(a.kind.bend??BEND),points=[];
+  for(let i=0;i<12;i++){yaw+=side*Math.PI/12;x+=Math.sin(yaw)*r*Math.PI/12;z+=Math.cos(yaw)*r*Math.PI/12;points.push([x,z]);}
+  return {points,end:[x,z],yaw};
+ }
+ // Room to turn round there, to one side or the other (so it never walks into a corner it cannot leave).
+ const turnable=(a,x,z,yaw)=>[1,-1].some(side=>bendPath(a,side,x,z,yaw).points.every(([px,pz])=>outside(a,px,pz)===0));
+ // A walk on the way it faces, ending where it can turn round; at the end of its room a half turn first. null: it stays (grazes or
+ // stands).
  function walkTarget(a){
   if(a.still)return null;
-  const {roam}=a.kind,[hx,hz]=a.home,at=[a.obj.position.x,a.obj.position.z];
-  const ahead=a.axes.reduce((b,f)=>Math.abs(turnOf(a.yaw,f))<Math.abs(turnOf(a.yaw,b))?f:b),ways=[ahead,ahead+Math.PI];
-  for(const way of ways)for(let tries=0;tries<6;tries++){
-   const angle=way+(random()*2-1)*.5,dist=.35+random()*Math.max(.15,roam*.9),x=at[0]+Math.sin(angle)*dist,z=at[1]+Math.cos(angle)*dist;
-   const u=(x-hx)*ACROSS[0]+(z-hz)*ACROSS[1],v=(x-hx)*DEPTH[0]+(z-hz)*DEPTH[1];
-   if(Math.abs(u)>roam||Math.abs(v)>roam*.33)continue;
-   const clear=herd.every(b=>b===a||[[b.obj.position.x,b.obj.position.z],b.target].every(p=>!p||Math.hypot(p[0]-x,p[1]-z)>=(a.length+b.length)*.45));
-   if(clear)return [x,z];
+  const at=[a.obj.position.x,a.obj.position.z],from=outside(a,...at);
+  const ahead=a.axes.reduce((b,f)=>Math.abs(turnOf(a.yaw,f))<Math.abs(turnOf(a.yaw,b))?f:b);
+  // Of the walks that fit, the one nearest the line through its own spot (give or take a little).
+  const along=(start,way,before=[])=>{
+   let best=null,score=Infinity;
+   for(let tries=0;tries<10;tries++){
+    const angle=way+(random()*2-1)*SWAY,dist=a.length*(WALK[0]+random()*(WALK[1]-WALK[0])),x=start[0]+Math.sin(angle)*dist,z=start[1]+Math.cos(angle)*dist;
+    if(!(outside(a,x,z)===0&&clearOf(a,x,z,APART)&&fine(a,[...before,...line(start,[x,z])],from)&&turnable(a,x,z,angle)))continue;
+    const off=Math.abs((x-a.home[0])*DEPTH[0]+(z-a.home[1])*DEPTH[1])/a.length+random()*.3;if(off<score){best=[x,z];score=off;}
+   }
+   return best;
+  };
+  const straight=along(at,ahead);if(straight){a.bend=0;return straight;}
+  if(random()>TURN_ROUND)return null;
+  for(const side of random()<.5?[1,-1]:[-1,1]){
+   const {points,end,yaw}=bendPath(a,side);if(!fine(a,points,from))continue;
+   const back=along(end,yaw,points);if(back){a.bend=side;return back;}
   }
   return null;
  }
  function step(a,dt){
   const at=a.obj.position;
   if(a.state==='walk'){
-   const dx=a.target[0]-at.x,dz=a.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
-   if(d<.04)enter(a,a.actions.eat&&random()<.6?'eat':'idle');
+   const dx=a.target[0]-at.x,dz=a.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz),off=turnOf(a.yaw,want),s=a.speed*dt;
+   // Always forward, the way it faces (no sliding sideways), steering at most as tight as its bend; a half turn is that bend, to
+   // the side it was planned on, until it faces the way back.
+   if(d<=Math.max(.05,s)||d<a.length*.3&&Math.abs(off)>Math.PI/2)enter(a,a.actions.eat&&random()<.6?'eat':'idle');
    else{
-    a.yaw=turnTowards(a.yaw,want,TURN*dt);
-    // Nearly facing it: straight there. Turning round: a bend, still walking forward at half its pace (no spinning on the spot).
-    if(Math.abs(turnOf(a.yaw,want))<.4){const s=Math.min(d,a.speed*dt);at.x+=dx/d*s;at.z+=dz/d*s;}
-    else{const s=a.speed*.5*dt;at.x+=Math.sin(a.yaw)*s;at.z+=Math.cos(a.yaw)*s;}
+    const most=s/(a.length*(a.kind.bend??BEND));
+    if(a.bend&&Math.abs(off)>.35)a.yaw+=a.bend*most;
+    else{a.bend=0;a.yaw+=Math.sign(off)*Math.min(Math.abs(off),most);}
+    at.x+=Math.sin(a.yaw)*s;at.z+=Math.cos(a.yaw)*s;
    }
-   if(a.state==='walk'&&(a.since+=dt)>30)enter(a,'idle');   // never walks for ever (the target was taken)
+   if(a.state==='walk'&&(a.since+=dt)>60)enter(a,'idle');   // never walks for ever
   }else{
    a.since=0;
    if((a.timer-=dt)<=0)enter(a,a.state==='lie'?'idle':pick(a.still?resting(a):a.kind.odds,random));

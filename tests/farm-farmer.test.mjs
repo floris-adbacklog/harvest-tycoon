@@ -292,7 +292,7 @@ test('the evening: from 20:00 to 7:00 by the player\'s clock your farmer rests o
  assert.match(game,/function placeBench\(spot\)\{if\(villageWorld\|\|farmBench\|\|!models\.has\('chair_001'\)\)return;const before=currentZone\(\);zone\('fields'\);cloneModel\('chair_001',spot\.x,spot\.z,\{height:spot\.height,rotation:spot\.turn\+CHAIR_FACING\}\);zone\(before\);farmBench=spot;\}/);
  // QA, 21 Oct 2026: the chair stands before the scenery is planted and the farmer comes after it, so the scenery is the same on every
  // visit (it reckons with what stands when it is planted) and leaves the farmer's loop, chair and trip spots free.
- assert.match(game,/if\(farmerSpots\)placeBench\(farmerSpots\.FARM_BENCH\);\n  buildScenery\(\{scene,models,mobile:mobileLayout\.matches,clear:farmerSpots\?\.inFarmerWay\?\?null\}\);/);
+ assert.match(game,/if\(farmerSpots\)placeBench\(farmerSpots\.FARM_BENCH\);\n  const keepOff=keptOff\(\);asBefore\(\(\)=>buildScenery\(\{scene,models,mobile:mobileLayout\.matches,clear:farmerSpots\?\.inFarmerWay\?\?null,keepOff\}\)\);/);
  assert.match(game,/if\(!villageWorld\)await sceneryDone;/);assert.match(game,/if\(!villageWorld\)sceneryDone=addScenery\(\);/);
  assert.match(read('public/scenery.js'),/if\(clear\)\{const d=entry\.size,across=Math\.max\(d\.x,d\.z\)\/2\/d\.y;list=list\.filter\(\(\[x,z,height\]\)=>!clear\(x,z,height\*across\)\);\}/);
  const {inFarmerWay}=await import('../public/farm-farmer.js');
