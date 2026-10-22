@@ -241,7 +241,7 @@ test('the sale: €19.99 once per season from level 20, the dates the game\'s ow
  assert.deepEqual(P.seasonCheckoutProblem({level:19,now:open,seasons}),{error:'The Season Pass is for sale from level 20.',status:409});
  assert.deepEqual(P.seasonCheckoutProblem({level:40,now:open,seasons,owned:true}),{error:'You already have the Season Pass for this season.',status:409});
  assert.deepEqual(P.seasonCheckoutProblem({level:40,now:START-1,seasons}).status,409,'not in the preview');assert.equal(P.seasonCheckoutProblem({level:40,now:Date.UTC(2026,11,22),seasons}).status,409,'not in the collecting week');
- assert.equal(P.offerPausedForSeason(START+6*D,seasons),true,'no special offer in the first week');assert.equal(P.offerPausedForSeason(START+7*D,seasons),false);assert.equal(P.offerPausedForSeason(START+D),false,'not scheduled: nothing paused');
+ assert.equal(P.offerPausedForSeason(START+6*D,seasons),false,'no pause since 22 Oct 2026: offers run beside the pass');assert.equal(P.SEASON_OFFER_PAUSE,0);assert.equal(P.offerPausedForSeason(START+7*D,seasons),false);assert.equal(P.offerPausedForSeason(START+D),false,'not scheduled: nothing paused');
  assert.match(read('supabase/functions/diamond-checkout/index.ts'),/async function currentOffer\(player:string\)\{\n[^\n]*\n if\(offerPausedForSeason\(\)\)return null;/);
  assert.equal(P.paymentPack('season').cents,1999);assert.equal(P.PLAY_PRODUCTS.season,'season_pass');assert.equal(P.kongProduct('season'),'season_pass');
  const row={id:'00000000-0000-4000-8000-000000000001',pack:'season',pass_id:ID,diamonds:0,coins:0,amount_cents:1999,player_id:'p',store:'kongregate',price_id:'season_pass'};

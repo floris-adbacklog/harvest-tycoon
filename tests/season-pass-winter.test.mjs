@@ -178,7 +178,7 @@ test('the sale: Autumn and Winter on sale together, each checkout names its seas
  const row={id:'00000000-0000-4000-8000-000000000001',pack:'season',pass_id:W,diamonds:0,coins:0,amount_cents:1999,player_id:'p',store:'kongregate',price_id:'season_pass'};
  assert.deepEqual(P.checkKongPurchase(row,{product:'season_pass',player:'p'}),{product:'season_pass'});
  assert.equal(P.appleProduct('season'),null,'the iPhone app sells no Season Pass');assert.equal(P.APPLE_SELLS_SEASON_PASS,false);
- assert.equal(P.offerPausedForSeason(START+6*D),true,'no special offer in Winter\'s first 7 days');assert.equal(P.offerPausedForSeason(START+7*D),false);
+ assert.equal(P.offerPausedForSeason(START+6*D),false,'no pause since 22 Oct 2026');assert.equal(P.offerPausedForSeason(START+7*D),false);
  assert.equal(P.offerPausedForSeason(at(12,10)),false,'the pre-sale pauses nothing');
  // diamond-checkout: the season the page names, on sale now, into the row; the catalogue lists both with their starts.
  const checkout=read('supabase/functions/diamond-checkout/index.ts');

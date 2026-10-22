@@ -126,7 +126,9 @@ export function seasonCheckoutProblem({level=1,owned=false,now=Date.now(),price=
  return null;
 }
 // No special offer in the first 7 days of a season (plan §6.4): the pass sells on its own first; the Starter Pack runs as always.
-export const SEASON_OFFER_PAUSE=7*24*60*60*1000;
+// 22 Oct 2026, the owner: no pause any more (a 50% offer posted the day after Autumn opened showed nowhere; he chose to let offers run
+// alongside the passes). Kept at 0 so it can come back by setting the days here.
+export const SEASON_OFFER_PAUSE=0;
 export const offerPausedForSeason=(now=Date.now(),seasons=SEASON_SALE.seasons)=>seasons.some(s=>s.startsAt!=null&&now>=s.startsAt&&now<s.startsAt+SEASON_OFFER_PAUSE);
 // A season purchase holds no diamonds or coins of its own, only a season the game knows.
 const seasonMismatch=purchase=>!seasonSale(purchase.pass_id)||purchase.diamonds!==0||(purchase.coins??0)!==0;

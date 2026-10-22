@@ -26,7 +26,7 @@ const purchaseReply=(p:any)=>({id:p.id,pack:p.pack,coins:p.coins,diamonds:p.diam
 // The special offer running now for this farmer (supabase/special-offer.sql): one at a time, from its level (10 or higher since 13 Oct
 // 2026, supabase/offer-level-10.sql). A problem reading it only hides the offer, so the Starter Pack and the diamond packs keep working.
 async function currentOffer(player:string){
- // The first week of a season has no offer (game/payments.js offerPausedForSeason): no look-up at all then.
+ // A season's first days had no offer (game/payments.js offerPausedForSeason; the pause is 0 days since 22 Oct 2026).
  if(offerPausedForSeason())return null;
  const now=new Date().toISOString();
  // The three look-ups at once (30 Sep 2026: one after the other they made the catalogue ~150 ms slower).
