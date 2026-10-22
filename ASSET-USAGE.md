@@ -168,9 +168,15 @@ pig, the goat's and the chick's gesture; no run), painted from the farm's palett
 | pig_101: pig_pink (Pig_03), pig_peach (Pig_02) | pig_003; pig_002, pig_005 | 1,252,032 → 114,844 bytes |
 | sheep_101: sheep_white (Sheep_01), sheep_grey (Sheep_02), sheep_cream (Sheep_01, white face and legs) | sheep_001; sheep_002; sheep_003 | 1,292,168 → 103,248 bytes |
 | horse_101: horse_bay (Horse_01), horse_black (Horse_02), horse_chestnut (Horse_05, its mane dark) | horse_002, horse_005; horse_004; horse_003 | 1,805,676 → 127,924 bytes |
+| duck_101: duck_white (Duck_01) | nothing: the duck on the farm's pond (22 Oct 2026), new | 583,964 → 63,952 bytes |
 
 687 KB for all seven files (about 253 KB as the site sends them, brotli-packed). They are not among the models the loading bar waits for,
 not loaded with reduced motion or when the browser asks to save data, and a kind that cannot load keeps its still models.
+
+The duck (22 Oct 2026, the owner: "zet de eend hier bij, doet verder niks") is the one animal added: it mostly floats on the farm's pond and now and then paddles a calm stretch
+(public/farm-duck.js), only to look at (no tap, nothing saved). Built by the same script with `KIND=duck_101`: only its swim and its
+float (swim_idle) are kept; its walk, idle, gesture and run are left out. It loads once the farm is on screen, not with reduced motion,
+simple graphics or Save-Data.
 
 ## The farmer (20 Oct 2026)
 

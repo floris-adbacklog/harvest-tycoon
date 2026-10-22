@@ -833,7 +833,7 @@ function decorate(){
   cloneModel('grass_001',x,z,{height:.25+(i%3)*.1,rotation:a});
  }
  for(const [x,z,r] of [[9.5,13.2,.3],[9.5,11.1,1.8],[-11.2,14.5,.7],[-14.7,14.8,2.1],[15.5,4.5,.4],[17.1,4.9,2.4]])cloneModel('grass_004',x,z,{height:.38,rotation:r});
- farmLife=createFarmLife({scene,cloneModel,patch,state,onOpen:id=>activities.open(id),reducedMotion});
+ farmLife=createFarmLife({scene,cloneModel,patch,state,onOpen:id=>activities.open(id),reducedMotion,simple:graphicsSimple});
  zone('fields');
  farmLife.attach('greenhouse',glasshouse);farmLife.attach('apiary',hive);farmLife.watchProduction(buildingViews);
  addExtraProps();

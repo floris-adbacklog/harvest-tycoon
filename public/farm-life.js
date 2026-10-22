@@ -4,7 +4,7 @@ import {art} from './visual-icons.js';
 import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad,roadRects,POND} from './farm-layout.js';
 export const LIFE_MODELS=['mountain_008','field_004','field_005','village_pier_001','village_boat_001','village_rowboat_001','village_stones_001','horse_002','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
 
-export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion}){
+export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotion,simple=false}){
  const views=new Map(),hitAreas=[],moving=[],effects=[],water=[],smoke=[];
  function scenery(name,x,z,options={}){
   const o=cloneModel(name,x,z,options);
@@ -81,9 +81,9 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  // Bluer water with a warmer sandy bank (7 Oct 2026, halfway from the old mint to the clear blue of the loading screen's pond).
  oval(POND.rx+.6,POND.rz+.6,24,new THREE.MeshStandardMaterial({color:0xbbaa82,roughness:1}),.019);
  oval(POND.rx,POND.rz,32,new THREE.MeshStandardMaterial({color:0x4eb1d2,roughness:.35,metalness:.05}),.027);
- scenery('village_pier_001',POND.x+4.8,POND.z+3,{width:3.4,rotation:-.55,y:.02});
- scenery('village_boat_001',POND.x+3.2,POND.z+4,{width:2.2,rotation:1,y:.03});
- scenery('village_rowboat_001',POND.x-2.6,POND.z-1.8,{width:2.6,rotation:.4,y:.03});
+ const pondThings=[scenery('village_pier_001',POND.x+4.8,POND.z+3,{width:3.4,rotation:-.55,y:.02}),
+  scenery('village_boat_001',POND.x+3.2,POND.z+4,{width:2.2,rotation:1,y:.03}),
+  scenery('village_rowboat_001',POND.x-2.6,POND.z-1.8,{width:2.6,rotation:.4,y:.03})];
  for(const [deg,width,rotation] of [[215,2.4,.9],[330,2,-.8]]){const [x,z]=shoreAt(deg,1.05);scenery('village_stones_001',x,z,{width,rotation});}
  for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.RingGeometry(.48,.51,32),new THREE.MeshBasicMaterial({color:0xd6f1da,transparent:true,opacity:.35,side:THREE.DoubleSide}));r.rotation.x=-Math.PI/2;{const [px,pz]=place(POND.x-.8+i*1.9,POND.z-.6-i*.5);r.position.set(px,.032,pz);}scene.add(r);water.push(r);}
  for(const deg of [150,200,250,300,20,95]){const [x,z]=shoreAt(deg,1.12);scenery('bush_003',x,z,{width:1.4});scenery('grass_004',x+.7,z-.4,{height:.6});}
@@ -110,6 +110,21 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  const beeHome=placeIn('apiary',10.4,13.7);
  for(let i=0;i<5;i++){const bee=new THREE.Mesh(new THREE.SphereGeometry(.06,4,3),new THREE.MeshBasicMaterial({color:0xf5c64c}));scene.add(bee);moving.push({obj:bee,kind:'bee',phase:i*1.8});}
  function attach(id,obj){return station(id,obj,obj.position.x,obj.position.z);}
+ // The duck on the pond (22 Oct 2026, the owner: "zet de eend hier bij, doet verder niks"; public/farm-duck.js): asked for at the first
+ // frame the farm is drawn (so the farm is on screen) and a quiet moment after it, never in the loading bar's models. Not with reduced
+ // motion (then animate never runs), simple graphics, Save-Data or a 2g line, as the farm's other animals. If it fails, no duck.
+ let duck=null,duckAsked=false;
+ function askDuck(){
+  if(duckAsked)return;duckAsked=true;
+  const connection=navigator.connection;if(reducedMotion||simple||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
+  // Its water: the pond's oval; out of its way: the pier and both boats as they stand, and the fishing line from the pier's end towards
+  // the middle (pond-scene.js pierSpot: the farmer at the pier's water side, the float 3.3 further).
+  const [cx,cz]=placeIn('pond',POND.x,POND.z),boxes=pondThings.map(o=>new THREE.Box3().setFromObject(o)).map(b=>({minX:b.min.x,maxX:b.max.x,minZ:b.min.z,maxZ:b.max.z}));
+  const pier=boxes[0],mid=[(pier.minX+pier.maxX)/2,(pier.minZ+pier.maxZ)/2],to=Math.atan2(cx-mid[0],cz-mid[1]),line={a:mid,b:[mid[0]+Math.sin(to)*4.2,mid[1]+Math.cos(to)*4.2],r:.35};
+  new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500))
+   .then(()=>import('./farm-duck.js')).then(({createDuck})=>createDuck({scene,water:{x:cx,z:cz,rx:POND.rx,rz:POND.rz},boxes,lines:[line]}))
+   .then(made=>{duck=made;}).catch(error=>console.warn('The duck was skipped.',error));
+ }
  // A pin is seen when nothing covers the farm and it is the topmost thing at its own middle (not under the top bar or a card).
  const seen=label=>{if(label.hidden)return false;const r=label.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return Boolean(hit&&label.contains(hit));};
  function position(camera,width,height,now){
@@ -135,6 +150,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  }
  function animate(t,dt,now){
   if(reducedMotion)return;
+  askDuck();duck?.animate(dt);
   for(const m of moving){
    if(m.kind==='bee')m.obj.position.set(beeHome[0]+Math.sin(t*1.2+m.phase)*.7,1.2+Math.sin(t*2+m.phase)*.25,beeHome[1]+Math.cos(t+m.phase)*.6);
   }

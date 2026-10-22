@@ -7,6 +7,8 @@
 // palette.png (the farm palette's cell nearest to the colour it read in the pack's own palette; nothing of the pack's picture is
 // shipped), carries the farm's baked shade (COLOR_0), and the file is meshopt-compressed and quantized. A clip's channels that only
 // hold a bone at its rest pose are left out (most of a file's JSON).
+// Since 22 Oct 2026 also the duck on the farm's pond (duck_101.glb: Duck_01 with its swim and its float only; public/farm-duck.js).
+// KIND=duck_101 before node builds only that one (the steps below as they are, cp only its file).
 // Run from a folder with @gltf-transform/core, extensions, functions (4.5.1), meshoptimizer (1.3.0) and pngjs (7.0.0) installed (npm i
 // them there, not in the game), <pack> = the pack's Animals_glb/Separate_Assets_glb/Domestic/Animals folder:
 //   node build-farm-animals.mjs <pack> public/assets/models/palette.png <out>
@@ -36,9 +38,16 @@ const KINDS=Object.freeze({
  // The old all-white sheep (sheep_003): the white one with a white face and white legs (its eyes and hooves stay dark).
  sheep_101:{variants:{sheep_white:['Sheep_01'],sheep_grey:['Sheep_02'],sheep_cream:['Sheep_01',{'63,60,60':'238,238,238'}]},clips:['idle','eat','walk']},
  // The chestnut's mane took a bright orange-brown cell: the dark brown of its legs instead.
- horse_101:{variants:{horse_bay:['Horse_01'],horse_black:['Horse_02'],horse_chestnut:['Horse_05',{'=140,69,5':'79,51,46'}]},clips:['idle','eat','walk']}
+ horse_101:{variants:{horse_bay:['Horse_01'],horse_black:['Horse_02'],horse_chestnut:['Horse_05',{'=140,69,5':'79,51,46'}]},clips:['idle','eat','walk']},
+ // The duck on the farm's pond (22 Oct 2026, the owner: "zet de eend hier bij, doet verder niks"; public/farm-duck.js): only its
+ // swim and its float (swim_idle); it never comes ashore, so its walk, idle, gesture and run are left out.
+ duck_101:{variants:{duck_white:['Duck_01']},clips:['swim','swim_idle']}
 });
-const clipName=name=>{const k=name.replace(/^.*_/,'').toLowerCase();return k==='lying'?'lie':k;};
+// KIND=duck_101 (a comma list) builds only those kinds; without it, all of them.
+const ONLY=process.env.KIND?new Set(process.env.KIND.split(',')):null;
+const BUILD=Object.entries(KINDS).filter(([kind])=>!ONLY||ONLY.has(kind));
+// A clip's name less the animal's ('Cow_Lying' lie, 'Duck_Swim_Idle' swim_idle).
+const clipName=name=>{const k=name.replace(/^[^_]*_/,'').toLowerCase();return k==='lying'?'lie':k;};
 await MeshoptEncoder.ready;await MeshoptDecoder.ready;
 const io=new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.encoder':MeshoptEncoder,'meshopt.decoder':MeshoptDecoder});
 
@@ -72,7 +81,7 @@ function sourceColour(image,u,v){
 const cellOf=rgb=>cells.find(c=>c.rgb.join(',')===rgb)??(()=>{throw new Error(`no cell ${rgb} in the farm's palette`);})();
 async function variant(kind,name,[file,paint={}]){
  const doc=await io.read(path.join(pack,`${file}.glb`)),root=doc.getRoot(),keep=KINDS[kind].clips;
- for(const a of root.listAnimations()){const k=a.getName().replace(/^.*_/,'').toLowerCase();if(keep.includes(k))a.setName(clipName(a.getName()));else a.dispose();}
+ for(const a of root.listAnimations()){const k=clipName(a.getName());if(keep.includes(k==='lie'?'lying':k))a.setName(clipName(a.getName()));else a.dispose();}
  const image=root.listTextures()[0].getImage(),report=new Map();
  for(const mesh of root.listMeshes())for(const p of mesh.listPrimitives()){
   const uv=p.getAttribute('TEXCOORD_0').clone(),v=[0,0];p.setAttribute('TEXCOORD_0',uv);
@@ -109,7 +118,7 @@ function pointAtPalette(glb){
 
 if(!aoDir){
  fs.mkdirSync(path.join(outDir,'models'),{recursive:true});fs.mkdirSync(path.join(outDir,'ao'),{recursive:true});   // bake-ao.py writes into a folder that is there
- for(const [kind,{variants}] of Object.entries(KINDS))for(const [name,file] of Object.entries(variants)){
+ for(const [kind,{variants}] of BUILD)for(const [name,file] of Object.entries(variants)){
   const doc=await variant(kind,name,file);await doc.transform(prune({keepAttributes:true}));
   fs.writeFileSync(path.join(outDir,'models',`${name}.glb`),pointAtPalette(Buffer.from(await io.writeBinary(doc))));
  }
@@ -145,7 +154,7 @@ function dropStill(doc){
  }
  return dropped;
 }
-for(const [kind,{variants}] of Object.entries(KINDS)){
+for(const [kind,{variants}] of BUILD){
  const names=Object.keys(variants),docs=[];
  for(const name of names){const doc=await io.read(path.join(outDir,'models',`${name}.glb`));addShade(doc,name);docs.push(doc);}
  // The first variant's file takes the others' meshes, each on the first one's bones (the same rig: matched by the bones' names).
