@@ -97,14 +97,17 @@ export async function createPets({scene,kinds,ground=()=>0,labels,reducedMotion}
    if(p.hop>0){p.hop=Math.max(0,p.hop-dt);const f=1-p.hop/HOP;p.body.position.y=Math.sin(f*Math.PI)*p.height*.35;}
    if(p.target&&p.hop<=0){
     const dx=p.target[0]-at.x,dz=p.target[1]-at.z,d=Math.hypot(dx,dz);
-    if(d<.05){p.target=null;p.rest=REST[0]+Math.random()*(REST[1]-REST[0]);p.face=nearestSideways(p.yaw);play(p,false);}
+    if(d<.05){p.target=null;p.rest=REST[0]+Math.random()*(REST[1]-REST[0]);p.face=nearestSideways(p.yaw);}
     else{
      const want=Math.atan2(dx,dz);p.yaw=turnTowards(p.yaw,want,TURN*dt);play(p,true);
      // It turns on the spot first, then walks: no sliding sideways.
      if(Math.abs(turnOf(p.yaw,want))<.5){const s=Math.min(d,p.spec.walk*dt);at.x+=dx/d*s;at.z+=dz/d*s;at.y=ground(at.x,at.z);}
     }
    }else if(!p.target){
-    p.yaw=turnTowards(p.yaw,p.face,TURN*.6*dt);
+    // Back to face along the screen with its legs stepping, then it stands (22 Oct 2026: no turning round on still legs). A tap's
+    // turn towards you comes with the hop.
+    const turning=Math.abs(turnOf(p.yaw,p.face))>.02;
+    p.yaw=turnTowards(p.yaw,p.face,TURN*dt);play(p,turning&&p.hop<=0);
     if(p.hop<=0&&(p.rest-=dt)<=0)nextSpot(p);
    }
    p.root.rotation.y=p.yaw;p.mixer.update(dt);

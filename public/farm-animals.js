@@ -119,7 +119,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   if(!a.actions[state])state='idle';
   const lying=state==='lie'||a.state==='lie';
   a.state=state;a.timer=state==='walk'?0:LASTS[state][0]+random()*(LASTS[state][1]-LASTS[state][0]);
-  if(state!=='walk'){a.target=null;a.face=a.faces.reduce((b,f)=>Math.abs(turnOf(a.yaw,f))<Math.abs(turnOf(a.yaw,b))?f:b);}
+  if(state!=='walk'){a.target=null;a.next=null;}
   play(a,state,lying?LIE_FADE:FADE);
   if(start){a.current.time=random()*a.current.getClip().duration;a.mixer.update(0);}
  }
@@ -139,16 +139,24 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
  function step(a,dt){
   const at=a.obj.position;
   if(a.state==='walk'){
+   // There: it turns back to face along the screen (the nearer of its sides; the cow only its own) still stepping, and only then
+   // grazes, stands or lies (22 Oct 2026, the owner: "de geanimeerde dieren zoals de koeien draaien soms een beetje raar": they
+   // turned round on the spot while grazing or lying, the whole body sliding round on still legs).
+   if(!a.target){
+    a.yaw=turnTowards(a.yaw,a.face,TURN*dt);
+    if(Math.abs(turnOf(a.yaw,a.face))<.02)enter(a,a.next);
+   }else{
    const dx=a.target[0]-at.x,dz=a.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
-   if(d<.04)enter(a,a.actions.eat&&random()<.6?'eat':'idle');
+   if(d<.04){a.target=null;a.next=a.actions.eat&&random()<.6?'eat':'idle';a.face=a.faces.reduce((b,f)=>Math.abs(turnOf(a.yaw,f))<Math.abs(turnOf(a.yaw,b))?f:b);}
    else{
     a.yaw=turnTowards(a.yaw,want,TURN*dt);
     // It turns first, then walks: no sliding sideways.
     if(Math.abs(turnOf(a.yaw,want))<.4){const s=Math.min(d,a.speed*dt);at.x+=dx/d*s;at.z+=dz/d*s;}
    }
+   }
    if(a.state==='walk'&&(a.since+=dt)>30)enter(a,'idle');   // never walks for ever (the target was taken)
   }else{
-   a.since=0;a.yaw=turnTowards(a.yaw,a.face,TURN*.5*dt);
+   a.since=0;
    if((a.timer-=dt)<=0)enter(a,a.state==='lie'?'idle':pick(a.still?resting(a):a.kind.odds,random));
   }
   a.obj.rotation.y=a.yaw;
