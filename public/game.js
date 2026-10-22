@@ -153,7 +153,8 @@ const FARM_STOPS=['fields','home','overview'];
 // The far end of the farm's axis is the heart of the farm (18 Oct 2026, the owner: the whole farm "is helemaal niet speelbaar", "dus niet zo
 // ver"; on a wide screen it showed the mountains round the valley): zooming out stops there, Show the whole farm is not on the farm (the
 // village keeps its own), and the far buildings are a drag away. The axis keeps its whole-farm part, unused, for the measures.
-const FARM_FAR=1;
+// 22 Oct 2026 (the owner: "maak iets meer uitzoomen mogelijk, klein stukje maar"): about a seventh of the way on towards the whole farm.
+const FARM_FAR=1.15;
 let zoomAt=FARM_STOPS.indexOf(viewMode),farmAxis=null,glide=null;
 let overviewBounds=null;
 let familyFlag=null;
@@ -1516,9 +1517,9 @@ function atAxis(d){let at=-1;for(const l of farmAxis.lengths){at+=Math.max(0,Mat
 function spanOn(at){const s=farmAxis.spans;at=Math.max(-1,Math.min(FARM_FAR,at));const part=Math.min(2,Math.floor(at+1));return s[part]*(s[part+1]/s[part])**(at+1-part);}
 function atWidth(span,out){
  const s=farmAxis.spans,grows=i=>s[i+1]>s[i]*(1+1e-9),at=i=>i-1+Math.log(span/s[i])/Math.log(s[i+1]/s[i]);
- if(span>=s[FARM_FAR+1]*(1-1e-9))return FARM_FAR;if(span<=s[0]*(1+1e-9))return -1;   // the two ends exactly (- and + grey out there)
- if(out){for(let i=0;i<=FARM_FAR;i++)if(grows(i)&&span<=s[i+1])return Math.max(i-1,at(i));return FARM_FAR;}
- for(let i=FARM_FAR;i>=0;i--)if(grows(i)&&span>=s[i])return Math.min(i,at(i));return -1;
+ if(span>=spanOn(FARM_FAR)*(1-1e-9))return FARM_FAR;if(span<=s[0]*(1+1e-9))return -1;   // the two ends exactly (- and + grey out there)
+ if(out){for(let i=0;i<=Math.ceil(FARM_FAR);i++)if(grows(i)&&span<=s[i+1])return Math.min(FARM_FAR,Math.max(i-1,at(i)));return FARM_FAR;}
+ for(let i=Math.ceil(FARM_FAR);i>=0;i--)if(grows(i)&&span>=s[i])return Math.min(FARM_FAR,i,at(i));return -1;
 }
 // The spot of ground under a point of the screen (client px), and keeping it there by hold of the way (the pan moves it back).
 function groundUnder(x,y){
@@ -1539,7 +1540,7 @@ function keepSpot({g,x,y},out){
 function wheelFarm(ratio,x,y){
  if(!farmAxis||ratio===1)return;
  const s=farmAxis.spans,spot={g:groundUnder(x,y),x,y},out=ratio<1,from=glide&&!glide.stop?glide.end:axisOf(zoomAt);
- const want=Math.max(Math.log(s[0]),Math.min(Math.log(s[FARM_FAR+1]),Math.log(spanOn(atAxis(from))/ratio))),end=axisOf(atWidth(Math.exp(want),out)),since=performance.now();
+ const want=Math.max(Math.log(s[0]),Math.min(Math.log(spanOn(FARM_FAR)),Math.log(spanOn(atAxis(from))/ratio))),end=axisOf(atWidth(Math.exp(want),out)),since=performance.now();
  if(reducedMotion){stopGlide();placeFarm(atAxis(end));keepSpot(spot,out);return;}
  if(glide?.spot){Object.assign(glide,{want,end,spot,since});return;}   // onto the wheel's glide still running
  stopGlide();let last=null;
@@ -1582,7 +1583,7 @@ function stopGlide(){glide=null;}
 // where two stops are as wide it glides on to the next width within the same 250 ms (atWidth).
 function stepFarm(direction){if(!farmAxis)return;const from=glide&&!glide.stop?glide.end:axisOf(zoomAt);glideFarm(atWidth(spanOn(atAxis(from))/1.25**direction,direction<0),{ms:reducedMotion?0:250,centre:false});}
 function resetView(){viewMode=startView();if(villageWorld){zoom=1;pan=0;panDepth=0;resize();}else glideFarm(FARM_STOPS.indexOf(viewMode),{stop:viewMode});if(ready)updateUI();}
-function showOverview(){if(villageWorld){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(FARM_FAR,{stop:FARM_STOPS[FARM_FAR]});}
+function showOverview(){if(villageWorld){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(FARM_FAR,{stop:FARM_STOPS[Math.round(FARM_FAR)]});}
 function focusFields(){if(villageWorld){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(0,{stop:'fields'});}
 function measureFarm(){
  // Use each actual building and field box, retaining the useful heights.

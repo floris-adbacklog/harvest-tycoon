@@ -10,7 +10,7 @@ const THREE=await import('../public/vendor/three.module.js');
 // These run game.js's own resize code for the farm's picture: the three stops are exactly the old views, and in between nothing jumps.
 const game=read('public/game.js');
 const slice=(from,to)=>{const a=game.indexOf(from),b=game.indexOf(to,a);assert.ok(a>0&&b>a,`game.js: ${from.slice(0,50)}`);return game.slice(a,b+to.length);};
-const stops=slice("const FARM_STOPS=","];"),far=slice('const FARM_FAR=',';'),FAR=Number(far.match(/=(\d+)/)[1]);
+const stops=slice("const FARM_STOPS=","];"),far=slice('const FARM_FAR=',';'),FAR=Number(far.match(/=([\d.]+)/)[1]);
 const block=slice(' const padding=mobile?','base:from.focus.clone().lerp(to.focus,k)};');
 const run=new Function('THREE','s',`${stops}${far}let {width,height,mobile,hudShift,overviewBounds,state,fieldRoom,zoomAt}=s,farmAxis;const villageWorld=false,aspect=width/height,camera={};${block}return {camera,farmAxis};`);
 const helpers=new Function('farmAxis',`${far}${slice('function axisOf(at){','\n')}${slice('function atAxis(d){','\n')}${slice('function spanOn(at){','\n')}${slice('function atWidth(span,out){','\n}')}return {axisOf,atAxis,spanOn,atWidth};`);
@@ -65,8 +65,8 @@ const SCREENS=[
 const near=(a,b,what)=>assert.ok(Math.abs(a-b)<1e-9,`${what}: ${a} against ${b}`);
 
 test('the camera buttons stop exactly on the old views, the heart of the farm is the farthest, and the closest end is the fields 2.2 times as close',()=>{
- assert.equal(FAR,1);
- for(const s of SCREENS)for(const [at,mode,zoom] of [[0,'fields',1],[1,'home',1],[2,'home',1],[-1,'fields',2.2]]){
+ assert.equal(FAR,1.15,'22 Oct 2026, the owner: a little further out than the heart of the farm');
+ for(const s of SCREENS)for(const [at,mode,zoom] of [[0,'fields',1],[1,'home',1],[-1,'fields',2.2]]){
   const v=view(s,at),o=oldView(s,mode,zoom);
   for(const side of ['left','right','top','bottom'])near(v[side],o[side],`${s.name} ${mode} at ${zoom}: ${side}`);
   near(v.base.x,o.focus.x,`${s.name} ${mode}: middle x`);near(v.base.z,o.focus.z,`${s.name} ${mode}: middle z`);
@@ -87,7 +87,7 @@ test('zooming runs smoothly through the views: the width grows with every step, 
   // The width changes by at most its own factor per unit of the axis (exactly that where it grows), and the middle slides at most
   // half a picture per unit: a wheel notch (.18) moves it under a tenth of the picture.
   assert.ok(grow<=1+1e-6,`${s.name}: width ${grow}`);assert.ok(slide<=.5+1e-3,`${s.name}: middle ${slide}`);
-  near(view(s,FAR).span,oldView(s,'home').top-oldView(s,'home').bottom,`${s.name}: the heart of the farm is the widest`);near(view(s,9).span,view(s,FAR).span,`${s.name}: never further`);
+  near(view(s,1).span,oldView(s,'home').top-oldView(s,'home').bottom,`${s.name}: the heart of the farm`);assert.ok(view(s,FAR).span>=view(s,1).span-1e-9&&view(s,FAR).span<=view(s,2).span+1e-9,`${s.name}: the farthest a little past it`);near(view(s,9).span,view(s,FAR).span,`${s.name}: never further`);
  }
 });
 
@@ -105,7 +105,7 @@ test('the camera buttons glide to their stop, + and - glide a step, and nothing 
  assert.doesNotMatch(game,/VIEW_LADDER|ladderStep|ladderAt|viewSpans/,'the old ladder is gone');
  assert.match(game,/\$\('zoom-in'\)\.addEventListener\('click',\(\)=>villageWorld\?zoomFarm\(1\.25\):stepFarm\(1\)\);\$\('zoom-out'\)\.addEventListener\('click',\(\)=>villageWorld\?zoomFarm\(1\/1\.25\):stepFarm\(-1\)\);/);
  assert.match(game,/function resetView\(\)\{viewMode=startView\(\);if\(villageWorld\)\{zoom=1;pan=0;panDepth=0;resize\(\);\}else glideFarm\(FARM_STOPS\.indexOf\(viewMode\),\{stop:viewMode\}\);/);
- assert.match(game,/function showOverview\(\)\{if\(villageWorld\)\{viewMode='overview';zoom=1;pan=0;panDepth=0;resize\(\);\}else glideFarm\(FARM_FAR,\{stop:FARM_STOPS\[FARM_FAR\]\}\);\}/,'Show the whole farm is the village\'s only');
+ assert.match(game,/function showOverview\(\)\{if\(villageWorld\)\{viewMode='overview';zoom=1;pan=0;panDepth=0;resize\(\);\}else glideFarm\(FARM_FAR,\{stop:FARM_STOPS\[Math\.round\(FARM_FAR\)\]\}\);\}/,'Show the whole farm is the village\'s only');
  assert.match(game,/function focusFields\(\)\{if\(villageWorld\)\{viewMode='fields';zoom=1;pan=0;panDepth=0;resize\(\);\}else glideFarm\(0,\{stop:'fields'\}\);\}/);
  assert.match(game,/function glideFarm\(to,\{ms=reducedMotion\?0:400,stop=null,centre=true\}=\{\}\)\{/,'about 400 ms, at once with reduced motion');
  assert.match(game,/glideFarm\(0,\{ms:450,stop:'fields'\}\);/,'the first basket still eases back to the fields in 450 ms');
@@ -123,7 +123,7 @@ test('the camera buttons glide to their stop, + and - glide a step, and nothing 
 // spot under the pointer and follows its notches smoothly; a camera button at its own stop does no work.
 test('+ and - and the wheel aim at a width, past a part where two stops are as wide',()=>{
  for(const s of SCREENS){
-  const {farmAxis}=view(s,0),{spanOn,atWidth}=helpers(farmAxis),s0=farmAxis.spans[0],s3=farmAxis.spans[FAR+1];
+  const {farmAxis}=view(s,0),{spanOn,atWidth}=helpers(farmAxis),s0=farmAxis.spans[0],s3=spanOn(FAR);
   for(let at=-1;at<=FAR;at+=1/16)for(const ratio of [1.25,1/1.25,1.197,1/1.197]){
    const to=atWidth(spanOn(at)/ratio,ratio<1),want=Math.max(s0,Math.min(s3,spanOn(at)/ratio));
    near(spanOn(to),want,`${s.name} from ${at} by ${ratio}`);assert.ok(ratio<1?to>=at:to<=at,`${s.name} from ${at}: the right way`);
@@ -131,7 +131,7 @@ test('+ and - and the wheel aim at a width, past a part where two stops are as w
  }
  const phone=SCREENS.find(s=>s.name==='phone, 40 fields'),{farmAxis}=view(phone,0),{spanOn,atWidth}=helpers(farmAxis);
  near(farmAxis.spans[1],farmAxis.spans[2],'the fields as wide as the heart of the farm');
- assert.equal(atWidth(spanOn(0)*1.25,true),FAR,'- from the fields goes on to the heart of the farm, the farthest');
+ assert.ok(atWidth(spanOn(0)*1.25,true)>=1-1e-9,'- from the fields goes on to the heart of the farm at least');
  assert.ok(atWidth(spanOn(1)/1.25,false)<0,'+ from the heart of the farm passes the fields');
 });
 
@@ -151,7 +151,7 @@ test('the glides land exactly, + and - step by 1.25 in 250 ms, and the wheel fol
   assert.equal(g.at,-1,`${s.name}: + reaches the closest`);
   // Three wheel notches out 30 ms apart from the fields: one smooth movement to 1.197^3 as wide, never more than a notch's share a frame.
   g.at=0;const start=spanOn(0),notch=Math.exp(.18);g.wheel(1/notch);clock.t+=30;g.frame(clock.t);g.wheel(1/notch);clock.t+=30;g.frame(clock.t);g.wheel(1/notch);
-  const {step}=run();near(spanOn(g.at),Math.min(farmAxis.spans[FAR+1],start*notch**3),`${s.name}: three notches out`);assert.ok(step<.18*.5,`${s.name}: a frame's step ${step}`);
+  const {step}=run();near(spanOn(g.at),Math.min(spanOn(FAR),start*notch**3),`${s.name}: three notches out`);assert.ok(step<.18*.5,`${s.name}: a frame's step ${step}`);
   // And in from the farthest to the closest end.
   g.at=FAR;for(let i=0;i<20;i++){g.wheel(notch);clock.t+=50;g.frame(clock.t);}run();assert.equal(g.at,-1,`${s.name}: in to the closest`);
  }
