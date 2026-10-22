@@ -12,7 +12,7 @@ export const EVENT_GOAL_TITLES=Object.freeze({
  harvested:[['Harvest rush','Bring in the harvest together with farmers across the valley.'],['Full barns','Field after field brought in, and every barn a little fuller.']],
  planted:[['Sowing season','Fresh seed in every furrow, as fast as you can plant.'],['Fresh furrows','Plant field after field before the rest of the valley.']],
  watered:[['Green thumbs','Give your fields some extra love with water.'],['Rain dance','No field goes thirsty today.']],
- tended:[['Tender care','A little care makes every harvest bigger.'],['Walk the rows','Look after every crop, row by row.']],
+ tended:[['Tender care','A little care brings every harvest in sooner.'],['Walk the rows','Look after every crop, row by row.']],
  fertilized:[['Rich soil','Fertilize your fields for a faster harvest.'],['Growing strong','A little fertilizer, a lot of growth.']],
  harvest_wheat:[['The wheat race','Every farm grows wheat. Bring in yours before the rest of the valley does.'],['Golden fields','Wheat, wheat and more wheat.']],
  harvest_corn:[['Corn country','Fill the barns with golden corn.'],['Cob and kernel','Corn for the mill, the market and the hens.']],
@@ -194,5 +194,12 @@ export const HOUR_LEFT_OUT=Object.freeze(Object.fromEntries([
  // An input needs a step of an hour or more, and fewer than half of the league's farmers hold it.
  'made_orchardsalad','made_pickaxe','made_linen'
 ].map(stat=>[stat,true])));
-export const EVENT_HOUR_POOLS=Object.freeze(EVENT_GOAL_POOLS.map(league=>Object.freeze(league.map(group=>Object.freeze(
- group.filter(g=>!HOUR_LEFT_OUT[g.stat]).map(({stat,targets})=>Object.freeze({stat,target:Math.min(stat==='lake_fish'?LAKE_FISH_PER_HOUR:Infinity,nice(targets[1]/HOUR_SHARE))})))))));
+// One crop a harvest (22 Oct 2026, the owner: "verdubbel de doelen"): water and care make a crop ripen sooner instead of giving more,
+// so farmers harvest about twice as often, and an hour's "Harvest crops" goal asks twice as many (HARVEST_GOAL_FACTOR). What
+// harvest_event_pick drew before it (the pools and the care line as they ran from 20 Oct 2026) stays below as *_BEFORE_ONE_CROP: the
+// switches that ran then (supabase/hourly-events.sql and the files after it) are generated from those, byte for byte.
+export const HARVEST_GOAL_FACTOR=2;
+const hourPools=factor=>Object.freeze(EVENT_GOAL_POOLS.map(league=>Object.freeze(league.map(group=>Object.freeze(
+ group.filter(g=>!HOUR_LEFT_OUT[g.stat]).map(({stat,targets})=>Object.freeze({stat,target:Math.min(stat==='lake_fish'?LAKE_FISH_PER_HOUR:Infinity,nice(targets[1]/HOUR_SHARE))*(stat==='harvested'?factor:1)})))))));
+export const EVENT_HOUR_POOLS=hourPools(HARVEST_GOAL_FACTOR),EVENT_HOUR_POOLS_BEFORE_ONE_CROP=hourPools(1);
+export const EVENT_GOAL_TITLES_BEFORE_ONE_CROP=Object.freeze({...EVENT_GOAL_TITLES,tended:[['Tender care','A little care makes every harvest bigger.'],['Walk the rows','Look after every crop, row by row.']]});

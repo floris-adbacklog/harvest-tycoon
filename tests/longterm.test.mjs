@@ -11,12 +11,16 @@ test('old saves preserve coins, inventory, levels, crop and job deadlines',()=>{
  assert.equal(levelOf(s),1+Math.floor(original.xp/60));assert.equal(s.coins,original.coins);assert.deepEqual(s.inventory,original.inventory);assert.equal(s.plots[5].readyAt,original.plots[5].readyAt);assert.equal(s.buildings.mill.job.readyAt,original.buildings.mill.job.readyAt);assert.deepEqual(s.buildings.mill.job.output,{flour:1});
  const again=structuredClone(s);normalizeFarm(s,now);assert.deepEqual(s,again);
 });
-test('active care yields three crops versus one passive crop and cannot be repeated',()=>{
+test('water and care make a crop ripen in a quarter of the time, one crop either way, and cannot be repeated',()=>{
  const a=createFarm(now),p=createFarm(now);act(a,{type:'field',id:8,action:'plant',crop:'wheat'},now);act(p,{type:'field',id:8,action:'plant',crop:'wheat'},now);
  act(a,{type:'field',id:8,action:'water'},now);assert.throws(()=>act(a,{type:'field',id:8,action:'tend'},now),/available in/);
  act(a,{type:'field',id:8,action:'tend'},a.plots[8].careAt);assert.throws(()=>act(a,{type:'field',id:8,action:'tend'},a.plots[8].careAt),/already/);
- assert(a.plots[8].readyAt<p.plots[8].readyAt);const active=act(a,{type:'field',id:8,action:'harvest'},now+CROPS.wheat.duration),passive=act(p,{type:'field',id:8,action:'harvest'},now+CROPS.wheat.duration);
- assert.equal(active.quantity,3);assert.equal(passive.quantity,1);assert.equal(active.xp,passive.xp*2);assert.equal(a.mastery.harvests.wheat,1);
+ assert(a.plots[8].readyAt<p.plots[8].readyAt);
+ // Since 22 Oct 2026: watered at planting, cared for when care opens (15%): ready at 15% + (40% - 15%) x 40% = 25% of its time.
+ const corn=createFarm(now+1);act(corn,{type:'field',id:8,action:'plant',crop:'corn'},now);act(corn,{type:'field',id:8,action:'water'},now);act(corn,{type:'field',id:8,action:'tend'},corn.plots[8].careAt);
+ assert.equal(corn.plots[8].readyAt-now,CROPS.corn.duration*.25);
+ const active=act(a,{type:'field',id:8,action:'harvest'},a.plots[8].readyAt),passive=act(p,{type:'field',id:8,action:'harvest'},now+CROPS.wheat.duration);
+ assert.equal(active.quantity,1);assert.equal(passive.quantity,1);assert.equal(active.xp,passive.xp);assert.equal(a.mastery.harvests.wheat,1);
  assert.equal(CROPS.wheat.duration,120000);assert.equal(CROPS.sunflower.duration,DAY_MS);
 });
 test('passive earnings accrue only once, cap offline time and do not retroactively use upgrades',()=>{
@@ -35,7 +39,10 @@ test('chores remain repeatable but do not pay twice during cooldown',()=>{
 });
 test('mastery counts field harvests, claims once and old crop counts receive credit',()=>{
  // Medals open at level 14 on every farm since 19 Oct 2026 (older farms had them from level 1).
- const s=createFarm(now,{level:14});s.version=3;delete s.mastery;s.stats.harvest_wheat=100;normalizeFarm(s,now);assert.equal(masteryStatus(s,'wheat')[1].progress,100);
+ const s=createFarm(now,{level:14});s.version=3;delete s.mastery;s.stats.harvest_wheat=100;normalizeFarm(s,now);
+ // 100 harvests reached Bronze and Silver with the numbers before one crop a harvest (25 / 100): both stay reached (state.mastery.kept)
+ // although the numbers doubled on 22 Oct 2026 (50 / 200 / 600 / 2,000).
+ assert.equal(s.mastery.kept.wheat,2);assert.equal(masteryStatus(s,'wheat')[1].progress,200);assert.equal(masteryStatus(s,'wheat')[2].progress,100);
  act(s,{type:'mastery',crop:'wheat',tier:0},now);act(s,{type:'mastery',crop:'wheat',tier:1},now);assert.equal(s.stats.mastery_medals,2);
  assert.throws(()=>act(s,{type:'mastery',crop:'wheat',tier:1},now),/already/);assert.throws(()=>act(s,{type:'mastery',crop:'wheat',tier:2},now),/Keep harvesting/);
 });

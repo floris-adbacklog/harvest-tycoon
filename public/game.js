@@ -20,7 +20,7 @@ import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,las
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CROPS, ITEMS, BUILDINGS, RECIPES, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil, normalizeFarm } from './farm-state.js';
+import { CROPS, ITEMS, BUILDINGS, RECIPES, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, harvestYield, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil, normalizeFarm } from './farm-state.js';
 import { createReminderNudge,harvestAction } from './reminder-nudge.js';
 import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds, asBeforeLayout } from './farm-layout.js';
 import { createMinimap } from './minimap.js';
@@ -1177,8 +1177,8 @@ async function interact(id,forcedAction){
  if(!action&&selectedTool==='water'&&toolPicked){const why=plot.watered?'Already watered. Your crop is growing nicely.':beginnerProgress(state).some(q=>q.id==='water'&&!q.done)?WATER_FIRST_MINUTE:plot.tended?'':'Water right after planting. This crop is past that; give it extra care instead.';if(why){toast(why);return {error:'too late to water'};}}
  // Nothing to do yet: say plainly what comes next and when (toasts drop "·", so two short sentences).
  if(!action){const now=farmNow(),name=CROPS[plot.crop].name;toast(`${name}: ${plot.tended?'fully cared for':`extra care opens in ${formatDuration(plot.careAt-now)}`}. Ready to harvest in ${formatDuration(plot.readyAt-now)}.`);return {error:'nothing to do yet'};}
- // One picture flies to the Market for the harvest, one more if the field was watered and one more for extra care.
- const flightCount=1+(plot.watered?1:0)+(plot.tended?1:0);
+ // One picture flies to the Market for each crop the harvest gives (one since 22 Oct 2026; 1-3 for a crop planted before).
+ const flightCount=harvestYield(plot);
  try{
   const medalsBefore=medalsWaiting(state);
   // The burst comes with the tap itself, also when the answer has to come from the server (a harvest that levels you up).
@@ -1187,8 +1187,9 @@ async function interact(id,forcedAction){
   // The golden first harvest shows on the field itself, so the toast stays free for the guide step it completes. A medal it earned
   // gets a chip of its own above it (Oct 2026).
   if(action==='harvest'){harvestFlight(id,result.crop,flightCount);if(result.firstHarvest)particleBurst(id,true);floatReward(id,withMedals(newMedals(medalsBefore,state),(result.firstHarvest?floatChip('harvest',`Golden first harvest ×${result.firstHarvest}`,'is-golden'):'')+floatChip(result.crop,`+${result.quantity}`)+worthChip({[result.crop]:result.quantity})+floatChip('xp',`+${result.xp} XP`,'is-xp')));}
-  if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water','+1 crop · faster'));}
-  if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care','+1 crop'));}
+  // Water and care make the crop ripen sooner (one crop a harvest, 22 Oct 2026): the chip says how much sooner.
+  if(action==='water'){particleBurst(id,true);floatReward(id,floatChip('water',sooner(result?.saved)));}
+  if(action==='tend'){particleBurst(id);floatReward(id,floatChip('care',sooner(result?.saved)));}
   if(action==='plant')floatReward(id,floatChip(state.plots[id].crop??selectedCrop,'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));
   // One tip at a time (16 Oct 2026): the wait note, once a day, goes before the sweep tip, which skips that tap.
   const waited=action==='plant'&&waitTip.planted(state.plots[id].crop);
@@ -1253,8 +1254,8 @@ function endSweep(){
  // The medals a sweep earned: their chips over its sum and ONE toast for all of them (Oct 2026).
  const medals=action==='harvest'?newMedals(run.medals,state):[];
  if(action==='harvest'){floatReward(last,withMedals(medals,(golden?floatChip('harvest',`Golden first harvest ×${golden}`,'is-golden'):'')+Object.entries(crops).map(([crop,n])=>floatChip(crop,`+${n}`)).join('')+worthChip(crops)+floatChip('xp',`+${xp} XP`,'is-xp')));medalToast(medals);}
- if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · faster`:'+1 crop · faster'));
- if(action==='tend')floatReward(last,floatChip('care',`+${result.count} crop${result.count>1?'s':''}`));
+ if(action==='water')floatReward(last,floatChip('water',result.count>1?`${result.count} fields · sooner`:sooner(result.fields[0]?.saved)));
+ if(action==='tend')floatReward(last,floatChip('care',result.count>1?`${result.count} fields · sooner`:sooner(result.fields[0]?.saved)));
  if(action==='plant'){floatReward(last,floatChip(result.crop,result.count>1?`${result.count} planted`:'Planted')+floatChip('coins',`−${result.cost}`,'is-cost'));if(result.short)toast('Out of coins for more seeds. Sell some produce at the market.');}
  if(action==='plant'&&!result.short)waitTip.planted(result.crop);
  renderer.shadowMap.needsUpdate=true;icons();
@@ -1270,6 +1271,8 @@ function easeToFields(){
  if(seen*2>=plots.length)return;
  glideFarm(0,{ms:450,stop:'fields'});
 }
+// What water or care took off a crop's time, for its chip ("4m sooner"); just "Sooner" when the answer has no time.
+const sooner=ms=>ms>=1000?`${formatDuration(ms)} sooner`:'Sooner';
 function showTool(tool){if(tool!==selectedTool)setTool(tool,false);const button=document.querySelector(`[data-tool="${tool}"]`);if(!button)return;button.classList.remove('just-used');void button.offsetWidth;button.classList.add('just-used');}
 function setTool(tool,picked=true){selectedTool=tool;toolPicked=picked;document.querySelectorAll('[data-tool]').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.setAttribute('aria-pressed',String(b.dataset.tool===tool));});updateHint();}
 // The seed you chose last is still chosen after a reload on this device (privacy.html lists the key).
@@ -1277,7 +1280,7 @@ const CROP_KEY='harvest-tycoon:seed';
 function setCrop(crop){selectedCrop=crop;try{localStorage.setItem(CROP_KEY,crop);}catch{}if(!seasonCrop(crop))tractorCrop=crop;setTool('plant');if(ready)plots.forEach((_,i)=>drawCrop(i));updateHint();}
 function updateHint(){
  // A drag from a ripe crop or an empty field sweeps (Oct 2026): the computer hints say so, and that the grass moves the view.
- let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. Earn +1 crop.':selectedTool==='water'?'Water a crop soon after planting for +1 crop and 20% less waiting.':selectedTool==='harvest'?'Click a ripe crop, or hold the mouse button and sweep over your crops to harvest them all. Drag the grass to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold the mouse button and sweep over empty fields to plant them all. Drag the grass to move the view.`;
+ let text=selectedTool==='tend'?'Give growing crops extra care when the green marker appears. They ripen sooner.':selectedTool==='water'?'Water a crop soon after planting: it ripens much sooner.':selectedTool==='harvest'?'Click a ripe crop, or hold the mouse button and sweep over your crops to harvest them all. Drag the grass to move the view.':`Click an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water it and give extra care when it is ready. Hold the mouse button and sweep over empty fields to plant them all. Drag the grass to move the view.`;
  if(!state.stats.harvested&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt))text='Your first crops are ready. Click one, or hold the mouse button anywhere and sweep across them to harvest them all!';
  if(selectedTool==='plant'&&state.stats.harvested>=3&&state.stats.produced===0)text='Your farm can do more. Click a building to start producing!';
  if(mobileLayout.matches)text=selectedTool==='plant'?`Tap an empty field to plant ${CROPS[selectedCrop].name.toLowerCase()}, or a growing crop to water and care for it. Drag to move the view.`:`Tap a field to ${selectedTool==='tend'?'give extra care':selectedTool}. Drag to move the view.`;

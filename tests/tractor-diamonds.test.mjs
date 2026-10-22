@@ -28,10 +28,15 @@ test('Full care: water and extra care for every growing crop at once, 2 diamonds
  const r=apply(s,{type:'tractor_care',expectedCost:quote.cost});
  assert.deepEqual(r,{count:2,cost:4});assert.equal(s.diamonds,diamonds-4);assert.equal(s.stats.diamonds_spent,spent+4);
  assert.ok(s.plots[0].watered&&s.plots[0].tended&&s.plots[1].tended);
- assert.ok(Math.abs((s.plots[0].readyAt-now)-left0*.8*.85)<1,'water then care on what is left');assert.ok(Math.abs((s.plots[1].readyAt-now)-left1*.85)<1);
+ // One crop a harvest (22 Oct 2026): water takes 60% off, care 60% of what is left.
+ assert.ok(Math.abs((s.plots[0].readyAt-now)-left0*.4*.4)<1,'water then care on what is left');assert.ok(Math.abs((s.plots[1].readyAt-now)-left1*.4)<1);
  assert.deepEqual(counters(s),before,'no water, care, harvest or tractor counts, no XP');assert.equal(s.stats.full_care,2);
  const t=s.plots[0].readyAt+1,harvest=apply(s,{type:'field',id:0,action:'harvest'},t);
- assert.equal(harvest.quantity,3);assert.equal(harvest.xp,CROPS.corn.xp*2,'the harvest gives three times the crop and double XP');
+ assert.equal(harvest.quantity,1);assert.equal(harvest.xp,CROPS.corn.xp,'one crop a harvest: Full care makes it come sooner');
+ // A crop planted before one crop a harvest (no oneCrop) keeps the old rule: three times the crop and double XP.
+ const old=farm();apply(old,{type:'field',id:0,action:'plant',crop:'corn'});delete old.plots[0].oneCrop;const leftOld=old.plots[0].readyAt-now;
+ apply(old,{type:'tractor_care',expectedCost:FULL_CARE_COST});assert.ok(Math.abs((old.plots[0].readyAt-now)-leftOld*.8*.85)<1,'the old cuts');
+ const oldHarvest=apply(old,{type:'field',id:0,action:'harvest'},old.plots[0].readyAt);assert.equal(oldHarvest.quantity,3);assert.equal(oldHarvest.xp,5*2);
  assert.throws(()=>apply(s,{type:'tractor_care',expectedCost:2},t),/No growing crops/);
  s.diamonds=1;apply(s,{type:'field',id:0,action:'plant',crop:'corn'},t);assert.throws(()=>apply(s,{type:'tractor_care',expectedCost:2},t),/You need 2 diamonds/);
 });
@@ -43,9 +48,10 @@ test('the night shift costs what it brings in with the chosen crop: 1 diamond pe
   const f=q.forecast,value=Object.entries(f.items).reduce((sum,[k,n])=>sum+marketQuote(k,start).price*n,0)-f.seeds;
   assert.equal(q.cost,Math.max(fields*SHIFT_MIN_PER_FIELD,Math.ceil(value/SHIFT_COINS_PER_DIAMOND)),crop);
  }
- assert.equal(corn.perField,8,'corn (15 minutes) is harvested in every one of the 8 hourly rounds');assert.equal(pumpkin.perField,1,'pumpkin (8 hours) once');
+ assert.equal(corn.perField,8,'corn (15 minutes) is harvested in every one of the 8 hourly rounds');assert.equal(pumpkin.perField,2,'pumpkin (8 hours, 2.5 with water and care) twice');
  assert.ok(barley.cost>corn.cost,'barley brings in more than corn in the same rounds, so it costs more');
- assert.equal(sunflower.forecast.tooSlow,true);assert.equal(sunflower.cost,fields*SHIFT_MIN_PER_FIELD,'a crop slower than the shift: only planted and cared for, at the lowest price');
+ // Since 22 Oct 2026 water and care bring a sunflower (a day) in in about 6 hours: once in the shift, priced by what it brings in.
+ assert.equal(sunflower.forecast.tooSlow,false);assert.equal(sunflower.perField,1);
  const diamonds=s.diamonds,r=apply(s,{type:'tractor_shift',crop:'corn',expectedCost:corn.cost},start);
  assert.equal(r.cost,corn.cost);assert.equal(s.diamonds,diamonds-corn.cost);assert.equal(r.endsAt,start+SHIFT_MS);assert.equal(r.planted,fields,'the first round plants every empty field at once');
  assert.ok(s.plots.every(p=>p.crop==='corn'&&p.watered),'and waters them');
@@ -66,7 +72,7 @@ test('the night shift harvests, replants, waters and cares while the farmer is a
  assert.equal(s.tractorShift.done,SHIFT_ROUNDS+1,'nine rounds: at the start and on every hour after it');
  const harvests=s.tractorShift.log.rounds.reduce((a,b)=>a+b,0);
  assert.ok(harvests>=fields,'corn ripens within the night: every field harvested at least once');
- assert.equal(s.inventory.corn-corn,s.tractorShift.log.items.corn);assert.ok(s.tractorShift.log.items.corn>=harvests*2,'watered (and cared) crops: 2 or 3 each');
+ assert.equal(s.inventory.corn-corn,s.tractorShift.log.items.corn);assert.equal(s.tractorShift.log.items.corn,harvests,'one crop a harvest (22 Oct 2026), watered and cared for or not');
  assert.ok(s.coins<coins,'replanting pays the seeds');
  assert.deepEqual(counters(s),before,'no harvest, plant, water, care, tractor or medal counts, and no XP');
  assert.equal(s.stats.shift_harvests,harvests);
@@ -91,7 +97,7 @@ test('the shift stops planting when the coins run out, keeps harvesting, and reg
  shift(berries);
  assert.equal(berries.plots[0].crop,perennial,'picked and growing again');assert.equal(berries.plots[0].harvestCycles,1);
  assert.equal(berries.plots[0].readyAt>now,true);assert.equal(berries.plots[0].plantedAt,now);
- assert.ok(Math.abs(berries.plots[0].readyAt-now-cropDuration(berries,perennial,true,now)*.8)<1,'and watered right away');
+ assert.ok(Math.abs(berries.plots[0].readyAt-now-cropDuration(berries,perennial,true,now)*.4)<1,'and watered right away (60% off)');
 });
 
 test('diamond work is no event action, and its seeds are no "Spend coins" for challenges or events',()=>{
@@ -165,7 +171,8 @@ test('the night shift price cannot be talked down: coins, what grows on the fiel
 test('before a night shift the farmer is warned when fields stay full until after it, or the crop brings in less than the lowest price; the price stays (6 Oct 2026)',()=>{
  const s=farm(),fields=s.plots.length,price=nightShiftQuote(s,'corn',now).cost;
  assert.equal(shiftFieldsTaken(s,'corn',now),0,'an empty farm');
- const slow=id=>{Object.assign(s.plots[id],{crop:null,plantedAt:0,readyAt:0});apply(s,{type:'field',id,action:'plant',crop:'sunflower'});};
+ // A sunflower already watered and cared for that ripens an hour after the shift (with water and care any crop now ripens within 8 hours).
+ const slow=id=>Object.assign(s.plots[id],{crop:'sunflower',plantedAt:now-HOUR,readyAt:now+SHIFT_MS+HOUR,careAt:now-HOUR,watered:true,tended:true,fertilized:false,harvestCycles:0,oneCrop:true});
  for(const id of [0,1,2])slow(id);
  assert.equal(shiftFieldsTaken(s,'corn',now),3,'a crop that ripens after the shift keeps its field');assert.equal(nightShiftQuote(s,'corn',now).cost,price,'only a warning: the price stays');
  apply(s,{type:'field',id:3,action:'plant',crop:'cabbage'});assert.equal(shiftFieldsTaken(s,'corn',now),3,'one that ripens during the shift frees its field');
@@ -175,8 +182,9 @@ test('before a night shift the farmer is warned when fields stay full until afte
  const t=farm();Object.assign(t.plots[0],{crop:'berries',plantedAt:now-1e7,readyAt:now+HOUR,careAt:now-1,watered:true,tended:true,harvestCycles:1});
  assert.equal(shiftFieldsTaken(t,'corn',now),1,'a bush of another crop regrows on its field');
  const e=farm();e.xp=xpForLevel(40);normalizeFarm(e,now);
- for(const crop of ['wheat','lettuce'])assert.equal(nightShiftQuote(e,crop,now).low,true,crop);
- for(const crop of ['corn','barley','cabbage','cauliflower','sunflower','berries','polebeans']){assert.ok(cropUnlocked(e,crop),crop);assert.equal(nightShiftQuote(e,crop,now).low,false,crop);}
+ // One crop a harvest (22 Oct 2026): the shift's hourly rounds harvest a quick crop once an hour, so corn (8 a field) joins them.
+ for(const crop of ['wheat','lettuce','corn'])assert.equal(nightShiftQuote(e,crop,now).low,true,crop);
+ for(const crop of ['barley','cabbage','cauliflower','sunflower','berries','polebeans']){assert.ok(cropUnlocked(e,crop),crop);assert.equal(nightShiftQuote(e,crop,now).low,false,crop);}
  const ui=read('public/retention-ui.js'),confirm=read('public/diamond-confirm.js');
  assert.match(ui,/:taken>=shift\.fields\?'All fields stay full during the shift: nothing to plant'/);assert.match(ui,/:taken\?`\$\{taken\} of \$\{shift\.fields\} fields stay full during the shift`/);
  assert.match(ui,/shift\.low\?`\$\{name\} brings in less than this price`/);assert.match(ui,/class="tractor-forecast\$\{warning\?' is-warn':''\}"/);

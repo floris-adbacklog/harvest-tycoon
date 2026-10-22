@@ -58,7 +58,8 @@ test('Double harvest doubles every harvest while it runs, also a crop that ripen
  const first=act(s,{type:'field',id:0,action:'harvest'},now+MIN);assert.equal(first.quantity,4);assert.equal(s.inventory.wheat,wheat+4);
  act(s,{type:'field',id:1,action:'harvest'},now+MIN);assert.equal(s.inventory.corn,corn+6,'watered and cared for: 3 becomes 6');
  act(s,{type:'field',id:2,action:'harvest'},now+MIN);assert.equal(s.inventory.lettuce,lettuce+2,'no care: 1 becomes 2');
- assert.equal(s.xp-xp,(CROPS.wheat.xp+CROPS.corn.xp*2+CROPS.lettuce.xp),'XP stays as it was: that is Double XP');
+ // These fields were planted before one crop a harvest (22 Oct 2026; no oneCrop): their old 1-3 crops and old XP (corn 5, doubled with both).
+ assert.equal(s.xp-xp,(2+5*2+3),'XP stays as it was: that is Double XP');
  assert.equal(s.stats.harvest_wheat,counted+4,'quests that count crops count the real amount');
  const after=act(s,{type:'field',id:3,action:'harvest'},now+31*MIN);assert.equal(after.quantity,2,'after 30 minutes it is over');
 });
@@ -113,4 +114,16 @@ test('Double XP and Double earnings have their own pictures; the pill shows a pi
  assert.match(ui,/pill\.innerHTML=chips\.map\(c=>`<span class="active-boost" data-active-boost="\$\{c\.id\}" title="\$\{c\.label\}">\$\{art\(c\.picture\)\}<b><\/b><\/span>`\)\.join\(''\)/);
  assert.match(ui,/\['xp','2× XP',state\.boosts\.xpUntil,'double-xp'\]/);assert.match(ui,/\['coins','2× coins',state\.boosts\.coinsUntil,'double-coins'\]/);
  assert.match(read('public/desktop-hud.css'),/\.active-boosts\{top:92px;padding:4px 11px;border-radius:999px\}/,'on a computer just under the top-right buttons, clear of the guide card');
+});
+
+test('one crop a harvest (22 Oct 2026): Double harvest makes it 2, whatever water and care; the XP is the crop\'s own',()=>{
+ const s=farm();
+ ripe(s,0,'corn',{watered:true,tended:true});ripe(s,1,'corn',{watered:false});ripe(s,2,'wheat');
+ for(const id of [0,1,2])s.plots[id].oneCrop=true;
+ const corn=s.inventory.corn,wheat=s.inventory.wheat,xp=s.xp;
+ assert.equal(act(s,{type:'field',id:0,action:'harvest'},now).quantity,1,'watered and cared for: still 1');
+ buy(s,'harvest','30m');
+ assert.equal(act(s,{type:'field',id:1,action:'harvest'},now+MIN).quantity,2);assert.equal(act(s,{type:'field',id:2,action:'harvest'},now+MIN).quantity,2);
+ assert.equal(s.inventory.corn,corn+3);assert.equal(s.inventory.wheat,wheat+2);
+ assert.equal(s.xp-xp,CROPS.corn.xp*2+CROPS.wheat.xp,'no double XP for water and care any more');
 });

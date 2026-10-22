@@ -36,7 +36,7 @@ test('the next goal: a field (9 to 12) that opened and can be paid for, after a 
  six.buildings.windmill.built=true;assert.equal(nextGoal(six,now).kind,'field');
  // Never past field 12, never on an older farm that started with 12 fields; quests and daily challenges still come first.
  const full=farmer({coins:1e6});for(let i=0;i<4;i++)act(full,{type:'expand'},now);assert.equal(full.plots.length,12);assert.notEqual(nextGoal(full,now).kind,'field');
- const quest=QUESTS.findIndex(q=>q.stat==='harvested'&&q.target<=5);s.stats.harvested=QUESTS[quest].target;assert.equal(nextGoal(s,now).kind,'quest');
+ const quest=QUESTS.findIndex(q=>q.stat==='harvested'&&q.target<=6);s.stats.harvested=QUESTS[quest].target;assert.equal(nextGoal(s,now).kind,'quest');
  s.claimed=QUESTS.map((_,i)=>i);const task=dailyTasks(s,now)[0];s.stats[task.stat]=(s.daily.baseline[task.stat]??0)+task.target;assert.equal(nextGoal(s,now).kind,'daily');
 });
 

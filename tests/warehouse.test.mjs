@@ -190,5 +190,6 @@ test('differential: the old rules on new saves keep the Warehouse and play on; t
  const back=normalizeFarm(old,now+2000);assert.equal(back.warehouse.level,2);
  // The new rules on an old save: the same farm but for state.warehouse.
  const o=O.normalizeFarm(O.createFarm(now-H),now),n=normalizeFarm(JSON.parse(JSON.stringify(o)),now);
- assert.deepEqual(n.warehouse,{level:1});delete n.warehouse;assert.deepEqual(n,o);
+ // (One crop a harvest, merged in on 22 Oct 2026, adds mastery.kept too: the medals the old numbers gave, none on a new farm.)
+ assert.deepEqual(n.warehouse,{level:1});delete n.warehouse;assert.deepEqual(n.mastery.kept,{});delete n.mastery.kept;assert.deepEqual(n,o);
 });

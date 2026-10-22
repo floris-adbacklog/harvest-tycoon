@@ -4,7 +4,7 @@
 // Plan F (13 Oct 2026, proposal 5): a tip about something that opens later says its level, as the Valley Market's does (events and farm
 // chores at 15, apple trees at 20 and berry bushes at 23; tests/text-round.test.mjs keeps them equal to the rules).
 export const LOADING_TIPS=Object.freeze([
- ['double-harvest','Water and care for a field: up to three crops from one harvest.'],
+ ['double-harvest','Water and care for a field: it is ready in about a quarter of the time.'],
  ['apples','From level 20 apple trees grow back after you pick them, and from level 23 berry bushes too.'],
  ['collect-all','Turn crops into goods in your buildings: they sell for more.'],
  ['instant-harvest','Hold the mouse button on a ripe crop and sweep across your fields to harvest them all. On a phone, hold a field for a moment first.'],

@@ -8,7 +8,7 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 globalThis.window??={};
 const {EVENT_LEAGUES,HOUR_EVENT_REWARDS,FAMILY_EVENT_BONUS,eventPrizes,RECIPES,RECIPE_LEVELS,CROPS,createFarm,xpForLevel,normalizeFarm}=await import('../game/farm-state.js');
-const {EVENT_GOAL_POOLS,EVENT_HOUR_POOLS,HOUR_LEFT_OUT,HOUR_SHARE,LAKE_FISH_PER_HOUR,EVENT_GOAL_TITLES}=await import('../public/event-goals.js');
+const {EVENT_GOAL_POOLS,EVENT_HOUR_POOLS,EVENT_HOUR_POOLS_BEFORE_ONE_CROP,HARVEST_GOAL_FACTOR,HOUR_LEFT_OUT,HOUR_SHARE,LAKE_FISH_PER_HOUR,EVENT_GOAL_TITLES}=await import('../public/event-goals.js');
 const {eventStandings,validateEvent,withPlayerRows}=await import('../supabase/functions/farm-api/event-service.js');
 const {hourlyEventsSql,NEW_MD5,LIVE_MD5,HOUR_SETTLE_BODY,SCHEDULE_BODY,PAUSE_BODY,REWARDS_JSON,LEGACY_LINES}=await import('../scripts/hourly-events-sql.mjs');
 const {PICK_BODY,VALIDATE_BODY,HOUR_PICK_BODY,HOUR_VALIDATE_BODY,HOUR_STATS}=await import('../scripts/event-goals-sql.mjs');
@@ -29,7 +29,8 @@ test('the hour pools: 12 leagues of 5 groups, never empty, a fifth of the medium
   for(const [k,group] of pool.entries())assert.ok(group.length>0,`${l.id}: group ${k} has a goal (harvest_event_pick divides by its size)`);
   for(const {stat,target} of pool.flat()){
    const medium=EVENT_GOAL_POOLS[i].flat().find(g=>g.stat===stat).targets[1];
-   assert.equal(target,Math.min(stat==='lake_fish'?3:Infinity,nice(medium/5)),`${l.id} ${stat}`);
+   // One crop a harvest (22 Oct 2026): an hour's harvest goal asks twice as many.
+   assert.equal(target,Math.min(stat==='lake_fish'?3:Infinity,nice(medium/5))*(stat==='harvested'?HARVEST_GOAL_FACTOR:1),`${l.id} ${stat}`);
    assert.ok(target>=1&&!HOUR_LEFT_OUT[stat],`${l.id} ${stat}`);
    assert.ok(EVENT_GOAL_TITLES[stat]?.length>=2&&EVENT_GOALS[stat],stat);
   }
@@ -53,7 +54,7 @@ test('every hour goal fits in the hour: a crop or the fastest non-Factory batch 
 
 test('a snapshot of the Sprout League and the Village Legends (spec §2.5.1)',()=>{
  const row=i=>EVENT_HOUR_POOLS[i].map(g=>g.map(k=>`${k.stat} ${k.target}`).join(', '));
- assert.deepEqual(row(0),['harvested 8, planted 8, watered 4, tended 2, fertilized 1','harvest_wheat 20, harvest_corn 8, harvest_lettuce 9, harvest_barley 5',
+ assert.deepEqual(row(0),['harvested 16, planted 8, watered 4, tended 2, fertilized 1','harvest_wheat 20, harvest_corn 8, harvest_lettuce 9, harvest_barley 5',
   'made_eggs 7, made_feed 6, made_milk 4, made_cheese 1, made_flour 6, produced 2, made_grainmeal 2, made_bread 2, parallel_batches 2, made_salad 2, made_fertilizer 2',
   'sold 20, earned 240, coins_spent 160','chores 1, activities 1, upgrades 1, activity_rounds 1']);
  assert.deepEqual(row(11),['made_stone 18, made_ironore 20, made_timber 25, made_clay 20','made_packedlunch 12, made_potatoes 30','village_batches 17, made_plank 7, made_rooftile 8',
@@ -141,7 +142,8 @@ test('the SQL file: guard, table check, pause, pick, settle, schedule, cron and 
  // Pick: one goal per league from the hour pools.
  assert.equal(body('harvest_event_pick'),HOUR_PICK_BODY);
  const pools=JSON.parse(HOUR_PICK_BODY.match(/pools constant jsonb:='([^\n]*)';\n/)[1].replaceAll("''","'"));
- assert.deepEqual(pools.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))),EVENT_HOUR_POOLS.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))));
+ // hourly-events.sql ran with the pools from before one crop a harvest (22 Oct 2026); supabase/one-crop.sql draws from today's.
+ assert.deepEqual(pools.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))),EVENT_HOUR_POOLS_BEFORE_ONE_CROP.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))));
  assert.ok(HOUR_PICK_BODY.includes("grp int:=(n%5)::int;")&&HOUR_PICK_BODY.includes("'objectives',jsonb_build_array(jsonb_build_object('stat',kind->>'stat','target',(kind->>'target')::int))"));
  // Pause: admin only.
  assert.equal(body('harvest_event_pause'),PAUSE_BODY);

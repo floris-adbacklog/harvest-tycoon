@@ -13,20 +13,21 @@ function farm(level){const s=createFarm(now);s.xp=xpForLevel(level);s.rookieUnti
 test('a medal waits from its harvest until it is collected, only for crops the Medals list shows',()=>{
  const s=farm(14);
  assert.deepEqual(medalsWaiting(s),[]);
- s.mastery.harvests.wheat=25;assert.deepEqual(medalsWaiting(s),['wheat:0']);
- s.mastery.harvests.wheat=100;assert.deepEqual(medalsWaiting(s),['wheat:0','wheat:1']);
+ // Medals ask twice the harvests since one crop a harvest (22 Oct 2026): 50 / 200 / 600 / 2,000.
+ s.mastery.harvests.wheat=49;assert.deepEqual(medalsWaiting(s),[]);s.mastery.harvests.wheat=50;assert.deepEqual(medalsWaiting(s),['wheat:0']);
+ s.mastery.harvests.wheat=200;assert.deepEqual(medalsWaiting(s),['wheat:0','wheat:1']);
  applyFarmAction(s,{type:'mastery',crop:'wheat',tier:0},now);assert.deepEqual(medalsWaiting(s),['wheat:1'],'collected: no longer waiting');
  s.mastery.harvests.truffles=1000;assert.ok(!medalsWaiting(s).some(id=>id.startsWith('truffles:')),'a crop that is not open yet never lights the "!"');
 });
 
 test('the harvest that earns a medal names it once; before level 14 a medal waits quietly',()=>{
  const s=farm(14),before=medalsWaiting(s);
- s.mastery.harvests.wheat=24;s.plots[0]={...s.plots[0],crop:'wheat',plantedAt:now-3600000,readyAt:now-1,careAt:now-1};
+ s.mastery.harvests.wheat=49;s.plots[0]={...s.plots[0],crop:'wheat',plantedAt:now-3600000,readyAt:now-1,careAt:now-1};
  const was=medalsWaiting(s);applyFarmAction(s,{type:'field',id:0,action:'harvest'},now);
  assert.deepEqual(newMedals(was,s),[{crop:'wheat',tier:0}]);
  assert.deepEqual(newMedals(medalsWaiting(s),s),[],'already known: no second notice');
  assert.deepEqual(before,[]);
- const young=farm(13);young.mastery.harvests.corn=25;assert.deepEqual(newMedals([],young),[],'Medals opens at level 14');
+ const young=farm(13);young.mastery.harvests.corn=50;assert.deepEqual(newMedals([],young),[],'Medals opens at level 14');
  assert.equal(FEATURE_LEVELS.mastery,14);
 });
 
@@ -67,17 +68,17 @@ function page(){
 test('one toast for many medals, never under a window, and a medal collected meanwhile is left out',t=>{
  t.mock.timers.enable({apis:['setTimeout']});
  const s=farm(14),p=page(),notice=createMedalNotice(p.el,{state:s,doc:p.doc});
- s.mastery.harvests.wheat=25;s.mastery.harvests.corn=25;
+ s.mastery.harvests.wheat=50;s.mastery.harvests.corn=50;
  notice.earned([{crop:'wheat',tier:0}]);notice.earned([{crop:'corn',tier:0}]);
  t.mock.timers.tick(800);
  assert.match(p.el.innerHTML,/2 new medals! Collect them in Medals\./);assert.ok(p.el.classList.set.has('visible'));assert.ok(p.el.classList.set.has('is-reward'));
  assert.ok(p.el.className.includes('medal-toast'),'it keeps its place at the bottom');
  // The tractor's window is open: the toast waits for it to close.
- p.el.innerHTML='';s.mastery.harvests.barley=25;p.open.push('tractor');
+ p.el.innerHTML='';s.mastery.harvests.barley=50;p.open.push('tractor');
  notice.earned([{crop:'barley',tier:0}]);t.mock.timers.tick(5000);assert.equal(p.el.innerHTML,'');
  p.close();t.mock.timers.tick(500);assert.match(p.el.innerHTML,/Barley: Bronze medal! Collect it in Medals\./);
  // Collected before its toast could show: no toast.
- p.el.innerHTML='';s.mastery.harvests.lettuce=25;p.open.push('estate');notice.earned([{crop:'lettuce',tier:0}]);
+ p.el.innerHTML='';s.mastery.harvests.lettuce=50;p.open.push('estate');notice.earned([{crop:'lettuce',tier:0}]);
  applyFarmAction(s,{type:'mastery',crop:'lettuce',tier:0},now);p.close();t.mock.timers.tick(500);assert.equal(p.el.innerHTML,'');
 });
 

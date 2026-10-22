@@ -4,7 +4,9 @@
 // 20 Oct 2026: the pick and the check are also exported (PICK_SQL, PICK_BODY, VALIDATE_SQL, VALIDATE_BODY), so
 // scripts/world-two-leagues-sql.mjs writes exactly the same functions into the live switch to the village leagues.
 import {writeFileSync} from 'node:fs';
-import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES,EVENT_HOUR_POOLS} from '../public/event-goals.js';
+// The 5-hour pick and the hourly pick that ran use the pools and titles from before one crop a harvest (22 Oct 2026); the hourly pick
+// of supabase/one-crop.sql (scripts/one-crop-sql.mjs) uses today's (HOUR_PICK_BODY_ONE_CROP).
+import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES_BEFORE_ONE_CROP as EVENT_GOAL_TITLES,EVENT_HOUR_POOLS_BEFORE_ONE_CROP as EVENT_HOUR_POOLS,EVENT_HOUR_POOLS as HOUR_POOLS_NOW,EVENT_GOAL_TITLES as TITLES_NOW} from '../public/event-goals.js';
 
 const pools=EVENT_GOAL_POOLS.map(league=>league.map(group=>group.map(({stat,targets})=>{
  const titles=EVENT_GOAL_TITLES[stat];if(!titles)throw Error(`No titles for ${stat}`);
@@ -69,12 +71,12 @@ export const VALIDATE_SQL=`create or replace function public.harvest_event_valid
 // Hourly events (20 Oct 2026, the owner): one goal an hour (public/event-goals.js EVENT_HOUR_POOLS). New exports beside the ones
 // above, which stay as they are: Part B (scripts/world-two-leagues-sql.mjs) imports PICK_BODY and VALIDATE_BODY, and its md5s must
 // not change after it ran. scripts/hourly-events-sql.mjs writes these into supabase/hourly-events.sql.
-const hourPools=EVENT_HOUR_POOLS.map(league=>league.map(group=>group.map(({stat,target})=>{
- const titles=EVENT_GOAL_TITLES[stat];if(!titles)throw Error(`No titles for ${stat}`);
+const poolsWithTitles=(pools,titleOf)=>pools.map(league=>league.map(group=>group.map(({stat,target})=>{
+ const titles=titleOf[stat];if(!titles)throw Error(`No titles for ${stat}`);
  return {stat,target,titles};
 })));
 export const HOUR_STATS=[...new Set(EVENT_HOUR_POOLS.flat(2).map(goal=>goal.stat))];
-export const HOUR_PICK_BODY=`
+const hourPickBody=hourPools=>`
 declare
  pools constant jsonb:='${JSON.stringify(hourPools).replaceAll("'","''")}';
  grp int:=(n%5)::int; lg int; r bigint; pool jsonb; kind jsonb; title jsonb; leagues jsonb:='[]'::jsonb;
@@ -93,8 +95,12 @@ begin
  -- The event's own title and goal are the Sprout League's: admin screens and any older reader keep working.
  return jsonb_build_object('title',leagues->0->>'title','description',leagues->0->>'description','objectives',leagues->0->'objectives','leagues',leagues);
 end `;
+export const HOUR_PICK_BODY=hourPickBody(poolsWithTitles(EVENT_HOUR_POOLS,EVENT_GOAL_TITLES));
+export const HOUR_PICK_BODY_ONE_CROP=hourPickBody(poolsWithTitles(HOUR_POOLS_NOW,TITLES_NOW));
 export const HOUR_PICK_SQL=`create or replace function public.harvest_event_pick(n bigint)
  returns jsonb language plpgsql stable set search_path to '' as $function$${HOUR_PICK_BODY}$function$;`;
+export const HOUR_PICK_SQL_ONE_CROP=`create or replace function public.harvest_event_pick(n bigint)
+ returns jsonb language plpgsql stable set search_path to '' as $function$${HOUR_PICK_BODY_ONE_CROP}$function$;`;
 // The check, with the rules of an hourly event's prizes (podium, finisher and the family bonus in rewards; no coins).
 const PODIUM_CHECK=` if new.rewards ? 'podium' then
   if jsonb_typeof(new.rewards->'podium')<>'array' or jsonb_array_length(new.rewards->'podium')<>3

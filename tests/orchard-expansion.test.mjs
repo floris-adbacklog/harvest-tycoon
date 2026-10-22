@@ -28,7 +28,7 @@ for(const crop of ['apples','berries'])test(`${crop} holds only one harvest whil
  const r=act(s,{type:'field',id:8,action:'harvest'},now+7*DAY_MS);assert.equal(r.quantity,1);assert.equal(s.coins,coins-seedCost(s,crop));assert.equal(p.readyAt,now+7*DAY_MS+cropDuration(s,crop,true));
  const before=structuredClone(s);assert.throws(()=>act(s,{type:'field',id:8,action:'harvest'},now+7*DAY_MS),/Still growing/);assert.deepEqual(s,before);
  act(s,{type:'field',id:8,action:'water'},now+7*DAY_MS+1);act(s,{type:'field',id:8,action:'tend'},p.careAt);p.fertilized=true;
- const t=p.readyAt,result=act(s,{type:'field',id:8,action:'harvest'},t);assert.equal(result.quantity,3);assert.equal(result.xp,CROPS[crop].xp*2);assert.equal(s.inventory[crop],4);assert.equal(s.mastery.harvests[crop],2);assert.equal(s.stats['harvest_'+crop],4);
+ const t=p.readyAt,result=act(s,{type:'field',id:8,action:'harvest'},t);assert.equal(result.quantity,1,'one crop a harvest (22 Oct 2026)');assert.equal(result.xp,CROPS[crop].xp);assert.equal(s.inventory[crop],2);assert.equal(s.mastery.harvests[crop],2);assert.equal(s.stats['harvest_'+crop],2);
  assert.equal(p.watered,false);assert.equal(p.tended,false);assert.equal(p.fertilized,false);assert.equal(p.harvestCycles,2);assert.equal(p.readyAt,t+cropDuration(s,crop,true));
 });
 test('normal crops clear; removing a planting validates the current cycle and awards nothing',()=>{

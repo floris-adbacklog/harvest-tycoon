@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {EVENT_LEAGUES,eventLeagueFor,eventLeagueIn,eventLeagueCount,NO_EVENT_ACTIONS,worldTwoItem} from '../public/farm-state.js';
-import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES,EVENT_GOAL_GROUPS} from '../public/event-goals.js';
+import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES,EVENT_GOAL_TITLES_BEFORE_ONE_CROP,EVENT_GOAL_GROUPS} from '../public/event-goals.js';
 import {EVENT_GOALS} from '../public/live-events-ui.js';
 import {eventStandings} from '../supabase/functions/farm-api/event-service.js';
 import {worldTwoLeaguesSql,LEAGUE_CASE,OLD_MD5,NEW_MD5} from '../scripts/world-two-leagues-sql.mjs';
@@ -40,7 +40,7 @@ test('pools: five groups in every league, never empty; the farm draws farm goals
  assert.deepEqual(EVENT_GOAL_POOLS.slice(6).map(p=>p.map(g=>g.length).join('/')),['3/1/2/1/2','4/2/5/1/2','4/4/9/1/2','4/4/11/1/2','4/4/11/1/2','4/4/11/1/2']);
  assert.equal(EVENT_GOAL_GROUPS[1].length,5);assert.deepEqual(EVENT_GOAL_GROUPS[2],['Mine and forest','Fields and kitchens','Workshops','Market square','Around the village']);
  // The farm leagues' pools are byte-identical to what harvest_event_pick drew before (supabase/live-event-league-goals.sql as live).
- const farm=JSON.stringify(EVENT_GOAL_POOLS.slice(0,6).map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES[stat]}))))).replaceAll("'","''");
+ const farm=JSON.stringify(EVENT_GOAL_POOLS.slice(0,6).map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES_BEFORE_ONE_CROP[stat]}))))).replaceAll("'","''");
  assert.equal(md5(farm),'badc8ae11b1bba4dcaf6b69cc21f5f62','the six farm pools as live (md5 of the live pools constant, 20 Oct 2026)');
  // A few numbers from the spec (20 Oct 2026).
  const t=(i,stat)=>EVENT_GOAL_POOLS[i].flat().find(g=>g.stat===stat)?.targets;

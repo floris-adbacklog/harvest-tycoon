@@ -41,8 +41,8 @@ test('missing expansion supplies and insufficient tractor fuel leave balances an
  s.coins=0;old=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'tractor',mode:'harvest'},now),/fuel/);assert.deepEqual(s,old);
  s.coins=14;const q=tractorQuote(s,'plant','wheat',now);assert.equal(q.count,0);old=structuredClone(s);
  assert.throws(()=>applyFarmAction(s,{type:'tractor',mode:'plant',crop:'wheat'},now),/fuel/);assert.deepEqual(s,old);
- s.coins=17;assert.equal(tractorQuote(s,'plant','wheat',now).count,1);
- const result=applyFarmAction(s,{type:'tractor',mode:'plant',crop:'wheat'},now);assert.equal(result.count,1);assert.equal(result.cost,17);assert.equal(s.coins,0);
+ s.coins=15;assert.equal(tractorQuote(s,'plant','wheat',now).count,1);   // 12 fuel + 2 for the field + 1 seed (3 until 22 Oct 2026)
+ const result=applyFarmAction(s,{type:'tractor',mode:'plant',crop:'wheat'},now);assert.equal(result.count,1);assert.equal(result.cost,15);assert.equal(s.coins,0);
 });
 test('mixed recipes consume larger batches and remain worth more than their ingredients',()=>{
  for(const recipe of Object.values(RECIPES).filter(r=>Object.keys(r.input).length>1)){

@@ -58,7 +58,7 @@ test('the harvest: a ripe field\'s plants are picked and the harvest flies to th
  const game=read('public/game.js'),rows=read('public/crop-rows.js');
  assert.match(game,/const picked=v\.visualCrop&&v\.lastReady&&cropMotion\.pick\(v\.cropGroup,cut\),fresh=v\.visualCrop!==undefined;\n  if\(!picked\)v\.rows\?\.dispose\(\);/,'a sweep\'s cut tips the plants over too (Oct 2026)');
  assert.match(game,/if\(action==='harvest'\)particleBurst\(id\);\n  const result=await runAction\(\{type:'field',id,action,crop:selectedCrop\}\);/,'the burst comes with the tap');assert.match(game,/if\(action==='harvest'\)\{harvestFlight\(id,result\.crop,flightCount\);/,'the harvest flies to the Market button');
- assert.match(game,/const flightCount=1\+\(plot\.watered\?1:0\)\+\(plot\.tended\?1:0\);/,'one picture, one more for water and one more for care');
+ assert.match(game,/const flightCount=harvestYield\(plot\);/,'one picture for each crop the harvest gives (one since 22 Oct 2026)');
  assert.match(read('public/harvest-fly.js'),/flight\.finished\.then\(\(\)=>\{outer\.remove\(\);/,'each flying picture is removed when it lands');
  assert.match(rows,/new THREE\.InstancedMesh\(template\.geometry,template\.material,spots\.length\)/);
  assert.match(rows,/if\(n\.isInstancedMesh\)n\.dispose\(\)/,'the picked plants are freed');

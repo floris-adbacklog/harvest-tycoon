@@ -22,7 +22,7 @@ test('all 16 crops can be planted, watered and harvested; collection is unique',
   apply(s,{type:'field',id:8,action:'harvest'},now+c.duration);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+c.duration),/Plant a crop|Still growing/);
   if(c.perennial)apply(s,{type:'clear_planting',id:8,expectedPlantedAt:s.plots[8].plantedAt},now+c.duration);
-  assert.equal(s.stats['harvest_'+crop],2);
+  assert.equal(s.stats['harvest_'+crop],1,'one crop a harvest, watered or not (22 Oct 2026)');
  }
  assert.equal(s.stats.varieties,16);assert.equal(s.discovered.length,16);
 });

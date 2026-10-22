@@ -6,7 +6,7 @@ const now=Date.UTC(2026,8,24,12),M=60000;
 // A 30-minute crop: care opens after 9 minutes (30%), so water fits in the first 9 minutes.
 const crop=(minutesIn,extra={})=>({crop:'corn',plantedAt:now-minutesIn*M,readyAt:now+(30-minutesIn)*M,careAt:now+(9-minutesIn)*M,watered:false,tended:false,...extra});
 
-test('water belongs to planting: until extra care opens (30% of the growing time), and always in the first minute',()=>{
+test('water belongs to planting: until extra care opens (15% of the growing time since 22 Oct 2026), and always in the first minute',()=>{
  assert.equal(canWater(crop(2),now),true);assert.equal(canWater(crop(8.9),now),true);
  assert.equal(canWater(crop(9),now),false,'care is open: the watering time has passed');assert.equal(canWater(crop(20),now),false);
  assert.equal(canWater(crop(2,{watered:true}),now),false);
