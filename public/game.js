@@ -56,7 +56,7 @@ import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
 import { renderLanguageSettings } from './language-settings.js';
-import { startTranslation, setOwnText, ownWords } from './i18n.js';
+import { startTranslation, setOwnText, ownWords, translateText } from './i18n.js';
 import { watchSelects } from './pretty-select.js';
 import { createInviteUI } from './invite-ui.js';
 import { createFarmShare,photoFrame } from './farm-share.js';
@@ -77,7 +77,7 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
 import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
-import { giftPass } from './farm-state.js';
+import { giftPass,giftMessageText } from './farm-state.js';
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
@@ -342,7 +342,7 @@ function giftPopup(gift,{eyebrow='A GIFT FOR YOU',title='Donation!',icon='gift',
  if(gift.item&&gift.itemCount&&ITEMS[gift.item])rewards.push(`<strong class="reward-item">${art(gift.item)}+${gift.itemCount.toLocaleString('en-US')} ${ITEMS[gift.item].name}</strong>`);
  $('gift-rewards').innerHTML=rewards.join('');
  const note=$('gift-message');
- if(gift.message){setOwnText(note,`“${gift.message}”`,[gift.message]);note.hidden=false;}else{setOwnText(note,text,names);note.hidden=!text;}
+ if(gift.message){const said=giftMessageText(gift.message,translateText);setOwnText(note,`“${said}”`,[said]);note.hidden=false;}else{setOwnText(note,text,names);note.hidden=!text;}
  refreshArt();$('gift-dialog').showModal();
 }
 // Invite a friend (public/invite-ui.js): the reward popups. A level-up celebration goes first; this one waits for it.

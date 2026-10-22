@@ -28,7 +28,7 @@ test('giftPopup fills in only the amounts (and item, if any) that were actually 
  assert.match(js,/if\(gift\.item&&gift\.itemCount&&ITEMS\[gift\.item\]\)rewards\.push\(`<strong class="reward-item">\$\{art\(gift\.item\)\}\+\$\{gift\.itemCount\.toLocaleString\('en-US'\)\} \$\{ITEMS\[gift\.item\]\.name\}<\/strong>`\);/,'an unrecognised item key (an old game version, say) is silently skipped rather than rendering "undefined"');
  // The note is set as text (public/i18n.js setOwnText sets .textContent), never interpolated into the innerHTML string — nothing here
  // needs escaping. The staff's own words stay as written.
- assert.match(js,/setOwnText\(note,`“\$\{gift\.message\}”`,\[gift\.message\]\);note\.hidden=false/);
+ assert.match(js,/setOwnText\(note,`“\$\{said\}”`,\[said\]\);note\.hidden=false/);
  assert.doesNotMatch(js,/gift-message'\)\.innerHTML/);
 });
 test('giftPopup is wired to both delivery paths: a fresh page load and a live reconnect refresh',()=>{
@@ -54,4 +54,15 @@ test('a gift from the admin\'s Edit shows at once in an open game: its notice fe
  // The gift is saved in the farm before its notice is written (admin-service.js), so the load finds it.
  const service=read('supabase/functions/farm-api/admin-service.js');
  assert.ok(service.indexOf("state.pendingGift=")<service.indexOf("kind:'gift'"));
+});
+
+test('a gift message that is a game text shows in the farmer\'s language, in the window and under Notifications (22 Oct 2026)',async()=>{
+ const {GIFT_MESSAGES,giftMessageText}=await import('../game/farm-state.js');
+ assert.ok(GIFT_MESSAGES.includes('To help you upgrade your Warehouse!'));
+ const nl=JSON.parse(read('public/i18n/nl.json'));
+ assert.equal(giftMessageText('To help you upgrade your Warehouse!',text=>nl[text]??null),'Om je te helpen je Pakhuis te upgraden!');
+ assert.equal(giftMessageText('7,000 players!',text=>nl[text]??'vertaald'),'7,000 players!','any other message stays as typed');
+ assert.equal(giftMessageText('To help you upgrade your Warehouse!',()=>null),'To help you upgrade your Warehouse!','English: as written');
+ assert.match(read('public/game.js'),/const said=giftMessageText\(gift\.message,translateText\);setOwnText\(note,`“\$\{said\}”`,\[said\]\)/);
+ assert.match(read('src/chat-ui.js'),/esc\(giftMessageText\(m\[2\],translateText\)\)/);
 });

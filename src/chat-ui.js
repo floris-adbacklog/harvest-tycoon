@@ -8,13 +8,13 @@ import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
-import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EMBLEMS,FAMILY_MIN_LEVEL,familyWeek} from '../public/farm-state.js';
+import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EMBLEMS,FAMILY_MIN_LEVEL,familyWeek,giftMessageText} from '../public/farm-state.js';
 import {familyShareButton} from '../public/family-profile.js';
 import {createFamilyLive,familyCardIds} from './family-live.js';
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
-import {chosenLanguage,ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
+import {chosenLanguage,ownWords,ownLine,ownText,setOwnText,translateText} from '../public/i18n.js';
 import {portalChat,portalOff} from '../public/portal.js';
 import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
 import {wikiSectionTitle} from '../public/wiki-content.js';
@@ -338,7 +338,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const m=/^Donation: you received (.*?)\.(?: “([\s\S]*)”)?$/.exec(String(body??''));
   if(!m)return withAmounts(body);
   const parts=m[1].split(' + ').map(part=>/ for every level$/.test(part)?`${withAmounts(part.replace(/ for every level$/,''))} <span>for every level</span>`:withAmounts(part));
-  return `<span>You’ve received:</span> ${parts.join(' + ')}${m[2]?` <span translate="no">“${esc(m[2])}”</span>`:''}`;
+  return `<span>You’ve received:</span> ${parts.join(' + ')}${m[2]?` <span translate="no">“${esc(giftMessageText(m[2],translateText))}”</span>`:''}`;
  }
  // Notices farm-api writes with a farmer's and a family's name in them (family-service.js requestNotice): each changing part is a name,
  // shown as typed (17 Oct 2026).

@@ -3806,6 +3806,11 @@ export function grantEmailBonus(state,now=Date.now()){if(state.emailBonus)return
 // Since 28 Sep 2026 the sender chooses fixed coins (at most 1,000) or coins per level (at most 50, supabase/staff-gift-per-level.sql):
 // per level, the farmer gets them times their level when the gift arrives, so late farms get a gift that still counts.
 export const STAFF_GIFT_COINS=1000,STAFF_GIFT_COINS_PER_LEVEL=50;
+// A gift's message in the farmer's own language (22 Oct 2026, the owner: "kan dit in verschillende talen"): a message that is exactly
+// one of these is a game text with translations (i18n/catalog.json), shown translated in the "Donation!" window (public/game.js) and
+// under Notifications (src/chat-ui.js giftBody); any other message stays as the staff typed it.
+export const GIFT_MESSAGES=Object.freeze(['To help you upgrade your Warehouse!']);
+export const giftMessageText=(message,translate)=>GIFT_MESSAGES.includes(message)?(translate(message)??message):message;
 export function receiveDonations(state,rows){
  state.donations??=[];const got=[],level=levelOf(state);
  for(const row of rows??[]){

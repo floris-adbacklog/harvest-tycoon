@@ -335,7 +335,7 @@ test('a message from someone else, in any chat, has a small Google Translate lin
 
 test('a gift note from the database shows in the player\'s language: "You’ve received:", the amounts, and the staff\'s words untranslated',()=>{
  const ui=read('src/chat-ui.js'),from=ui.indexOf(' const AMOUNT_ART='),to=ui.indexOf(' function noticeRow(');
- const giftBody=new Function('art','esc',ui.slice(from,to)+';return giftBody;')(k=>`[${k}]`,s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+ const giftBody=new Function('art','esc','giftMessageText','translateText',ui.slice(from,to)+';return giftBody;')(k=>`[${k}]`,s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),(m)=>m,()=>null);
  const html=giftBody('Donation: you received 10 diamonds + 10 coins for every level. “We reached 2.000+ players!”');
  assert.equal(html,'<span>You’ve received:</span> <span class="chat-amount">[diamonds]<b>10</b> diamonds</span> + <span class="chat-amount">[coins]<b>10</b> coins</span> <span>for every level</span> <span translate="no">“We reached 2.000+ players!”</span>');
  assert.equal(giftBody('Donation: you received 50 diamonds.'),'<span>You’ve received:</span> <span class="chat-amount">[diamonds]<b>50</b> diamonds</span>','no note');
