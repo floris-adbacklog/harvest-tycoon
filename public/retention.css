@@ -509,6 +509,8 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 /* A crop's time with water and care (22 Oct 2026): the water and care pictures, small, before the time (seed shop, seed picker). */
 .cared-time{display:inline-flex;align-items:center;white-space:nowrap}.cared-time .game-art{width:13px;height:13px;margin-inline-end:1px}.seed-row-copy small .cared-time .game-art{width:13px;height:13px;vertical-align:0}
 .seed-yield-line .cared-time{margin-inline-end:6px;vertical-align:-3px}.seed-yield-line .cared-time .game-art{width:17px;height:17px}
+/* The growing time before it (22 Oct 2026): the hourglass, a little apart from the time with water and care. */
+.crop-time{display:inline-flex;align-items:center;white-space:nowrap;margin-inline-end:8px;opacity:.85}.crop-time .game-art{width:13px;height:13px;margin-inline-end:2px}.seed-yield-line .crop-time{margin-inline-end:4px;vertical-align:-3px}.seed-yield-line .crop-time .game-art{width:17px;height:17px}.seed-yield-line .crop-time+span{margin-inline-end:10px}
 .seed-filters button{white-space:nowrap;padding-inline:6px}
 @media(max-width:340px){.seed-filters button{padding-inline:3px;font-size:12px}}
 

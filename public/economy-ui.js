@@ -79,13 +79,16 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  // kosten met water en care"), with the water and care pictures beside it; the dialog's line under the filter says so in words. A field's
  // own timer keeps its real time left.
  const caredTime=(key,regrowing=false)=>`<span class="cared-time" title="With water and care">${art('water')}${art('care')}${seconds(caredDuration(state,key,regrowing,farmNow()))}</span>`;
- const cropPrice=key=>seasonCrop(key)?`${seasonSeedsOf(state,key)} packets · ${caredTime(key)}`:`${seedCost(state,key)} · ${caredTime(key)}`;
+ // Both times (22 Oct 2026, the owner: "zet bij crops total tijd en tijd met water en full care"): the growing time on its own (an
+ // hourglass), then the time with water and care.
+ const growTimes=(key,regrowing=false)=>`<span class="crop-time" title="Growing time">${art('hourglass')}${seconds(cropDuration(state,key,regrowing,farmNow()))}</span>${caredTime(key,regrowing)}`;
+ const cropPrice=key=>seasonCrop(key)?`${seasonSeedsOf(state,key)} packets · ${growTimes(key)}`:`${seedCost(state,key)} · ${growTimes(key)}`;
  function chooseCrop(key){if(seasonCrop(key)?seasonSeedsOf(state,key)<1||!seasonCropOpen(key,farmNow()):!cropUnlocked(state,key)){notify(cropUnlockHint(state,key));return;}selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').innerHTML=cropPrice(key);onCrop(key);}
  // The season crop's row on top of the seeds while its season runs or a farm still has packets: the packets instead of a price.
  function seasonSeedRows(){
   return Object.keys(SEASON_CROPS).filter(key=>seasonSeedsOf(state,key)>0||seasonCropOpen(key,farmNow())&&levelOf(state)>=10).map(key=>{
    const c=CROPS[key],n=seasonSeedsOf(state,key),open=seasonCropOpen(key,farmNow()),usable=open&&n>0;
-   const line=!open?'This crop only grows in its season. Your seed packets keep until then.':n?`${caredTime(key)} · sells for ${marketQuote(key,farmNow()).price}`:'Seed packets come from the Season Pass.';
+   const line=!open?'This crop only grows in its season. Your seed packets keep until then.':n?`${growTimes(key)} · sells for ${marketQuote(key,farmNow()).price}`:'Seed packets come from the Season Pass.';
    return `<button class="seed-row crop-${key} is-season ${selectedCrop===key?'selected':''} ${usable?'':'is-locked'}" data-choose-crop="${key}" ${usable?'':'disabled'} aria-pressed="${selectedCrop===key}"><span class="seed-row-art">${art(key)}</span><span class="seed-row-copy"><strong>${c.name}</strong><small>${line}</small></span><span class="seed-row-price">${art(`${key}-seeds`)}${n}</span></button>`;
   }).join('');
  }
@@ -96,7 +99,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    // One compact row per crop, like the market: picture, name (plus "Regrows" for orchard crops), time and today's price,
    // the seed price on the right. The filter tabs already say how quick a crop is.
    const locked=!cropUnlocked(state,key);
-   return `<button class="seed-row crop-${key} ${selectedCrop===key?'selected':''} ${locked?'is-locked':''}" data-choose-crop="${key}" ${locked?'disabled':''} aria-pressed="${selectedCrop===key}"${paceTitle?` title="${paceTitle}"`:''}><span class="seed-row-art">${art(key)}</span><span class="seed-row-copy"><strong>${c.name}${c.perennial?'<em class="seed-pace is-regrow">Regrows</em>':''}</strong><small>${locked?`${art('lock','unlock-lock')} ${cropUnlockHint(state,key)}`:`${caredTime(key)} · sells for ${marketQuote(key,farmNow()).price}`}</small></span><span class="seed-row-price">${art('coins')}${seedCost(state,key)}</span>${selectedCrop===key?'<span class="seed-row-check" aria-hidden="true">✓</span>':''}</button>`;
+   return `<button class="seed-row crop-${key} ${selectedCrop===key?'selected':''} ${locked?'is-locked':''}" data-choose-crop="${key}" ${locked?'disabled':''} aria-pressed="${selectedCrop===key}"${paceTitle?` title="${paceTitle}"`:''}><span class="seed-row-art">${art(key)}</span><span class="seed-row-copy"><strong>${c.name}${c.perennial?'<em class="seed-pace is-regrow">Regrows</em>':''}</strong><small>${locked?`${art('lock','unlock-lock')} ${cropUnlockHint(state,key)}`:`${growTimes(key)} · sells for ${marketQuote(key,farmNow()).price}`}</small></span><span class="seed-row-price">${art('coins')}${seedCost(state,key)}</span>${selectedCrop===key?'<span class="seed-row-check" aria-hidden="true">✓</span>':''}</button>`;
   }).join('');
   // What is still locked goes to the bottom, folded, on every farm (older farms too), so what you can use comes first.
   foldLocked($('crop-catalog'),'[data-choose-crop]:not(.is-season)',b=>!cropUnlocked(state,b.dataset.chooseCrop),'Seeds to unlock','seeds-locked');});

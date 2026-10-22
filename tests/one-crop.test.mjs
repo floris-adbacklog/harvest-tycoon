@@ -97,9 +97,11 @@ test('per field and hour: the same crops for every way of playing, the same wort
 test('the seed shop and the seed picker show a crop\'s time with water and care, with the water and care pictures; the fields keep their real time',()=>{
  const ui=read('public/economy-ui.js'),html=read('public/farm.html');
  assert.match(ui,/const caredTime=\(key,regrowing=false\)=>`<span class="cared-time" title="With water and care">\$\{art\('water'\)\}\$\{art\('care'\)\}\$\{seconds\(caredDuration\(state,key,regrowing,farmNow\(\)\)\)\}<\/span>`;/);
- assert.match(ui,/\$\('selected-crop-price'\)\.innerHTML=cropPrice\(key\);/);assert.match(ui,/:`\$\{caredTime\(key\)\} · sells for \$\{marketQuote\(key,farmNow\(\)\)\.price\}`\}<\/small>/);
- assert.match(html,/<p class="seed-yield-line"><span class="cared-time"><i data-game-art="water"><\/i><i data-game-art="care"><\/i><\/span>Times with water and care\. Every harvest gives 1 crop\.<\/p>/);
+ assert.match(ui,/\$\('selected-crop-price'\)\.innerHTML=cropPrice\(key\);/);assert.match(ui,/:`\$\{growTimes\(key\)\} · sells for \$\{marketQuote\(key,farmNow\(\)\)\.price\}`\}<\/small>/);
+ assert.match(html,/<p class="seed-yield-line"><span class="crop-time"><i data-game-art="hourglass"><\/i><\/span><span>Growing time<\/span> <span class="cared-time"><i data-game-art="water"><\/i><i data-game-art="care"><\/i><\/span>Times with water and care\. Every harvest gives 1 crop\.<\/p>/);
  assert.match(read('public/retention.css'),/\.cared-time\{display:inline-flex/);
+ // Both times (22 Oct 2026): the growing time with an hourglass before the time with water and care.
+ assert.match(ui,/const growTimes=\(key,regrowing=false\)=>`<span class="crop-time" title="Growing time">\$\{art\('hourglass'\)\}\$\{seconds\(cropDuration\(state,key,regrowing,farmNow\(\)\)\)\}<\/span>\$\{caredTime\(key,regrowing\)\}`;/);
  assert.doesNotMatch(read('public/game.js'),/\+1 crop/,'no "+1 crop" for water or care any more');
  const s=farm();assert.equal(caredDuration(s,'wheat',false,now),30000,'wheat: 2 minutes, 30 seconds with water and care (care opens at 18 s, above the 15-second minimum)');
  assert.ok(caredDuration(s,'apples',true,now)<cropDuration(s,'apples',true,now)*.26);
