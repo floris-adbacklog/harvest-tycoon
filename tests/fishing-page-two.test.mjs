@@ -267,7 +267,7 @@ test('the wiki explains page two from the rules: from level 20, 50 diamonds for 
  const pondPart=html=>html.slice(html.indexOf('id="sec-fishing-pond"'),html.indexOf('</section>',html.indexOf('id="sec-fish-book-page-2"')));
  const site=pondPart(wikiArticle('helpers',{}).html),high=pondPart(wikiArticle('helpers',{level:30}).html),at20=pondPart(wikiArticle('helpers',{level:TWO}).html);
  for(const html of [site,high,at20]){
-  assert.match(html,/<h3>Fish book page 2<\/h3>/);
+  assert.match(html,/<h3>(?:<span class="game-art[^"]*"[^>]*><\/span>)?Fish book page 2<\/h3>/);
   assert.ok(html.includes('Catch all 16 kinds, on both pages, for 50 diamonds more, once: 75 diamonds in all.'));
   assert.ok(html.includes('one of your first 60 fish from level 20 is always a sturgeon.'));
   assert.ok(html.includes('Catch all 8 kinds for 25 diamonds, once.'));
@@ -298,7 +298,9 @@ test('the wiki below level 20 is the pond section of 01ff2cd, word for word; pag
  const O=await import(asModule(old.replace("import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';",oldPrizes).replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`)));
  // One sentence more since 17 Oct 2026: the pond has its own quests.
  const quests=html=>html.replace('<li>Fishing counts for no events, challenges or Family Chest.</li>','<li>The pond has its own quests, from your first fish to a thousand. Fishing counts for no events, challenges or Family Chest.</li>');
- for(const level of [1,4,10,19])assert.equal(pond(wikiArticle('helpers',{level}).html),quests(pond(O.wikiArticle('helpers',{level}).html)),`level ${level}`);
+ // Since 22 Oct 2026 a heading has a painted icon in front of its words (wiki-content.js wikiIcon); the words are the same.
+ const bare=html=>html.replace(/(<h3>)<span class="game-art[^"]*"[^>]*><\/span>/g,'$1');
+ for(const level of [1,4,10,19])assert.equal(bare(pond(wikiArticle('helpers',{level}).html)),quests(pond(O.wikiArticle('helpers',{level}).html)),`level ${level}`);
  assert.notEqual(pond(wikiArticle('helpers',{level:30}).html),pond(O.wikiArticle('helpers',{level:30}).html),'from 20 the section is page two\'s');
 });
 

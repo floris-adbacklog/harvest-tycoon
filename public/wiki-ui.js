@@ -45,9 +45,11 @@ function home(){
 
 // The window's heading (18 Oct 2026, the window shell): on a topic its title, and the way back to all topics as the round back button in
 // front of it; on the home page How to play again. Only in the game's window.
-function headerBack(el,title){
+// Its badge (22 Oct 2026, game style): the topic's own picture in front of its title, the book on the home page.
+function headerBack(el,title,picture='guide'){
  const dialog=dialogOf(),heading=dialog?.querySelector('.dialog-heading');if(!heading)return;
  heading.querySelector('.wiki-back')?.remove();
+ const badge=heading.querySelector('.dialog-badge');if(badge&&badge.dataset.wikiBadge!==picture){const t=document.createElement('template');t.innerHTML=art(picture,'dialog-badge');const next=t.content.firstElementChild;if(next){next.dataset.wikiBadge=picture;badge.replaceWith(next);}}
  const h=dialog.querySelector('#help-title');
  if(title==null){if(h)h.textContent='How to play';return;}
  const back=el?.querySelector('.wiki-back');
@@ -59,7 +61,7 @@ function topic(id,anchor=''){
  const el=root(),article=wikiArticle(id,ctx());if(!el||!article)return home();
  view=id;
  el.innerHTML=`<div class="wiki" data-wiki-view="${id}"><button type="button" class="small-button wiki-back" data-wiki-home>‹ All topics</button>${wikiHero(article)}${wikiJump(article)}<article class="wiki-article">${article.html}</article><section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t,ctx())).join('')}</div></section></div>`;
- refreshArt();stickyOffset();showInstall(el);fadeJump(el);addCopy(el,id);showBack(el);headerBack(el,article.title);
+ refreshArt();stickyOffset();showInstall(el);fadeJump(el);addCopy(el,id);showBack(el);headerBack(el,article.title,article.art);
  const target=anchor&&reveal(anchor);
  if(target)land(target);else scrollTop();
 }

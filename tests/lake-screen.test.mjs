@@ -178,13 +178,13 @@ test('the wiki: a Village lake section in The Village only, from the rules; page
  for(const id of ['helpers','getting-started'])assert.equal(O.wikiArticle(id,{level:150}).html,wikiArticle(id,{level:150}).html,`${id}: the farm's topics as they were (the pond's section too)`);
  for(const level of [100,119]){
   const html=O.wikiArticle('village',{level}).html,part=lake(html);
-  assert.ok(part.includes('<h3>Village lake</h3>'),`level ${level}`);assert.ok(!html.includes('sec-village-lake-page-2')&&!part.includes('From level 120'),`level ${level}: page one only`);
+  assert.match(part,/<h3>(?:<span class="game-art[^"]*"[^>]*><\/span>)?Village lake<\/h3>/,`level ${level}`);assert.ok(!html.includes('sec-village-lake-page-2')&&!part.includes('From level 120'),`level ${level}: page one only`);
   for(const key of G.LAKE_FISH_PAGES[1])assert.ok(!html.includes(`fish-${key}`),`level ${level}: no ${key}`);
   assert.ok(part.includes(`<td>${G.LAKE_FISH.bleak.chance}%</td>`)&&part.includes(`Coins at level ${level}`));
  }
  const at120=O.wikiArticle('village',{level:120}).html,site=O.wikiArticle('village',{}).html;
  for(const html of [at120,site]){
-  assert.ok(html.includes('<h3>Village lake page 2</h3>'));for(const f of Object.values(G.LAKE_FISH))assert.ok(html.includes(f.name),f.name);
+  assert.match(html,/<h3>(?:<span class="game-art[^"]*"[^>]*><\/span>)?Village lake page 2<\/h3>/);for(const f of Object.values(G.LAKE_FISH))assert.ok(html.includes(f.name),f.name);
   for(const text of ['Catch all 10 kinds for 35 diamonds, once.','your lake fish number 120 is him','Catch all 20 kinds, on both pages, for 65 diamonds more, once: 100 diamonds in all.','one of your first 60 lake fish from level 120 is always a Glacier Ghost.',
    '5 casts to start, then a new one every 20 minutes, up to 5 waiting. They are the lake’s own'])assert.ok(html.includes(text),text);
  }

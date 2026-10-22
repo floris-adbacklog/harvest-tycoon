@@ -333,8 +333,8 @@ test('a building is one closed row (picture, name, level, cost and what it makes
 });
 test('the home: Getting started above two even columns, an odd last tile across the row, and Read first as a badge that stays whole',async()=>{
  const {wikiGroups}=await import('../public/wiki-content.js');const home=wikiGroups();
- assert.match(home,/<section class="wiki-group"><h3>Start here<\/h3><a class="wiki-tile is-featured" href="\/wiki\/getting-started"[^]*?<b class="wiki-badge">Read first<\/b><\/strong>[^]*?<\/a><div class="wiki-tiles">/);
- assert.match(wikiGroups({level:20},{featured:false}),/<h3>Start here<\/h3><div class="wiki-tiles"><a class="wiki-tile" href="\/wiki\/getting-started"/);
+ assert.match(home,/<section class="wiki-group"><h3>(?:<span class="game-art[^"]*"[^>]*><\/span>)?Start here<\/h3><a class="wiki-tile is-featured" href="\/wiki\/getting-started"[^]*?<b class="wiki-badge">Read first<\/b><\/strong>[^]*?<\/a><div class="wiki-tiles">/);
+ assert.match(wikiGroups({level:20},{featured:false}),/<h3>(?:<span class="game-art[^"]*"[^>]*><\/span>)?Start here<\/h3><div class="wiki-tiles"><a class="wiki-tile" href="\/wiki\/getting-started"/);
  const css=read('public/wiki.css');
  assert.match(css,/\.wiki-tiles\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}\n\.wiki-tiles>\.wiki-tile:last-child:nth-child\(odd\)\{grid-column:1\/-1\}/);
  assert.match(css,/\.wiki-badge\{[^}]*white-space:nowrap\}/);assert.doesNotMatch(css,/content:'Read first'/,'a CSS text is never translated');

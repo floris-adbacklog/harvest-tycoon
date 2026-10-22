@@ -1,5 +1,5 @@
 import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,COIN_PACK,DAILY_BOOST_MS,giftCoins,COMEBACK_MIN_DAYS,COMEBACK_MAX_DAYS,COMEBACK_EVERY_DAYS,COMEBACK_COINS,comebackCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,MARKET_PAYOUT_MULTIPLIER,familyOrderPay,FAMILY_ORDER_LINES,FAMILY_ORDER_VALUE,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,HAND_FULL_LEVEL,HAND_REST_PER_LEVEL,FIRST_BATCH_MS,TRACTOR_FUEL_BASE,FULL_CARE_COST,SHIFT_MS,SHIFT_COINS_PER_DIAMOND,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fieldFuel,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,LAB_FULL_BEDS,MILLER_LEVEL,MILLER_ORDER,MILLER_PREMIUM,MILLER_DIAMONDS,millerValue,POND_BOOK_REFILL_MS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,VISITOR_DIAMONDS,GIANT_COINS_PER_KG,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,TOP_XP_FROM,XP_CURVE,FAMILY_EVENT_BONUS,worldTwoBuilding,worldTwoItem,VILLAGE_GOODS,MASTER_UPGRADES,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,TOP_BUILDING_LEVEL,DOUBLE_BATCH_PER_LEVEL,VILLAGE_QUESTS,questXp,VILLAGE_BRIEFS,VILLAGE_BUILD_XP,VILLAGE_UPGRADE_GOODS,VILLAGE_THIRD_BOARD,VILLAGE_REQUEST_BOARDS,VILLAGE_REQUEST_BOARDS_MAX,VILLAGE_REQUEST_WAIT,VILLAGE_XP_SHARE,VILLAGE_PREMIUM,villageRequestValue,upgradeGoods,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_TILES_FROM,VILLAGE_UPGRADE_TILES,VILLAGE_THREE_KINDS,BUILDER_CRATE_COINS,upgradeCost,BOAT_GOODS,BOAT_PREMIUM,BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,BOAT_XP_SHARE,BOAT_RETURN,BOAT_QUAY_RETURN,boatValue,WORLD_TWO_TOP,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,SEASON_PASS,passPhase,passTotals,BOOST_LENGTH_NAMES,expansionCost,expansionMaterials,expansionLevel} from './farm-state.js';
-import {art} from './visual-icons.js';
+import {art,artSource} from './visual-icons.js';
 // Natural fertilizer's share (21 Oct 2026): its own section in Fields and crops.
 import {FERTILIZER_CUT} from './farm-state.js';
 // The Fishing pond (11 Oct 2026): its section, only once the pond is open (POND_OPEN).
@@ -59,12 +59,13 @@ const avatarsBody=(portal=false)=>`<p>Pick your avatar in Settings. ${PLAYER_AVA
 export const STARTER_DAYS=7;
 // The home page in three groups; "Getting started" leads as the one to read first.
 export const WIKI_GROUPS=Object.freeze([
- {title:'Start here',ids:['getting-started','crops','buildings']},
- {title:'Grow your farm',ids:['market','daily','quests','helpers']},
- {title:'Together and extras',ids:['family','events','chat','diamonds','estate','village','account']}
+ {title:'Start here',art:'tool-seeds',ids:['getting-started','crops','buildings']},
+ {title:'Grow your farm',art:'harvest',ids:['market','daily','quests','helpers']},
+ {title:'Together and extras',art:'family-sharing',ids:['family','events','chat','diamonds','estate','village','account']}
 ]);
 // Each topic's header has its own soft colour.
-const TINTS={'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',village:'#dde6ee',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'};
+export const WIKI_TINTS=Object.freeze({'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',village:'#dde6ee',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'});
+const TINTS=WIKI_TINTS;
 
 const number=n=>Number(n).toLocaleString('en-US');
 export function wikiTime(ms){
@@ -80,7 +81,45 @@ let scope=null;
 const item=(key,count,plain=false)=>{const to=!plain&&scope&&itemTarget(key),inner=`${art(key)}<span>${count>1?`${number(count)} `:''}${itemName(key)}</span>`;return to?`<a class="wiki-item" href="${scope.to(...to)}" data-wiki-topic="${to[0]}" data-wiki-anchor="${to[1]}">${inner}</a>`:`<span class="wiki-item">${inner}</span>`;};
 const items=list=>Object.entries(list).map(([key,count])=>item(key,count)).join('');
 const slug=text=>'sec-'+text.toLowerCase().replace(/<[^>]+>/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-const section=(title,body)=>`<section class="wiki-section" id="${slug(title)}"><h3>${title}</h3>${body}</section>`;
+// A painted game icon beside a title (22 Oct 2026, the owner: "maak de ingelogde wiki en uitgelogd ook meer in nieuwe game-stijl"): a
+// picture drawn by the stylesheet, so a heading's words stay exactly its words (no alt text read with it, on the website or in the game).
+export const wikiIcon=(key,cls='')=>{
+ const source=artSource(key);if(!source)return '';
+ if(source.columns>1)return art(key,cls);
+ return `<span class="game-art wiki-pic${cls?` ${cls}`:''}" aria-hidden="true" style="background-image:url('${source.src}')"></span>`;
+};
+// Each section's own icon, by its spot; one that is not listed takes its topic's picture (wikiArticle).
+const SECTION_ART={
+ 'sec-the-whole-game-in-four-steps':'seeds','sec-where-to-find-things':'farm','sec-beginner-guide':'guide','sec-working-your-fields':'harvest','sec-help-at-the-start':'boost',
+ 'sec-coins-xp-and-diamonds':'coins','sec-your-first-20-levels':'trophy','sec-what-to-do-next':'quests','sec-coming-back':'collect-all','sec-need-help':'feedback','sec-saved-for-you':'lock',
+ 'sec-play-it-as-an-app':'send',
+ 'sec-planting':'seeds','sec-water-and-care':'water','sec-natural-fertilizer':'fertilizer','sec-trees-and-bushes':'apples','sec-more-fields':'farmhouse','sec-medals':'trophy',
+ 'sec-silo-research':'silo','sec-every-crop':'vegetables',
+ 'sec-how-buildings-work':'hammer',
+ 'sec-selling':'market','sec-how-far-prices-move':'double-coins','sec-farm-stall':'stall',
+ 'sec-quests':'quests','sec-level-rewards':'xp','sec-what-opens-when':'lock',
+ 'sec-a-gift-every-day':'gift','sec-back-after-a-while':'letter','sec-daily-challenges':'trophy','sec-delivery-orders':'cart','sec-halloween-pass':'ghostpumpkin','sec-season-pass':'vip',
+ 'sec-a-new-day':'bell',
+ 'sec-together-is-better':'family-members','sec-ranks-and-the-top-farmer':'rank-gold','sec-the-family-chest':'family-chest-wood','sec-the-family-order':'family-weekly-order',
+ 'sec-the-weekly-tournament':'family-tournament','sec-family-level':'trophy','sec-your-family-flag':'family-barn','sec-the-family-pages':'family-management',
+ 'sec-collecting-rewards':'collect-all','sec-family-chat':'chat','sec-events-together':'live-events','sec-changing-family':'invite-friends','sec-away-too-long':'letter',
+ 'sec-a-new-event-every-hour':'live-events','sec-how-it-works':'quests','sec-leagues':'trophy',
+ 'sec-tractor':'tractor','sec-farm-chores':'chores','sec-a-helping-hand':'helping-hand','sec-fishing-pond':'fishingpond','sec-fish-book-page-2':'fish-goldencarp',
+ 'sec-your-second-world':'village-badge','sec-golden-briefs':'letter','sec-landmarks':'landmark-windpump','sec-villagers-requests':'supply-cart','sec-market-week':'villagemarket',
+ 'sec-the-miller-s-order':'villager-miller','sec-village-lake':'villagelake','sec-village-lake-page-2':'fish-salmon','sec-diamonds-in-the-village':'diamonds',
+ 'sec-past-level-10':'mastertools','sec-builder-s-crates':'builderscrate','sec-made-on-the-farm':'packedlunch','sec-village-quests':'quests',
+ 'sec-something-to-grow-towards':'estate','sec-estate-chapters':'log','sec-estate-workshop-improvements':'estateworkshop','sec-after-level-90':'master','sec-heirlooms':'seedlab',
+ 'sec-valley-projects':'valleyprojects',
+ 'sec-earning-diamonds':'diamonds','sec-finish-now':'instant-harvest','sec-coins-for-diamonds':'coin-cart','sec-boosts':'boost','sec-vip':'vip','sec-buying-diamonds':'pack-chest',
+ 'sec-the-chat':'chat','sec-your-choice':'settings','sec-the-admins-and-the-moderators':'admin','sec-house-rules':'alert',
+ 'sec-your-account':'farm','sec-settings':'settings','sec-feedback':'feedback','sec-avatars':'vip-farmer','sec-my-farmer':'farmhand','sec-confirm-your-email':'letter',
+ 'sec-invite-a-friend':'invite-friends','sec-privacy':'lock'
+};
+// A league's section (Events): a cup.
+const sectionArt=id=>SECTION_ART[id]??(/-(?:league|legends)$/.test(id)?'grand-fair':null)??TOPIC_ART;
+// The topic being written (wikiArticle), for the icon of a section that has none of its own.
+let TOPIC_ART='guide';
+const section=(title,body)=>{const id=slug(title);return `<section class="wiki-section" id="${id}"><h3>${wikiIcon(sectionArt(id))}${title}</h3>${body}</section>`;};
 // On a phone the long tables become cards (CSS shows one or the other).
 const dual=(tableHtml,cards)=>`<div class="wiki-dual">${tableHtml}<ul class="wiki-cards">${cards.join('')}</ul></div>`;
 // row: the card stands for a table row with that id (a crop, a field), so a link to the row finds the card on a phone (wiki-ui.js).
@@ -793,7 +832,7 @@ const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','
 
 export function wikiArticle(id,ctx={}){
  const topic=TOPIC[id];if(!topic||!topicShown(id,ctx))return null;const h=helpers(ctx);
- let html;scope=h;try{html=BODIES[id](h);}finally{scope=null;}
+ let html;scope=h;TOPIC_ART=topic.art;try{html=BODIES[id](h);}finally{scope=null;TOPIC_ART='guide';}
  return {...topic,...(h.portal&&PORTAL_BLURBS[id]?{blurb:PORTAL_BLURBS[id]}:{}),html,related:(RELATED[id]??[]).filter(r=>topicShown(r,ctx)).map(r=>TOPIC[r])};
 }
 // The heading of a spot on a topic (Oct 2026; the chat shows a wiki link as a chip with it): a section's or a building's title, a crop's
@@ -828,11 +867,11 @@ const topicShown=(id,ctx)=>id!=='village'||ctx.level==null||ctx.level>=WORLD_TWO
 // and an odd last tile takes the whole row, so a group never ends in a gap (wiki.css).
 export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>{
  const ids=g.ids.filter(id=>topicShown(id,ctx)),first=featured&&ids[0]==='getting-started';
- return `<section class="wiki-group"><h3>${g.title}</h3>${first?wikiTile(TOPIC[ids[0]],ctx,{featured:true}):''}<div class="wiki-tiles">${ids.slice(first?1:0).map(id=>wikiTile(TOPIC[id],ctx)).join('')}</div></section>`;
+ return `<section class="wiki-group"><h3>${wikiIcon(g.art)}${g.title}</h3>${first?wikiTile(TOPIC[ids[0]],ctx,{featured:true}):''}<div class="wiki-tiles">${ids.slice(first?1:0).map(id=>wikiTile(TOPIC[id],ctx)).join('')}</div></section>`;
 }).join('');
 // "Read next" under a topic: a short row per topic, picture and title.
-export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
-export const wikiTile=(topic,ctx={},{featured=false}={})=>{const h=helpers(ctx);return `<a class="wiki-tile${featured?' is-featured':''}" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}">${art(topic.art)}<strong>${topic.title}${featured?' <b class="wiki-badge">Read first</b>':''}</strong><span>${h.portal&&PORTAL_BLURBS[topic.id]||topic.blurb}</span><i aria-hidden="true">›</i></a>`;};
+export const wikiNext=(topic,ctx={})=>{const h=helpers(ctx);return `<a class="wiki-next" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}" style="--tint:${TINTS[topic.id]??'#efe6d8'}">${art(topic.art)}<strong>${topic.title}</strong><i aria-hidden="true">›</i></a>`;};
+export const wikiTile=(topic,ctx={},{featured=false}={})=>{const h=helpers(ctx);return `<a class="wiki-tile${featured?' is-featured':''}" href="${h.href(topic.id)}" data-wiki-topic="${topic.id}" style="--tint:${TINTS[topic.id]??'#efe6d8'}">${art(topic.art)}<strong>${topic.title}${featured?' <b class="wiki-badge">Read first</b>':''}</strong><span>${h.portal&&PORTAL_BLURBS[topic.id]||topic.blurb}</span><i aria-hidden="true">›</i></a>`;};
 
 // The search box and its quick searches, the same in How to play and on the website. App comes first and goes straight to how to
 // install it: many players do not know there is one.

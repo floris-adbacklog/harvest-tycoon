@@ -198,7 +198,7 @@
 @font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/dm-sans-bold.ttf') format('truetype')}
 .wiki-page .wiki-facts,.wiki-page .wiki-chips,.wiki-page .wiki-next-list,.wiki-page .wiki-cards{margin-left:0;padding-left:0}
 .wiki-page .wiki-facts li,.wiki-page .wiki-chips li,.wiki-page .wiki-cards li{margin:0}
-.wiki-page .wiki-jump-wrap{margin:0 -8px 8px}.wiki-page .wiki-jump{padding:10px 8px}
+.wiki-page .wiki-jump-wrap{margin:0 0 8px}
 .wiki-page .wiki-group>h3{margin-top:4px}
 .wiki-page .legal-card{width:min(980px,calc(100% - 32px))}
 .wiki-page .wiki-crumbs{margin:0 0 14px;font-size:14px}
@@ -266,3 +266,145 @@ html[data-portal] .wiki-copy{display:none!important}
 /* The window shell (18 Oct 2026): a topic's title is the window's title, with the round way back to all topics in front of it; the topic's
    banner keeps its picture and its line. */
 #help-dialog .wiki-hero h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ---- Game style (22 Oct 2026, the owner: "maak de ingelogde wiki en uitgelogd ook meer in nieuwe game-stijl", option 2) ----
+   How to play and the website look like the game's windows: a painted icon before every title and heading (wiki-content.js wikiIcon),
+   the jump bar as the game's tabs, crops, recipes, goods and fish as item cards with their pictures on every screen, and cards, chips
+   and buttons with the sturdy rim and the edge underneath of buttons.css and dialog-shell.css. The website loads neither sheet, so every
+   colour falls back to the same token value. */
+.wiki{--wiki-rim:var(--panel-line,#e6ddd1);--wiki-edge:var(--panel-edge,#e2d3b3);--wiki-card:var(--panel-card,#fbf8f3);--wiki-panel:var(--panel,#fffdf5);--wiki-ink:var(--ink,#453e28)}
+/* A single picture drawn by the stylesheet (wikiIcon): the whole picture, never stretched. */
+.wiki .wiki-pic{background-color:transparent;background-position:center;background-size:contain;background-repeat:no-repeat}
+/* A picture on a tile of its own colour (a topic's tint, cream-gold for an item): a sprite's neighbours stay out of the tile's padding. */
+.wiki :is(.wiki-tile,.wiki-next)>.game-art,.wiki .wiki-card>.game-art{box-sizing:border-box;padding:5px;border-radius:14px;background-color:var(--tile,#f6ecd3);background-origin:content-box;box-shadow:inset 0 -3px 0 #5a43200f}
+.wiki :is(.wiki-tile,.wiki-next)>.game-art{--tile:var(--tint,#f3ecdf)}
+.wiki :is(.wiki-tile,.wiki-next)>.game-art-sprite,.wiki .wiki-card>.game-art-sprite{background-image:var(--art-sheet),linear-gradient(var(--tile,#f6ecd3),var(--tile,#f6ecd3));background-size:var(--art-size) var(--art-size),100% 100%;background-position:var(--art-position),0 0;background-origin:content-box,border-box;background-clip:content-box,border-box;background-repeat:no-repeat}
+
+/* Headings: the icon in front, the house ink. */
+.wiki .wiki-section>h3,.wiki .wiki-building>summary h3{gap:10px;color:var(--wiki-ink)}
+.wiki .wiki-section>h3{font-size:19px}
+.wiki .wiki-section>h3>.game-art{width:36px;height:36px}
+.wiki .wiki-section{border-top:2px solid #f1e9dc}
+/* The home page's groups: a heading with its icon, no small capitals. */
+.wiki .wiki-group>h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;color:var(--wiki-ink);font:700 18px/1.2 'Outfit',sans-serif;letter-spacing:0;text-transform:none}
+.wiki .wiki-group>h3>.game-art{width:30px;height:30px}
+
+/* Search and the quick searches: a sunken field, and the cream second buttons. */
+.wiki .wiki-search{border:2px solid var(--wiki-rim);border-radius:16px;background:#fff;box-shadow:inset 0 3px 0 #f3ecdf}
+.wiki .wiki-search:focus-within{border-color:#c2912d;box-shadow:inset 0 3px 0 #f3ecdf,0 0 0 3px #f1dfb4}
+.wiki .wiki-quick{gap:8px;margin:-2px 0 20px}
+.wiki .wiki-quick :is(button,a){min-height:36px;padding:4px 14px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:var(--btn-second,#f7f0e3);box-shadow:inset 0 2px 0 #ffffff47,0 3px 0 var(--btn-second-edge,#e2d3b3);color:var(--btn-second-text,#5b4520);transition:transform .12s,box-shadow .12s}
+.wiki .wiki-quick :is(button,a):hover{background:var(--btn-second-hover,#f0e5d1)}
+.wiki .wiki-quick :is(button,a):active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-second-edge,#e2d3b3)}
+.wiki .wiki-results{border:2px solid var(--wiki-rim);border-radius:16px;box-shadow:0 3px 0 var(--wiki-edge)}
+
+/* Topic tiles and Read next: framed cards with the edge underneath, the picture on the topic's tint. */
+.wiki .wiki-tile{grid-template-columns:54px minmax(0,1fr) auto;padding:12px 14px 12px 12px;border:2px solid var(--wiki-rim);border-radius:18px;background:var(--wiki-panel);box-shadow:0 4px 0 var(--wiki-edge)}
+.wiki .wiki-tile:hover{box-shadow:0 6px 0 var(--wiki-edge)}
+.wiki .wiki-tile:active{box-shadow:0 1px 0 var(--wiki-edge)}
+.wiki .wiki-tile>.game-art{width:54px;height:54px}
+.wiki .wiki-tile.is-featured{grid-template-columns:68px minmax(0,1fr) auto;border-color:#b9d3a3;background:linear-gradient(135deg,#eef6e6,#fffdf5);box-shadow:0 4px 0 #cfe2bd}
+.wiki .wiki-tile.is-featured>.game-art{width:68px;height:68px}
+.wiki .wiki-badge{background:var(--btn-main,#3f8a4a);box-shadow:0 2px 0 var(--btn-main-edge,#2b5e32)}
+.wiki .wiki-next{min-height:60px;padding:8px 12px 8px 8px;border:2px solid var(--wiki-rim);border-radius:16px;background:var(--wiki-panel);box-shadow:0 3px 0 var(--wiki-edge)}
+.wiki .wiki-next:hover{background:var(--btn-second,#f7f0e3)}
+.wiki .wiki-next>.game-art{width:42px;height:42px;padding:4px;border-radius:12px}
+.wiki .wiki-next-list{gap:10px}
+
+/* A topic's banner in How to play: a framed card in its own colour. */
+.wiki .wiki-hero{border:2px solid #e6ddd1;border-color:color-mix(in srgb,var(--tint) 55%,#c9b48f);box-shadow:0 4px 0 #e2d3b3;box-shadow:0 4px 0 color-mix(in srgb,var(--tint) 45%,#c9b48f)}
+
+/* The jump bar as the game's tabs: a sunken track, every spot a raised cream tab with its picture. */
+.wiki .wiki-jump-wrap{padding:8px 0;margin-bottom:6px;background:var(--wiki-panel)}
+.wiki .wiki-jump{gap:6px;padding:4px 4px 7px;border:1px solid #e3d6c1;border-radius:16px;background:#efe6d8;box-shadow:inset 0 2px 0 #e6dac7}
+.wiki .wiki-jump a{min-height:38px;padding:3px 12px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:var(--wiki-panel);box-shadow:0 3px 0 var(--btn-second-edge,#e2d3b3);color:var(--btn-second-text,#5b4520);font-size:13.5px}
+.wiki .wiki-jump a:has(>.game-art){padding-inline-start:6px}
+.wiki .wiki-jump a:hover{background:var(--btn-second,#f7f0e3)}
+.wiki .wiki-jump a:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-second-edge,#e2d3b3)}
+.wiki .wiki-jump .game-art{width:26px;height:26px}
+.wiki .wiki-jump-wrap::after{top:9px;bottom:9px;right:1px;width:44px;border-radius:0 15px 15px 0;background:linear-gradient(90deg,#efe6d800,#efe6d8 75%)}
+
+/* Fact cards, tables and chips: the sturdy rim and the edge underneath. */
+.wiki .wiki-facts{gap:12px}
+.wiki .wiki-facts li{border:2px solid var(--wiki-rim);border-radius:16px;background:var(--wiki-card);box-shadow:0 3px 0 var(--wiki-edge)}
+.wiki .wiki-facts li>.game-art{width:42px;height:42px}
+.wiki .wiki-table-wrap{border:2px solid var(--wiki-rim);border-radius:16px;background:var(--wiki-panel);box-shadow:0 3px 0 var(--wiki-edge)}
+.wiki .wiki-table th{background:var(--btn-second,#f7f0e3);color:#7a6a4a}
+.wiki .wiki-loop{border:2px solid var(--wiki-rim);border-radius:18px;background:var(--wiki-card);box-shadow:0 3px 0 var(--wiki-edge)}
+.wiki .wiki-regrow li{border:2px solid var(--wiki-rim);background:var(--wiki-panel);box-shadow:0 3px 0 var(--wiki-edge)}
+.wiki .wiki-regrow li>a{padding:0;border:0;border-radius:0;background:none}
+.wiki .wiki-open{border-width:2px;box-shadow:0 2px 0 #eadfcd}
+.wiki .wiki-stats>span{border:1px solid #eadfcd;background:#fff}
+
+/* Item cards (crops, recipes, goods, fish): what a table showed, as the game's recipe cards, on every screen. Two or three side by side
+   where there is room, one under the other on a phone. The other tables stay tables on a computer. */
+.wiki .wiki-cards{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.wiki .wiki-card{grid-template-columns:58px minmax(0,1fr);gap:12px;padding:10px 12px 12px 10px;border:2px solid var(--wiki-rim);border-radius:16px;background:var(--wiki-card);box-shadow:0 3px 0 var(--wiki-edge)}
+.wiki .wiki-card>.game-art{width:58px;height:58px;padding:6px}
+.wiki .wiki-card strong{font-size:16px}
+.wiki :is(.wiki-building:not(#building-farmhouse) .wiki-building-body,#sec-every-crop,#sec-made-on-the-farm,#sec-heirlooms,#sec-fishing-pond,#sec-fish-book-page-2,#sec-village-lake,#sec-village-lake-page-2) .wiki-dual>.wiki-table-wrap{display:none}
+.wiki :is(.wiki-building:not(#building-farmhouse) .wiki-building-body,#sec-every-crop,#sec-made-on-the-farm,#sec-heirlooms,#sec-fishing-pond,#sec-fish-book-page-2,#sec-village-lake,#sec-village-lake-page-2) .wiki-dual>.wiki-cards{display:grid}
+
+/* A building: one framed card that opens to its recipes, its heading a cream band while open. */
+.wiki .wiki-section.wiki-building{margin:0 0 12px;padding:0;border:2px solid var(--wiki-rim);border-radius:18px;background:var(--wiki-panel);box-shadow:0 4px 0 var(--wiki-edge)}
+.wiki .wiki-section.wiki-building+.wiki-section:not(.wiki-building){margin-top:22px}
+.wiki .wiki-building>summary{padding:12px 12px 12px 14px;border-radius:16px}
+.wiki .wiki-building>summary:hover{background:var(--btn-second,#f7f0e3)}
+.wiki .wiki-building[open]>summary{border-radius:16px 16px 0 0;background:var(--btn-second,#f7f0e3);border-bottom:2px solid var(--wiki-rim)}
+.wiki .wiki-building>summary h3 .game-art{width:42px;height:42px}
+.wiki .wiki-building>summary .wiki-meta{padding-left:0;padding-inline-start:52px}
+.wiki .wiki-building-body{padding:12px 14px 16px}
+
+/* Install the app: the game's green main button. */
+.wiki .wiki-install-button{min-height:48px;border:2px solid var(--btn-main-line,#316c3a);border-radius:var(--btn-radius,14px);background:var(--btn-main,#3f8a4a);box-shadow:inset 0 2px 0 #ffffff47,0 4px 0 var(--btn-main-edge,#2b5e32);color:var(--btn-main-text,#fffef3);text-shadow:0 1px 0 #0000002e}
+.wiki .wiki-install-button:hover:not(:disabled){background:var(--btn-main-hover,#397c43)}
+.wiki .wiki-install-button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--btn-main-edge,#2b5e32)}
+
+@media(max-width:600px){
+ .wiki .wiki-tile{grid-template-columns:46px minmax(0,1fr) auto;padding:10px 12px 10px 10px}
+ .wiki .wiki-tile>.game-art{width:46px;height:46px;padding:4px}
+ .wiki .wiki-tile.is-featured{grid-template-columns:56px minmax(0,1fr) auto}.wiki .wiki-tile.is-featured>.game-art{width:56px;height:56px}
+ .wiki .wiki-cards{grid-template-columns:1fr}
+ .wiki .wiki-card{grid-template-columns:50px minmax(0,1fr);gap:10px}.wiki .wiki-card>.game-art{width:50px;height:50px;padding:5px}
+ .wiki .wiki-section>h3>.game-art{width:32px;height:32px}
+ .wiki .wiki-building>summary{padding:10px}
+ .wiki .wiki-building>summary h3 .game-art{width:36px;height:36px}
+ .wiki .wiki-building>summary .wiki-meta,.wiki .wiki-makes{padding-left:0;padding-inline-start:46px}
+ .wiki .wiki-building-body{padding:10px 10px 14px}
+ /* Trees and bushes: the picture beside the name, the level under it, so a long name (Dutch, German) keeps its words whole. */
+ .wiki .wiki-regrow li{display:block;padding:6px 8px}
+ .wiki .wiki-regrow li>a{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:8px;row-gap:2px}
+ .wiki .wiki-regrow li>a>.game-art{grid-row:1/3}
+ .wiki .wiki-regrow li>a>.wiki-level{justify-self:start}
+}
+@media(prefers-reduced-motion:reduce){.wiki .wiki-quick :is(button,a){transition:none}}
+
+/* ---- The website: the farm with the logo over it, then the page as one game window ---- */
+.wiki-page .legal-hero{padding:22px 20px 92px;background:#cfe3b5}
+.wiki-page .legal-hero::before{background:linear-gradient(180deg,#fffaf000 0%,#fffaf01f 55%,#f1e9dc 100%),url('/assets/farm-backdrop.webp') center 45%/cover no-repeat}
+.wiki-page .legal-logo img{width:150px;filter:drop-shadow(0 6px 12px #3b322047)}
+.wiki-page .legal-card{--wiki-pad:clamp(16px,3.6vw,34px);margin-top:-68px;padding:0 var(--wiki-pad) var(--wiki-pad);border:2px solid var(--wiki-rim);border-radius:26px;background:var(--wiki-panel);box-shadow:0 6px 0 var(--wiki-edge),0 24px 60px #3b322024}
+/* The window's heading: its picture, the page's title (h1) and line, and Play free where a window has its close. */
+.wiki-window-head{display:flex;align-items:center;gap:14px;margin:0 calc(-1*var(--wiki-pad)) 20px;padding:18px var(--wiki-pad);border-bottom:2px solid var(--wiki-rim);border-radius:24px 24px 0 0;background:var(--btn-second,#f7f0e3)}
+.wiki .wiki-window-head>.game-art{width:60px;height:60px;filter:drop-shadow(0 3px 4px #5a432026)}
+.wiki-window-titles{flex:1;min-width:0}
+.wiki-window-head h1{margin:0;color:var(--wiki-ink);font:700 clamp(26px,4vw,34px)/1.1 'Outfit',sans-serif;letter-spacing:-.4px}
+.wiki-window-head .updated{margin:5px 0 0;color:var(--ink-soft,#7a705f);font-size:15px;line-height:1.45}
+.wiki-page .wiki-play,.wiki-page .wiki-cta a{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:48px;padding:0 22px;border:2px solid var(--btn-main-line,#316c3a);border-radius:var(--btn-radius,14px);background:var(--btn-main,#3f8a4a);box-shadow:inset 0 2px 0 #ffffff47,0 4px 0 var(--btn-main-edge,#2b5e32);color:var(--btn-main-text,#fffef3);font:700 16px 'DM Sans',sans-serif;text-shadow:0 1px 0 #0000002e;text-decoration:none;white-space:nowrap;transition:background .12s,box-shadow .12s,transform .12s}
+.wiki-page .wiki-play:hover,.wiki-page .wiki-cta a:hover{background:var(--btn-main-hover,#397c43);color:var(--btn-main-text,#fffef3);text-decoration:none}
+.wiki-page .wiki-play:active,.wiki-page .wiki-cta a:active{transform:translateY(3px);box-shadow:0 1px 0 var(--btn-main-edge,#2b5e32)}
+.wiki-page .wiki-play:focus-visible,.wiki-page .wiki-cta a:focus-visible{outline:3px solid #c2912d;outline-offset:2px}
+.wiki-page .wiki-cta{padding:16px 18px;border:2px solid #cfe2c0;border-radius:18px;background:#eef6e6;box-shadow:0 4px 0 #d7e8c8}
+.wiki-page .wiki-crumbs{color:var(--ink-soft,#7a705f)}
+@media(max-width:600px){
+ .wiki-page .legal-hero{padding:16px 16px 76px}
+ .wiki-page .legal-logo img{width:118px}
+ .wiki-page .legal-card{width:calc(100% - 24px);margin-top:-58px;border-radius:22px}
+ .wiki-window-head{flex-wrap:wrap;gap:10px 12px;padding-block:14px;border-radius:20px 20px 0 0}
+ .wiki .wiki-window-head>.game-art{width:48px;height:48px;align-self:flex-start}
+ .wiki-window-titles{flex-basis:calc(100% - 60px)}
+ .wiki-window-head .updated{font-size:14px}
+ .wiki-page .wiki-play{flex:1 1 100%;min-height:46px}
+ .wiki-page .wiki-cta a{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){.wiki-page .wiki-play,.wiki-page .wiki-cta a{transition:none}}

@@ -55,7 +55,10 @@ function byHand(){var f=document.createElement('textarea');f.value=url;f.setAttr
 if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,byHand);else byHand();},true);}
 open();addEventListener('hashchange',open);var bar=document.querySelector('.wiki-jump');if(!bar)return;var wrap=bar.parentElement;function fade(){wrap.classList.toggle('is-scrollable',bar.scrollWidth>bar.clientWidth+2);wrap.classList.toggle('at-end',bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4);}
 fade();bar.addEventListener('scroll',fade,{passive:true});addEventListener('resize',fade);})();</script>`;
-function page({path,title,heading,description,body,data=null}){
+// Every page is a game window (22 Oct 2026, the owner: "maak de ingelogde wiki en uitgelogd ook meer in nieuwe game-stijl"): the farm and
+// the logo over it, then one framed cream panel whose heading is the page's picture (badge) and title, as the game's windows have, with
+// the green Play free button where a window has its close. The title is still the page's one h1, the line under it its description.
+function page({path,title,heading,description,body,data=null,badge=''}){
  body=namePictures(body);
  return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#214d36">
@@ -64,12 +67,10 @@ function page({path,title,heading,description,body,data=null}){
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96.png"><link rel="canonical" href="${SITE}${path}">${data?ldScript(data):''}<link rel="manifest" href="/manifest.webmanifest"><script src="/android-app.js"></script><link rel="stylesheet" href="/legal.css"><link rel="stylesheet" href="/wiki.css"></head>
 <body class="wiki-page">
 <header class="legal-hero">
- <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp" alt="Harvest Tycoon" width="1024" height="1024"></a>
- <p class="eyebrow">HARVEST TYCOON WIKI</p>
- <h1>${esc(heading)}</h1>
- <p class="updated">${esc(description)}</p>
+ <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp?v=20261021" alt="Harvest Tycoon" width="1024" height="1024"></a>
 </header>
 <main class="legal-card wiki">
+ <div class="wiki-window-head">${badge}<div class="wiki-window-titles"><h1>${esc(heading)}</h1><p class="updated">${esc(description)}</p></div><a class="wiki-play" href="/">Play free</a></div>
 ${body}
  <div class="wiki-cta"><p>Ready to start your own farm? It’s free to play.</p><a href="/">Play Harvest Tycoon</a></div>
 </main>
@@ -141,10 +142,10 @@ export function searchData(index,art){
 }
 
 export async function buildWiki(outDir,{contentUrl=new URL('../public/wiki-content.js',import.meta.url)}={}){
- const {WIKI_TOPICS,wikiArticle,wikiNext,wikiJump,wikiGroups,wikiSearchBox,wikiQuick,wikiSearchIndex}=await import(contentUrl.href);
+ const {WIKI_TOPICS,wikiArticle,wikiNext,wikiJump,wikiGroups,wikiSearchBox,wikiQuick,wikiSearchIndex,wikiIcon}=await import(contentUrl.href);
  const {art}=await import(new URL('visual-icons.js',contentUrl).href);
  mkdirSync(join(outDir,'wiki'),{recursive:true});
- writeFileSync(join(outDir,'wiki','index.html'),page({path:'/wiki',title:'Harvest Tycoon wiki: crops, buildings, recipes and tips',heading:'The farm wiki',description:'Everything about Harvest Tycoon: every crop, building and recipe, the market, Farm family, events, diamonds and more.',
+ writeFileSync(join(outDir,'wiki','index.html'),page({path:'/wiki',title:'Harvest Tycoon wiki: crops, buildings, recipes and tips',heading:'The farm wiki',description:'Everything about Harvest Tycoon: every crop, building and recipe, the market, Farm family, events, diamonds and more.',badge:wikiIcon('guide','wiki-window-badge'),
   body:` ${wikiSearchBox()}${wikiQuick()}<div id="wiki-results" class="wiki-results" hidden></div>${wikiGroups()}`}));
  writeFileSync(join(outDir,'wiki','search.json'),JSON.stringify(searchData(wikiSearchIndex(),art)));
  for(const topic of WIKI_TOPICS){
@@ -155,7 +156,7 @@ export async function buildWiki(outDir,{contentUrl=new URL('../public/wiki-conte
  <section class="wiki-related"><h3>Read next</h3><div class="wiki-next-list">${article.related.map(t=>wikiNext(t)).join('')}</div></section>`;
   // The breadcrumb as search engines read it (8 Oct 2026): the same two steps as the one on the page.
   const data=[breadcrumbs([['Wiki',`${SITE}/wiki`],[article.title,`${SITE}/wiki/${topic.id}`]])];
-  writeFileSync(join(outDir,'wiki',`${topic.id}.html`),page({path:`/wiki/${topic.id}`,title:`${article.title} — Harvest Tycoon wiki`,heading:article.title,description:article.blurb,body,data}));
+  writeFileSync(join(outDir,'wiki',`${topic.id}.html`),page({path:`/wiki/${topic.id}`,title:`${article.title} — Harvest Tycoon wiki`,heading:article.title,description:article.blurb,body,data,badge:wikiIcon(topic.art,'wiki-window-badge')}));
  }
  writeFileSync(join(outDir,'llms.txt'),llmsText(WIKI_TOPICS));
  // The sitemap gets the wiki pages (once, even if the build runs twice).

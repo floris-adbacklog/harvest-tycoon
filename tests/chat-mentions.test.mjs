@@ -36,7 +36,8 @@ test('a message becomes words, wiki chips and mentions, in order; the chip says 
  assert.equal(wikiSectionTitle('crops','sec-nothing-here'),'Fields and crops','an unknown section: the topic');
  // The titles are texts the page already translates: the house rules heading is in the catalog.
  assert.ok('House rules' in JSON.parse(read('i18n/catalog.json')));
- assert.match(wikiArticle('chat').html,/id="sec-house-rules"><h3>House rules<\/h3>/);
+ // Since 22 Oct 2026 a section's painted icon stands in front of its words (wiki-content.js wikiIcon): no words of its own.
+ assert.match(wikiArticle('chat').html,/id="sec-house-rules"><h3>(?:<span class="game-art[^"]*"[^>]*><\/span>)?House rules<\/h3>/);
 });
 
 test('the game and the database let the same wiki links through: the same address, at most 2, every other link refused with its reason',()=>{
