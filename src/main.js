@@ -7,7 +7,7 @@ import {trackCommerce,trackGame,trackSignUp,isNewRegistration,trackAuth,trackInv
 import {MODES,formErrors,describeAuthError,randomPlayerName} from './account-form.js';
 import {startPwa} from './pwa.js';
 import {openIntent,openIntentOfUrl,withoutOpen,discordTicket,discordAuthorizeUrl,discordBack,reminderSource} from '../public/app-links.js';
-import {startUpdateCheck} from './app-update.js';
+import {startUpdateCheck,guardPurchases} from './app-update.js';
 import {createNotifications} from './notifications.js';
 import {createChatClient} from './chat-client.js';
 import {startLoadingTips,ACCOUNT_STEPS,farmHandOver,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
@@ -427,6 +427,8 @@ async function openFarm(){
    if(!back.state)return;
    pendingOpen={open:'discord-link',...back};keepOpen(pendingOpen);void signOut();
   };
+  // A purchase holds Reload everyone now back while it runs (src/app-update.js guardPurchases, 22 Oct 2026).
+  guardPurchases(bridge);
   window.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');store.set(RETURNING_KEY,'1');
   scheduleBrowserTip({embedded:embeddedBrowser(navigator.userAgent),doc:document,win:window,storage:store});
  }catch(error){if(ticket===generation){

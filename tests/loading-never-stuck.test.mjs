@@ -276,7 +276,7 @@ function supabaseModule(client){
  const timers=[];let clock=0,id=0;
  const source=read('src/supabase.js').replace(/^import .*;\n/gm,'').replace(/^export /gm,'')
   .replace('import.meta.env.VITE_SUPABASE_URL','"https://x.supabase.co"').replace('import.meta.env.VITE_SUPABASE_ANON_KEY','"anon"');
- const context=vm.createContext({createClient:()=>client,describeFailure,connectionMessage,safeToRepeat,withRetry,enabledProviders:async()=>[],chosenLanguage:()=>'en',
+ const context=vm.createContext({createClient:()=>client,describeFailure,connectionMessage,safeToRepeat,withRetry,enabledProviders:async()=>[],chosenLanguage:()=>'en',noteReloadAfter:data=>data,
   navigator:{onLine:true},Intl,Date,Promise,Error,Object,Boolean,Number,String,
   setTimeout:(fn,ms)=>{timers.push({id:++id,at:clock+ms,fn});return id;},clearTimeout:t=>{const i=timers.findIndex(x=>x.id===t);if(i>=0)timers.splice(i,1);}});
  const api=vm.runInContext(`${source}\n;({verifiedUser,farmRequest,ACCOUNT_WAIT})`,context);

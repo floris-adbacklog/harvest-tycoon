@@ -166,7 +166,7 @@ function supabaseModule({stored,navigation='navigate',answers=[]}={}){
  const client={functions:{invoke:async(name,{body})=>{bodies.push(body);return answers.shift()??{data:{ok:true},error:null};}}};
  const source=read('src/supabase.js').replace(/^import .*;\n/gm,'').replace(/^export /gm,'')
   .replace('import.meta.env.VITE_SUPABASE_URL','"https://x.supabase.co"').replace('import.meta.env.VITE_SUPABASE_ANON_KEY','"anon"');
- const context=vm.createContext({createClient:()=>client,describeFailure,connectionMessage,safeToRepeat,withRetry,enabledProviders:async()=>[],chosenLanguage:()=>'en',LOAD_STALL_KEY,
+ const context=vm.createContext({createClient:()=>client,describeFailure,connectionMessage,safeToRepeat,withRetry,enabledProviders:async()=>[],chosenLanguage:()=>'en',noteReloadAfter:data=>data,LOAD_STALL_KEY,
   sessionStorage:kept.api,performance:{getEntriesByType:type=>type==='navigation'?[{type:navigation}]:[]},navigator:{onLine:true},
   Intl,Date:{now:()=>clock},Promise,Error,Object,Boolean,Number,String,JSON,Array,setTimeout,clearTimeout});
  const {farmRequest}=vm.runInContext(`${source}\n;({farmRequest})`,context);

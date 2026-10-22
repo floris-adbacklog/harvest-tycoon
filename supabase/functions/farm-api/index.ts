@@ -7,6 +7,7 @@ import {handlePlayerDirectory} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare,handleFamilyCards} from './family-service.js';
 import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
+import {handleAdminReload,readReloadAfter} from './reload-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
@@ -71,7 +72,11 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
+  // beside the farm (cached, never fails), so a load waits no longer for it.
+  const reloadAt=body.operation==='load'?readReloadAfter(admin):null;
+  if(body.operation==='admin_reload'){const r=await handleAdminReload({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
    const r=await handleAdminEmail({admin,body,user});
@@ -204,7 +209,7 @@ Deno.serve(async(req)=>{
   if(body.operation==='load'&&isAdminAccount(user)){
    const now=Date.now(),own=await admin.from('player_farms').select('family:state->family').eq('player_id',user.id).maybeSingle();
    const family=!own.error&&own.data?.family&&typeof own.data.family==='object'?own.data.family:null;
-   return reply({state:createShowcaseFarm(now,{family}),profile:{player_id:user.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile?.avatar_id??'default'},adminView:true,emailCheck:{needed:false,email:user.email??'',canChange:false},serverNow:now});
+   return reply({state:createShowcaseFarm(now,{family}),profile:{player_id:user.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile?.avatar_id??'default'},adminView:true,emailCheck:{needed:false,email:user.email??'',canChange:false},serverNow:now,reloadAfter:await reloadAt});
   }
   // Keep one server-owned roll across optimistic concurrency retries.
   let choreRoll:number|undefined;
@@ -296,12 +301,12 @@ Deno.serve(async(req)=>{
      // every family rule applies: leader, room, no family yet). Then the reply carries the farm as it is after that.
      if(friends.length&&await inviteFriendsToFamily(friends)){
       const latest=await admin.from('player_farms').select('state,revision').eq('player_id',user.id).maybeSingle();
-      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now});}
+      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now,reloadAfter:await reloadAt});}
      }
-     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now});
+     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now,reloadAfter:await reloadAt});
     }
     later(writeLog(admin,user.id,logged));
-    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now});
+    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now,reloadAfter:await reloadAt});
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});

@@ -102,7 +102,7 @@ function nextLoad({tab,device}){
  const api=store=>({getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)});
  const client={functions:{invoke:async(name,{body})=>{bodies.push(body);return {data:{ok:true},error:null};}}};
  const source=read('src/supabase.js').replace(/^import .*;\n/gm,'').replace(/^export /gm,'').replace('import.meta.env.VITE_SUPABASE_URL','"https://x.supabase.co"').replace('import.meta.env.VITE_SUPABASE_ANON_KEY','"anon"');
- const context=vm.createContext({createClient:()=>client,describeFailure,connectionMessage,safeToRepeat,withRetry,enabledProviders:async()=>[],chosenLanguage:()=>'en',LOAD_STALL_KEY,LOAD_FAILED_KEY,
+ const context=vm.createContext({createClient:()=>client,describeFailure,connectionMessage,safeToRepeat,withRetry,enabledProviders:async()=>[],chosenLanguage:()=>'en',noteReloadAfter:data=>data,LOAD_STALL_KEY,LOAD_FAILED_KEY,
   sessionStorage:api(session),localStorage:api(local),performance:{getEntriesByType:()=>[{type:'navigate'}]},navigator:{onLine:true},Intl,Date:{now:()=>clock},Promise,Error,Object,Boolean,Number,String,JSON,Array,setTimeout,clearTimeout});
  const {farmRequest}=vm.runInContext(`${source}\n;({farmRequest})`,context);
  return {load:async()=>{await farmRequest({operation:'load'});return bodies.at(-1);},session,local};

@@ -69,7 +69,7 @@ test('the admin, and nobody else, can put a farmer on another address at once, w
 });
 test('the routes, the password check, the screens and the database column',()=>{
  const index=read('supabase/functions/farm-api/index.ts'),events=read('supabase/functions/farm-api/event-service.js');
- assert.match(index,/handleEvents\(\{admin,body,user,passwordOk\}\)/);assert.match(index,/'admin_player','admin_email','invite','player_log'\]/);
+ assert.match(index,/handleEvents\(\{admin,body,user,passwordOk\}\)/);assert.match(index,/'admin_player','admin_email','invite','player_log','admin_reload'\]/);
  assert.match(index,/await check\.auth\.signOut\(\{scope:'local'\}\)/,'the check\'s own session is ended, never the farmer\'s');
  assert.match(index,/canChange:\(user\.app_metadata\?\.provider\?\?'email'\)==='email'/);
  assert.match(events,/command==='email_change_send'\)return respond\(await sendEmailChange\(/);assert.match(events,/accountLog\('email_change','Changed the email address'\)/);

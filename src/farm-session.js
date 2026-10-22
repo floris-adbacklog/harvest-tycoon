@@ -1,3 +1,4 @@
+import {guardPurchases} from './app-update.js';
 import {createConnection,connectionMessage,reasonOf,refused,WAKE_GRACE} from './connection.js';
 // An open farm on a page around the game (Oct 2026): the game page (farm.html) in a frame, the farm from the server, the bridge the
 // game talks through, and the connection that keeps it open through short problems. It is the website's own way of opening the farm
@@ -78,6 +79,8 @@ export function createFarmSession({
    // A trip takes the frame's own place in the history, as on the website (13 Oct 2026, src/main.js travel).
    bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'?`${farmUrl}?world=village`:farmUrl;try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
    extend(bridge,{alive:()=>ticket===generation,user});
+   // A purchase holds Reload everyone now back while it runs (src/app-update.js guardPurchases, 22 Oct 2026).
+   guardPurchases(bridge);
    win.harvestBridge=bridge;frame=page;release(bridge);phase('authenticated');
    opened(bridge,user);
   }catch(error){if(ticket===generation){

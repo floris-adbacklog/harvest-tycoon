@@ -3,6 +3,7 @@ import {describeFailure,connectionMessage,safeToRepeat,withRetry} from './connec
 import {enabledProviders} from './social-login.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {LOAD_STALL_KEY,LOAD_FAILED_KEY} from '../public/loading-screen.js';
+import {noteReloadAfter} from './app-update.js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
@@ -93,7 +94,8 @@ const takeStall=()=>{
  let arrival='';try{arrival=globalThis.performance.getEntriesByType('navigation')[0]?.type??'';}catch{}
  return {loadStall:note.kind==='left'&&arrival==='reload'&&note.at<=pageStarted?{...note,kind:'refresh'}:note};
 };
-export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage(),platform:pagePlatform(),...takeOpened(),...takeStall()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)});}
+// Every answer passes src/app-update.js noteReloadAfter (22 Oct 2026, Reload everyone now): a load's answer says when the admin last pressed it.
+export function farmRequest(body,{retry=true}={}){const sent=body?.operation==='load'?{...body,timeZone:deviceTimeZone(),language:chosenLanguage(),platform:pagePlatform(),...takeOpened(),...takeStall()}:body;return withRetry(()=>farmRequestOnce(sent),{repeatable:retry&&safeToRepeat(sent)}).then(noteReloadAfter);}
 export async function paymentRequest(body){
  const {data,error}=await supabase.functions.invoke('diamond-checkout',{body,timeout:20000});
  if(error){let detail;try{detail=await error.context?.json();}catch{}throw new Error(detail?.error||'Could not connect to checkout. Please try again.');}

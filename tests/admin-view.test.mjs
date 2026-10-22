@@ -51,7 +51,7 @@ test('farm-api: an admin account\'s load is the showcase, after the play lock an
  const branch=api.indexOf("if(body.operation==='load'&&isAdminAccount(user)){"),loop=api.indexOf('for(let attempt=0;attempt<5;attempt++){');
  assert.ok(lock>0&&branch>lock&&loop>branch,'lock, then the showcase, then the farm read loop');
  const body=api.slice(branch,api.indexOf('\n  }\n',branch));
- assert.match(body,/return reply\(\{state:createShowcaseFarm\(now,\{family\}\),profile:\{player_id:user\.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile\?\.avatar_id\?\?'default'\},adminView:true,emailCheck:\{needed:false,email:user\.email\?\?'',canChange:false\},serverNow:now\}\);/);
+ assert.match(body,/return reply\(\{state:createShowcaseFarm\(now,\{family\}\),profile:\{player_id:user\.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile\?\.avatar_id\?\?'default'\},adminView:true,emailCheck:\{needed:false,email:user\.email\?\?'',canChange:false\},serverNow:now,reloadAfter:await reloadAt\}\);/);
  assert.match(body,/admin\.from\('player_farms'\)\.select\('family:state->family'\)\.eq\('player_id',user\.id\)\.maybeSingle\(\)/,'only the family is read');
  assert.doesNotMatch(body,/harvest_commit_farm|\.update\(|\.insert\(|\.upsert\(|grantLevelRewards|receiveDonations|grantEmailBonus|writeLog/,'nothing is written');
 });

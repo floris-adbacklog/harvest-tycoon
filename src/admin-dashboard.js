@@ -20,6 +20,7 @@ import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,SOURCE_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,sourcesHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 import {purchaseState,purchaseCounts,PURCHASE_LABELS} from './admin-purchases.js';
 import {createNewsMail} from './admin-news-mail.js';
+import {createReloadCard} from './admin-reload.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -143,6 +144,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  document.body.append(dialog);
  // News and offers by email (13 Oct 2026): its own card at the end of Settings, shown for the admin only (src/admin-news-mail.js).
  const newsMail=createNewsMail({dialog,bridge});
+ // Reload everyone now (22 Oct 2026): its own card after it, for the admin only (src/admin-reload.js).
+ const reloadCard=createReloadCard({dialog,bridge});
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
  // Four tabs: the chat first (what a moderator comes for), then players, growth and, for the admin, the chat settings.
  function showTab(name){
@@ -266,6 +269,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(role==='admin')void showPartners();
   if(role==='admin')void loadSources();
   if(role==='admin')newsMail.show();
+  if(role==='admin')void reloadCard.show();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
