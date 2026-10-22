@@ -62,6 +62,10 @@ for(const key of VILLAGE_ART)pictures[key]=key;
 // for care, as the cursor over a field and in the hand during a sweep (public/sweep-tools.js).
 const TOOL_PICTURES=['tool-sickle','tool-can','tool-seeds','tool-gloves'];
 for(const key of TOOL_PICTURES)pictures[key]=key;
+// A helping hand's job tiles (22 Oct 2026, painted by the owner, WebP, 256 px): one picture for each state of a stop's job, the one that
+// waits for its job and the one that is fine or done (public/activities-ui.js TILE_ART).
+export const JOB_PICTURES=Object.freeze(['seedling-dry','seedling-healthy','honeyframe-full','honeyframe-busy','bowl-empty','bowl-full','tool-worn','tool-fixed']);
+for(const key of JOB_PICTURES)pictures[key]=key;
 // The Fishing pond (11 Oct 2026, painted by the owner, WebP, 256 px on a clear ground): the eight fish of the fish book (fish-minnow …
 // fish-whiskers; a fish not caught yet is its own shadow, by CSS) and the rod on its basket for the pond's pin, menus and level card.
 // Page two's eight (11 Oct 2026, painted by the owner the same way): the fish that swim in the pond from level 20.
@@ -89,6 +93,7 @@ for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedla
 for(const key of VILLAGE_ART)webpPictures.add(key);
 webpPictures.add('feedback');
 for(const key of TOOL_PICTURES)webpPictures.add(key);
+for(const key of JOB_PICTURES)webpPictures.add(key);
 // The farm app (30 Sep 2026, painted by the user): a golden phone with the barn, for installing the game and the admin's devices.
 pictures.farmapp='farmapp';webpPictures.add('farmapp');
 // The four crop medals (6 Oct 2026, painted, WebP): bronze, silver, gold and platinum, one to three stars and a diamond so the tier reads

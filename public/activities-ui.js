@@ -2,12 +2,13 @@ import {featureUnlocked,featureUnlockHint,ACTIVE_STATIONS,activityRoundReward,ac
 import {farmNow} from './farm-client.js';
 import {refreshArt,art} from './visual-icons.js';
 const $=id=>document.getElementById(id);
-// The painted picture on each tile of a job (22 Oct 2026, the owner: "maak dit mooier"): the thing itself, faded while it waits for its
-// job (a dry seedling, an empty trough, a worn tool) and bright once it is done or fine. The Apiary's two kinds are two pictures.
-const TILE_ART={greenhouse:{pics:['lettuce','cabbage','cauliflower','lettuce','cabbage','cauliflower']},apiary:{target:'honey',other:'family-bee'},paddock:{pics:['chore-troughs']},workshop:{pics:['hammer','tool-sickle','pickaxe','tool-can','mastertools','tool-gloves']}};
-function tile(station,id,done,target){
- const t=TILE_ART[station],pic=t.pics?t.pics[id%t.pics.length]:target?t.target:t.other,faded=target&&!done&&t.pics;
- return `<span class="activity-tile-art${faded?' is-faded':''}">${art(pic)}${done?'<i data-lucide="check" class="activity-tile-tick" data-line-icon aria-hidden="true"></i>':''}</span>`;
+// The painted picture on each tile of a job (22 Oct 2026, the owner: "maak dit mooier", and he painted them): one picture for each state,
+// the same on every tile: the one that waits for its job (a dry seedling, a frame of capped honey, an empty bowl, a worn tool) and the
+// one that is fine or done.
+const TILE_ART={greenhouse:{target:'seedling-dry',fine:'seedling-healthy'},apiary:{target:'honeyframe-full',fine:'honeyframe-busy',done:'honeyframe-full'},paddock:{target:'bowl-empty',fine:'bowl-full'},workshop:{target:'tool-worn',fine:'tool-fixed'}};
+function tile(station,done,target){
+ const t=TILE_ART[station],pic=done?t.done??t.fine:target?t.target:t.fine;
+ return `<span class="activity-tile-art">${art(pic)}${done?'<i data-lucide="check" class="activity-tile-tick" data-line-icon aria-hidden="true"></i>':''}</span>`;
 }
 // A helping hand: four stops around the farm. The hub shows each stop's reward and state at a glance; opening a stop that is
 // ready starts its job at once; a finished job offers "Next stop" (the next stop of the round) and the way back to all stops.
@@ -85,7 +86,7 @@ export function createActivitiesUI({state,runAction,notify,onResult}){
    body=`<div class="activity-result${result.roundComplete?' is-round':''}"><span class="activity-result-art">${art(`activity-${s.station}`)}<i data-lucide="check" class="activity-tile-tick" data-line-icon aria-hidden="true"></i></span><strong>${result.roundComplete?'Round complete!':'Job complete!'}</strong><div class="activity-chips">${rewardChips({...s,xp:result.xp})}${result.roundComplete?`<span class="activity-chip is-bonus">${art('trophy')}Round bonus: +${result.bonus.coins} coins · +${result.bonus.xp} XP</span>`:''}</div></div>${nav}`;
   }else if(s.job){
    const dots=[0,1,2].map(i=>`<i class="${i<s.job.done.length?'is-done':''}${i===s.job.done.length-1?' is-new':''}"></i>`).join(''),last=s.job.done.at(-1);
-   body=`<div class="activity-job-progress"><span class="activity-dots" aria-hidden="true">${dots}</span><span>${s.job.done.length} of 3 done</span></div><div class="activity-board" aria-label="${s.instruction}">${Array.from({length:6},(_,id)=>{const done=s.job.done.includes(id),target=s.job.targets.includes(id);return `<button class="activity-tile ${done?'done':target?'needs-care':'healthy'}${done&&id===last?' just-done':''}" data-activity-target="${id}" ${done||busy?'disabled':''} aria-label="${done?'Completed':target?s.task:s.other}">${tile(s.station,id,done,target)}<strong>${done?'Done':target?s.target:s.other}</strong></button>`;}).join('')}</div>`;
+   body=`<div class="activity-job-progress"><span class="activity-dots" aria-hidden="true">${dots}</span><span>${s.job.done.length} of 3 done</span></div><div class="activity-board" aria-label="${s.instruction}">${Array.from({length:6},(_,id)=>{const done=s.job.done.includes(id),target=s.job.targets.includes(id);return `<button class="activity-tile ${done?'done':target?'needs-care':'healthy'}${done&&id===last?' just-done':''}" data-activity-target="${id}" ${done||busy?'disabled':''} aria-label="${done?'Completed':target?s.task:s.other}">${tile(s.station,done,target)}<strong>${done?'Done':target?s.target:s.other}</strong></button>`;}).join('')}</div>`;
   }else if(s.remaining){
    body=`<p class="activity-wait">This stop is back in <b data-activity-wait>${formatDuration(s.remaining)}</b>.</p>${nav}`;
   }else{
