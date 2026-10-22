@@ -19,7 +19,8 @@ export function createReloadCard({dialog,bridge,ask=confirmAction,doc=globalThis
   +`<p class="admin-popup-note">${RELOAD_HINT}</p><p class="admin-popup-note">${RELOAD_REACH}</p>`
   +'<div class="admin-offer-actions"><button type="button" class="primary-button" id="admin-reload-now">Reload everyone now</button></div>'
   +'<p class="admin-hint" id="admin-reload-last"></p><p class="admin-hint" id="admin-reload-status" role="status"></p>';
- settings.append(section);
+ // First on Settings (22 Oct 2026), above this device's numbers.
+ if(settings.prepend)settings.prepend(section);else settings.append(section);
  const $=id=>section.querySelector(`#admin-reload-${id}`);
  async function show(){
   section.hidden=false;

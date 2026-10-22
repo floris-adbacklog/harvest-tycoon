@@ -1,0 +1,158 @@
+/* The Admin dashboard in the game's own look (22 Oct 2026, the owner picked "restructure + refresh"; src/admin-dashboard.js loads this
+   sheet for the admin and the moderators only, nobody else downloads it). The window is the game's shell (dialog-shell.css is-sheet):
+   the title plaque with the dashboard's picture and its name, the name search beside it, then chunky tabs with a picture over each name.
+   Inside, every card is a cream card with the game's sturdy rim and the edge underneath (retention.css .toast, buttons.css), the same
+   spacing everywhere, tidy tables and lists. Works from a 390 px phone to a computer. The game's palette only (no new colours: the
+   cream, the warm ink, the button families' greens, golds and reds). Every rule starts with #admin-dashboard-dialog, so it wins over the
+   older rules in retention.css, chat.css and player-profiles.css without !important. */
+#admin-dashboard-dialog{--admin-rim:#e3d8c6;--admin-edge:#e2d4ba;--admin-card:#fffdf5;--admin-soft:#f7f0e3;--admin-gap:14px}
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
+ #admin-dashboard-dialog.is-sheet{--w:1000px;width:min(1000px,calc(100vw - 48px));max-width:none}
+}
+
+/* ---- The heading: picture, name, the search, the close ---- */
+#admin-dashboard-dialog .admin-top .dialog-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#admin-dashboard-dialog .dialog-heading .dialog-titles{flex:1 1 auto}
+#admin-dashboard-dialog .admin-dashboard-close{margin-inline-start:0;order:3}
+#admin-dashboard-dialog .admin-search{position:relative;flex:0 1 380px;min-width:220px;order:2}
+#admin-dashboard-dialog .admin-search input{box-sizing:border-box;width:100%;min-height:44px;padding:0 14px 0 40px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:14px;
+ background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%237a705f' stroke-width='2.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 13px 50%;
+ box-shadow:inset 0 2px 0 #efe6d8;color:#3d382a;font:600 15px 'DM Sans',sans-serif}
+#admin-dashboard-dialog .admin-search input:focus-visible{outline:3px solid #c2912d;outline-offset:1px}
+#admin-dashboard-dialog .admin-search-results{position:absolute;z-index:30;inset-inline:0;top:calc(100% + 6px);display:grid;gap:2px;max-height:min(360px,60vh);overflow:auto;margin:0;padding:6px;list-style:none;
+ border:2px solid var(--admin-rim);border-radius:16px;background:var(--admin-card);box-shadow:0 4px 0 var(--admin-edge),0 14px 30px #3a301c2e}
+#admin-dashboard-dialog .admin-search-results[hidden]{display:none}
+#admin-dashboard-dialog .admin-search-results button{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 10px;border:0;border-radius:12px;background:none;color:#3d382a;font:inherit;text-align:start;cursor:pointer}
+#admin-dashboard-dialog .admin-search-results button:hover,#admin-dashboard-dialog .admin-search-results button:focus-visible{background:var(--admin-soft);outline:none}
+#admin-dashboard-dialog .admin-search-results span{display:grid;min-width:0}
+#admin-dashboard-dialog .admin-search-results strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#admin-dashboard-dialog .admin-search-results small{font-size:12px;font-weight:600;color:#80776b}
+#admin-dashboard-dialog .admin-search-results .admin-empty{padding:10px 12px;font-size:13px}
+#admin-dashboard-dialog .admin-search-results .admin-avatar{width:34px;height:34px}
+
+/* ---- The tabs: a sunken track, a picture over each name, the chosen one raised; one row on a computer, two on a phone ---- */
+#admin-dashboard-dialog .admin-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;margin:0;padding:5px}
+#admin-dashboard-dialog .admin-tabs>button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:62px;padding:6px 4px;font-size:13px;line-height:1.1}
+#admin-dashboard-dialog .admin-tabs>button[hidden]{display:none}
+#admin-dashboard-dialog .admin-tabs>button>.game-art{width:30px;height:30px}
+#admin-dashboard-dialog .admin-tab-name{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#admin-dashboard-dialog .admin-tab-count{position:absolute;top:4px;inset-inline-end:calc(50% - 30px);min-width:20px;height:20px;box-sizing:border-box;padding:0 5px;border:2px solid #fffdf5;border-radius:999px;background:var(--badge-wait,#d9533c);color:#fff;font:700 12px/16px 'DM Sans',sans-serif;text-align:center;box-shadow:0 1px 2px #3b322040}
+#admin-dashboard-dialog .admin-tab-count[hidden]{display:none}
+/* A moderator's three tabs: what they come for first. */
+#admin-dashboard-dialog[data-role="moderator"] [data-admin-tab="chat"]{order:1}
+#admin-dashboard-dialog[data-role="moderator"] [data-admin-tab="feedback"]{order:2}
+#admin-dashboard-dialog[data-role="moderator"] [data-admin-tab="players"]{order:3}
+
+/* ---- Cards: cream, the sturdy rim and the edge underneath ---- */
+#admin-dashboard-dialog [data-admin-panel]{display:grid;gap:var(--admin-gap);align-content:start}
+#admin-dashboard-dialog [data-admin-panel][hidden]{display:none}
+#admin-dashboard-dialog [data-admin-panel]>*{margin:0;min-width:0}
+#admin-dashboard-dialog .admin-card{margin:0;padding:16px 18px;border:1.5px solid var(--admin-rim);border-radius:18px;background:var(--admin-card);box-shadow:0 4px 0 var(--admin-edge)}
+#admin-dashboard-dialog .admin-card[hidden],#admin-dashboard-dialog .admin-card.is-behind{display:none}
+#admin-dashboard-dialog .admin-card h3{display:flex;align-items:center;gap:10px;margin:0 0 12px;font:700 18px/1.2 'Outfit',sans-serif;color:var(--ink,#453e28)}
+#admin-dashboard-dialog .admin-card h3>.game-art{width:32px;height:32px;flex:none}
+#admin-dashboard-dialog .admin-card h3>span:not(.game-art){font:700 13px/1.5 'DM Sans',sans-serif;padding:1px 9px;border-radius:999px;background:#fdf1d8;color:#8a5a12}
+#admin-dashboard-dialog .admin-card .admin-hint{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:#80776b}
+#admin-dashboard-dialog .admin-card h4.admin-subhead,#admin-dashboard-dialog .admin-player-detail h4{margin:16px 0 6px;font:700 14px/1.3 'Outfit',sans-serif;letter-spacing:0;text-transform:none;color:#6b5d44}
+#admin-dashboard-dialog .admin-guide{background:#f3f7ec;border-color:#d6e3c4;box-shadow:0 4px 0 #dce8cc}
+#admin-dashboard-dialog .admin-card.is-flash{animation:admin-flash 1.5s ease-out}
+@keyframes admin-flash{0%,40%{box-shadow:0 4px 0 var(--admin-edge),0 0 0 4px var(--gold-ring,#e5b64a)}100%{box-shadow:0 4px 0 var(--admin-edge),0 0 0 0 #e5b64a00}}
+@media(prefers-reduced-motion:reduce){#admin-dashboard-dialog .admin-card.is-flash{animation:none;box-shadow:0 4px 0 var(--admin-edge),0 0 0 3px var(--gold-ring,#e5b64a)}}
+/* Side by side where they fit (Growth: countries, devices, languages). */
+#admin-dashboard-dialog .admin-card-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--admin-gap);align-items:start}
+
+/* ---- Overview: the tiles ---- */
+/* Three rows: the players (three tiles), what waits for the staff (two), the money (two). */
+#admin-dashboard-dialog .admin-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+#admin-dashboard-dialog .admin-tile{grid-column:span 3}
+#admin-dashboard-dialog .admin-tile:is([data-tile="online"],[data-tile="new"],[data-tile="day1"]){grid-column:span 2}
+#admin-dashboard-dialog .admin-tile{display:grid;justify-items:start;align-content:start;gap:2px;min-width:0;padding:12px 14px 14px;border:2px solid var(--admin-rim);border-radius:16px;background:#fbf6ec;
+ box-shadow:inset 0 2px 0 #ffffff8c,0 4px 0 var(--admin-edge);color:var(--ink,#453e28);text-align:start;font:inherit;cursor:pointer;transition:background .12s,transform .12s,box-shadow .12s}
+#admin-dashboard-dialog .admin-tile:hover{background:var(--admin-soft)}
+#admin-dashboard-dialog .admin-tile:active{transform:translateY(3px);box-shadow:inset 0 2px 0 #ffffff8c,0 1px 0 var(--admin-edge)}
+#admin-dashboard-dialog .admin-tile:focus-visible{outline:3px solid #c2912d;outline-offset:2px}
+#admin-dashboard-dialog .admin-tile>.game-art{width:36px;height:36px;margin-bottom:4px}
+#admin-dashboard-dialog .admin-tile strong{font:700 30px/1.05 'Outfit',sans-serif;font-variant-numeric:tabular-nums;color:#3f3827}
+#admin-dashboard-dialog .admin-tile span{font:700 14px/1.25 'DM Sans',sans-serif;color:#4f472f}
+#admin-dashboard-dialog .admin-tile small{font:600 12px/1.35 'DM Sans',sans-serif;color:#8a7c69}
+#admin-dashboard-dialog .admin-tile.is-waiting{background:#fdeee9;border-color:#f0c9bd;box-shadow:inset 0 2px 0 #ffffff8c,0 4px 0 #e7b9aa}
+#admin-dashboard-dialog .admin-tile.is-waiting strong,#admin-dashboard-dialog .admin-tile.is-waiting span{color:#a03f2c}
+#admin-dashboard-dialog .admin-tile.is-money{background:#fff6dc;border-color:#ecd39c;box-shadow:inset 0 2px 0 #ffffff8c,0 4px 0 #e2c27e}
+#admin-dashboard-dialog .admin-tile.is-money strong{color:#6f4d0e}
+@media(prefers-reduced-motion:reduce){#admin-dashboard-dialog .admin-tile{transition:none}}
+/* Quick actions: the game's cream buttons with a picture, side by side. */
+#admin-dashboard-dialog .admin-quick-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+#admin-dashboard-dialog .admin-quick-actions>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;min-height:84px;padding:10px 8px;font-size:14px;line-height:1.2;text-align:center}
+#admin-dashboard-dialog .admin-quick-actions>button>.game-art{width:34px;height:34px;flex:none}
+
+/* ---- Lists and tables ---- */
+#admin-dashboard-dialog .admin-recent-list>li{align-items:flex-start;padding:10px 2px;border-bottom:1px solid #efe7da}
+#admin-dashboard-dialog .admin-recent-list>li>.admin-avatar{margin-top:2px}
+#admin-dashboard-dialog .admin-recent-list>li:last-child{border-bottom:0}
+#admin-dashboard-dialog .admin-recent-list .admin-avatar{width:36px;height:36px;font-size:12.5px}
+#admin-dashboard-dialog .admin-player-list>li{padding:0}
+#admin-dashboard-dialog .admin-player-row{padding:10px 6px;border-radius:12px}
+#admin-dashboard-dialog .admin-player-row:hover{background:var(--admin-soft)}
+#admin-dashboard-dialog .admin-online-list li{border-radius:14px;border:1.5px solid #d6e3c4;background:#f3f7ec;box-shadow:0 2px 0 #dce8cc}
+#admin-dashboard-dialog .admin-empty{padding:6px 0;color:#80776b;font-style:normal}
+#admin-dashboard-dialog .admin-table-scroll{overflow-x:auto;border:1.5px solid #ece3d4;border-radius:14px;background:#fff}
+#admin-dashboard-dialog .admin-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;font-variant-numeric:tabular-nums}
+#admin-dashboard-dialog .admin-table th{position:sticky;top:0;padding:9px 10px;border-bottom:2px solid #e6dccb;background:#f7f0e3;color:#6b5d44;font:700 12.5px/1.2 'DM Sans',sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap}
+#admin-dashboard-dialog .admin-table td{padding:8px 10px;border-bottom:1px solid #f1eadf}
+#admin-dashboard-dialog .admin-table tbody tr:nth-child(even) td:not([class^=admin-heat]){background:#fcf9f3}
+#admin-dashboard-dialog .admin-table tbody tr:last-child td{border-bottom:0}
+#admin-dashboard-dialog .admin-table td[class^=admin-heat]{border-radius:0;box-shadow:inset 0 0 0 2px #fff;border-radius:8px}
+#admin-dashboard-dialog .admin-invite-totals{gap:8px;margin:0 0 10px}
+#admin-dashboard-dialog .admin-invite-totals>span{padding:5px 11px;border:1.5px solid #ece3d4;border-radius:999px;background:#fbf6ec;font-size:13px}
+#admin-dashboard-dialog .admin-facts{border-radius:14px}
+#admin-dashboard-dialog .admin-detail-top{flex-wrap:wrap}
+#admin-dashboard-dialog .admin-popup-fields{border-radius:14px}
+
+/* ---- Forms: one field look ---- */
+#admin-dashboard-dialog :is(.admin-popup-fields,.admin-news-hours,.admin-levels,.admin-donate,.admin-offer-kinds,.admin-player-tools) :is(input:not([type=checkbox]):not([type=radio]),select){border:2px solid #e2d6c2;border-radius:12px;min-height:42px}
+#admin-dashboard-dialog .admin-news textarea{border:2px solid #e2d6c2;border-radius:14px}
+#admin-dashboard-dialog :is(input,select,textarea):focus-visible{outline:3px solid #c2912d;outline-offset:1px}
+#admin-dashboard-dialog .admin-status{margin:16px 0 0}
+
+/* ---- Phones ---- */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ #admin-dashboard-dialog{--admin-gap:12px}
+ #admin-dashboard-dialog .admin-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #admin-dashboard-dialog .admin-tile,#admin-dashboard-dialog .admin-tile:is([data-tile="online"],[data-tile="new"]){grid-column:auto}
+ #admin-dashboard-dialog .admin-tile[data-tile="day1"]{grid-column:1/-1}
+ #admin-dashboard-dialog .admin-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #admin-dashboard-dialog .admin-quick-actions>button:last-child:nth-child(odd){grid-column:1/-1}
+}
+@media(max-width:700px){
+ /* The search under the name, full width; the tabs in rows of four. */
+ #admin-dashboard-dialog .admin-search{order:4;flex:1 1 100%;max-width:none;margin:2px 0 0}
+ #admin-dashboard-dialog .admin-tabs{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,1fr))}
+ #admin-dashboard-dialog[data-role="moderator"] .admin-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #admin-dashboard-dialog .admin-tabs{gap:2px;padding:4px}
+ #admin-dashboard-dialog .admin-tabs>button{min-height:50px;padding:4px 2px;font-size:12px;gap:2px}
+ #admin-dashboard-dialog .admin-tabs>button>.game-art{width:24px;height:24px}
+ #admin-dashboard-dialog .admin-search input{min-height:42px;font-size:16px}
+ #admin-dashboard-dialog .dialog-heading .dialog-badge{width:36px;height:36px}
+ #admin-dashboard-dialog .admin-tab-count{inset-inline-end:calc(50% - 28px)}
+ #admin-dashboard-dialog .admin-card{padding:14px}
+ #admin-dashboard-dialog .admin-card h3{font-size:17px}
+ /* A tile: the picture beside the number, the words under them. */
+ #admin-dashboard-dialog .admin-tile{grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;padding:10px 12px 12px}
+ #admin-dashboard-dialog .admin-tile>.game-art{width:28px;height:28px;margin:0}
+ #admin-dashboard-dialog .admin-tile strong{font-size:24px}
+ #admin-dashboard-dialog .admin-tile :is(span,small){grid-column:1/-1}
+ #admin-dashboard-dialog .admin-tile span{font-size:13px;margin-top:2px}
+ #admin-dashboard-dialog .admin-tile small{font-size:12px}
+ #admin-dashboard-dialog .admin-tile.is-money strong{font-size:21px}
+ #admin-dashboard-dialog .admin-quick-actions>button{min-height:72px;font-size:13px}
+}
+/* A label beside its field (Language, Send as, Show it for, From, Send it): the words on one line, the field as wide as it needs. */
+#admin-dashboard-dialog .admin-news-hours{flex-wrap:wrap;gap:6px 10px;white-space:nowrap}
+#admin-dashboard-dialog .admin-news-hours>:is(select,input){flex:0 1 320px;width:auto;min-width:0;max-width:100%}
+#admin-dashboard-dialog .admin-news-hours>input[type=number]{flex:0 0 96px}
+/* All players: the list's own search (name, language; for the admin also country and IP) wide, the order beside it. */
+#admin-dashboard-dialog .admin-player-tools{display:flex;gap:8px;margin:0 0 10px}
+#admin-dashboard-dialog .admin-player-tools>input{flex:1 1 auto;width:auto;min-width:0}
+#admin-dashboard-dialog .admin-player-tools>select{flex:0 0 auto;width:auto;max-width:45%}
+/* The special offer's amounts and choices side by side where they fit. */
+#admin-dashboard-dialog #admin-offer-form .admin-popup-fields{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}

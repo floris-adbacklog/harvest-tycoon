@@ -1,4 +1,4 @@
-// News and offers by email (13 Oct 2026), a card of its own at the end of the Admin dashboard's Settings, for the admin only. The admin
+// News and offers by email (13 Oct 2026), a card of its own on the Admin dashboard's Messages tab (Settings before 22 Oct 2026), for the admin only. The admin
 // writes the subject, the text and an optional button per game language with the same editor as News and pop-ups (each language keeps
 // what was typed for it, the English shows in the empty fields as what to translate), chooses from which level and, if wanted, played
 // in the last N days, sees how many farmers it reaches per language, sends a test of the chosen language to their own address and then
@@ -50,7 +50,8 @@ export function logRow(m){
 }
 
 export function createNewsMail({dialog,bridge,ask=confirmAction,pause=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
- const settings=dialog.querySelector('[data-admin-panel="settings"]');if(!settings)return {show(){}};
+ // On the Messages tab, right under News and pop-ups (22 Oct 2026); Settings in a dashboard without that tab.
+ const settings=dialog.querySelector('[data-admin-panel="messages"]')??dialog.querySelector('[data-admin-panel="settings"]');if(!settings)return {show(){}};
  const section=document.createElement('section');section.className='admin-card';section.id='admin-news-mail';section.hidden=true;
  section.innerHTML='<h3>'+art('letter')+'News and offers by email</h3><form id="admin-mail-form" class="admin-news admin-mail">'
   +'<label class="admin-news-hours">Language<select id="admin-mail-language">'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label><p class="admin-popup-note" id="admin-mail-language-note"></p>'
@@ -65,7 +66,7 @@ export function createNewsMail({dialog,bridge,ask=confirmAction,pause=ms=>new Pr
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-mail-test">Send a test to me</button><button type="submit" class="primary-button" id="admin-mail-send">Send</button></div>'
   +'<p class="admin-hint" id="admin-mail-status" role="status"></p></form>'
   +'<h4 class="admin-subhead" id="admin-mail-log-head" hidden>Last emails</h4><ul class="admin-recent-list" id="admin-mail-log" hidden></ul>';
- settings.append(section);
+ const news=settings.querySelector?.('#admin-chat-settings');if(news?.after)news.after(section);else settings.append(section);
  const $=id=>section.querySelector(`#admin-mail-${id}`);
  const status=text=>{$('status').textContent=text;};
 

@@ -65,9 +65,8 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 @media(max-width:480px){.farmer-profile-dialog{padding:18px;border-radius:24px}.farmer-identity{gap:13px}.farmer-avatar{flex-basis:76px;height:76px}.farmer-avatar-img{padding:3px 3px 0}.farmer-profile-dialog .eyebrow{font-size:12px;letter-spacing:1px}.farmer-stat{padding:10px 4px 9px;gap:3px}.farmer-stat>.game-art{width:30px;height:30px}.farmer-stat strong{font-size:19px}.farmer-stat-grid{gap:8px}.farmer-badge-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.farmer-search{padding:12px}.farmer-search-result{gap:8px}.farmer-search-avatar{flex-basis:30px;height:34px;font-size:12px}.farmer-search-result .farmer-presence{font-size:12px;gap:4px}.farmer-search-name strong{font-size:14px}.farmer-family{padding:12px}}
 .leaderboard-table .leaderboard-place{width:60px;padding-inline:8px;text-align:center}.leaderboard-place .rank-number{display:inline-grid;place-items:center;min-width:40px;min-height:46px;font-weight:700}.leaderboard-place .rank-trophy>.game-art{width:44px;height:48px}
 @media(max-width:480px){.leaderboard-table .leaderboard-place{width:42px;padding-inline:3px}.leaderboard-place .rank-trophy>.game-art{width:34px;height:40px}.leaderboard-place .rank-number{min-width:34px}.leaderboard-table td{overflow-wrap:anywhere}}
-/* The admin dashboard (floris@millstone.nl only — #admin-button in the topbar stays hidden for everyone else). */
-/* Wide enough on a computer for all six tabs with their names (Feedback made six, 30 Sep 2026); phones use the full-width sheet. */
-@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){.admin-dashboard-dialog.wide-dialog{width:min(900px,calc(100% - 28px));max-width:900px}}
+/* The admin dashboard (floris@millstone.nl only — #admin-button in the topbar stays hidden for everyone else). Its window size and
+   look since 22 Oct 2026: public/admin-dashboard.css. */
 .admin-card{border:1px solid #ded2c8;border-radius:16px;padding:16px 18px;margin:16px 0;background:#fffdf5}
 .admin-card h3{font:600 16px 'Outfit',sans-serif;margin:0 0 6px;display:flex;align-items:center;gap:9px;color:#3d382a}
 .admin-card h3>svg{width:18px;height:18px;color:#8a7a4a;flex-shrink:0}

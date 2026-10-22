@@ -212,8 +212,8 @@ test('the dashboard: the filters next to the audience, the count with them, the 
  assert.match(admin,/if\(reached===null\)\{showGroupFilters\(false\);/,'never a wider send without the filters');
  assert.match(admin,/\$\{number\(b\.recipients\)\} farmer\$\{b\.recipients===1\?'':'s'\}, \$\{number\(b\.replies\)\} replied/);
  assert.match(admin,/import \{translateLink,groupPills\} from '\.\/chat-ui\.js';/);
- // The moderators never see it: the whole card is the admin's (Settings).
- assert.match(admin,/dialog\.querySelector\('\[data-admin-tab="settings"\]'\)\.hidden=role!=='admin';/);
+ // The moderators never see it: the whole card is the admin's (Messages since 22 Oct 2026).
+ assert.match(admin,/for\(const tab of ADMIN_TABS\)dialog\.querySelector\(`\[data-admin-tab="\$\{tab\}"\]`\)\.hidden=role!=='admin';/);assert.ok(admin.indexOf('data-admin-panel="messages"')<admin.indexOf('id="admin-dm-fields"'));
 });
 
 test('no SQL file starts an if with a bare case: PL/pgSQL ends the condition at the case\'s own then (8 Oct 2026, "syntax error at end of input")',()=>{

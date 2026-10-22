@@ -480,12 +480,12 @@ test('the client: the count and the list from the database, the rest through the
  await assert.rejects(client.newsMail({operation:'lost'}),{message:'The server did not answer. Look under Last emails before you send again: Continue goes on where it stopped.'});
 });
 
-test('the dashboard: its own card in Settings for the admin only, the staff screens\' rules',()=>{
+test('the dashboard: its own card on Messages for the admin only, the staff screens\' rules',()=>{
  const admin=read('src/admin-dashboard.js'),card=read('src/admin-news-mail.js');
  assert.match(admin,/import \{createNewsMail\} from '\.\/admin-news-mail\.js';/);
  assert.match(admin,/document\.body\.append\(dialog\);\n[^\n]*\n const newsMail=createNewsMail\(\{dialog,bridge\}\);/);
  assert.match(admin,/  if\(role==='admin'\)newsMail\.show\(\);\n/);
- assert.match(admin,/dialog\.querySelector\('\[data-admin-tab="settings"\]'\)\.hidden=role!=='admin';/,'the Settings tab is the admin\'s');
+ assert.match(admin,/for\(const tab of ADMIN_TABS\)dialog\.querySelector\(`\[data-admin-tab="\$\{tab\}"\]`\)\.hidden=role!=='admin';/,'the Messages tab is the admin\'s');assert.match(card,/dialog\.querySelector\('\[data-admin-panel="messages"\]'\)\?\?dialog\.querySelector\('\[data-admin-panel="settings"\]'\)/,'on Messages (22 Oct 2026)');
  assert.match(card,/const why=error=>error\?\.raw\?\?error\?\.message;/);assert.doesNotMatch(card,/error\.message/);
  assert.doesNotMatch(card,/ · /,'no middle dot');
  assert.match(read('scripts/i18n-extract.mjs'),/admin-\[\^\/\]\*/,'staff screens stay English (left out of the catalog)');

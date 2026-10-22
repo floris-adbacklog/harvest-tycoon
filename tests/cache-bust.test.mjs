@@ -82,7 +82,7 @@ test('the deploy versions every script and stylesheet of the game pages, maps ev
   const game=read('src/game-cloud.js').match(/import\(\/\* @vite-ignore \*\/ '(\/game\.js[^']*)'\)/)[1];
   const src=readdirSync(new URL('../src',import.meta.url)).filter(f=>f.endsWith('.js')).map(f=>read(`src/${f}`)).join('\n');
   const asked=[...src.matchAll(/import\(\/\* @vite-ignore \*\/ '([^']+)'\)/g)].map(m=>m[1]),sheets=[...src.matchAll(/import\.meta\.resolve\?\.\('([^']+)'\)/g)].map(m=>m[1]);
-  assert.deepEqual([...new Set(sheets)].sort(),['/admin-view.css','/offer.css','/starter-pack.css']);
+  assert.deepEqual([...new Set(sheets)].sort(),['/admin-dashboard.css','/admin-view.css','/offer.css','/starter-pack.css']);
   mkdirSync(join(dir,'cloud'));
   writeFileSync(join(dir,'cloud/game-cloud.js'),`import { t as e } from "./i18n-GhQDEmBg.js";\n${asked.map(path=>`await import(\n\t/* @vite-ignore */\n\t"${path}"\n);`).join('\n')}\n${sheets.map(path=>`s.href = import.meta.resolve?.("${path}") ?? "${path}";`).join('\n')}`);
   writeFileSync(join(dir,'cloud/i18n-GhQDEmBg.js'),'export const t = 1;');

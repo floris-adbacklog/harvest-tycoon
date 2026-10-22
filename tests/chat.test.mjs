@@ -133,8 +133,10 @@ test('the chat window: Global first, Global\'s red count only for mentions of yo
 
 test('the Admin dashboard opens for moderators too, reading only; giving stays with the admin',()=>{
  const dash=read('src/admin-dashboard.js');
- assert.match(dash,/dialog\.querySelector\('\[data-admin-tab="settings"\]'\)\.hidden=role!=='admin';/);
- assert.match(dash,/'ONLY FOR YOU':'FOR THE MODERATORS'/);
+ assert.match(dash,/for\(const tab of ADMIN_TABS\)dialog\.querySelector\(`\[data-admin-tab="\$\{tab\}"\]`\)\.hidden=role!=='admin';/);
+ // The title is the button's name with its picture, no small capitals line above it (22 Oct 2026, the owner's taste).
+ assert.match(dash,/dialog\.querySelector\('#admin-dashboard-title'\)\.textContent=role==='admin'\?'Admin dashboard':'Moderator dashboard';/);
+ assert.doesNotMatch(dash,/eyebrow|ONLY FOR YOU|FOR THE MODERATORS/);
  assert.match(read('src/player-profiles.js'),/checkAdmin\(\)\.then\(admin=>\{if\(!disposed&&gift&&admin&&selected===playerId&&dialog\.open\)\{renderAdminGrant\(playerId\);return true;\}return false;\}\);/,'the gift form on a profile is still only for the admin');
 });
 
@@ -291,10 +293,13 @@ test('the chat client has no method twice: a second staffList once emptied the A
  assert.match(src,/staffList:\(\)=>rpc\('staff_list'\)/);assert.match(src,/staffRoles:\(\)=>rpc\('chat_staff_list'\)/);
  assert.match(readFileSync(new URL('../src/staff-badge.js',import.meta.url),'utf8'),/chat\?\.staffRoles\?\.\(\)/);
 });
-test('phones show the dashboard tabs as icons only; each tab keeps its name',()=>{
- const dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/chat.css',import.meta.url),'utf8');
- for(const [tab,name] of [['chat','Chat'],['players','Players'],['growth','Growth'],['purchases','Purchases'],['settings','Settings']])assert.match(dash,new RegExp(`data-admin-tab="${tab}" aria-label="${name}"[^>]*>'\\+art\\('[\\w-]+'\\)\\+'<span class="admin-tab-name">${name}</span></button>`),tab);
- assert.match(css,/@media\(max-width:600px\)\{\.admin-tab-name\{display:none\}/,'only the words hide, never a sprite icon (a span too)');
+test('the dashboard tabs: a picture over each name, on a phone in rows of four (22 Oct 2026)',()=>{
+ const dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/admin-dashboard.css',import.meta.url),'utf8');
+ for(const [tab,name] of [['overview','Overview'],['players','Players'],['growth','Growth'],['money','Money'],['messages','Messages'],['settings','Settings']])assert.match(dash,new RegExp(`data-admin-tab="${tab}" aria-label="${name}"[^>]*>'\\+art\\('[\\w-]+'\\)\\+'<span class="admin-tab-name">${name}</span></button>`),tab);
+ // Chat and Feedback carry their count (open reports, open messages).
+ for(const [tab,name] of [['chat','Chat'],['feedback','Feedback']])assert.match(dash,new RegExp(`data-admin-tab="${tab}" aria-label="${name}"[^>]*>'\\+art\\('[\\w-]+'\\)\\+'<span class="admin-tab-name">${name}</span><b class="admin-tab-count" id="admin-${tab}-count" hidden>0</b></button>`),tab);
+ assert.match(css,/#admin-dashboard-dialog \.admin-tab-name\{display:block;/,'the names stay, also on a phone');
+ assert.match(css,/@media\(max-width:700px\)\{[^]*#admin-dashboard-dialog \.admin-tabs\{grid-auto-flow:row;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/);
 });
 test('the staff see who reported a message, with the reason, in the open reports and the log',()=>{
  const sql=readFileSync(new URL('../supabase/chat-report-reporters.sql',import.meta.url),'utf8'),dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8');

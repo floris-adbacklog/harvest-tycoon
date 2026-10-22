@@ -188,7 +188,8 @@ test('retention percentages are colour-coded so a pattern is visible at a glance
 });
 test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
  const js=read('src/admin-dashboard.js');
- assert.match(js,/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/bridge\.request\(operation==='admin_retention'\?\{operation,days:Number\(view\.retention\)\}:\{operation\}\)/);
+ // The parts live with the tab rules since 22 Oct 2026 (src/admin-overview.js): a moderator loads only what Players shows.
+ assert.match(read('src/admin-overview.js'),/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/const PARTS=partsFor\(role\);/);assert.match(js,/bridge\.request\(operation==='admin_retention'\?\{operation,days:Number\(view\.retention\)\}:\{operation\}\)/);
  assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
  assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
  assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
@@ -203,7 +204,8 @@ test('checkAdmin is exported from player-profiles.js so admin-dashboard.js does 
 });
 test('the dashboard opens with three headline numbers, lists every player, and has no event controls any more',()=>{
  const js=read('src/admin-dashboard.js'),html=read('public/farm.html'),icons=read('public/visual-icons.js');
- assert.match(js,/<div class="admin-kpis"><div>'\+art\('family-members'\)\+'<strong id="admin-kpi-online">/);assert.match(js,/renderKpis\(online,retention\)/);
+ // The headline numbers are the Overview's tiles since 22 Oct 2026 (the admin only), drawn from what the parts loaded.
+ assert.match(js,/<button type="button" class="admin-tile" data-tile="online" data-go="players">'\+art\('family-members'\)\+'<strong id="admin-kpi-online">/);assert.match(js,/if\(online\)overview\.online=online;if\(retention\)overview\.retention=retention;renderOverview\(\);/);
  assert.match(js,/<ul id="admin-player-list" class="admin-recent-list admin-player-list"><\/ul>/);
  assert.ok(!/admin-events|mountAdminEvents|liveEvents/.test(js),'farm events run on their own schedule');
  assert.match(html,/id="admin-menu-entry" hidden><i data-game-art="admin"><\/i><span><strong>Admin dashboard<\/strong><small>Players and retention<\/small>/);
@@ -229,7 +231,7 @@ test('the Invite a friend log: who invited whom, how far the friend is, and whet
  tables.player_invite_codes=[{player_id:A,code:'TONYAA',closed_at:now-day},{player_id:B,code:'BRAMAA',closed_at:null}];
  assert.ok((await handleAdminInvites({admin:db,user:admin,now})).data.invites.every(i=>i.inviterClosed===true));
  const dash=read('src/admin-dashboard.js');
- assert.match(dash,/\['admin_invites','Invites'\]/,'the rest of the dashboard still loads before farm-api knows it');
+ assert.match(read('src/admin-overview.js'),/\['admin_invites','Invites'\]/,'the rest of the dashboard still loads before farm-api knows it');assert.match(dash,/const missing=PARTS\.filter\(\(_,i\)=>!got\[i\]\)/);
  assert.match(read('supabase/functions/farm-api/index.ts'),/if\(body\.operation==='admin_invites'\)\{/);
 });
 
@@ -276,7 +278,7 @@ test('the Purchases tab: every checkout newest first, with who, what, the price 
  const code=read('supabase/functions/farm-api/admin-analytics-service.js'),index=read('supabase/functions/farm-api/index.ts'),dash=read('src/admin-dashboard.js');
  assert.match(code,/export async function handleAdminPurchases\(\{admin,user,limit=500\}\)\{\n if\(!isSuperadmin\(user\)\)return respond/);
  assert.match(index,/body\.operation==='admin_purchases'/);assert.match(index,/if\(!\[[^\]]*'admin_purchases'[^\]]*\]\.includes\(body\?\.operation\)\)/,'on the list of operations farm-api accepts');assert.ok(index.indexOf("body.operation==='admin_purchases'")<index.indexOf('const username=profile?.username'),'reachable for the admin account without a farmer name');
- assert.match(dash,/dialog\.querySelector\('\[data-admin-tab="purchases"\]'\)\.hidden=role!=='admin';/,'the tab only for the admin');
+ assert.match(dash,/for\(const tab of ADMIN_TABS\)dialog\.querySelector\(`\[data-admin-tab="\$\{tab\}"\]`\)\.hidden=role!=='admin';/,'the tab only for the admin');assert.match(read('src/admin-overview.js'),/STAFF_TABS=Object\.freeze\(\['players','chat','feedback'\]\)/,'Money is not a moderator\'s tab (22 Oct 2026)');
  assert.match(dash,/if\(role==='admin'\)void bridge\.request\(\{operation:'admin_purchases'\}\)/,'loaded only for the admin');
 });
 

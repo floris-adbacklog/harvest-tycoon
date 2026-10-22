@@ -1,9 +1,13 @@
-// The staff dashboard (the admin and the moderators): three headline numbers, the chat reports, who is online, every farmer with
-// when they were last active and one farmer's details (src/admin-players.js), where new players stop, a 7-day retention cohort
-// and the Invite a friend log; for the admin also where new farmers come from, news for everyone, the moderators and the
-// levels from which farmers may chat (supabase/chat.sql). Giving coins, XP, diamonds or goods stays admin-only (Send a gift and the profile). Farm events run on their own schedule (live-events-schedule.sql), so they have no controls here. A single
-// icon button in the topbar (hidden for everyone else, same gate as the gift panel in player-profiles.js) opens
-// its own dialog inside the game, instead of a separate page — one session, one sign-in, nothing extra to visit.
+// The staff dashboard (the admin and the moderators), one dialog inside the game opened by a single icon button in the topbar (hidden for
+// everyone else, same gate as the gift panel in player-profiles.js): one session, one sign-in, nothing extra to visit. Since 22 Oct 2026
+// (the owner picked "restructure + refresh") eight tabs in the game's own look (public/admin-dashboard.css), the rules in
+// src/admin-overview.js: Overview (today's numbers and quick actions), Players (who is online, every farmer and one farmer's details,
+// src/admin-players.js), Growth (where new players stop and come from, retention, countries, devices, languages, Invite a friend), Money
+// (purchases, the special offer, partners), Chat (reports, the log, how to handle them, the moderators and who may chat), Feedback,
+// Messages (news and pop-ups, group messages, the newsletter, the welcome message, gifts) and Settings (Reload everyone, this device).
+// A moderator sees Players, Chat and Feedback only, and the dashboard asks for nothing else for them; the server checks every request
+// again. Giving coins, XP, diamonds or goods stays admin-only (Send a gift and the profile). Farm events run on their own schedule
+// (live-events-schedule.sql), so they have no controls here. A name search at the top opens a farmer's details from any tab.
 import {checkAdmin} from './player-profiles.js';
 import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
@@ -14,13 +18,14 @@ import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerShownCents,offerProblem,offer
 const offerEuro=cents=>cents%100===0?`€${cents/100}`:`€${(cents/100).toFixed(2)}`;
 import {avatarImage} from '../public/player-avatars.js';
 import {LANGUAGES} from '../public/languages.js';
-import {chosenLanguage} from '../public/i18n.js';
+import {chosenLanguage,undot} from '../public/i18n.js';
 import {translateLink,groupPills} from './chat-ui.js';
 import {deviceName} from '../supabase/functions/farm-api/admin-analytics-service.js';
 import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SORTS,FUNNEL_PERIODS,RETENTION_PERIODS,SOURCE_PERIODS,GUIDE_STEPS,filterPlayers,playerRow,playerDetail,funnel,funnelHtml,sourcesHtml,countryCounts,countriesHtml,languageCounts,languagesHtml,deviceCounts,devicesHtml,dateTime,clock,zoneDay} from './admin-players.js';
 import {purchaseState,purchaseCounts,PURCHASE_LABELS} from './admin-purchases.js';
 import {createNewsMail} from './admin-news-mail.js';
 import {createReloadCard} from './admin-reload.js';
+import {ADMIN_TABS,tabsFor,firstTab,partsFor,QUICK_ACTIONS,overviewTiles,searchPlayers,euro as euros} from './admin-overview.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -42,35 +47,63 @@ const heat=pct=>pct>=50?'admin-heat-good':pct>=25?'admin-heat-ok':'admin-heat-lo
 export function createAdminDashboard(bridge,{chat=null}={}){
  const button=document.getElementById('admin-button');
  if(!button)return {};
- const dialog=document.createElement('dialog');dialog.id='admin-dashboard-dialog';dialog.className='game-dialog wide-dialog admin-dashboard-dialog';dialog.setAttribute('aria-labelledby','admin-dashboard-title');
- dialog.innerHTML=`<div class="dialog-heading"><div class="admin-title"><span class="admin-badge">${art('admin')}</span><div><span class="eyebrow" id="admin-dashboard-eyebrow">ONLY FOR YOU</span><h2 id="admin-dashboard-title">Admin dashboard</h2></div></div><button class="icon-button admin-dashboard-close" aria-label="Close"><i data-lucide="x"></i></button></div>`
-  +'<div class="admin-kpis"><div>'+art('family-members')+'<strong id="admin-kpi-online">–</strong><span>Online now</span></div><div>'+art('invite-friends')+'<strong id="admin-kpi-new">–</strong><span>New today</span></div><div>'+art('rank-gold')+'<strong id="admin-kpi-day1">–</strong><span>Kept on day 1</span></div><div>'+art('alert')+'<strong id="admin-kpi-reports">–</strong><span>Open reports</span></div></div>'
-  +'<div class="market-tabs admin-tabs" role="tablist" aria-label="Dashboard"><button type="button" role="tab" data-admin-tab="chat" aria-label="Chat" class="active" aria-selected="true">'+art('chat')+'<span class="admin-tab-name">Chat</span></button><button type="button" role="tab" data-admin-tab="feedback" aria-label="Feedback" aria-selected="false">'+art('feedback')+'<span class="admin-tab-name">Feedback</span><b class="admin-tab-count" id="admin-feedback-count" hidden>0</b></button><button type="button" role="tab" data-admin-tab="players" aria-label="Players" aria-selected="false">'+art('family-members')+'<span class="admin-tab-name">Players</span></button><button type="button" role="tab" data-admin-tab="growth" aria-label="Growth" aria-selected="false">'+art('xp')+'<span class="admin-tab-name">Growth</span></button><button type="button" role="tab" data-admin-tab="purchases" aria-label="Purchases" aria-selected="false" hidden>'+art('diamonds')+'<span class="admin-tab-name">Purchases</span></button><button type="button" role="tab" data-admin-tab="settings" aria-label="Settings" aria-selected="false" hidden>'+art('settings')+'<span class="admin-tab-name">Settings</span></button></div>'
-  +'<div data-admin-panel="chat">'
-  +'<section class="admin-card admin-guide"><h3>'+art('admin')+'Keeping the valley friendly</h3><ul><li><strong>Delete</strong> a message that is rude, hurtful or shares personal details (an address, a phone number).</li><li><strong>Mute for a day</strong> when someone keeps it up after a message is deleted.</li><li><strong>Ban from chat</strong> only for serious or repeated abuse. It closes the chat, never the farm.</li><li>Not sure? Choose <strong>Nothing wrong</strong> or leave it for the admin.</li></ul></section>'
-  +'<section class="admin-card" id="admin-reports" hidden><h3>'+art('alert')+'Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
-  +'<section class="admin-card" id="admin-report-log" hidden><h3>'+art('quests')+'Report log</h3><p class="admin-hint">Every reported message, newest first: who reported it and what the staff did with it.</p><ul id="admin-log-list" class="admin-recent-list admin-log-list"></ul></section>'
-  // Feedback & bugs (supabase/feedback.sql): what farmers send with the mailbox button, for the admin and the moderators.
-  +'</div><div data-admin-panel="feedback" hidden>'
-  +'<section class="admin-card"><h3>'+art('feedback')+'Feedback</h3><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-feedback-filter="open" aria-pressed="true">Open</button><button type="button" class="admin-filter" data-feedback-filter="done" aria-pressed="false">Done</button></div>'
-  +'<ul id="admin-feedback-list" class="admin-recent-list admin-feedback-list"></ul><p class="admin-hint">What farmers send with the mailbox button, newest first, in their own words. Done moves a message to Done. A name opens the farmer\'s profile, where you can write back.</p></section>'
-  +'</div><div data-admin-panel="players" hidden>'
-  +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'Send a gift</h3><form id="admin-donate-form" class="admin-donate"><div class="admin-gift-to"><span>Send to</span><div class="admin-filters" role="group" aria-label="Send to">'+GIFT_AUDIENCES.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-gift-audience="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><div id="admin-gift-player" class="admin-gift-player" hidden><input type="search" id="admin-gift-search" placeholder="Find a farmer by name" aria-label="Find a farmer" autocomplete="off"><ul id="admin-gift-results" class="admin-gift-results"></ul></div></div><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" placeholder="0" inputmode="numeric"></label><label><span>'+art('coins')+'<b id="admin-donate-coins-label">Coins</b></span><input type="number" id="admin-donate-coins" min="0" max="1000" step="10" placeholder="0" inputmode="numeric"></label><div class="admin-coin-kind"><div class="admin-filters" role="group" aria-label="Coins"><button type="button" class="admin-filter active" data-coin-kind="fixed" aria-pressed="true">Fixed</button><button type="button" class="admin-filter" data-coin-kind="level" aria-pressed="false">Per level</button></div><p class="admin-hint" id="admin-donate-preview">Every farmer gets the same.</p></div><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button" id="admin-donate-send">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
+ const dialog=document.createElement('dialog');dialog.id='admin-dashboard-dialog';dialog.className='game-dialog wide-dialog admin-dashboard-dialog is-sheet is-l';dialog.setAttribute('aria-labelledby','admin-dashboard-title');
+ // The heading (22 Oct 2026, the owner picked "restructure + refresh"): the window shell's plaque (public/dialog-shell.css) with the
+ // dashboard's own picture and its name, no small capitals line above it; a name search that works from every tab; then the tabs.
+ // The three stay on top together while a tab scrolls (.dialog-top).
+ dialog.innerHTML='<div class="dialog-top admin-top"><div class="dialog-heading">'+art('admin','dialog-badge')+'<div class="dialog-titles"><h2 id="admin-dashboard-title">Admin dashboard</h2></div>'
+  +'<div class="admin-search" role="search"><input type="search" id="admin-search" placeholder="Find a farmer by name" aria-label="Find a farmer by name" autocomplete="off" aria-controls="admin-search-results"><ul id="admin-search-results" class="admin-search-results" hidden></ul></div>'
+  +'<button class="icon-button admin-dashboard-close" aria-label="Close"><i data-lucide="x"></i></button></div>'
+  // The tabs (22 Oct 2026): Overview, Players, Growth, Money, Chat, Feedback, Messages, Settings. A moderator sees only Players, Chat
+  // and Feedback (ADMIN_TABS are hidden for them, and nothing on those tabs is asked for); the server checks every request again.
+  +'<div class="market-tabs admin-tabs" role="tablist" aria-label="Dashboard">'
+  +'<button type="button" role="tab" data-admin-tab="overview" aria-label="Overview" class="active" aria-selected="true">'+art('farm')+'<span class="admin-tab-name">Overview</span></button>'
+  +'<button type="button" role="tab" data-admin-tab="players" aria-label="Players" aria-selected="false">'+art('family-members')+'<span class="admin-tab-name">Players</span></button>'
+  +'<button type="button" role="tab" data-admin-tab="growth" aria-label="Growth" aria-selected="false">'+art('xp')+'<span class="admin-tab-name">Growth</span></button>'
+  +'<button type="button" role="tab" data-admin-tab="money" aria-label="Money" aria-selected="false">'+art('coins')+'<span class="admin-tab-name">Money</span></button>'
+  +'<button type="button" role="tab" data-admin-tab="chat" aria-label="Chat" aria-selected="false">'+art('chat')+'<span class="admin-tab-name">Chat</span><b class="admin-tab-count" id="admin-chat-count" hidden>0</b></button>'
+  +'<button type="button" role="tab" data-admin-tab="feedback" aria-label="Feedback" aria-selected="false">'+art('feedback')+'<span class="admin-tab-name">Feedback</span><b class="admin-tab-count" id="admin-feedback-count" hidden>0</b></button>'
+  +'<button type="button" role="tab" data-admin-tab="messages" aria-label="Messages" aria-selected="false">'+art('letter')+'<span class="admin-tab-name">Messages</span></button>'
+  +'<button type="button" role="tab" data-admin-tab="settings" aria-label="Settings" aria-selected="false">'+art('settings')+'<span class="admin-tab-name">Settings</span></button></div></div>'
+  // Overview (the admin only): today's numbers (UTC days, as the rest of the dashboard), each a button to the tab that has the details,
+  // the money only here and on Money; then the things the admin often does, each opening its own card.
+  +'<div data-admin-panel="overview">'
+  +'<section class="admin-card admin-overview"><h3>'+art('farm')+'Today</h3><div class="admin-tiles" id="admin-tiles">'
+  +'<button type="button" class="admin-tile" data-tile="online" data-go="players">'+art('family-members')+'<strong id="admin-kpi-online">–</strong><span>Online now</span><small id="admin-kpi-online-note">Active in the last 30 minutes</small></button>'
+  +'<button type="button" class="admin-tile" data-tile="new" data-go="players">'+art('invite-friends')+'<strong id="admin-kpi-new">–</strong><span>New players today</span><small>Since 00:00 UTC</small></button>'
+  +'<button type="button" class="admin-tile" data-tile="day1" data-go="growth">'+art('rank-gold')+'<strong id="admin-kpi-day1">–</strong><span>Kept on day 1</span><small>Signups of the last 7 days</small></button>'
+  +'<button type="button" class="admin-tile" data-tile="reports" data-go="chat">'+art('alert')+'<strong id="admin-kpi-reports">–</strong><span>Open chat reports</span><small>Waiting for the staff</small></button>'
+  +'<button type="button" class="admin-tile" data-tile="feedback" data-go="feedback">'+art('feedback')+'<strong id="admin-kpi-feedback">–</strong><span>New feedback</span><small id="admin-kpi-feedback-note">Open messages</small></button>'
+  +'<button type="button" class="admin-tile is-money" data-tile="revenue-today" data-go="money">'+art('coins')+'<strong id="admin-kpi-revenue-today">–</strong><span>Earned today</span><small id="admin-kpi-paid-today">Paid since 00:00 UTC</small></button>'
+  +'<button type="button" class="admin-tile is-money" data-tile="revenue-week" data-go="money">'+art('diamonds')+'<strong id="admin-kpi-revenue-week">–</strong><span>Earned in 7 days</span><small id="admin-kpi-paid-week">Today and the 6 days before</small></button>'
+  +'</div><p class="admin-hint">Earned counts paid checkouts of real farmers (test payments left out), before the store or Stripe takes its share.</p></section>'
+  +'<section class="admin-card admin-quick"><h3>'+art('boost')+'Quick actions</h3><div class="admin-quick-actions">'
+  +'<button type="button" class="secondary-button" data-quick="news">'+art('bell')+'<span>News and pop-up</span></button>'
+  +'<button type="button" class="secondary-button" data-quick="gift">'+art('gift')+'<span>Gift to everyone</span></button>'
+  +'<button type="button" class="secondary-button" data-quick="offer">'+art('diamonds')+'<span>Start an offer</span></button>'
+  +'<button type="button" class="secondary-button" data-quick="reload">'+art('farmapp')+'<span>Reload everyone</span></button>'
+  +'<button type="button" class="secondary-button" data-quick="mail">'+art('letter')+'<span>Newsletter</span></button>'
+  +'</div></section></div>'
+  // Players (the admin and the moderators): who is on now, every farmer, and one farmer's details.
+  +'<div data-admin-panel="players" hidden>'
   +'<section class="admin-card"><h3>'+art('family-members')+'Online now <span id="admin-online-count">0</span></h3><ul id="admin-online-list" class="admin-online-list"></ul><p class="admin-hint">Active in the last <span id="admin-online-window">30</span> minutes.</p></section>'
-  +'<section class="admin-card" id="admin-players"><h3>'+art('family-members')+'All players <span id="admin-players-count">0</span></h3><div class="admin-player-tools"><input type="search" id="admin-player-search" placeholder="Search by name" aria-label="Search players" autocomplete="off"><select id="admin-player-sort" aria-label="Order">'+PLAYER_SORTS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></div><div class="admin-filters" role="group" aria-label="Show">'+PLAYER_FILTERS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-player-filter="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-player-list" class="admin-recent-list admin-player-list"></ul><button type="button" id="admin-player-more" class="small-button admin-more" hidden>Show more</button><p class="admin-hint">Times are Amsterdam time. Last action: the last time the farm saved. Gone quiet: played before, not active for 7 days or more. New: joined in the last 7 days.</p></section>'
+  +'<section class="admin-card" id="admin-players"><h3>'+art('family-members')+'All players <span id="admin-players-count">0</span></h3><div class="admin-player-tools"><input type="search" id="admin-player-search" placeholder="Search by name" aria-label="Search players" autocomplete="off"><select id="admin-player-sort" aria-label="Order">'+PLAYER_SORTS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></div><div class="admin-filters" role="group" aria-label="Show">'+PLAYER_FILTERS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-player-filter="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-player-list" class="admin-recent-list admin-player-list"></ul><button type="button" id="admin-player-more" class="small-button admin-more" hidden>Show more</button><p class="admin-hint">Times are UTC. Last action: the last time the farm saved. Gone quiet: played before, not active for 7 days or more. New: joined in the last 7 days.</p></section>'
   +'<section class="admin-card admin-player-detail" id="admin-player-detail" hidden></section>'
+  // Growth (the admin only): where new players stop and come from, where they play, what they speak, who stays and who invites.
   +'</div><div data-admin-panel="growth" hidden>'
   +'<section class="admin-card" id="admin-funnel"><h3>'+art('quests')+'New players: where do they stop?</h3><div class="admin-filters" role="group" aria-label="Period">'+FUNNEL_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-funnel-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><ul id="admin-funnel-list" class="admin-bars admin-funnel"></ul><p class="admin-hint">Of everyone who made an account in the period, how many got this far. Coming back counts only farmers who joined long enough ago, from their last activity.</p></section>'
   // Where new farmers come from (2 Oct 2026, supabase/player-attribution.sql): the admin only, it has money in it.
   +'<section class="admin-card" id="admin-sources" hidden><h3>'+art('invite-friends')+'Where new farmers come from</h3><div class="admin-filters" role="group" aria-label="Sources period">'+SOURCE_PERIODS.map(([id,label])=>`<button type="button" class="admin-filter${id==='30'?' active':''}" data-source-period="${id}" aria-pressed="${id==='30'}">${label}</button>`).join('')+'</div><div class="admin-table-scroll"><table class="admin-table admin-source-table"><thead><tr><th>Source</th><th>Farmers</th><th>Day 1</th><th>Level 5</th><th>Level 10</th><th>Level 14</th><th>Checkouts</th><th>Paid</th><th>€</th></tr></thead><tbody id="admin-source-body"></tbody></table></div><p class="admin-hint">One source per farmer, the first that applies: our ?src= tag, a partner link, a friend’s invite, the ad’s utm_source / campaign, the ad click (Meta, TikTok, Google), the website that linked, else Direct. Recorded once, when a new farm opens. Day 1 is approximate (last activity). Checkouts, Paid and € leave test payments out.</p></section>'
-  +'<section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of each farmer’s device time zone, the last time they opened the game.</p></section>'
-  +'<section class="admin-card" id="admin-devices" hidden><h3>'+art('farmapp')+'Mobile or desktop</h3><div id="admin-device-box"></div><p class="admin-hint">The device each farmer last opened the game on. Mobile is a phone or a tablet.</p></section>'
-  +'<section class="admin-card" id="admin-languages"><h3>'+art('settings')+'Game language</h3><ul id="admin-language-list" class="admin-bars"></ul><p class="admin-hint">The language each farmer’s game was in, the last time they opened it.</p></section>'
   // 7, 30 or 90 days (1 Oct 2026): a row per signup day, or per signup week for 90 days (admin-analytics-service.js).
-  +'<section class="admin-card"><h3>'+art('xp')+'Retention</h3><div class="admin-filters" role="group" aria-label="Retention period">'+RETENTION_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-retention-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><p class="admin-hint" id="admin-retention-hint">Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
+  +'<section class="admin-card" id="admin-retention"><h3>'+art('xp')+'Retention</h3><div class="admin-filters" role="group" aria-label="Retention period">'+RETENTION_PERIODS.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-retention-period="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><p class="admin-hint" id="admin-retention-hint">Share of each day’s signups (UTC) still active N days later. Approximate: based on last activity.</p><div class="admin-table-scroll"><table class="admin-table admin-retention-table"><thead id="admin-retention-head"></thead><tbody id="admin-retention-body"></tbody></table></div></section>'
+  +'<div class="admin-card-pair"><section class="admin-card" id="admin-countries" hidden><h3>'+art('invite-friends')+'Where players come from</h3><ul id="admin-country-list" class="admin-bars"></ul><p class="admin-hint">The country of each farmer’s device time zone, the last time they opened the game.</p></section>'
+  +'<section class="admin-card" id="admin-devices" hidden><h3>'+art('farmapp')+'Mobile or desktop</h3><div id="admin-device-box"></div><p class="admin-hint">The device each farmer last opened the game on. Mobile is a phone or a tablet.</p></section>'
+  +'<section class="admin-card" id="admin-languages"><h3>'+art('settings')+'Game language</h3><ul id="admin-language-list" class="admin-bars"></ul><p class="admin-hint">The language each farmer’s game was in, the last time they opened it.</p></section></div>'
   +'<section class="admin-card"><h3>'+art('gift')+'Invite a friend</h3><div id="admin-invite-totals" class="admin-invite-totals"></div><ul id="admin-invite-list" class="admin-recent-list admin-invite-list"></ul><p class="admin-hint">Each friend who reaches level 10 within 30 days earns 150 diamonds for both. “Paid” means the diamonds are in their farm.</p></section>'
+  // Money (the admin only): every checkout, the special offer and the partners.
+  +'</div><div data-admin-panel="money" hidden>'
   // Purchases (27 Sep 2026, the admin only): every checkout, paid or not, newest first.
-  +'</div><div data-admin-panel="purchases" hidden>'
+  +'<section class="admin-card" id="admin-purchases"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Open</button><button type="button" class="admin-filter" data-purchase-filter="unpaid" aria-pressed="false">Not paid</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (UTC). “Open”: the payment page may still be open, for up to 24 hours. “Not paid”: no payment within 24 hours. Test payments are marked.</p></section>'
   // Special offers (29 Sep 2026, supabase/special-offer.sql): diamonds, coins and/or VIP at shop prices, for €4.99, once per farmer,
   // from the level the admin picks: 14 unless changed, 10 at the earliest (13 Oct 2026, OFFER.minLevel, supabase/offer-level-10.sql).
   // The discount (21 Oct 2026, game/payments.js OFFER.discounts): 90% off is worth €49.99 (the default, as before), 50% €9.98, 33%
@@ -94,10 +127,23 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +(APPLE_SELLS_OFFER?'':' The iPhone app does not show it until Apple has approved it as an in-app purchase.')+'</p>'
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'
   +'<p class="admin-hint" id="admin-offer-status" role="status"></p></form><ul id="admin-offer-list" class="admin-recent-list" hidden></ul></section>'
-  +'<section class="admin-card"><h3>'+art('diamonds')+'Purchases</h3><div id="admin-purchase-totals" class="admin-invite-totals"></div><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-purchase-filter="all" aria-pressed="true">All</button><button type="button" class="admin-filter" data-purchase-filter="paid" aria-pressed="false">Paid</button><button type="button" class="admin-filter" data-purchase-filter="open" aria-pressed="false">Open</button><button type="button" class="admin-filter" data-purchase-filter="unpaid" aria-pressed="false">Not paid</button></div><ul id="admin-purchase-list" class="admin-recent-list admin-purchase-list"></ul><p class="admin-hint">Every checkout, newest first (Amsterdam time). “Open”: the payment page may still be open, for up to 24 hours. “Not paid”: no payment within 24 hours. Test payments are marked.</p></section>'
   // The partner programme (supabase/partners.sql, /partners): partners, what they brought in, and payout requests to pay by hand.
   +'<section class="admin-card" id="admin-partners"><h3>'+art('invite-friends')+'Partners <span id="admin-partner-count">0</span></h3><div id="admin-partner-totals" class="admin-invite-totals"></div><h4 class="admin-subhead">Payout requests</h4><ul id="admin-payout-list" class="admin-recent-list"></ul><h4 class="admin-subhead">Partners</h4><ul id="admin-partner-list" class="admin-recent-list"></ul><p class="admin-hint">Partners sign up on harvesttycoon.com/partners and earn 25% of what their players spend, without 21% VAT. A payout request comes by email to info@harvesttycoon.com with where to pay: pay it by hand, then mark it paid here. Rejected goes back to what they can ask for.</p></section>'
-  +'</div><div data-admin-panel="settings" hidden>'
+  // Chat (the admin and the moderators): how to handle a report, the open reports, the log; for the admin also the moderators and the
+  // levels from which farmers may chat.
+  +'</div><div data-admin-panel="chat" hidden>'
+  +'<section class="admin-card" id="admin-reports" hidden><h3>'+art('alert')+'Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
+  +'<section class="admin-card admin-guide"><h3>'+art('admin')+'Keeping the valley friendly</h3><ul><li><strong>Delete</strong> a message that is rude, hurtful or shares personal details (an address, a phone number).</li><li><strong>Mute for a day</strong> when someone keeps it up after a message is deleted.</li><li><strong>Ban from chat</strong> only for serious or repeated abuse. It closes the chat, never the farm.</li><li>Not sure? Choose <strong>Nothing wrong</strong> or leave it for the admin.</li></ul></section>'
+  +'<section class="admin-card" id="admin-report-log" hidden><h3>'+art('quests')+'Report log</h3><p class="admin-hint">Every reported message, newest first: who reported it and what the staff did with it.</p><ul id="admin-log-list" class="admin-recent-list admin-log-list"></ul></section>'
+  +'<section class="admin-card" id="admin-mods" hidden><h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p></section>'
+  +'<section class="admin-card" id="admin-chat-levels" hidden><h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p></section>'
+  // Feedback & bugs (supabase/feedback.sql): what farmers send with the mailbox button, for the admin and the moderators.
+  +'</div><div data-admin-panel="feedback" hidden>'
+  +'<section class="admin-card"><h3>'+art('feedback')+'Feedback</h3><div class="admin-filters" role="group" aria-label="Show"><button type="button" class="admin-filter active" data-feedback-filter="open" aria-pressed="true">Open</button><button type="button" class="admin-filter" data-feedback-filter="done" aria-pressed="false">Done</button></div>'
+  +'<ul id="admin-feedback-list" class="admin-recent-list admin-feedback-list"></ul><p class="admin-hint">What farmers send with the mailbox button, newest first, in their own words. Done moves a message to Done. A name opens the farmer\'s profile, where you can write back.</p></section>'
+  // Messages (the admin only): news, pop-ups and group messages, the newsletter (src/admin-news-mail.js adds its card here), the welcome
+  // message and gifts.
+  +'</div><div data-admin-panel="messages" hidden>'
   +'<section class="admin-card" id="admin-chat-settings" hidden><h3>'+art('bell')+'News and pop-ups</h3><form id="admin-news-form" class="admin-news">'
   // In more languages (supabase/admin-texts-languages.sql): English for every language without a text of its own.
   +'<label class="admin-news-hours">Language<select id="admin-news-language">'+LANGUAGES.map(l=>`<option value="${l.code}">${esc(l.name)}</option>`).join('')+'</select></label><p class="admin-popup-note" id="admin-news-language-note"></p>'
@@ -128,9 +174,10 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label>From level<input id="admin-popup-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label>'
   +'<p class="admin-popup-note">Every farmer sees the pop-up once, when nothing else is open, and never in their first half hour. It ends after the time below, or after 30 days. Who installed the app is only known on the device: phones and browsers are checked when the game opens. Android app (Google Play): only in our app from Google Play, never in the iPhone app, a browser or a game site; send it as a pop-up only (a notification would reach everyone). Website: harvesttycoon.com in a browser or on the home screen (itch.io too), never in our apps or on a game portal (CrazyGames, Kongregate, Discord); a pop-up only as well.</p></div>'
   +'<label class="admin-news-hours" id="admin-news-hours-row">Show it for<select id="admin-news-hours"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24" selected>24 hours</option><option value="48">48 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select></label><label class="admin-news-hours" id="admin-news-level-row">From level<input id="admin-news-level" type="number" min="1" max="200" step="1" value="1" inputmode="numeric"></label><button type="submit" class="primary-button">Send</button></form><ul class="admin-popup-list" id="admin-popup-list" hidden></ul>'
+  +'<p class="admin-hint" id="admin-news-status" role="status"></p></section>'
   // A private message from the admin to every new farmer, a few minutes after they sign up (supabase/welcome-dm.sql), in the
   // language they play in when it has a text of its own, otherwise in English (supabase/welcome-dm-languages.sql).
-  +'<h3>'+art('chat')+'Welcome message</h3><form id="admin-welcome-form" class="admin-news admin-welcome" hidden><label class="admin-welcome-on"><input type="checkbox" role="switch" class="family-switch" id="admin-welcome-on"><span>Send new farmers a private message from you</span></label>'
+  +'<section class="admin-card" id="admin-welcome" hidden><h3>'+art('chat')+'Welcome message</h3><form id="admin-welcome-form" class="admin-news admin-welcome" hidden><label class="admin-welcome-on"><input type="checkbox" role="switch" class="family-switch" id="admin-welcome-on"><span>Send new farmers a private message from you</span></label>'
   // From (Oct 2026): the welcome comes from one of the admins, Tony or Gerard (supabase/gerard.sql); it is sent as that farmer, with
   // their face and name, and replies go to them, so the text should say who they are.
   +'<label class="admin-news-hours" id="admin-welcome-from" hidden>From<select id="admin-welcome-sender"></select></label>'
@@ -138,19 +185,25 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<textarea id="admin-welcome-text" maxlength="500" rows="4" placeholder="Hi {name}, welcome to Harvest Tycoon!"></textarea><p class="admin-popup-note" id="admin-welcome-language-note"></p><p class="admin-popup-note">{name} becomes their farmer name. They can reply; the replies come in under your private messages. Only farmers who sign up after you switch it on get it, each once.</p>'
   +'<label class="admin-news-hours">Send it<select id="admin-welcome-delay"><option value="1">1 minute after sign-up</option><option value="3">3 minutes after sign-up</option><option value="5">5 minutes after sign-up</option><option value="10">10 minutes after sign-up</option><option value="30">30 minutes after sign-up</option></select></label>'
   +'<button type="submit" class="primary-button">Save</button><p class="admin-hint" id="admin-welcome-status"></p></form>'
-  +'<h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p>'
-  +'<h3>'+art('chat')+'Who may chat</h3><form id="admin-levels-form" class="admin-levels"><label>Global chat from level<input type="number" id="admin-level-global" min="1" max="200" step="1" inputmode="numeric"></label><label>Private messages from level<input type="number" id="admin-level-dm" min="1" max="200" step="1" inputmode="numeric"></label><button type="submit" class="small-button">Save</button></form><p id="admin-chat-status" class="admin-hint" role="status"></p><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
+  +'</section>'
+  +'<section class="admin-card" id="admin-donate" hidden><h3>'+art('gift')+'Send a gift</h3><form id="admin-donate-form" class="admin-donate"><div class="admin-gift-to"><span>Send to</span><div class="admin-filters" role="group" aria-label="Send to">'+GIFT_AUDIENCES.map(([id,label],i)=>`<button type="button" class="admin-filter${i?'':' active'}" data-gift-audience="${id}" aria-pressed="${!i}">${label}</button>`).join('')+'</div><div id="admin-gift-player" class="admin-gift-player" hidden><input type="search" id="admin-gift-search" placeholder="Find a farmer by name" aria-label="Find a farmer" autocomplete="off"><ul id="admin-gift-results" class="admin-gift-results"></ul></div></div><label><span>'+art('diamonds')+'Diamonds</span><input type="number" id="admin-donate-diamonds" min="0" max="50" step="1" placeholder="0" inputmode="numeric"></label><label><span>'+art('coins')+'<b id="admin-donate-coins-label">Coins</b></span><input type="number" id="admin-donate-coins" min="0" max="1000" step="10" placeholder="0" inputmode="numeric"></label><div class="admin-coin-kind"><div class="admin-filters" role="group" aria-label="Coins"><button type="button" class="admin-filter active" data-coin-kind="fixed" aria-pressed="true">Fixed</button><button type="button" class="admin-filter" data-coin-kind="level" aria-pressed="false">Per level</button></div><p class="admin-hint" id="admin-donate-preview">Every farmer gets the same.</p></div><label class="admin-donate-message"><span>Message</span><input type="text" id="admin-donate-message" maxlength="120" placeholder="Thanks for playing!"></label><button type="submit" class="primary-button" id="admin-donate-send">Send to everyone</button></form><p class="admin-hint" id="admin-donate-room"></p></section>'
+  // Settings (the admin only): Reload everyone (src/admin-reload.js adds its card here) and this device's screen numbers.
+  +'</div><div data-admin-panel="settings" hidden>'
+  +'<section class="admin-card" id="admin-device-card"><h3>'+art('farmapp')+'This device</h3><p id="admin-device" class="admin-hint admin-device"></p></section></div>'
   +'<p id="admin-dashboard-status" class="admin-hint admin-status" role="status"></p>';
  document.body.append(dialog);
- // News and offers by email (13 Oct 2026): its own card at the end of Settings, shown for the admin only (src/admin-news-mail.js).
+ // News and offers by email (13 Oct 2026): its own card on Messages, under News and pop-ups, shown for the admin only (src/admin-news-mail.js).
  const newsMail=createNewsMail({dialog,bridge});
- // Reload everyone now (22 Oct 2026): its own card after it, for the admin only (src/admin-reload.js).
+ // Reload everyone now (22 Oct 2026): its own card on Settings, for the admin only (src/admin-reload.js).
  const reloadCard=createReloadCard({dialog,bridge});
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
- // Four tabs: the chat first (what a moderator comes for), then players, growth and, for the admin, the chat settings.
+ // Escape in the search box empties it first; a second Escape closes the window, as everywhere.
+ // The tabs (src/admin-overview.js): one shows at a time; a tab this role may not see is never shown, whoever asks for it.
  function showTab(name){
+  if(!tabsFor(role).includes(name))name=firstTab(role);
   dialog.querySelectorAll('[data-admin-tab]').forEach(tab=>{const on=tab.dataset.adminTab===name;tab.classList.toggle('active',on);tab.setAttribute('aria-selected',String(on));});
   dialog.querySelectorAll('[data-admin-panel]').forEach(panel=>panel.hidden=panel.dataset.adminPanel!==name);
+  closeSearch();
  }
  dialog.querySelectorAll('[data-admin-tab]').forEach(tab=>tab.onclick=()=>showTab(tab.dataset.adminTab));
  let refreshTimer;
@@ -194,19 +247,25 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   view.detail=null;const panel=dialog.querySelector('[data-admin-panel="players"]');
   dialog.querySelector('#admin-player-detail').hidden=true;panel.querySelectorAll('.is-behind').forEach(s=>s.classList.remove('is-behind'));
  }
- // Headline numbers: who is on now, today's signups (today's retention row) and how many of the recent signups came
- // back the next day, weighted by cohort size.
- function renderKpis(online,retention){
-  // The server counts the last week's signups whatever period the table shows (retention.kpi); an older server sends only the week.
-  const today=zoneDay(Date.now()),row=retention.rows.find(r=>r.day===today),day1=retention.rows.map(r=>r.days[1]).filter(Boolean);
-  const kept=retention.kpi?.day1??day1.reduce((sum,d)=>({retained:sum.retained+d.retained,total:sum.total+d.total}),{retained:0,total:0});
-  dialog.querySelector('#admin-kpi-online').textContent=number(online.count);
-  dialog.querySelector('#admin-kpi-new').textContent=number(retention.kpi?.today??row?.size??0);
-  dialog.querySelector('#admin-kpi-day1').textContent=kept.total?`${Math.round(kept.retained/kept.total*100)}%`:'—';
+ // Overview (the admin only): the tiles from what the other parts loaded (src/admin-overview.js overviewTiles), drawn again whenever one
+ // of them comes in; a part that did not load shows "–". Moderators have no Overview, so nothing here is drawn or asked for for them.
+ const overview={};
+ function renderOverview(){
+  if(role!=='admin')return;
+  const t=overviewTiles(overview),put=(id,value)=>{const el=dialog.querySelector(`#admin-kpi-${id}`);if(el)el.textContent=value;};
+  put('online',t.online==null?'–':number(t.online));put('new',t.new==null?'–':number(t.new));put('day1',t.day1==null?'—':`${t.day1}%`);
+  put('reports',t.reports==null?'–':number(t.reports));put('feedback',t.feedback==null?'–':number(t.feedback));
+  put('revenue-today',t.revenueToday==null?'–':euros(t.revenueToday));put('revenue-week',t.revenueWeek==null?'–':euros(t.revenueWeek));
+  if(t.feedbackToday!=null)put('feedback-note',`${number(t.feedbackToday)} sent today`);
+  if(t.paidToday!=null)put('paid-today',`${number(t.paidToday)} paid since 00:00 UTC`);
+  if(t.paidWeek!=null)put('paid-week',`${number(t.paidWeek)} paid, today and the 6 days before`);
+  // A tile that waits for the staff glows: open reports, open feedback.
+  dialog.querySelector('[data-tile="reports"]')?.classList.toggle('is-waiting',t.reports>0);
+  dialog.querySelector('[data-tile="feedback"]')?.classList.toggle('is-waiting',t.feedback>0);
  }
  function renderRetention(data){
   const columns=data.columns??Array.from({length:8},(_,i)=>i),period=data.period??7;
-  dialog.querySelector('#admin-retention-hint').textContent=data.weekly?'Share of each week’s signups (from Monday, UTC) still active N days after their own signup day. A farmer counts once N days have passed. Approximate: based on last activity.':'Share of each day’s signups (Amsterdam time) still active N days later. Approximate: based on last activity.';
+  dialog.querySelector('#admin-retention-hint').textContent=data.weekly?'Share of each week’s signups (from Monday, UTC) still active N days after their own signup day. A farmer counts once N days have passed. Approximate: based on last activity.':'Share of each day’s signups (UTC) still active N days later. Approximate: based on last activity.';
   dialog.querySelector('#admin-retention-head').innerHTML=`<tr><th>Signed up</th><th>Farmers</th>${columns.map(n=>`<th>Day ${n}</th>`).join('')}</tr>`;
   dialog.querySelector('#admin-retention-body').innerHTML=data.rows.length?data.rows.map(row=>`<tr><td>${data.weekly?`Week of ${fmtDay(row.day)}`:fmtDay(row.day)}</td><td>${number(row.size)}</td>${row.days.map(d=>d?`<td class="${heat(d.pct)}" title="${d.retained} / ${d.total} still active">${d.pct}%</td>`:'<td class="admin-pending">—</td>').join('')}</tr>`).join(''):`<tr><td colspan="${columns.length+2}" class="admin-empty">No signups in the last ${period===7?'week':`${period} days`}.</td></tr>`;
  }
@@ -262,21 +321,23 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  async function load(){
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
   void loadChat();void loadFeedback();
-  // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing.
-  const PARTS=[['admin_online','Online now'],['admin_players','All players'],['admin_retention','Retention'],['admin_invites','Invites']];
-  const [online,players,retention,invites]=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
+  // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing. A
+  // moderator only loads what Players shows (src/admin-overview.js partsFor): Retention and Invites are on the admin's Growth tab.
+  const PARTS=partsFor(role);
+  const got=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
+  const part=name=>got[PARTS.findIndex(([operation])=>operation===name)]??null,online=part('admin_online'),players=part('admin_players'),retention=part('admin_retention'),invites=part('admin_invites');
   if(role==='admin')void showOffers();
   if(role==='admin')void showPartners();
   if(role==='admin')void loadSources();
   if(role==='admin')newsMail.show();
   if(role==='admin')void reloadCard.show();
-  if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(renderPurchases).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
+  if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(data=>{overview.purchases=data?.purchases??[];renderPurchases(data);renderOverview();}).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players)showPlayers(players);
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
   if(retention)renderRetention(retention);
-  if(online&&retention)renderKpis(online,retention);
+  if(online)overview.online=online;if(retention)overview.retention=retention;renderOverview();
   if(invites)renderInvites(invites);
-  const missing=PARTS.filter((_,i)=>![online,players,retention,invites][i]).map(([,name])=>name);
+  const missing=PARTS.filter((_,i)=>!got[i]).map(([,name])=>name);
   status.textContent=missing.length?`${missing.join(', ')} could not be loaded. Please try again.`:`Updated ${clock(new Date().toISOString())} (UTC)`;
  }
  // Feedback & bugs: the open messages (the count on the tab), or the ones marked done; each with the farmer's name, the time
@@ -291,7 +352,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const client=bridge.chat,list=dialog.querySelector('#admin-feedback-list');if(!client?.feedbackList||!role)return;
   try{
    const [open,done]=await Promise.all([client.feedbackList(false),feedbackView==='done'?client.feedbackList(true):null]);
-   const count=dialog.querySelector('#admin-feedback-count');count.textContent=number(open.length);count.hidden=!open.length;
+   const count=dialog.querySelector('#admin-feedback-count');count.textContent=number(open.length);count.hidden=!open.length;overview.feedback=open;renderOverview();
    const shown=done??open;await loadFaces(shown.map(f=>f.playerId));
    list.innerHTML=shown.length?shown.map(feedbackRow).join(''):`<li class="admin-empty">${feedbackView==='done'?'Nothing is marked done yet.':'No open messages. Everything is read.'}</li>`;
   }catch(error){list.innerHTML=`<li class="admin-empty">${esc(why(error))}</li>`;}
@@ -320,7 +381,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const chatStatus=dialog.querySelector('#admin-chat-status');
   try{
    const reports=await client.reports();await loadFaces(reports.map(r=>r.sender));
-   dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-count').textContent=number(reports.length);dialog.querySelector('#admin-kpi-reports').textContent=number(reports.length);
+   dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-count').textContent=number(reports.length);
+   // The open reports also on the Chat tab (for the moderators too, who have no Overview) and on the Overview's tile.
+   const tabCount=dialog.querySelector('#admin-chat-count');tabCount.textContent=number(reports.length);tabCount.hidden=!reports.length;overview.reports=reports;renderOverview();
    dialog.querySelector('#admin-report-list').innerHTML=reports.length?reports.map(r=>`<li>${avatar(r.senderName,false,r.sender)}<span class="admin-recent-copy"><strong>${esc(r.senderName??'A farmer')} <small>${where(r.channel)} · ${number(r.reports)} report${r.reports===1?'':'s'}${r.present?'':' · already gone'}</small></strong><small class="admin-report-body">“${esc(r.body)}”</small>${reportedBy(r)}<span class="admin-report-actions">${r.present?`<button type="button" class="small-button" data-report="delete" data-id="${esc(r.messageId)}">Delete</button>`:''}<button type="button" class="small-button" data-report="mute" data-id="${esc(r.messageId)}" data-player="${esc(r.sender)}">Mute 1 day</button><button type="button" class="small-button" data-report="ban" data-id="${esc(r.messageId)}" data-player="${esc(r.sender)}">Ban from chat</button><button type="button" class="small-button" data-report="dismiss" data-id="${esc(r.messageId)}">Nothing wrong</button></span></span></li>`).join(''):'<li class="admin-empty">No open reports. The valley is friendly today.</li>';
   }catch(error){dialog.querySelector('#admin-reports').hidden=false;dialog.querySelector('#admin-report-list').innerHTML=`<li class="admin-empty">${esc(why(error))}</li>`;}
   try{
@@ -330,7 +393,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(role!=='admin')return;
   // Send a gift: only the admins since 3 Oct 2026 (supabase/staff-gift-admin-only.sql); a moderator never sees the card.
   try{showRoom(await client.donationRoom());}catch{}
-  dialog.querySelector('#admin-chat-settings').hidden=false;void showPopups();void showWelcome();
+  for(const id of ['admin-chat-settings','admin-welcome','admin-mods','admin-chat-levels'])dialog.querySelector(`#${id}`).hidden=false;void showPopups();void showWelcome();
   // This device, as the installed app sees it (public/app-mode.js): to check the bottom of the screen on a real phone.
   const viewport=w=>{try{return w.harvestViewport??null;}catch{return null;}},page=viewport(window.parent),frame=viewport(window);
   dialog.querySelector('#admin-device').textContent=page?`This device: screen ${page.screen}, window ${page.window}, full-screen box ${page.fixed}, status bar ${page.statusBar}, strip ${page.shortfall}. Game: window ${frame?.window??'?'}, box ${frame?.fixed??'?'}, page strip ${frame?.strip??0}.`:'This device: not the installed app.';
@@ -444,8 +507,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   dialog.querySelector('#admin-gift-results').innerHTML=gift.player&&!found.length?`<li class="is-chosen">${avatar(gift.player.username,gift.player.online,gift.player.playerId)}<span><strong>${esc(gift.player.username)}</strong><small>Level ${number(gift.player.level)}</small></span></li>`
    :found.map(p=>`<li><button type="button" data-gift-pick="${esc(p.playerId)}" aria-pressed="${gift.player?.playerId===p.playerId}">${avatar(p.username,p.online,p.playerId)}<span><strong>${esc(p.username)}</strong><small>Level ${number(p.level)}</small></span></button></li>`).join('');
  }
- // From a farmer's page: back to the list first, since the gift card waits behind that page.
- function giftTo(player){closePlayer();gift.audience='player';gift.player=player;dialog.querySelector('#admin-gift-search').value='';paintGift();dialog.querySelector('#admin-donate').scrollIntoView({behavior:'smooth',block:'start'});}
+ // From a farmer's page: back to the list first, then the gift card on Messages, for that farmer.
+ function giftTo(player){closePlayer();showTab('messages');gift.audience='player';gift.player=player;dialog.querySelector('#admin-gift-search').value='';paintGift();dialog.querySelector('#admin-donate').scrollIntoView({behavior:'smooth',block:'start'});}
  dialog.querySelector('#admin-donate').addEventListener('click',event=>{
   const kind=event.target.closest('[data-coin-kind]');if(kind){gift.perLevel=kind.dataset.coinKind==='level';paintCoins();return;}
   const choice=event.target.closest('[data-gift-audience]');if(choice){gift.audience=choice.dataset.giftAudience;paintGift();if(gift.audience==='player'&&!gift.player)dialog.querySelector('#admin-gift-search').focus();return;}
@@ -639,11 +702,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-popup-list').addEventListener('click',async event=>{
   const stop=event.target.closest('[data-popup-stop]');if(!stop)return;
   if(!await confirmAction({title:'Stop this pop-up?',description:'Farmers who have not seen it yet will not get it. The news stays in Notifications.',confirmLabel:'Stop',tone:'danger'}))return;
-  try{await bridge.chat.stopPopup(stop.dataset.popupStop);}catch(error){dialog.querySelector('#admin-chat-status').textContent=why(error);}
+  try{await bridge.chat.stopPopup(stop.dataset.popupStop);}catch(error){dialog.querySelector('#admin-news-status').textContent=why(error);}
   void showPopups();
  });
  dialog.querySelector('#admin-news-form').addEventListener('submit',async event=>{
-  event.preventDefault();const chatStatus=dialog.querySelector('#admin-chat-status');
+  event.preventDefault();const chatStatus=dialog.querySelector('#admin-news-status');
   keepNewsLanguage();const en=newsTexts.en??{},body=en.body??'',texts=newsOwnTexts(),languages=texts?` in ${Object.keys(texts).length+1} languages`:'';
   if(!body){chatStatus.textContent=newsLanguage==='en'?'':'Write the English text first: farmers in every other language get it.';return;}
   const sent=()=>{newsTexts={};newsLanguage='en';dialog.querySelector('#admin-news-language').value='en';showNewsLanguage();};
@@ -692,18 +755,71 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  function open(tab='chat'){
   if(!role)return;
   if(!dialog.open)openDashboard();
-  showTab(dialog.querySelector(`[data-admin-tab="${tab}"]:not([hidden])`)?tab:'chat');
+  showTab(tabsFor(role).includes(tab)?tab:firstTab(role));
   if(tab==='players')dialog.querySelector('#admin-online-list')?.closest('.admin-card')?.scrollIntoView?.({block:'start'});
  }
+ // One card on its tab, brought into view with a short glow (the Overview's tiles and quick actions).
+ function showCard(tab,id){
+  showTab(tab);const card=dialog.querySelector(`#${id}`);if(!card||card.hidden)return null;
+  dialog.querySelectorAll('.is-flash').forEach(other=>other.classList.remove('is-flash'));
+  card.scrollIntoView?.({behavior:'smooth',block:'start'});void card.offsetWidth;card.classList.add('is-flash');
+  setTimeout(()=>card.classList.remove('is-flash'),1600);return card;
+ }
+ // The Overview's tiles open the tab with the details: Online now and New players today on Players (the new ones listed newest first),
+ // Kept on day 1 at Retention, the reports on Chat, the feedback on Feedback, the money on Money.
+ dialog.querySelector('#admin-tiles').addEventListener('click',event=>{
+  const tile=event.target.closest('[data-tile]');if(!tile)return;const kind=tile.dataset.tile;
+  if(kind==='online'){open('players');return;}
+  if(kind==='new'){view.filter='new';view.sort='new';view.shown=60;dialog.querySelector('#admin-player-sort').value='new';pressed(dialog.querySelectorAll('[data-player-filter]'),dialog.querySelector('[data-player-filter="new"]'));renderPlayers();showCard('players','admin-players');return;}
+  if(kind==='day1'){showCard('growth','admin-retention');return;}
+  if(kind.startsWith('revenue')){showCard('money','admin-purchases');return;}
+  showTab(tile.dataset.go);
+ });
+ // Quick actions (the admin only, src/admin-overview.js QUICK_ACTIONS): each opens its card, ready to fill in; nothing is sent from
+ // here, every card still asks before it sends (confirmAction).
+ dialog.querySelector('.admin-quick-actions').addEventListener('click',event=>{
+  const action=QUICK_ACTIONS[event.target.closest('[data-quick]')?.dataset.quick];if(!action)return;
+  if(action.audience){gift.audience=action.audience;gift.player=null;paintGift();}
+  const card=showCard(action.tab,action.card);
+  if(card&&action.focus)setTimeout(()=>dialog.querySelector(`#${action.focus}`)?.focus?.({preventScroll:true}),350);
+ });
+ // The search at the top (every tab, the admin and the moderators): farmers by name from the list Players loaded, the most recently
+ // active first; a pick (or Enter for the first) opens that farmer's details on Players. Names only, as the moderators see them.
+ const search=dialog.querySelector('#admin-search'),found=dialog.querySelector('#admin-search-results');
+ function closeSearch(){if(found){found.hidden=true;found.innerHTML='';}search?.setAttribute('aria-expanded','false');}
+ function paintSearch(){
+  const q=search.value.trim();if(!q){closeSearch();return;}
+  const hits=searchPlayers(view.players,q);
+  found.innerHTML=hits.length?hits.map(p=>`<li><button type="button" data-search-pick="${esc(p.playerId)}">${avatar(p.username,p.online,p.playerId)}<span><strong>${esc(p.username)}</strong><small>Level ${number(p.level)}${p.online?', online now':`, ${esc(ago(p.lastActiveAt))}`}</small></span></button></li>`).join('')
+   :`<li class="admin-empty">${view.players.length?'No farmer with that name.':'The players are still loading…'}</li>`;
+  found.hidden=false;search.setAttribute('aria-expanded','true');
+ }
+ function pickFarmer(id){search.value='';closeSearch();showTab('players');void openPlayer(id);}
+ search.addEventListener('input',paintSearch);
+ search.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&search.value){event.preventDefault();event.stopPropagation();search.value='';closeSearch();return;}
+  if(event.key!=='Enter')return;event.preventDefault();const first=searchPlayers(view.players,search.value)[0];if(first)pickFarmer(first.playerId);
+ });
+ found.addEventListener('click',event=>{const pick=event.target.closest('[data-search-pick]');if(pick)pickFarmer(pick.dataset.searchPick);});
+ dialog.addEventListener('click',event=>{if(!event.target.closest('.admin-search'))closeSearch();});
+ // No middle dots on screen (the owner: never " · "): the staff screens are left out of the translation pass (public/i18n.js KEEP), so
+ // the dashboard runs the same undot over what it draws itself; a text that is already clean is left alone, so this never loops.
+ const clean=node=>{if(node.nodeType===3){const next=undot(node.data);if(next!==node.data)node.data=next;return;}
+  if(node.nodeType!==1||node.closest?.('textarea,input'))return;const walk=document.createTreeWalker(node,4);for(let t=walk.nextNode();t;t=walk.nextNode())clean(t);};
+ clean(dialog);
+ if(typeof MutationObserver==='function')new MutationObserver(list=>{for(const m of list){if(m.type==='characterData')clean(m.target);else m.addedNodes.forEach(clean);}}).observe(dialog,{subtree:true,childList:true,characterData:true});
  window.harvestStaff={role:()=>role,showFarmer,open};
  // For the admin (checked by e-mail, as before) and the moderators (their role comes with the chat). Phones hide the topbar
  // icons, so the same dashboard also gets a card at the end of the More menu. The server checks every request again.
  let role=null;
  Promise.all([checkAdmin(),chat?.whenReady?.().then(overview=>overview?.role??null).catch(()=>null)]).then(([admin,chatRole])=>{
   role=admin||chatRole==='admin'?'admin':chatRole==='moderator'?'moderator':null;if(!role)return;
-  dialog.querySelector('#admin-dashboard-eyebrow').textContent=role==='admin'?'ONLY FOR YOU':'FOR THE MODERATORS';
+  // The dashboard's own look (22 Oct 2026), only for the staff: nobody else downloads it (public/admin-dashboard.css).
+  const style=document.createElement('link');style.rel='stylesheet';style.href=import.meta.resolve?.('/admin-dashboard.css')??'/admin-dashboard.css';document.head.append(style);
+  dialog.dataset.role=role;
   dialog.querySelector('#admin-dashboard-title').textContent=role==='admin'?'Admin dashboard':'Moderator dashboard';
-  dialog.querySelector('[data-admin-tab="settings"]').hidden=role!=='admin';dialog.querySelector('[data-admin-tab="purchases"]').hidden=role!=='admin';
+  for(const tab of ADMIN_TABS)dialog.querySelector(`[data-admin-tab="${tab}"]`).hidden=role!=='admin';
+  showTab(firstTab(role));
   button.hidden=false;const entry=document.getElementById('admin-menu-entry');if(entry)entry.hidden=false;
  });
  return {};

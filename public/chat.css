@@ -200,17 +200,14 @@ span.chat-avatar{cursor:default}
 .admin-feedback-meta{display:block;margin-top:4px}
 .admin-report-actions a.small-button{display:inline-flex;align-items:center;text-decoration:none}
 .admin-news textarea{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:10px 12px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:400 14px/1.4 'DM Sans',sans-serif;resize:vertical}
-#admin-chat-settings h3:not(:first-child){margin-top:20px}
 .admin-levels{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
 .admin-levels label{display:grid;gap:4px;color:#5e523a;font-size:13px;font-weight:700}
 .admin-levels input{width:96px;min-height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d6c9b8;border-radius:10px;background:#fff;font:600 14px 'DM Sans',sans-serif}
 .admin-levels .small-button{width:auto;min-height:40px}
-#admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
 .admin-tabs{margin:0 0 12px}
 [data-admin-panel][hidden],.admin-tabs button[hidden]{display:none}
 .admin-guide{background:#f3f7ec;border-color:#dce8cc}
 .admin-guide ul{display:grid;gap:6px;margin:8px 0 0;padding-inline-start:18px;color:#4f5a3c;font-size:13px;line-height:1.45}
-@media(max-width:600px){#admin-dashboard-dialog .admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Settings: a picture on every switch (the envelope for private messages). */
 .notify-row-art>.game-art{flex:none;width:34px;height:34px;margin-inline-end:2px;object-fit:contain}
 .notify-row-art{justify-content:flex-start;gap:12px}.notify-row-art>span{flex:1;min-width:0}
@@ -254,11 +251,9 @@ span.chat-avatar{cursor:default}
 /* The dashboard in the game's own look: painted icons on the numbers, the tabs and every heading; farmers' own pictures. */
 #admin-dashboard-dialog .admin-card h3{display:flex;align-items:center;gap:9px}
 #admin-dashboard-dialog .admin-card h3>.game-art{flex:none;width:28px;height:28px;object-fit:contain}
-#admin-dashboard-dialog .admin-kpis>div>.game-art{justify-self:center;width:30px;height:30px;margin-bottom:2px;object-fit:contain}
 .admin-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .admin-tabs button>.game-art{flex:none;width:20px;height:20px;object-fit:contain}
 /* Phones: the five tabs as icons only (the words no longer fit); each keeps its name for screen readers. */
-@media(max-width:600px){.admin-tab-name{display:none}.admin-tabs button>.game-art{width:26px;height:26px}}
 .admin-avatar.has-face{overflow:hidden;background:#f1e7de}
 .admin-avatar.has-face>img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
 .admin-avatar.has-face>.online-dot{position:absolute}
