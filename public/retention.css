@@ -375,14 +375,17 @@
  .project-focus h3{font-size:21px}
 }
 
-/* Floating rewards over a field: small chips with their picture instead of plain white text. */
-.floating-reward{display:flex;gap:6px;align-items:center;transform:translateX(-50%);color:#453e28;text-shadow:none;font:700 16px 'Outfit',sans-serif;white-space:nowrap}
-.float-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px 3px 4px;border-radius:999px;background:#fffdf5f2;box-shadow:0 4px 12px #3a301c33,0 1px 0 #e8dcc4}
-.float-chip .game-art{width:24px;height:24px;object-fit:contain}
-.float-chip.is-xp{background:#eef2fcf2;color:#39518f}
-.float-chip.is-cost{background:#fbf1dff2;color:#8a5a1c}
-.float-chip.is-golden{background:#f7d77af2;color:#6b4712;font-weight:700}
-@media(max-width:900px),(max-height:550px) and (pointer:coarse){.floating-reward{font-size:14px}.float-chip .game-art{width:20px;height:20px}}
+/* Floating rewards over a field: chips with their picture instead of plain white text. 22 Oct 2026 (the owner: "kan die ui/ux mooier
+   zoals de rest, en misschien iets langer in beeld"): the game's cream card with a rim and a chunky shadow like its buttons, the
+   picture a little bigger, bolder figures; they pop in, stay about a second and a half and then rise (2.6 s, styles.css
+   @keyframes reward; game.js floatAt removes them after 2.7 s). */
+.floating-reward{display:flex;gap:7px;align-items:center;transform:translateX(-50%);color:#453e28;text-shadow:none;font:700 17px 'Outfit',sans-serif;white-space:nowrap}
+.float-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 13px 4px 4px;border:1.5px solid #e3d8c6;border-radius:999px;background:#fffdf5;box-shadow:0 3px 0 #e2d4ba,0 8px 18px #3a301c2e;letter-spacing:.01em}
+.float-chip .game-art{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 1px #3a301c33)}
+.float-chip.is-xp{background:#eef3fd;border-color:#c9d5f0;box-shadow:0 3px 0 #c3d0ee,0 8px 18px #2a3a6a26;color:#34508f}
+.float-chip.is-cost{background:#fbf1df;border-color:#ecd3a8;box-shadow:0 3px 0 #e6c891,0 8px 18px #3a301c2e;color:#8a5a1c}
+.float-chip.is-golden{background:linear-gradient(#fbe7a6,#f3cd5c);border-color:#e0aa3e;box-shadow:0 3px 0 #c98f2a,0 8px 18px #6b471240;color:#5e3c0c}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){.floating-reward{font-size:15px}.float-chip{padding:3px 11px 3px 4px}.float-chip .game-art{width:24px;height:24px}}
 /* A new crop medal (Oct 2026, public/medal-notice.js): its chip on a line of its own over the floating harvest, in the tier's colour
    (the profile's medal dots); one short toast at the bottom, just above the tools (farm.html puts #medal-toast in the bottom bar, so it
    follows every layout) that slides up, goes by itself and takes no taps; the yellow "!" on the Medals tab until it is collected. */
@@ -1525,7 +1528,7 @@ html[data-portal] .feedback-copy{display:none!important}
 .event-league-list b{font-size:13px;color:#4b3d22}
 .event-league-list small{font-size:12px;color:#8a7d66;white-space:nowrap}
 /* What a harvest is worth at today's prices (11 Oct 2026, Part A A11): a gold coin chip beside the crops, the coins come when it is sold. */
-.float-chip.is-worth{background:#fff1c4f2;color:#7a5512;font-weight:700}
+.float-chip.is-worth{background:#fff1c4;border-color:#ecd08a;box-shadow:0 3px 0 #e6c470,0 8px 18px #3a301c2e;color:#7a5512}
 /* Join again in Welcome back (17 Oct 2026, the owner): the family's own emblem in the gift row's place. */
 #welcome-back-dialog .welcome-family .family-emblem{width:38px;height:38px;border-radius:12px}
 #welcome-back-dialog .welcome-family .family-emblem .game-art{width:28px;height:28px}

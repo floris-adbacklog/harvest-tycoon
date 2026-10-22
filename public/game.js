@@ -1084,7 +1084,7 @@ function worthChip(crops){
  return worth>0?floatChip('coins',`worth ${worth.toLocaleString('en-US')}`,'is-worth'):'';
 }
 function floatReward(id,html){const v=plots[id];floatAt(v.x,2.4,v.z,html);}
-function floatAt(x,y,z,html){const p=new THREE.Vector3(x,y,z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);floatClear(e);setTimeout(()=>e.remove(),1400);}
+function floatAt(x,y,z,html){const p=new THREE.Vector3(x,y,z).project(camera),e=document.createElement('div');e.className='floating-reward';e.innerHTML=html;e.style.left=`${world.offsetLeft+(p.x*.5+.5)*world.clientWidth}px`;e.style.top=`${world.offsetTop+(-p.y*.5+.5)*world.clientHeight}px`;$('game').append(e);floatClear(e);setTimeout(()=>e.remove(),2700);}
 // A float stays in sight (11 Oct 2026, Part A A11: at 918x516 the first basket's float, with what it is worth, rose from the top row of
 // fields under the level card and the level-2 line, and its start lay under the side tools). It starts low enough to stay below the bars
 // at the top and the toast's place all the way up (the float rises 75 px, styles.css @keyframes reward); the toast's place counts also
