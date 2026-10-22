@@ -100,10 +100,8 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   obj.traverse(n=>{if(n.isMesh)n.visible=false;});
   obj.add(rig);relock(obj);
   const home=[obj.position.x,obj.position.z];
-  // It faces as the layout turned it, or the other way along the screen; the cow only the way it was turned (seen from its other
-  // side, from up here, its turned head seems to stare at the sky).
-  const faces=file==='cow_101'?[turn]:[turn,turn+Math.PI];
-  const a={obj,rig,mixer,actions,kind,file,still,home,length,faces,yaw:turn,face:turn,state:null,timer:0,target:null,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
+  // It walks along the screen, the way the layout turned it or the other way (axes).
+  const a={obj,rig,mixer,actions,kind,file,still,home,length,axes:[turn,turn+Math.PI],yaw:turn,state:null,timer:0,target:null,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
   // A head start of its own: a state of its own and a point of its own in its clips. The old lying pig lies.
   enter(a,model==='pig_002'&&actions.lie?'lie':pick(resting(a),random),true);
   return a;
@@ -119,18 +117,23 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   if(!a.actions[state])state='idle';
   const lying=state==='lie'||a.state==='lie';
   a.state=state;a.timer=state==='walk'?0:LASTS[state][0]+random()*(LASTS[state][1]-LASTS[state][0]);
-  if(state!=='walk'){a.target=null;a.next=null;}
+  if(state!=='walk')a.target=null;
   play(a,state,lying?LIE_FADE:FADE);
   if(start){a.current.time=random()*a.current.getClip().duration;a.mixer.update(0);}
  }
- // A few calm steps, mostly along the screen (seen from the side, as the farm's animals stand), round its own spot, and never onto
- // another animal (where it stands or where it is going).
+ // A few calm steps forward (22 Oct 2026, the owner: "de geanimeerde dieren zoals de koeien draaien soms een beetje raar"): before,
+ // it picked any spot round its own and turned to it, a cow up to half a turn for a step shorter than itself, and turned back after.
+ // Now it walks on the way it faces, give or take 30 degrees off its line along the screen, staying within its roam round its own spot
+ // (along the screen, a third of that up and down it) and never onto another animal (where it stands or where it is going). Only
+ // when nothing ahead fits (it reached the end of its roam) does it turn round, walking a bend, and go back the other way.
  function walkTarget(a){
   if(a.still)return null;
   const {roam}=a.kind,[hx,hz]=a.home,at=[a.obj.position.x,a.obj.position.z];
-  for(let tries=0;tries<6;tries++){
-   const u=(random()*2-1)*roam,v=(random()*2-1)*roam*.33,x=hx+u*ACROSS[0]+v*DEPTH[0],z=hz+u*ACROSS[1]+v*DEPTH[1];
-   if(Math.hypot(x-at[0],z-at[1])<.35)continue;
+  const ahead=a.axes.reduce((b,f)=>Math.abs(turnOf(a.yaw,f))<Math.abs(turnOf(a.yaw,b))?f:b),ways=[ahead,ahead+Math.PI];
+  for(const way of ways)for(let tries=0;tries<6;tries++){
+   const angle=way+(random()*2-1)*.5,dist=.35+random()*Math.max(.15,roam*.9),x=at[0]+Math.sin(angle)*dist,z=at[1]+Math.cos(angle)*dist;
+   const u=(x-hx)*ACROSS[0]+(z-hz)*ACROSS[1],v=(x-hx)*DEPTH[0]+(z-hz)*DEPTH[1];
+   if(Math.abs(u)>roam||Math.abs(v)>roam*.33)continue;
    const clear=herd.every(b=>b===a||[[b.obj.position.x,b.obj.position.z],b.target].every(p=>!p||Math.hypot(p[0]-x,p[1]-z)>=(a.length+b.length)*.45));
    if(clear)return [x,z];
   }
@@ -139,20 +142,13 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
  function step(a,dt){
   const at=a.obj.position;
   if(a.state==='walk'){
-   // There: it turns back to face along the screen (the nearer of its sides; the cow only its own) still stepping, and only then
-   // grazes, stands or lies (22 Oct 2026, the owner: "de geanimeerde dieren zoals de koeien draaien soms een beetje raar": they
-   // turned round on the spot while grazing or lying, the whole body sliding round on still legs).
-   if(!a.target){
-    a.yaw=turnTowards(a.yaw,a.face,TURN*dt);
-    if(Math.abs(turnOf(a.yaw,a.face))<.02)enter(a,a.next);
-   }else{
    const dx=a.target[0]-at.x,dz=a.target[1]-at.z,d=Math.hypot(dx,dz),want=Math.atan2(dx,dz);
-   if(d<.04){a.target=null;a.next=a.actions.eat&&random()<.6?'eat':'idle';a.face=a.faces.reduce((b,f)=>Math.abs(turnOf(a.yaw,f))<Math.abs(turnOf(a.yaw,b))?f:b);}
+   if(d<.04)enter(a,a.actions.eat&&random()<.6?'eat':'idle');
    else{
     a.yaw=turnTowards(a.yaw,want,TURN*dt);
-    // It turns first, then walks: no sliding sideways.
+    // Nearly facing it: straight there. Turning round: a bend, still walking forward at half its pace (no spinning on the spot).
     if(Math.abs(turnOf(a.yaw,want))<.4){const s=Math.min(d,a.speed*dt);at.x+=dx/d*s;at.z+=dz/d*s;}
-   }
+    else{const s=a.speed*.5*dt;at.x+=Math.sin(a.yaw)*s;at.z+=Math.cos(a.yaw)*s;}
    }
    if(a.state==='walk'&&(a.since+=dt)>30)enter(a,'idle');   // never walks for ever (the target was taken)
   }else{
