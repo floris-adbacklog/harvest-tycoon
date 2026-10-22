@@ -2,6 +2,7 @@ import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_X
 import {art,artSource} from './visual-icons.js';
 // Natural fertilizer's share (21 Oct 2026): its own section in Fields and crops.
 import {FERTILIZER_CUT} from './farm-state.js';
+import {WAREHOUSE_CAPACITY,WAREHOUSE_COSTS,WAREHOUSE_MASTER,WAREHOUSE_MAX_LEVEL,WAREHOUSE_START_ROOM} from './farm-state.js';
 // The Fishing pond (11 Oct 2026): its section, only once the pond is open (POND_OPEN).
 import {FAMILY_IDLE_DAYS,FAMILY_IDLE_DEFAULT} from './farm-state.js';
 // The farm's pets (20 Oct 2026): their names and finds, for one line in Getting started.
@@ -33,7 +34,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'getting-started',title:'Getting started',art:'farm',blurb:'The Beginner guide step by step, where to find things, and help when you are stuck.',keywords:'start beginner guide rookie controls swipe sweep zoom tutorial new first steps stuck help buttons phone computer sell money'},
  {id:'crops',title:'Fields and crops',art:'wheat',blurb:'Planting, watering, more fields and every crop in the game.',keywords:'plant water care harvest field seeds grow medals mastery silo trees fertilizer fertilize natural fertiliser'},
  {id:'buildings',title:'Buildings and goods',art:'buildings',blurb:'What each building makes, from what, and how long it takes.',keywords:'production recipe goods upgrade factory batch collect'},
- {id:'market',title:'Market',art:'market',blurb:'Selling crops and goods, and prices that change every day.',keywords:'sell price demand coins stall'},
+ {id:'market',title:'Market and Warehouse',art:'market',blurb:'Selling crops and goods, prices that change every day, and the Warehouse that keeps it all.',keywords:'sell price demand coins stall warehouse storage full upgrade places'},
  {id:'quests',title:'Quests and levels',art:'quests',blurb:'Goals, XP, levels and what opens when.',keywords:'xp level unlock journal quest claim'},
  {id:'daily',title:'Daily rewards and orders',art:'gift',blurb:'The daily gift, challenges and delivery orders.',keywords:'streak gift challenges deliveries orders cart commission comeback chest away return'},
  {id:'family',title:'Farm family',art:'family-members',blurb:'Playing together: the Family Chest, weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite chest level flag join order points stats goods'},
@@ -96,7 +97,7 @@ const SECTION_ART={
  'sec-planting':'seeds','sec-water-and-care':'water','sec-natural-fertilizer':'fertilizer','sec-trees-and-bushes':'apples','sec-more-fields':'farmhouse','sec-medals':'trophy',
  'sec-silo-research':'silo','sec-every-crop':'vegetables',
  'sec-how-buildings-work':'hammer',
- 'sec-selling':'market','sec-how-far-prices-move':'double-coins','sec-farm-stall':'stall',
+ 'sec-selling':'market','sec-how-far-prices-move':'double-coins','sec-farm-stall':'stall','sec-warehouse':'warehouse','sec-warehouse-levels':'hammer',
  'sec-quests':'quests','sec-level-rewards':'xp','sec-what-opens-when':'lock',
  'sec-a-gift-every-day':'gift','sec-back-after-a-while':'letter','sec-daily-challenges':'trophy','sec-delivery-orders':'cart','sec-halloween-pass':'ghostpumpkin','sec-season-pass':'vip',
  'sec-a-new-day':'bell',
@@ -425,7 +426,7 @@ const BODIES={
    ['buildings','Build',`Each building opens at a level and costs coins once; the ${BUILDINGS.dairy.name} needs the ${BUILDINGS.mill.name} first, the ${BUILDINGS.bakery.name} the ${BUILDINGS.dairy.name} and the ${BUILDINGS.windmill.name}. Tap a building to start a batch: it turns crops (or other goods) into goods that sell for more.`],
    ['hammer','Upgrade',`Better buildings run more batches at the same time, up to level ${MAX_BUILDING_LEVEL}. Level ${MAX_BUILDING_LEVEL} is fully upgraded. Every level costs more than the one before, and a building that costs more to build costs more to upgrade. From level 4 an upgrade also asks for goods the building makes itself, like milk for the Dairy Barn. The Factory asks for goods from across the valley from its first upgrade. The Buildings discount boost halves the coins and goods of your next upgrade.${h.level==null||h.level>=WORLD_TWO_LEVEL?` <span>From level ${MASTER_UPGRADES[0].level}, master tools from ${h.link('village',TOPIC.village.title,'sec-past-level-10')} take a building on to level ${TOP_BUILDING_LEVEL}.</span> <span>From level ${RECIPE_LEVELS.builderscrate}, builder’s crates from ${h.link('village',TOPIC.village.title,'sec-builder-s-crates')} take coins off an upgrade, up to half the price.</span>`:''}`],
    // 18 Oct 2026: a computer with a mouse shows a building's picture without its name (desktop-hud.css), so the label, not the name.
-   ['collect-all','Collect','When a batch is ready, the building\'s label on the farm turns yellow: tap it to collect everything that is ready. Or open the building and use Collect all.'],
+   ['collect-all','Collect',`When a batch is ready, the building\'s label on the farm turns yellow: tap it to collect everything that is ready. Or open the building and use Collect all. What you collect goes into your ${h.link('market','Warehouse','sec-warehouse')}; while it is full, a finished batch waits in its building.`],
    // 11 Oct 2026 (farm-state.js batchDuration).
    ['eggs','A quick first batch',`The first batch in each new building is ready in ${FIRST_BATCH_MS/1000} seconds. After that every batch takes its usual time.`],
    ['feed','Animal feed',`Chickens, cows, sheep, goats and pigs eat animal feed. Mix it at the ${BUILDINGS.mill.name}: ${RECIPES.feed.input.corn} corn make ${RECIPES.feed.output.feed}, ${RECIPES.barleyfeed.input.barley} barley make ${RECIPES.barleyfeed.output.feed} and ${RECIPES.wheatfeed.input.wheat} wheat make ${RECIPES.wheatfeed.output.feed}. At the ${BUILDINGS.windmill.name}, ${RECIPES.windfeed.input.barley} barley make ${RECIPES.windfeed.output.feed}. Feed sells for ${ITEMS.feed.sell} coins.`],
@@ -433,6 +434,7 @@ const BODIES={
   ]))+farmhouseBlock(h)+familyHallBlock(h)+blocks;
  },
  market(h){
+  const village=h.level==null||h.level>=WORLD_TWO_LEVEL;
   return section('Selling',facts([
    ['market','Prices change every day','At 00:00 UTC the market sets new prices. Most days a price stays close to normal; now and then it is much higher or lower. Today’s market pick is the item whose price rose most today, and the outlook shows tomorrow’s.'],
    ['coins','Sell some or sell all','Choose how many to sell (on a phone: tap Pick amount), or sell all of one crop. The basket at the bottom shows what all your crops are worth.'],
@@ -441,7 +443,19 @@ const BODIES={
    ['buildings','Goods pay more',`Crops made into goods sell for more than the crops that went in. See ${h.link('buildings')}.`],
    ['quests','Keep what you need',`Orders and your family ask for crops and goods, and often pay more than the market. See ${h.link('daily',TOPIC.daily.title,'sec-delivery-orders')} and ${h.link('family',TOPIC.family.title,'sec-the-family-order')}.`]
   ]))+section('How far prices move',table(['What','Lowest','Highest'],[['Crops',MARKET_RANGES.crops],['Goods',MARKET_RANGES.goods]].map(([what,[lo,hi]])=>`<tr><td>${what}</td><td>${Math.round(lo*100)}% of normal</td><td>${Math.round(hi*100)}% of normal</td></tr>`))+'<p>Every crop and good has its own price each day. The Market shows today’s price next to the normal one.</p>')
-  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time. What it earns per level is in ${h.link('helpers',TOPIC.helpers.title,'sec-farm-stall')}.</p>`);
+  +section('Farm stall',`<p>${h.lvl(FEATURE_LEVELS.stall)} Your stall earns coins by itself. Collect them from time to time. What it earns per level is in ${h.link('helpers',TOPIC.helpers.title,'sec-farm-stall')}.</p>`)
+  // The Warehouse (22 Oct 2026, farm-state.js): what counts, what waits when it is full, what always works, and its levels. Below level 100
+  // nothing of the village shows (its goods and the levels with master tools), as everywhere in How to play.
+  +section('Warehouse',facts([
+   ['warehouse','Everything in one place',`Everything you harvest and make is kept in your Warehouse, the big red barn by the road west of your fields: crops, goods${village?', village goods':''} and heirlooms. Each one takes one place. Coins, diamonds, seed packets, boosts and fish take no place. Tap the Warehouse, or the Warehouse line at the top of the Market, to see everything you have and how full it is.`],
+   ['lock','When it is full','Harvesting, collecting batches, the Seed Lab and starting the tractor’s Harvest job or night shift wait. Ripe crops stay on their fields and finished batches wait in their building: nothing is lost. One harvest or collect may go over the limit, so a field or a batch is never split.'],
+   ['market','What always works','Planting, starting batches, selling and everything else keep working. Rewards, gifts, purchases, chores and a night shift that is already running always arrive, also in a full Warehouse. To make room, sell at the Market, use goods for batches, orders and upgrades, or upgrade the Warehouse.'],
+   ['coins','Almost full','From 90% full the Market button shows how full your Warehouse is, and Full once it is full.']
+  ]))
+  +section('Warehouse levels',`<p>Upgrades cost coins.${village?` From level ${WAREHOUSE_MAX_LEVEL+1} (farm level ${WAREHOUSE_MASTER[0].level} and up) they also ask for master tools, planks and stone from the village, like the buildings past level ${WAREHOUSE_MAX_LEVEL}.`:''} The Buildings discount boost halves the coins${village?' and goods':''} of your next Warehouse upgrade too.</p>`
+   +table(['Level','Places','Upgrade cost'],WAREHOUSE_CAPACITY.slice(0,village?undefined:WAREHOUSE_MAX_LEVEL).map((places,i)=>{const level=i+1,master=WAREHOUSE_MASTER[level-WAREHOUSE_MAX_LEVEL-1];
+    return `<tr><td>${level}</td><td>${number(places)}</td><td>${level===1?'Every farm starts here':master?`${art('coins')}${number(master.coins)}, ${Object.entries(master.materials).map(([k,n])=>`${number(n)} ${ITEMS[k].name.toLowerCase()}`).join(', ')} (level ${master.level})`:`${art('coins')}${number(WAREHOUSE_COSTS[level-2])}`}</td></tr>`;}))
+   +`<p>A farm that was already growing when the Warehouse came started on the level that holds its stock and a quarter more (${Math.round((WAREHOUSE_START_ROOM-1)*100)}%), as high as its farm level allowed. Nobody lost anything.</p>`);
  },
  quests(h){
   // Each thing that opens is a chip; one explained elsewhere leads there (Oct 2026). The Starter Pack is bought, so never in our Android app
@@ -556,7 +570,7 @@ const BODIES={
   // The goods last, right before "and" (7 Oct 2026), so nothing but a space stands between them (wiki.css: a last .wiki-item has no margin).
   const stops=Object.values(ACTIVE_STATIONS).map(a=>`<tr><td>${a.name}</td><td>${a.coins?`${art('coins')}${number(a.coins)}, `:''}${item(a.item,a.itemCount??1)} and ${number(a.xp)} XP</td></tr>`);
   return section('Tractor',`<p>${h.lvl(FEATURE_LEVELS.tractor)} The tractor does one job on every field that needs it. Fuel costs ${art('coins')}${TRACTOR_FUEL_BASE} a job, plus for every field ${Math.round(TRACTOR_FUEL_SHARE*100)}% of what its crop usually sells for, at least ${TRACTOR_FUEL_PER_FIELD} coins: wheat ${fieldFuel('wheat')}, pumpkin ${fieldFuel('pumpkin')}, sunflower ${fieldFuel('sunflower')}. Planting also pays the seeds.</p>`
-   +facts([['seeds','Plant','Your chosen crop on every empty field. It asks first, so you can check the crop.'],['water','Water','Every crop that can still take water.'],['care','Extra care','Every crop that is ready for it.'],['harvest','Harvest','Every ripe field.'],['fertilizer','Fertilize',`Natural fertilizer on every growing crop that has none yet, 1 a field: ${Math.round(FERTILIZER_CUT*100)}% off its time left. With less fertilizer than fields, the longest waits go first. See ${h.link('crops',TOPIC.crops.title,'sec-natural-fertilizer')}.`]])
+   +facts([['seeds','Plant','Your chosen crop on every empty field. It asks first, so you can check the crop.'],['water','Water','Every crop that can still take water.'],['care','Extra care','Every crop that is ready for it.'],['harvest','Harvest',`Every ripe field. It cannot start while your ${h.link('market','Warehouse','sec-warehouse')} is full; once it runs, it harvests every ripe field.`],['fertilizer','Fertilize',`Natural fertilizer on every growing crop that has none yet, 1 a field: ${Math.round(FERTILIZER_CUT*100)}% off its time left. With less fertilizer than fields, the longest waits go first. See ${h.link('crops',TOPIC.crops.title,'sec-natural-fertilizer')}.`]])
    +`<p>With diamonds the tractor does more. The tractor's diamond work counts for no challenges, events or leaderboards. What it brings in is yours, like any crop.</p>`
    +facts([['tractor-full-care','Full care',`Water and extra care for every growing crop at once, also outside their usual moments, so each gives three times the crop. ${FULL_CARE_COST} diamonds a crop. A crop that already had both is skipped.`],
     ['tractor-night-shift','Night shift',`For ${SHIFT_MS/3600000} hours the tractor does a round every hour: it harvests, plants your chosen crop, waters and gives care, also while you are away. The tractor card shows how it is doing.`]])

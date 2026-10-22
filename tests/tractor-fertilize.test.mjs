@@ -216,7 +216,9 @@ test('old rules on new saves and new rules on old saves (main eef95f62): no new 
  assert.throws(()=>O.applyFarmAction(structuredClone(saved),{type:'tractor',mode:'fertilize',crop:'wheat'},now),{message:'Choose a tractor task.'});
  // The same farm under the old and the new rules has the same keys: nothing new is saved.
  const oldFarm=O.normalizeFarm(O.createFarm(now-HOUR),now),newFarm=normalizeFarm(structuredClone(oldFarm),now);
- assert.deepEqual(Object.keys(newFarm).sort(),Object.keys(oldFarm).sort());
+ // The Warehouse (22 Oct 2026) is the one key added since: state.warehouse, which the old rules keep as it is (tests/warehouse.test.mjs).
+ const later=keys=>keys.filter(k=>k!=='warehouse');
+ assert.deepEqual(later(Object.keys(newFarm).sort()),Object.keys(oldFarm).sort());
  assert.equal(JSON.stringify(Object.keys(O.normalizeFarm(structuredClone(saved),now)).sort()),keys);
  // New rules on an old save: the Fertilize job works on it.
  const legacy=farm();growing(legacy,0,'cabbage');const back=normalizeFarm(O.normalizeFarm(structuredClone(legacy),now),now);

@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {applyFarmAction as act,productionJobs,RECIPES} from '../game/farm-state.js';
+import {roomFor} from './warehouse-room.mjs';
 const now=Date.UTC(2026,8,19,12);
-function fixture(){const s=createFarm(now);s.buildings.windmill.level=5;s.buildings.mill.level=2;for(const k in s.inventory)s.inventory[k]=100;return s;}
+function fixture(){const s=createFarm(now);s.buildings.windmill.level=5;s.buildings.mill.level=2;for(const k in s.inventory)s.inventory[k]=100;return roomFor(s,['grainmeal','flour','fertilizer','feed','bread']);}
 test('collect all aggregates mixed recipes, leaves running batches and other buildings untouched',()=>{
  const s=fixture();
  for(const recipe of ['grainmeal','flour','fertilizer'])act(s,{type:'produce',recipe},now);

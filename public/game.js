@@ -50,6 +50,7 @@ import { flyHarvest, bump } from './harvest-fly.js';
 import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
 import { createSweepTip } from './sweep-tip.js';
 import { createActivitiesUI } from './activities-ui.js';
+import { createWarehouseUI,isWarehouseFull,warehouseTone,fillText } from './warehouse-ui.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
 import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
@@ -75,6 +76,7 @@ import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
+import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
@@ -159,7 +161,7 @@ const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],s
 const coach=createCoach();
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
 guardWheel();
-let liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
+let warehouse=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
@@ -254,7 +256,7 @@ const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,noti
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+function openUtility(key){if(key==='warehouse'){warehouse?.open();return;}if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1239,6 +1241,8 @@ function endSweep(){
  const result=run.handle.end(),action=run.action;
  if(!result){if(run.handle.reason)toast(run.handle.reason);return;}
  sweepTip.swept(action,run.count);
+ // A harvest sweep that stopped because the Warehouse is full (22 Oct 2026): the note says how many fields it harvested.
+ if(run.handle.full&&warehouse)warehouse.note(run.handle.full,{count:result.count});
  // As after a tap (runAction): the guide, the reminder, a level-up.
  beginner?.afterAction(result);if(action==='harvest'){nudge?.harvested();farmerJoins({type:'field',action:'harvest',id:result.fields.at(-1).id});}
  const change=progressionChange(run.before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();
@@ -1297,12 +1301,16 @@ function hudNumbers(){
  const worth=guideAt('sell')?marketWorth(state,'crops',farmNow()):0,badge=$('stock-count'),market=$('market-button');
  // Otherwise no badge (18 Oct 2026, the owner, the window shell): a red badge means something waits for you, and the count of goods in the
  // barn is no task; the Market's heading says it ("N in your barn").
+ // The Warehouse (22 Oct 2026): from 90% full the badge shows how full it is (amber), and Full (red) once bringing in waits; the Market is
+ // the way out, so the Market button is where it shows on every screen (phone, computer and the small window).
+ const tone=worth?'ok':warehouseTone(state),filled=tone!=='ok';badge.classList.toggle('is-near',tone==='near');badge.classList.toggle('is-full',tone==='full');
+ if(filled){badge.hidden=false;badge.classList.remove('is-worth');delete badge.dataset.worth;const text=tone==='full'?'Full':`${Math.min(99,Math.floor(storedCount(state)/warehouseCapacity(state)*100))}%`;if(badge.textContent!==text)badge.textContent=text;market.setAttribute('aria-label',`Market: Warehouse ${tone==='full'?'full ':''}${fillText(state)}`);return;}
  badge.hidden=!worth;badge.classList.toggle('is-worth',worth>0);
  if(worth){const text=worth.toLocaleString('en-US');if(badge.dataset.worth!==text){badge.dataset.worth=text;badge.innerHTML=`${art('coins')}${text}`;}market.setAttribute('aria-label',`Market: your basket is worth ${text} coins`);}
  else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent='';market.removeAttribute('aria-label');}
 }
 function updateUI(){
- hudNumbers();
+ hudNumbers();warehouse?.refresh();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
  // batch ready, and the market square when the golden brief or a landmark can be built (Oct 2026; no pop-up). Not a villager you could
@@ -1768,6 +1776,8 @@ function pinLight(key){
  if(key==='stall'){const now=farmNow(),s=stallStatus(state,now);return s.balance>=s.capacity?'full':stallNotice(state,now)?'ready':'';}
  if(key==='chores'){const now=farmNow(),open=Object.keys(CHORES).map(id=>choreStatus(state,id,now)).filter(s=>!s.locked);return open.length&&open.every(s=>!s.remaining)?'ready':'';}
  // The village's market square: a villager you can help or a golden brief you can build.
+ // The Warehouse (22 Oct 2026): red while it is full and bringing in waits.
+ if(key==='warehouse')return warehouseFull(state)?'full':'';
  if(key==='villagemarket')return villageSquareReady(state)?'ready':'';
  return economy.placeReady(key)?'ready':'';
 }
@@ -1975,7 +1985,11 @@ function bindUI(){
  lookSettings=createLookSettings(document.getElementById('look-settings'),{state,runAction,clock:farmNow});
  // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
  window.harvestStock=key=>Number(state.inventory?.[key])||0;
- economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),village:villageWorld});
+ economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),onWarehouse:()=>warehouse?.open(),village:villageWorld});
+ // The Warehouse's window and its full note (22 Oct 2026, public/warehouse-ui.js). A refusal because it is full is that note, with the Market
+ // and Upgrade, over any open window (the toast sits under a modal window); every other message stays the toast.
+ warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI});
+ {const plain=showToast??createToast($('toast'));showToast=(message,options)=>{if(isWarehouseFull(message))warehouse.note(message);else plain(message,options);};}
  let savedCrop=null;try{savedCrop=localStorage.getItem(CROP_KEY);}catch{}
  if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);
  // Every seventh day of a streak (7, 14 ...) is celebrated with the gift popup, after a level-up if one is showing.

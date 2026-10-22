@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm} from './legacy-farm.mjs';
+import {roomFor} from './warehouse-room.mjs';
 import {applyFarmAction as act,normalizeFarm,RECIPES,PROJECTS,CHAPTER_DIAMONDS,currentProject,grantChapterRewards,productionJobs,recipeValue,dailyOrders,ORDER_POOL,PRODUCTS,availableDaily,xpForLevel,DAY_MS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,16);
 function farm(){const s=createLegacyFarm(now);s.xp=xpForLevel(28);s.levelRewards=Array.from({length:28},(_,i)=>i+1);s.coins=100000000;s.diamonds=0;s.mastery.claimed=Array.from({length:24},(_,i)=>String(i));for(const k in s.inventory)s.inventory[k]=1000;return s;}
@@ -9,14 +10,14 @@ test('new bulk feed is more ingredient-efficient, with positive production margi
  assert.equal(RECIPES.windfeed.output.feed,13,'8 barley make 13 feed since 26 Sep 2026 (was 10)');
  assert.ok(RECIPES.windfeed.input.barley/RECIPES.windfeed.output.feed<RECIPES.barleyfeed.input.barley/RECIPES.barleyfeed.output.feed);
  for(const id of Object.keys(RECIPES))if(!RECIPES[id].coins)assert.ok(recipeValue(id).added>0,id);   // bottled honey is a coin sink on purpose
- const s=farm();s.buildings.windmill.level=2;
+ const s=roomFor(farm(),['oil','windfeed','feed','barleyfeed','flour']);s.buildings.windmill.level=2;
  s.buildings.windmill.job={id:'windmill-old',recipe:'windfeed',startedAt:now-1200000,readyAt:now,output:{feed:7},xp:32};
  const stock=s.inventory.feed;act(s,{type:'collect',building:'windmill',jobId:'windmill-old'},now);assert.equal(s.inventory.feed,stock+7);
  const created=act(s,{type:'produce',recipe:'windfeed'},now);const job=productionJobs(s.buildings.windmill)[0];assert.equal(job.output.feed,13);
  act(s,{type:'collect',building:'windmill',jobId:created.jobId},created.readyAt);assert.equal(s.inventory.feed,stock+20);
 });
 test('long production earns its new XP while already-running batches keep the promised XP',()=>{
- const s=farm();s.buildings.mill.level=2;
+ const s=roomFor(farm(),['oil','windfeed','feed','barleyfeed','flour']);s.buildings.mill.level=2;
  s.buildings.mill.job={id:'mill-old',recipe:'oil',startedAt:now-1,readyAt:now,output:{oil:1},xp:15};
  assert.equal(act(s,{type:'collect',building:'mill',jobId:'mill-old'},now).xp,15);
  const job=act(s,{type:'produce',recipe:'oil'},now);s.boosts.xpUntil=job.readyAt+1000;

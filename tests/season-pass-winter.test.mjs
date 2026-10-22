@@ -277,6 +277,8 @@ test('differential: the live rules on new saves (a Winter pre-sale) and the new 
  // it as it is and never read it (they list storage from their own ITEMS).
  const a=make(O),b=JSON.parse(JSON.stringify(a));O.normalizeFarm(a,now+H);normalizeFarm(b,now+H);
  assert.equal(b.inventory.sprouts,0);assert.equal(a.inventory.sprouts,undefined);delete b.inventory.sprouts;
+ // And since 22 Oct 2026 the Warehouse (state.warehouse, tests/warehouse.test.mjs), which the live rules keep as it is.
+ assert.ok(b.warehouse);delete b.warehouse;
  assert.deepEqual(b,a,'new rules on a live save: identical but for that count');
  const kept=JSON.parse(JSON.stringify(b));kept.inventory.sprouts=0;O.normalizeFarm(kept,now+2*H);assert.equal(kept.inventory.sprouts,0,'the live rules keep it');
  // And the other way round on a new save at the same moment.
@@ -285,5 +287,5 @@ test('differential: the live rules on new saves (a Winter pre-sale) and the new 
  // A claim on Autumn gives the same under both.
  const e=make(O),f=JSON.parse(JSON.stringify(e));e.season.points=65*12;f.season.points=65*12;O.normalizeFarm(e,now);normalizeFarm(f,now);
  assert.deepEqual(O.applyFarmAction(e,{type:'season_claim',track:'paid',tier:3},now+H),applyFarmAction(f,{type:'season_claim',track:'paid',tier:3},now+H));
- delete f.inventory.sprouts;assert.deepEqual(f,e);
+ delete f.inventory.sprouts;delete f.warehouse;assert.deepEqual(f,e);
 });

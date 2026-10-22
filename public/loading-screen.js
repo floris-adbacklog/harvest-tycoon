@@ -18,6 +18,8 @@ export const LOADING_TIPS=Object.freeze([
  ['squash','Plant a long crop before you go: your farm keeps growing while you are away.'],
  ['chore-weeds','From level 15 farm chores pay coins and XP, and sometimes find extra crops.'],
  ['helping-hand','Lend a helping hand at four stops on the farm for coins, goods and XP.'],
+ // The Warehouse (22 Oct 2026).
+ ['warehouse','Everything you harvest and make goes into your Warehouse. When it is full, sell at the Market or upgrade it.'],
  ['family-chest-gold','Fill a Family Chest with your Farm family every week: everything you do on your farm counts.'],
  ['family-sharing','In a Farm family you help each other every day with coins, crops and goods.'],
  ['family-tournament','The top ten families win diamonds in the weekly Family Tournament.'],

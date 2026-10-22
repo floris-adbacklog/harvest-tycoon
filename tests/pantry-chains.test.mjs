@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
 import {normalizeFarm,applyFarmAction as act,RECIPES,ITEMS,QUESTS,DAILY_POOLS,ORDER_POOL,COMMISSION_POOL,DAY_MS,xpForLevel,recipeAvailability,productionJobs,marketQuote,dailyTasks,dailyOrders,utcDay} from '../game/farm-state.js';
+import {roomFor} from './warehouse-room.mjs';
 const ids=['orchardjuice','berrysmoothie','applecompote','applevinegar','pickledbeans','beangratin','orchardsalad','berrycheesecake','harvesthamper'];
 const now=Date.UTC(2026,8,19,12);
-function farm(){const s=createFarm(now);s.xp=xpForLevel(20);for(const b of Object.values(s.buildings)){b.built=true;b.level=3;}for(const k of Object.keys(s.inventory))s.inventory[k]=100;return s;}
+function farm(){const s=createFarm(now);s.xp=xpForLevel(20);for(const b of Object.values(s.buildings)){b.built=true;b.level=3;}for(const k of Object.keys(s.inventory))s.inventory[k]=100;return roomFor(s,[...ids,'applejuice']);}
 test('new recipes reserve bulk ingredients, preserve running batches and reward collection once',()=>{
  for(const id of ids){const s=farm(),r=RECIPES[id],before=structuredClone(s.inventory),coins=s.coins,diamonds=s.diamonds;
  const result=act(s,{type:'produce',recipe:id,count:3},now);assert.equal(productionJobs(s.buildings[r.building]).length,3);

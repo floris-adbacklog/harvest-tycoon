@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
+import {roomFor} from './warehouse-room.mjs';
 import {normalizeFarm,applyFarmAction as act,CROPS,STARTER_PACK_CROPS,BUILDINGS,RECIPES,DAY_MS,xpForLevel,cropDuration,seedCost,recipeValue,dailyTasks,dailyOrders,productionJobs,BOOSTS} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12),crops=['greenbeans','apples','berries'],buildings=['kitchen','juicepress','preserves'];
 function advanced(){const s=createFarm(now);s.xp=xpForLevel(20);s.coins=100000;s.diamonds=500;return s;}
@@ -41,7 +42,7 @@ test('boosts and tractor never collect multiple cycles or grant stock without ha
  act(s,{type:'buy_boost',boost:'crops',expectedCost:BOOSTS.crops.cost},now+3);assert.equal(s.inventory.apples,1);act(s,{type:'tractor',mode:'harvest'},now+20000);assert.equal(s.inventory.apples,2);assert.equal(s.inventory.berries,1);
 });
 test('all new chains support three simultaneous batches and collect-all with positive processing value',()=>{
- const s=advanced();open(s);for(const k of Object.keys(s.inventory))s.inventory[k]=100;
+ const s=advanced();open(s);for(const k of Object.keys(s.inventory))s.inventory[k]=100;roomFor(s,['stew','applejuice','applepie','berrypreserves','berrytart']);
  for(const recipe of ['stew','applejuice','applepie','berrypreserves','berrytart']){const r=RECIPES[recipe],key=Object.keys(r.output)[0];s.buildings[r.building].level=3;const n=s.inventory[key],result=act(s,{type:'produce',recipe,count:3},now);assert.equal(productionJobs(s.buildings[r.building]).length,3);act(s,{type:'collect_all',building:r.building},result.readyAt);assert.equal(s.inventory[key],n+3);assert.ok(recipeValue(recipe).added>0);}
 });
 test('new tasks and orders wait for buildings and rotate after unlocking',()=>{

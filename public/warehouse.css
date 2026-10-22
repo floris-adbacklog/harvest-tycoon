@@ -1,0 +1,53 @@
+/* The Warehouse (22 Oct 2026, public/warehouse-ui.js): its window, the bar that says how full it is, the upgrade card, the note where
+   bringing in waits, and the Market button's badge from 90% full. The game's cream cards and buttons.css's buttons; logical sides only. */
+.warehouse-lead{margin:0 0 12px;color:#5b4a2c;font-size:14px;line-height:1.45}
+.warehouse-meter{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid #e6ddd1;border-radius:16px;background:#fbf8f3}
+.warehouse-meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.warehouse-meter-top strong{font-size:22px;color:#3d2f17;font-variant-numeric:tabular-nums}
+.warehouse-meter-top span{font-size:13px;font-weight:700;color:#7a6a4c}
+.warehouse-bar{height:14px;border-radius:999px;background:#ece3d3;box-shadow:inset 0 1px 2px #3a301c26;overflow:hidden}
+.warehouse-bar>span{display:block;height:100%;min-width:6px;border-radius:999px;background:#5fae4f;transition:width .3s}
+.warehouse-meter.is-near .warehouse-bar>span{background:#e3a53c}
+.warehouse-meter.is-full .warehouse-bar>span{background:#c9573f}
+.warehouse-meter.is-full .warehouse-meter-top span{color:#b4513f}
+.warehouse-actions{display:flex;justify-content:flex-end;margin:10px 0}
+.warehouse-actions .secondary-button,.warehouse-note-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:6px 14px}
+.warehouse-actions .game-art,.warehouse-note-actions .game-art{width:22px;height:22px}
+.warehouse-upgrade{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border:1px solid #e6ddd1;border-radius:16px;background:#fffdf5}
+.warehouse-upgrade>div{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 220px}
+.warehouse-upgrade h3{margin:0;font-size:16px;color:#3d2f17}
+.warehouse-upgrade p{margin:0;font-size:13px;color:#6b5a3a}
+.warehouse-upgrade .primary-button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 16px;flex:none}
+.warehouse-upgrade .reward-chips>b.is-gain{border-color:#cfe0c3;background:#eef6e6;color:#3f6b2c;padding-inline-start:9px}
+.warehouse-upgrade .reward-chips>b.is-missing{border-color:#efc2b6;background:#fbece7;color:#a1442f}
+.warehouse-upgrade .reward-chips .game-art{width:18px;height:18px}
+.warehouse-group{margin:0 0 12px}
+.warehouse-group h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:15px;color:#3d2f17}
+.warehouse-group h3 .game-art{width:24px;height:24px}
+.warehouse-group h3 b{margin-inline-start:auto;padding:2px 9px;border-radius:999px;background:#f3ead9;color:#6b5a3a;font-size:13px}
+.warehouse-items{display:flex;flex-wrap:wrap;gap:6px}
+.warehouse-item{display:flex;align-items:center;gap:6px;flex:1 1 150px;min-width:0;max-width:100%;padding-block:5px;padding-inline:5px 10px;border:1px solid #ece3d3;border-radius:12px;background:#fbf8f3}
+.warehouse-item .product-art{width:30px;height:30px;flex:none}
+.warehouse-item span{flex:1;min-width:0;font-size:13px;color:#4a3b20;overflow-wrap:anywhere}
+.warehouse-item b{font-size:14px;color:#3d2f17;font-variant-numeric:tabular-nums}
+.warehouse-empty .game-art{width:64px;height:64px}
+/* The note where bringing in waits: the center notice's card with two buttons. */
+.warehouse-note{gap:8px}
+.warehouse-note .toast-icon .game-art{width:34px;height:34px}
+.warehouse-note .toast-text strong{font-size:17px;color:#3d2f17}
+.warehouse-note-line{margin:0;font-size:14px;color:#5b4a2c;line-height:1.4}
+.warehouse-note-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;margin-top:4px}
+.warehouse-note-actions button{flex:1 1 130px;white-space:nowrap}
+/* The Market button's badge from 90% full: amber, and red with "Full" when bringing in waits. */
+#stock-count.is-near,#stock-count.is-full{display:flex;align-items:center;width:auto;min-width:0;padding:0 6px;border-radius:999px;white-space:nowrap;font-size:10px;font-weight:700}
+#stock-count.is-near{background:#f6c75a;color:#5c3b06}
+#stock-count.is-full{background:#c9573f;color:#fff}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .warehouse-meter-top strong{font-size:19px}
+ .warehouse-item{flex-basis:130px}
+}
+/* The Market's heading: how full the Warehouse is, and a tap opens it. */
+#market-barn .warehouse-chip{display:inline-flex;align-items:center;gap:5px;min-height:28px;margin:0;padding-block:2px;padding-inline:4px 10px;border:1px solid #e3d8c6;border-radius:999px;background:#fbf8f3;color:#5b4520;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+#market-barn .warehouse-chip .game-art{width:20px;height:20px}
+#market-barn .warehouse-chip.is-near{border-color:#ecd08a;background:#fff1c4;color:#6b4712}
+#market-barn .warehouse-chip.is-full{border-color:#e7b3a6;background:#fbe6e0;color:#a1442f}
