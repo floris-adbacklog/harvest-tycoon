@@ -47,3 +47,11 @@ test('createFarmClient forwards a load response\'s gift to onGift (see tests/onl
  assert.match(js,/onGift,onEmailCheck,onError\}\)\{/);
  assert.match(js,/if\(data\.gift\)onGift\?\.\(data\.gift\);/);
 });
+
+test('a gift from the admin\'s Edit shows at once in an open game: its notice fetches the farm (22 Oct 2026)',()=>{
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/if\(event\.notice\?\.kind==='gift'\)setTimeout\(\(\)=>\{void win\.harvestRefresh\?\.\(\)\?\.catch\?\.\(\(\)=>\{\}\);\},500\);/);
+ // The gift is saved in the farm before its notice is written (admin-service.js), so the load finds it.
+ const service=read('supabase/functions/farm-api/admin-service.js');
+ assert.ok(service.indexOf("state.pendingGift=")<service.indexOf("kind:'gift'"));
+});

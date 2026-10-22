@@ -485,7 +485,10 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(event.type==='edited'){const changed=event.message;if(changed&&messages.some(m=>m.id===changed.id)){messages=withEdit(messages,changed);if(dialog.open)paint();}return;}
   if(event.type==='notice'){
    // A gift for everyone: an open game fetches it now (the farm adds it on load), a few seconds apart so not everyone asks at once.
+   // A gift from the admin's Edit for this farmer alone (kind 'gift', 22 Oct 2026, the owner: it only showed after a refresh): it is
+   // already in the farm, and the load shows its window (pendingGift), so fetch it at once.
    if(event.notice?.kind==='donation')setTimeout(()=>{void win.harvestRefresh?.()?.catch?.(()=>{});},1000+Math.random()*9000);
+   if(event.notice?.kind==='gift')setTimeout(()=>{void win.harvestRefresh?.()?.catch?.(()=>{});},500);
    if(dialog.open&&tab==='notices'){if(!notices.some(n=>n.id===event.notice.id)){notices=[event.notice,...notices];freshNotices++;paint();}markRead('notices');}
    else{overview.unread.notices=Math.min(99,(overview.unread.notices??0)+1);counts();}
    return;
