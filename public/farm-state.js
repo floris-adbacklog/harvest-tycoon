@@ -3492,9 +3492,10 @@ const SEASON_LIST=Object.freeze([AUTUMN_2026,WINTER_2026]);
 export const SEASON_IDS=Object.freeze(SEASON_LIST.map(s=>s.id));
 // The passes the admin can give from a farmer's Edit (22 Oct 2026, the owner: "dat ik ook Seizoenspas of Halloween pas kan geven"): the
 // same as buying one, its id in passPremium (supabase/functions/farm-api/admin-service.js), shown in the "Donation!" window by name.
-// Their names as the game already shows them (Autumn's is the plain "Season Pass" of the shop).
+// Each by its season's name (the owner, 22 Oct 2026: Autumn's as "Autumn Season Pass", next to "Winter Season Pass").
+const GIFT_PASS_NAMES={'autumn-2026':'Autumn Season Pass'};
 export const GIFT_PASSES=Object.freeze([{id:SEASON_PASS.id,name:SEASON_PASS.name,art:'giant-small'},
- ...SEASON_LIST.map(s=>({id:s.id,name:s.passName??'Season Pass',art:s.art}))].map(p=>Object.freeze(p)));
+ ...SEASON_LIST.map(s=>({id:s.id,name:s.passName??GIFT_PASS_NAMES[s.id]??'Season Pass',art:s.art}))].map(p=>Object.freeze(p)));
 export const giftPass=id=>GIFT_PASSES.find(p=>p.id===id)??null;
 // 1.4 × the season's days (from its start to its end), rounded to 5: 65 for a start on 6 November.
 export const seasonPerTier=(startsAt,endsAt)=>Math.max(5,Math.round(1.4*Math.round((endsAt-startsAt)/DAY_MS)/5)*5);

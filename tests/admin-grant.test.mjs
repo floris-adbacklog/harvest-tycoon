@@ -212,7 +212,7 @@ test('a waiting gift is picked up and cleared on the farmer\'s own next load, al
 test('the admin can give the Halloween Pass or a Season Pass: into passPremium as if bought, never twice, shown and logged by name',async()=>{
  const {GIFT_PASSES}=await import('../game/farm-state.js');
  assert.deepEqual(GIFT_PASSES.map(p=>p.id),['halloween-2026','autumn-2026','winter-2026']);
- assert.deepEqual(GIFT_PASSES.map(p=>p.name),['Halloween Pass','Season Pass','Winter Season Pass']);
+ assert.deepEqual(GIFT_PASSES.map(p=>p.name),['Halloween Pass','Autumn Season Pass','Winter Season Pass']);
  assert.equal(validGrant({coins:0,xp:0,diamonds:0,item:null,itemCount:0,pass:'autumn-2026'}),true,'a pass on its own is a gift');
  assert.equal(validGrant({coins:0,xp:0,diamonds:0,item:null,itemCount:0,pass:'spring-2099'}),false,'only a pass the game knows');
  const db=database();
