@@ -122,3 +122,21 @@ export function shareAtlas(object,name){
   }
  });
 }
+// One building in another colour (22 Oct 2026, the owner: the Sheep Barn has the Goat Shed's barn and needs a roof of its own). The
+// palette is a grid of PALETTE_CELLS x PALETTE_CELLS swatches and a model picks a swatch by where its corners sit on it. repaint gives
+// this one copy its own geometry and moves the corners that sit in a swatch [column,row] to another one, the same spot inside it, so
+// nothing else changes: not the shared palette, not the other copies of the model (they keep the geometry the model was loaded with).
+export const PALETTE_CELLS=11;
+export function repaint(object,swaps){
+ const cell=value=>Math.min(PALETTE_CELLS-1,Math.floor(value*PALETTE_CELLS));
+ object.traverse(mesh=>{
+  const uv=mesh.isMesh&&mesh.geometry.attributes.uv;if(!uv)return;
+  mesh.geometry=mesh.geometry.clone();const own=mesh.geometry.attributes.uv;
+  for(let i=0;i<own.count;i++){
+   const u=own.getX(i),v=own.getY(i),swap=swaps.find(([[c,r]])=>cell(u)===c&&cell(v)===r);
+   if(swap){const [[c,r],[toC,toR]]=swap;own.setXY(i,u+(toC-c)/PALETTE_CELLS,v+(toR-r)/PALETTE_CELLS);}
+  }
+  own.needsUpdate=true;
+ });
+ return object;
+}

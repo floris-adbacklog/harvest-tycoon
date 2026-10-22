@@ -46,12 +46,13 @@ test('the second WebP batch: same pixel size as the PNG it came from (which stay
   assert.deepEqual(size(webp),size(png),`${name}: same pixel size`);
   assert.ok(statSync(file(webp)).size<statSync(file(png)).size*.4,`${name}.webp should be well under half the PNG`);
  }
- for(const key of LARGE)assert.match(art(key),new RegExp(`/assets/icons/${key}\\.webp"`),key);
+ // A picture redrawn under its own name carries a version (?v=, visual-icons.js PICTURE_VERSIONS: the Sheep Barn's roof, 22 Oct 2026).
+ for(const key of LARGE)assert.match(art(key),new RegExp(`/assets/icons/${key}\\.webp(\\?v=\\d{8})?"`),key);
 });
 test('the Buildings list and a building page ask pictureFile() for every picture, and every file it names exists',()=>{
  const ui=read('public/economy-ui.js');
  assert.doesNotMatch(ui,/\/assets\/icons\/\$\{[^}]*\}\.png/,'no hardcoded .png picture paths left');
- for(const name of [...Object.keys(BUILDINGS),'familyhall-model',...PLACES])assert.ok(existsSync(file(`public${pictureFile(name)}`)),pictureFile(name));
+ for(const name of [...Object.keys(BUILDINGS),'familyhall-model',...PLACES])assert.ok(existsSync(file(`public${pictureFile(name).split('?')[0]}`)),pictureFile(name));
  assert.equal(pictureFile('farmhouse'),'/assets/icons/farmhouse.png','the small pictures stay PNG');
  assert.equal(pictureFile('glasshouse'),'/assets/icons/glasshouse.webp');
 });

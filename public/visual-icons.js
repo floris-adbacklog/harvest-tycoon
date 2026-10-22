@@ -19,7 +19,7 @@ for(const id of ["orchardjuice", "berrysmoothie", "applecompote", "applevinegar"
 const MIDGAME_ITEM_ART=['squash','polebeans','ciderapples','squashsoup','beeswax','wool','yarn','cloth','cider'];
 for(const id of [...MIDGAME_ITEM_ART,'beeyard','sheepbarn','glasshouse','weaving'])pictures[id]=id;
 // The Warehouse (22 Oct 2026): a render of its barn (the Sheep Barn's old red barn) with crates by the doors, WebP; the Sheep Barn's
-// picture is a render of its new barn (the Goat Shed's) with two of its sheep since the same day.
+// picture is a render of its new barn (the Goat Shed's, with the Sheep Barn's own slate-blue roof) with two of its sheep since the same day.
 pictures.warehouse='warehouse';
 // Wave 2: the new goods and cherries (WebP), the Valley Market and the Ranch (painted, WebP), renders of the two new buildings (PNG).
 const VALLEY_ITEM_ART=['cherries','goatmilk','goatcheese','candles','blanket','cherryjam','cherrypie','valley-market','ranch'];
@@ -131,12 +131,17 @@ for(const key of ['season-pass-winter','season-point-winter','golden-sledge','em
 pictures.sprouts='brussels-sprouts';pictures['sprouts-seeds']='brussels-sprouts-seeds';webpPictures.add('sprouts');webpPictures.add('sprouts-seeds');
 for(const key of ['season-badge-winter-2026','frame-winter','profile-bg-winter','season-pass-banner-winter']){pictures[key]=key;webpPictures.add(key);pictureFolder[key]='season';}
 const folder=key=>pictureFolder[key]??'icons';
-export const pictureFile=name=>`/assets/${folder(name)}/${name}.${webpPictures.has(name)?'webp':'png'}`;
+// A picture that changed under the same name gets a version (/assets/ is kept a day and then served stale for a week while it is
+// checked), so a returning farmer sees the new one at once: the Sheep Barn's slate-blue roof (22 Oct 2026; that morning's render of
+// its new barn still showed the old green-roofed barn to farmers whose browser had kept the picture).
+const PICTURE_VERSIONS=Object.freeze({sheepbarn:'20261022'});
+const stamp=key=>PICTURE_VERSIONS[key]?`?v=${PICTURE_VERSIONS[key]}`:'';
+export const pictureFile=name=>`/assets/${folder(name)}/${name}.${webpPictures.has(name)?'webp':'png'}${stamp(name)}`;
 // Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.
 export function artSource(key){
  const e=spriteEntries[key];
  if(e)return {src:`/assets/icons/${e.file}`,columns:e.columns,index:e.index};
- if(pictures[key])return {src:`/assets/${folder(key)}/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}`,columns:1,index:0};
+ if(pictures[key])return {src:`/assets/${folder(key)}/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}${stamp(key)}`,columns:1,index:0};
  return null;
 }
 export function art(key,extra=''){
@@ -147,7 +152,7 @@ export function art(key,extra=''){
  }
  // loading="lazy" (6 Oct 2026): a picture loads once it is shown, not before. The game's windows are built at the start, so about 80
  // pictures (2.5 MB) of closed windows used to load before the farm could be played.
- if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/${folder(key)}/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}" alt="" draggable="false" loading="lazy" decoding="async">`;
+ if(pictures[key])return `<img class="game-art ${extra}" data-art="${key}" src="/assets/${folder(key)}/${pictures[key]}.${svgArt.has(key)?'svg':webpPictures.has(key)?'webp':'png'}${stamp(key)}" alt="" draggable="false" loading="lazy" decoding="async">`;
  return '';
 }
 export function refreshArt(){

@@ -43,7 +43,7 @@ import { createBeginnerUI } from './beginner-ui.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish, hideClippedScenery } from './scene-polish.js';
-import { shareAtlas,sharePalette,download } from './model-atlas.js';
+import { shareAtlas,sharePalette,download,repaint } from './model-atlas.js';
 import { createAtmosphere } from './farm-atmosphere.js';
 import { buildRows, createCropMotion, isRowCrop } from './crop-rows.js';
 import { flyHarvest, bump } from './harvest-fly.js';
@@ -540,15 +540,18 @@ const farmerTooltip=name=>name?`<strong>${ownWords(name)}</strong>`:'';
 function tapFamilyFarmer(id){const other=familyWalkers.find(w=>w.playerId===id),landed=other?.react()??Promise.resolve();if(window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(id,{back:null}));}
 // The roads (6 Oct 2026, softer on 7 Oct): a warmer, sandier pink, towards the paths of the loading screen's painted valley; one
 // tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
+// The Sheep Barn's roof: the palette's brown swatch [column 8, row 5] becomes the slate blue-grey one [10, 5] (93,126,142), on its copy only.
+const SHEEP_BARN_ROOF=Object.freeze([[[8,5],[10,5]]]);
 const roadMaterials=new Map();
 function roadMaterial(material){
  let road=roadMaterials.get(material);
  if(!road){road=material.clone();road.color.setRGB(.94,.87,.79);roadMaterials.set(material,road);}
  return road;
 }
-function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0}={}){
+function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0,paint}={}){
  const entry=models.get(name);if(!entry)throw new Error(`Missing model: ${name}`);
  const obj=entry.object.clone(true),d=entry.size;
+ if(paint)repaint(obj,paint);   // this copy in other palette swatches (model-atlas.js repaint)
  if(name==='road_001')obj.traverse(n=>{if(n.isMesh)n.material=Array.isArray(n.material)?n.material.map(roadMaterial):roadMaterial(n.material);});
  if(width!=null&&depth!=null)obj.scale.set(width/d.x,(height??d.y)/d.y,depth/d.z);
  else {const s=height!=null?height/d.y:width!=null?width/Math.max(d.x,d.z):scale;obj.scale.setScalar(s);}
@@ -772,7 +775,9 @@ function decorate(){
  zone('sheepbarn');
  // In the Goat Shed's barn since 22 Oct 2026, at the Goat Shed's size (its own red barn became the Warehouse). The two stand at the
  // valley's two ends, never in one picture. Until then (asBefore) the old barn's size: 5.4 wide, 4.4 high and 9 deep.
- addBuilding('sheepbarn',23.8,-15.4,{width:5,height:4.6,depth:8});
+ // Its roof is slate blue-grey (22 Oct 2026, the owner: "kunnen we dit dak een iets andere kleur geven om het te onderscheiden"): the
+ // Goat Shed keeps the barn's brown roof and the Warehouse its green one; the walls stay red.
+ addBuilding('sheepbarn',23.8,-15.4,{width:5,height:4.6,depth:8,paint:SHEEP_BARN_ROOF});
  // The old barn itself stands in for it then, every part of it, so what is placed round it by chance does not change.
  {const {object:barn,hit}=buildingViews.get('sheepbarn'),was=cloneModel('hangar_006',23.8,-15.4,{width:5.4,height:4.4,depth:9});was.userData.building='sheepbarn';
   scene.remove(was);gone.push([was,scene.children[scene.children.indexOf(barn)-1]]);fresh.push(barn);outlineBefore.set('sheepbarn',was);

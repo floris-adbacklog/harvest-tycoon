@@ -52,7 +52,7 @@ test('the farm\'s pieces: the Warehouse a utility on the Sheep Barn\'s old barn,
  assert.match(game,/zone\('mill'\);addBuilding\('mill',-12\.5,4,\{width:6\.2\}\);/);
  assert.equal((game.match(/tower_005/g)??[]).length,2,'loaded, and only as it stood (goneNow)');assert.match(game,/goneNow\(cloneModel\('tower_005'/);
  assert.equal(BUILDINGS.sheepbarn.model,'hangar_015');assert.equal(BUILDINGS.goatshed.model,'hangar_015');
- assert.match(game,/addBuilding\('sheepbarn',23\.8,-15\.4,\{width:5,height:4\.6,depth:8\}\);/);assert.match(game,/addBuilding\('goatshed',31\.9,-14\.6,\{width:5,height:4\.6,depth:8\}\);/);
+ assert.match(game,/addBuilding\('sheepbarn',23\.8,-15\.4,\{width:5,height:4\.6,depth:8,paint:SHEEP_BARN_ROOF\}\);/);   // its own roof (tests/sheepbarn-roof.test.mjs)assert.match(game,/addBuilding\('goatshed',31\.9,-14\.6,\{width:5,height:4\.6,depth:8\}\);/);
  assert.match(game,/was=cloneModel\('hangar_006',23\.8,-15\.4,\{width:5\.4,height:4\.4,depth:9\}\)/,'the old barn stands in while the scenery is placed');
  // Its pin and the Sheep Barn's picture (WebP).
  assert.match(icons,/pictures\.warehouse='warehouse';/);assert.match(icons,/webpPictures\.add\('warehouse'\);/);
