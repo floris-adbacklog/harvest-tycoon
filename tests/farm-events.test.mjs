@@ -125,9 +125,13 @@ test('Welcome Back offers one button that goes straight to what is waiting',()=>
  assert.equal(welcomeAction({crops:0,batches:0,stall:0}),'Let’s get farming');
  assert.match(read('public/game.js'),/if\(state\.stats\.harvested>0&&\(!initialWelcome\|\|initialChapterReward\?\.diamonds\)\)toast\(`Welcome back!/,'no second "Welcome back" toast under the card');
 });
-test('the chore bar fills up at the chore\'s own maximum, and a plain result looks different from a find',()=>{
+test('the chore card shows its bonus chance in the bonus chip and a mastery bar towards the next chore, and a plain result looks different from a find',()=>{
  const growth=read('public/growth-ui.js');
- assert.match(growth,/<progress max="\$\{c\.maxChance\}" value="\$\{status\.chance\}"/);
+ // 23 Oct 2026 (the owner's 1-4): the bonus chance sits in the chip; the bar counts the tries to mastery and names the chore it opens.
+ assert.match(growth,/<b>\$\{status\.chance\}% chance<\/b>/);
+ assert.match(growth,/<progress max="\$\{n\}" value="\$\{done\}" aria-hidden="true"><\/progress><small>\$\{opens\?`Mastery \$\{done\} \/ \$\{n\} · unlocks \$\{opens\.name\}`/);
+ assert.match(growth,/data-fold="chores-locked"/,'the locked chores fold away');
+ assert.match(growth,/\.sort\(\(a,b\)=>a\.status\.remaining-b\.status\.remaining\)/,'ready chores first');
  assert.match(growth,/dialog\.classList\.toggle\('is-bonus',!!result\.bonus\);/);
  assert.match(growth,/No \$\{ITEMS\[item\]\.name\.toLowerCase\(\)\} this time\./);
 });

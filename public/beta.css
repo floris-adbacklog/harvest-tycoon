@@ -57,3 +57,43 @@
 .chore-card p{color:#8a8070}
 .chore-chance strong{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .chore-chance .chore-mastered{padding:0 6px;line-height:16px;vertical-align:1px;background:#fffdf5}
+/* The chores window (23 Oct 2026, the owner's 1-4): compact cards, the button beside them on a phone too; a chore that is ready again
+   gets a green edge; the bonus chance sits in its chip; the mastery bar says which chore it opens; the locked ones fold away as rows. */
+.chore-card{grid-template-columns:64px minmax(0,1fr) auto;gap:14px;padding:14px 16px}
+.chore-card .chore-icon{width:64px;height:64px}
+.chore-card h3{margin:0;font-size:17px}
+.chore-card.is-ready{border-color:#8cc06a;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+.chore-card.is-waiting{background:#fbf8ef}
+.chore-main{min-width:0}
+.chore-card .chore-rewards{margin:6px 0 6px}
+.chore-rewards .chore-bonus b{margin-inline-start:4px;padding:1px 7px;border-radius:999px;background:#fffdf4;color:#42632e;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.chore-mastery{display:grid;gap:3px;margin:0}
+.chore-mastery progress{width:100%;height:8px;appearance:none;border:0;border-radius:999px;background:#ece3d2;overflow:hidden}
+.chore-mastery progress::-webkit-progress-bar{background:#ece3d2;border-radius:999px}
+.chore-mastery progress::-webkit-progress-value{background:linear-gradient(90deg,#d9a53c,#e8b94e);border-radius:999px}
+.chore-mastery progress::-moz-progress-bar{background:#d9a53c;border-radius:999px}
+.chore-mastery small{color:#8a7a5c;font-size:12px;font-weight:400;overflow-wrap:anywhere}
+.chore-mastery.is-mastered{display:block;margin:2px 0 0}.chore-mastery.is-mastered .tag-info{display:inline-flex;width:auto}.chore-card .chore-rewards>span{white-space:nowrap}
+.chore-act{display:grid;justify-items:center;gap:4px;min-width:118px}
+.chore-act>button{width:100%;min-width:0;margin:0;white-space:nowrap}
+.chore-act>small{color:#9a8c72;font-size:12px;font-weight:700;white-space:nowrap}
+.chore-act>button.is-waiting:disabled{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;font-variant-numeric:tabular-nums}
+.chore-act>button.is-waiting:disabled::before{content:"";flex:none;width:18px;height:18px;background:url(/assets/icons/hourglass.svg) center/contain no-repeat;opacity:.75}
+.chore-unlocks{margin-top:14px}
+.chore-locked-list{display:grid;gap:8px;padding-top:10px}
+.chore-locked{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 12px;border:1px dashed #dccfbd;border-radius:16px;background:#f8f3e8;opacity:.9}
+.chore-locked .chore-icon{width:44px;height:44px;padding:3px;box-sizing:border-box;border-radius:12px;background:#efe6d6;filter:grayscale(.6)}
+.chore-locked .chore-icon>.game-art{width:100%;height:100%;object-fit:contain}
+.chore-locked strong{display:block;font-size:14.5px;color:#5c4a2e}
+.chore-locked small{display:block;color:#9a8c72;font-size:12.5px}
+.chore-locked>.game-art,.chore-locked>.unlock-lock{width:18px;height:18px;opacity:.6}
+@media(max-width:720px){
+ .chore-card{grid-template-columns:48px minmax(0,1fr) auto;gap:10px;padding:12px}
+ .chore-card .chore-icon{width:48px;height:48px;align-self:start}
+ .chore-card h3{font-size:15.5px}
+ .chore-card .chore-rewards{gap:5px}
+ .chore-card .chore-rewards>span{padding:3px 8px 3px 5px;font-size:12px}
+ .chore-card .chore-rewards .game-art{width:17px;height:17px}
+ .chore-card>.chore-act{grid-column:auto;min-width:96px;align-self:center}
+ .chore-act>button{padding-inline:10px;font-size:14px}
+}

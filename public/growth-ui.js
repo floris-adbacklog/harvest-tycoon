@@ -73,13 +73,25 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  // A chore's button: Do chore, Locked, or the time until it can be done again (2 Oct 2026: on a dark button, the time left was pale
  // grey on pale beige and hard to read).
  const choreButton=s=>s.locked?{text:'Locked',waiting:false}:s.remaining?{text:`Back in ${formatDuration(s.remaining)}`,waiting:true}:{text:'Do chore',waiting:false};
+ // The chores window (23 Oct 2026, the owner picked 1, 2, 3 and 4): the chores you can do on top, a chore that is ready again first
+ // and marked green, waiting ones below by their time left; the locked ones folded away as small rows (as Seeds to unlock). Each card
+ // is compact on a phone too (its button beside it): the rewards, the bonus as a chip ("60% chance" and what it finds) and a mastery
+ // bar that says which chore it opens. The rest every chore has sits under its button.
  function renderChores(){
   const mastery=c=>Math.ceil((c.maxChance-c.baseChance)/CHORE_PRACTICE_STEP);
-  $('estate-content').innerHTML=`${lead('shovel','Coins and XP every time, sometimes extra goods.')}<div class="chore-list">${Object.entries(CHORES).map(([key,c])=>{
-   const status=choreStatus(state,key,farmNow()),remaining=status.remaining,base=choreRewards(c),item=c.bonus.item;
-   const foot=status.locked?`Master ${CHORES[c.requires].name} first`:status.mastered?`Mastered · every ${formatDuration(c.cooldown)}`:`${Math.min(mastery(c),status.attempts)} / ${mastery(c)} to mastery · every ${formatDuration(c.cooldown)}`;
-   return `<article class="chore-card ${status.locked?'is-locked':''}"><span class="chore-icon">${art(`chore-${key}`)}</span><div><h3>${c.name}</h3><p>${c.description}</p><div class="chore-rewards"><span>${art('coins')}+${base.coins}</span><span>${art('xp')}+${base.xp} XP</span><span class="chore-bonus" title="Bonus: ${status.chance}% chance">${art(item)}+${c.bonus.count} ${ITEMS[item].name.toLowerCase()}</span></div><div class="chore-chance ${status.mastered?'is-mastered':''}"><progress max="${c.maxChance}" value="${status.chance}" aria-label="${c.name} bonus chance, ${status.chance}% of ${c.maxChance}%"></progress><strong>${status.chance}% bonus chance${status.mastered?'<span class="tag-info chore-mastered">Mastered</span>':''}</strong></div><p class="chore-foot">${foot}</p></div><button class="${remaining||status.locked?'small-button':'primary-button'}${choreButton(status).waiting?' is-waiting':''}" data-chore="${key}" ${remaining||status.locked?'disabled':''}>${choreButton(status).text}</button></article>`;
-  }).join('')}</div>`;
+  const now=farmNow();
+  const next=key=>Object.entries(CHORES).find(([,c])=>c.requires===key)?.[1]??null;
+  const all=Object.entries(CHORES).map(([key,c])=>({key,c,status:choreStatus(state,key,now)}));
+  const open=all.filter(x=>!x.status.locked).sort((a,b)=>a.status.remaining-b.status.remaining),locked=all.filter(x=>x.status.locked);
+  const card=({key,c,status})=>{
+   const base=choreRewards(c),item=c.bonus.item,n=mastery(c),done=Math.min(n,status.attempts),opens=next(key);
+   const progress=status.mastered?`<p class="chore-mastery is-mastered"><span class="tag-info">Mastered</span></p>`
+    :`<div class="chore-mastery"><progress max="${n}" value="${done}" aria-hidden="true"></progress><small>${opens?`Mastery ${done} / ${n} · unlocks ${opens.name}`:`Mastery ${done} / ${n}`}</small></div>`;
+   const shown=choreButton(status),ready=!status.remaining;
+   return `<article class="chore-card ${ready?'is-ready':'is-waiting'}" title="${c.description}"><span class="chore-icon">${art(`chore-${key}`)}</span><div class="chore-main"><h3>${c.name}</h3><div class="chore-rewards"><span>${art('coins')}+${base.coins}</span><span>${art('xp')}+${base.xp} XP</span><span class="chore-bonus" title="Bonus: ${status.chance}% chance">${art(item)}+${c.bonus.count} ${ITEMS[item].name.toLowerCase()}<b>${status.chance}% chance</b></span></div>${progress}</div><div class="chore-act"><button class="${ready?'primary-button':'small-button'}${shown.waiting?' is-waiting':''}" data-chore="${key}" ${ready?'':'disabled'}>${shown.text}</button><small>every ${formatDuration(c.cooldown)}</small></div></article>`;
+  };
+  const row=({key,c})=>`<div class="chore-locked"><span class="chore-icon">${art(`chore-${key}`)}</span><span><strong>${c.name}</strong><small>Master ${CHORES[c.requires].name} first</small></span>${art('lock','unlock-lock')}</div>`;
+  keepFolds($('estate-content'),`${lead('shovel','Coins and XP every time, sometimes extra goods.')}<div class="chore-list">${open.map(card).join('')}</div>${locked.length?`<details class="future-unlocks chore-unlocks" data-fold="chores-locked"><summary>${art('lock','unlock-lock')}<span>Chores to unlock · ${locked.length}</span></summary><div class="chore-locked-list">${locked.map(row).join('')}</div></details>`:''}`);
   document.querySelectorAll('[data-chore]').forEach(b=>b.onclick=()=>act({type:'chore',id:b.dataset.chore},r=>{showChoreResult(b.dataset.chore,r);return `Job well done! +${r.coins} coins and +${r.xp} XP.${r.bonus?` Bonus: ${bonusText(r.items)}!`:''}`;}));
  }
  const bonusText=items=>Object.entries(items??{}).map(([item,count])=>`+${count} ${ITEMS[item]?.name.toLowerCase()??item}`).join(', ');
