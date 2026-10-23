@@ -236,3 +236,10 @@ test('My farm shows only for a farmer who has the Village',()=>{
  assert.match(game,/\$\('farm-button'\)\.hidden=!worldTwo;\$\('village-button'\)\.hidden=!worldTwo;/);
  assert.match(phone,/\.side-tools\{[^}]*grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax\(0,1fr\);/,'as many columns as buttons');
 });
+
+// 23 Oct 2026 (the owner: "Tel de coins pas op als je Market sluit"): the Market covers the coin pill, so its sales count up once it closes.
+test('coins that come in while the Market is open count up when it closes',()=>{
+ const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.match(game,/function showCoins\(goal\)\{\n const el=\$\('coins'\);\n[^\n]*\n[^\n]*\n if\(\$\('market-dialog'\)\?\.open&&coinNow!=null&&goal>coinNow\)return;/,'held, before anything changes');
+ assert.match(game,/\$\('market-dialog'\)\.addEventListener\('close',\(\)=>showCoins\(state\.coins\)\);/);
+});

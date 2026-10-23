@@ -1312,6 +1312,9 @@ let coinGoal=null,coinNow=null,coinRun=0;
 const coinText=n=>n.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});
 function showCoins(goal){
  const el=$('coins');
+ // What comes in while the Market is open waits on the pill (23 Oct 2026, the owner: "tel de coins pas op als je Market sluit"): the
+ // window covers it, so the coins count up once it closes, from where they stood, and the farmer sees the sale come in.
+ if($('market-dialog')?.open&&coinNow!=null&&goal>coinNow)return;
  if(goal===coinGoal){if(!coinRun&&el.textContent!==coinText(goal)){el.textContent=coinText(goal);fitText(el);}return;}
  const from=coinNow;coinGoal=goal;cancelAnimationFrame(coinRun);coinRun=0;el.style.minWidth='';
  el.textContent=coinText(goal);fitText(el);
@@ -1997,6 +2000,7 @@ function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
+ $('market-dialog').addEventListener('close',()=>showCoins(state.coins));
  // The coins open the Market, where coins are made (23 Oct 2026, the owner): their pill looked like a button and now is one.
  $('coin-button')?.addEventListener('click',()=>openDialog('market-dialog'));
  $('help-button').addEventListener('click',()=>{renderWiki(state);openDialog('help-dialog');});
