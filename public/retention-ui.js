@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt,dailyWait} from './quests-ui.js';
-import {streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
@@ -44,16 +44,19 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  const chestRow=c=>c?`<div class="welcome-gift welcome-chest"><span class="welcome-gift-art">${art('family-chest-wood')}</span><span class="welcome-gift-copy"><strong>Comeback chest</strong>${chestChips(c)}<small class="welcome-chest-note">For coming back after ${COMEBACK_MIN_DAYS} days or more. One every ${COMEBACK_EVERY_DAYS} days.</small></span><button type="button" id="comeback-chest" class="small-button">Collect</button></div>`:'';
  function gift(){
   // The seven days of the current streak week: day 1-7, then 8-14 and so on, each with its diamonds and, on days 3, 5 and 7, its boost.
+  // 23 Oct 2026 (the owner: bigger and readable on a phone): a collected day is its green check, today has a gold edge (still to collect)
+  // or a green one (collected), and once today is collected the next day has a dashed gold edge: tomorrow's gift, also on the row below.
   const now=farmNow(),today=streakToday(state,now),claimed=today.claimed;
   const streak=claimed?today.streak:today.streak-1,week=Math.floor((today.streak-1)/7)*7;
   const days=Array.from({length:7},(_,i)=>{const n=week+i+1,g=dailyGift(state,n,now),got=n<today.streak||claimed&&n===today.streak,current=n===today.streak&&!claimed;
-   return `<li class="streak-day ${current?'current':''} ${got?'collected':''}"${g.boost?` title="${BOOSTS[g.boost].name} for ${g.boostMs/60000} minutes"`:''}><small>Day ${n}</small>${got?'<i data-lucide="check"></i>':art(n%7===0?'gift':'diamonds')}<b>${g.diamonds}</b>${g.boost?`<span class="streak-boost">${art(BOOSTS[g.boost].art)}</span>`:''}</li>`;}).join('');
+   const mark=n===today.streak?' is-today':claimed&&n===today.streak+1?' is-next':'';
+   return `<li class="streak-day ${current?'current':''} ${got?'collected':''}${mark}"${g.boost?` title="${BOOSTS[g.boost].name} for ${g.boostMs/60000} minutes"`:''}><small>Day ${n}</small>${got?'<i data-lucide="check"></i>':art(n%7===0?'gift':'diamonds')}<b>${g.diamonds}</b>${g.boost?`<span class="streak-boost">${art(BOOSTS[g.boost].art)}</span>`:''}</li>`;}).join('');
   const rule=saveReady(state,now)?'Coins grow with your level. Miss one day and your streak is kept, once a week.':'Coins grow with your level. Your streak was saved this week: miss another day and it starts over.';
   // Collected: tomorrow's gift instead of an empty "come back", and (where reminders can work but are off) one tap to be reminded.
   const offer=giftOffer(now),next=claimed?dailyGift(state,today.streak+1,now+DAY_MS):null;
-  const claim=claimed?`<span><strong>Tomorrow · day ${today.streak+1}</strong>${giftChips(next)}</span><span class="streak-done"><i data-lucide="check"></i>Collected</span>`
+  const claim=claimed?`<span><strong>Tomorrow</strong>${giftChips(next)}</span><span class="streak-done"><i data-lucide="check"></i>Collected</span>`
    :`<span><strong>Day ${offer.day} gift${offer.saved?' · streak saved':''}</strong>${giftChips(offer)}</span><button id="checkin-gift" class="primary-button">Collect</button>`;
-  $('daily-gift').innerHTML=`${chestRow(chestOffer(now))}<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div><b class="streak-count">${streak}</b></div><ol class="streak-days">${days}</ol><div class="streak-claim">${claim}</div>${claimed?'<button type="button" class="gift-remind secondary-button" id="gift-remind" hidden><i data-game-art="bell"></i>Remind me when tomorrow’s gift is ready</button>':''}<small class="gift-note">${rule}</small></section>`;
+  $('daily-gift').innerHTML=`${chestRow(chestOffer(now))}<section class="gift-panel streak-panel ${claimed?'is-claimed':''}"><div class="streak-head">${art('streak','streak-flame')}<div><h3>${streak?`${streak}-day streak`:'Start a streak'}</h3><p>Best ${state.login.best} day${state.login.best===1?'':'s'}${vipActive(state,now)?' · VIP doubles your gifts':''}</p></div></div><ol class="streak-days">${days}</ol><div class="streak-claim">${claim}</div>${claimed?'<button type="button" class="gift-remind secondary-button" id="gift-remind" hidden><i data-game-art="bell"></i>Remind me when tomorrow’s gift is ready</button>':''}<small class="gift-note">${rule}</small></section>`;
   if($('checkin-gift'))$('checkin-gift').onclick=()=>void collectGift();
   if($('comeback-chest'))$('comeback-chest').onclick=async()=>{$('comeback-chest').disabled=true;if(!await collectChest()&&$('comeback-chest'))$('comeback-chest').disabled=false;};
   if(claimed)void offerReminder();
@@ -174,7 +177,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   // as crops picked (the leaderboards count the fields only).
   const total=(prefix,keep=()=>true)=>Object.entries(stats).reduce((n,[k,v])=>k.startsWith(prefix)&&keep(k.slice(prefix.length))&&Number.isFinite(v)?n+v:n,0);
   const crops=Math.max(stats.harvested??0,total('harvest_'))+total('made_',k=>CROPS[k]),goods=Math.max(stats.produced??0,total('made_',k=>!CROPS[k]&&!worldTwoItem(k)));
-  const tile=(icon,value,label)=>`<div>${art(icon)}<p><strong>${value}</strong><span>${label}</span></p></div>`;
+  // 23 Oct 2026 (the owner): the four totals as one row of small chips, so a new farmer's zeros do not fill the window.
+  const tile=(icon,value,label)=>`<li>${art(icon)}<strong>${value}</strong><span>${label}</span></li>`;
   // World II's goods (30 Sep 2026) have their own tab, from level 100; the farm's Goods tab and its count stay the farm's.
   const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!worldTwoItem(k)),villageKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&worldTwoItem(k));
   if(journalTab==='village'&&!worldTwoOpen(state))journalTab='crops';
@@ -187,11 +191,16 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const seen=key=>CROPS[key]?state.discovered.includes(key):count(key)>0;
   const card=key=>`<div class="collection-crop discovered">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${number(count(key))} ${verb}</small></div>`;
   const have=keys.filter(seen),left=keys.length-have.length;
+  // Nothing collected yet (23 Oct 2026): a small card, and on the Crops tab the crop to harvest first (one growing in a field, else
+  // wheat) as the card it will become.
+  const first=state.plots?.find(p=>CROPS[p?.crop])?.crop??(cropUnlocked(state,'wheat')?'wheat':cropKeys.find(k=>cropUnlocked(state,k))??'wheat');
+  const empty=journalTab==='crops'?`<div class="quest-empty journal-empty is-crops"><div class="collection-crop journal-first">${art(first,'collection-picture')}<strong>${ITEMS[first].name}</strong></div><div><h3>Your first harvest</h3><p>Harvest a crop and it shows up here. ${keys.length} crops to discover.</p></div></div>`
+   :`<div class="quest-empty journal-empty">${art(journalTab==='village'?'village-badge':'buildings')}<div><h3>Nothing collected yet</h3><p>${journalTab==='village'?`Make something in the village and it shows up here. ${keys.length} goods to discover.`:`Collect a batch from a building and it shows up here. ${keys.length} goods to discover.`}</p></div></div>`;
   const tabButton=(key,label,list)=>`<button type="button" data-journal-tab="${key}" aria-pressed="${journalTab===key}" class="${journalTab===key?'active':''}">${label} <b>${found(list)}/${list.length}</b></button>`;
   $('journal-content').innerHTML=`<section class="journal-hero"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div class="journal-hero-copy"><div class="journal-hero-top"><strong>Level ${level+1} in ${number(Math.max(0,target-current))} XP</strong><small>${number(current)} / ${number(target)} XP</small></div><progress max="${target}" value="${current}" aria-label="Level progress"></progress><div class="journal-next"><span>Level-up reward</span><b>${art('coins')}${number(reward.coins)}</b><b>${art('diamonds')}${reward.diamonds}</b></div></div></section>`
-   +`<div class="journal-tiles">${tile('harvest',number(crops),'crops harvested')}${tile('buildings',number(goods),'goods made')}${tile('quests',`${state.claimed.length}/${QUESTS.length}`,'quests done')}${tile('cart',number(stats.deliveries??0),'deliveries')}</div>`
+   +`<ul class="journal-stats">${tile('harvest',number(crops),'Crops harvested')}${tile('buildings',number(goods),'Goods made')}${tile('quests',`${state.claimed.length}/${QUESTS.length}`,'Quests done')}${tile('cart',number(stats.deliveries??0),'Deliveries')}</ul>`
    +`<section class="journal-collection"><div class="journal-collection-head"><h3>Your collection</h3><div class="market-tabs journal-tabs" role="group" aria-label="Collection">${tabButton('crops','Crops',cropKeys)}${tabButton('goods','Goods',goodKeys)}${worldTwoOpen(state)?tabButton('village','Village',villageKeys):''}</div></div>${have.length?`<div class="collection-grid">${have.map(card).join('')}${left?`<div class="collection-crop collection-left"><b>${left}</b><small>still to discover</small></div>`:''}</div>`
-    :`<div class="quest-empty journal-empty">${art(journalTab==='crops'?'harvest':journalTab==='village'?'village-badge':'buildings')}<h3>Nothing collected yet</h3><p>${journalTab==='crops'?`Harvest a crop and it shows up here. ${keys.length} crops to discover.`:journalTab==='village'?`Make something in the village and it shows up here. ${keys.length} goods to discover.`:`Collect a batch from a building and it shows up here. ${keys.length} goods to discover.`}</p></div>`}</section>`
+    :empty}</section>`
    +roadmapMarkup(state);
   document.querySelectorAll('[data-journal-tab]').forEach(b=>b.onclick=()=>{journalTab=b.dataset.journalTab;renderJournal();});
   icons();

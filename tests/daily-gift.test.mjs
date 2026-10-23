@@ -63,7 +63,9 @@ test('the gift sounds like a present, shows tomorrow once collected, and comes b
  assert(CUE_ORDER.includes('dailygift')&&SOUND_CUES.dailygift&&CUE_LENGTH.dailygift<1.5);
  const samples=renderCue('dailygift',24000);assert(samples.some(v=>Math.abs(v)>.01)&&samples.every(v=>Math.abs(v)<=.5));
  const retention=read('public/retention-ui.js'),welcome=read('public/welcome-ui.js'),game=read('public/game.js');
- assert.match(retention,/<strong>Tomorrow · day \$\{today\.streak\+1\}<\/strong>\$\{giftChips\(next\)\}/);
+ // 23 Oct 2026: tomorrow's day is the dashed tile in the week strip, so the card above Collected just says Tomorrow.
+ assert.match(retention,/<strong>Tomorrow<\/strong>\$\{giftChips\(next\)\}/);
+ assert.match(retention,/claimed&&n===today\.streak\+1\?' is-next'/,'tomorrow marked in the week');
  assert.match(retention,/if\(r&&r\.streak%7===0\)celebrate\(r\);/,'every seventh day is celebrated');
  assert.match(retention,/danger=!today\.claimed&&today\.streak-1>=3&&new Date\(\)\.getHours\(\)>=18/,'the flame: a streak of 3+ in the evening');
  assert.match(retention,/\(await api\.push\.status\(\)\)\.kind!=='off'\)return;/,'the reminder offer only where notifications can work and are off');
