@@ -771,16 +771,85 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
  #building-dialog #building-content .recipe-act .start-recipe{height:38px;min-height:38px;padding-inline:8px;font-size:13px}
 }
 
-/* Farmhouse field map on phones: small plain tiles (soil with a sprout for your fields, the next one marked, the rest
-   faint) instead of forty seed bags and padlocks; desktop keeps the pictures. */
-@media(max-width:900px),(max-height:550px) and (pointer:coarse){
- .expansion-panel .field-preview{grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin:14px 0}
- .expansion-panel .field-preview>span{height:20px;border-radius:6px}
- .expansion-panel .field-preview>span>.game-art,.expansion-panel .field-preview>span>svg{display:none}
- .expansion-panel .field-preview>.unlocked{border:1px solid #c9a57f;background:radial-gradient(circle at 50% 42%,#8fbf5a 0 3px,transparent 3.5px),linear-gradient(180deg,#b98a5c,#9c6f45)}
- .expansion-panel .field-preview>.locked{border:1px dashed #e0d6c9;background:#f6f1ea}
- .expansion-panel .field-preview>.is-next{border:1.5px dashed #d0a64a;background:#fff6dc;position:relative}
- .expansion-panel .field-preview>.is-next::after{content:'+';position:absolute;inset:0;display:grid;place-items:center;font:700 14px/1 'Outfit',sans-serif;color:#b08a3c}
+/* The Farmhouse (23 Oct 2026, the owner's redesign, as the chores and production windows; economy-ui.js): the growing space as one
+   line with a small map of the forty fields, the next field as a compact card with its price as chips and Buy beside it (a green edge
+   when it can be bought now, muted with one red line saying why when not), the rule folded away, the Estate as one row, and Your fields
+   as compact rows, ripe ones first with a green edge, gold bars, a quiet remove button and the two Remove all buttons under the list.
+   Two ids and .farmhouse-panel, so no other building's window is touched. */
+#building-dialog #building-content .farmhouse-panel{display:grid;gap:14px;margin:2px 0 4px;color:#453e28}
+#building-dialog #building-content .fh-space{display:grid;gap:8px;margin:0;padding:0;border:0;background:none}
+#building-dialog #building-content .fh-space-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px}
+#building-dialog #building-content .fh-space-head strong{font:700 16px/1.3 'Outfit',sans-serif;color:#453e28}
+#building-dialog #building-content .fh-space-head span{font-size:13px;font-weight:700;color:#8a7a5c;white-space:nowrap;font-variant-numeric:tabular-nums}
+#building-dialog #building-content .fh-map{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px;margin:0 0 4px}
+#building-dialog #building-content .fh-map>span{height:12px;border:1px dashed #e0d6c9;border-radius:4px;background:#f6f1ea}
+#building-dialog #building-content .fh-map>.is-field{border:1px solid #a87a4e;background:radial-gradient(circle at 50% 50%,#8fbf5a 0 2px,transparent 2.5px),linear-gradient(180deg,#b98a5c,#9c6f45)}
+#building-dialog #building-content .fh-map>.is-next{border:1.5px dashed #d0a64a;background:#fff3cf}
+#building-dialog #building-content .fh-next{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:6px 12px;margin:0;padding:12px 14px;border:1px solid #ddd2c7;border-radius:18px;background:#fffdf4;box-shadow:0 2px 0 #ece3d2}
+#building-dialog #building-content .fh-next.is-ready{border-color:#8cc06a;background:#f6fbef;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#building-dialog #building-content .fh-next.is-waiting{border-color:#e6ddd1;background:#f8f4ea;box-shadow:none}
+#building-dialog #building-content .fh-next.is-done{grid-template-columns:48px minmax(0,1fr)}
+#building-dialog #building-content .fh-next-art{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#efe6d6}
+#building-dialog #building-content .fh-next-art>.game-art{width:40px;height:40px;object-fit:contain}
+#building-dialog #building-content .fh-next-art>svg{width:24px;height:24px;color:#4f7a35}
+#building-dialog #building-content .fh-next.is-done .fh-next-art{background:#e6efdc}
+#building-dialog #building-content .fh-next.is-waiting .fh-next-art>.game-art{filter:saturate(.6);opacity:.85}
+#building-dialog #building-content .fh-next-main{display:grid;gap:6px;min-width:0}
+#building-dialog #building-content .fh-next-main>strong{font:700 16px/1.25 'Outfit',sans-serif;color:#4a3a24}
+#building-dialog #building-content .fh-next-main>small{font-size:13px;line-height:1.4;color:#8a7a5c}
+#building-dialog #building-content .fh-cost{display:flex;flex-wrap:wrap;gap:5px;max-width:none;margin:0}
+#building-dialog #building-content .fh-cost .ingredient{padding:3px 8px 3px 3px;border-radius:999px;font-size:12px;line-height:1.3}
+#building-dialog #building-content .fh-cost .ingredient>:is(.product-art,.game-art,img){width:22px;height:22px}
+#building-dialog #building-content .fh-why{display:block;margin:0;color:#a1442f;font-size:12px;line-height:1.4;font-weight:700;text-align:start}
+#building-dialog #building-content .fh-next>#expand-fields{width:auto;min-width:112px;height:44px;min-height:44px;margin:0;padding-block:0;padding-inline:18px;justify-content:center;font-size:15px;white-space:nowrap}
+#building-dialog #building-content .fh-rule{margin-top:0}
+#building-dialog #building-content .fh-rule>p{margin:0 2px 10px;font-size:13px;line-height:1.5}
+#building-dialog #building-content .farmhouse-panel>.estate-entry{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;margin:0;padding:10px 14px;border:1px solid #e3d3a4;border-radius:16px;background:#fbf4dc;box-shadow:0 2px 0 #eadfba;color:#453e28}
+#building-dialog #building-content .farmhouse-panel>.estate-entry[hidden]{display:none}
+#building-dialog #building-content .farmhouse-panel>.estate-entry>.game-art{width:36px;height:36px}
+#building-dialog #building-content .farmhouse-panel>.estate-entry strong{font-size:15px;font-weight:700}
+#building-dialog #building-content .farmhouse-panel>.estate-entry small{margin-top:2px;font-size:12px;line-height:1.4;color:#8a7a5c}
+#building-dialog #building-content .farmhouse-panel>.estate-entry>svg:last-child{width:18px;height:18px;color:#a09684}
+#building-dialog #building-content .farmhouse-panel .field-list{margin:0;padding:0;border:0;background:none}
+#building-dialog #building-content .farmhouse-panel .field-list-head{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:0 2px}
+#building-dialog #building-content .farmhouse-panel .field-list-head h3{margin:0;margin-inline-end:auto;font:700 16px/1.3 'Outfit',sans-serif;color:#453e28}
+#building-dialog #building-content .farmhouse-panel .field-list-head span{font-size:13px;font-weight:700;color:#8a7a5c;white-space:nowrap}
+#building-dialog #building-content .farmhouse-panel .field-list-head .fh-ripe{padding:2px 9px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:12px}
+#building-dialog #building-content .farmhouse-panel .field-list ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+#building-dialog #building-content .farmhouse-panel .field-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;margin:0;padding:8px 10px 8px 12px;border:1px solid #ddd2c7;border-radius:14px;background:#fffdf4}
+#building-dialog #building-content .farmhouse-panel .field-row.is-ready{border-color:#8cc06a;background:#f6fbef;box-shadow:0 2px 0 #b9d9a0}
+#building-dialog #building-content .farmhouse-panel .field-row.is-waiting{background:#fbf8ef}
+#building-dialog #building-content .farmhouse-panel .field-row>.game-art{width:36px;height:36px;object-fit:contain}
+#building-dialog #building-content .farmhouse-panel .field-row-copy{display:grid;gap:5px;min-width:0}
+#building-dialog #building-content .farmhouse-panel .field-row-name{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0}
+#building-dialog #building-content .farmhouse-panel .field-row-name strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px;font-weight:700;color:#4a3a24}
+#building-dialog #building-content .farmhouse-panel .field-row-name .fh-field-no{font-size:12px;font-weight:400;color:#9a8c72;white-space:nowrap}
+#building-dialog #building-content .farmhouse-panel .field-row-name em{padding:0 7px;border-radius:999px;background:#e6efdc;color:#42632e;font-size:12px;font-style:normal;font-weight:700;white-space:nowrap}
+#building-dialog #building-content .farmhouse-panel .field-row-name .fh-time{margin-inline-start:auto;font-size:12px;font-weight:700;color:#8a7a5c;white-space:nowrap;font-variant-numeric:tabular-nums}
+#building-dialog #building-content .farmhouse-panel .field-row.is-ready .fh-time{color:#3f6b2c}
+#building-dialog #building-content .farmhouse-panel .field-row-bar{display:block;height:6px;border-radius:999px;background:#ece3d2;overflow:hidden}
+#building-dialog #building-content .farmhouse-panel .field-row-bar>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d9a53c,#e8b94e)}
+#building-dialog #building-content .farmhouse-panel .field-row.is-ready .field-row-bar{display:none}
+#building-dialog #building-content .farmhouse-panel .field-row-remove{display:grid;place-items:center;width:36px;height:36px;margin:0;padding:0;border:1px solid transparent;border-radius:12px;background:none;color:#b3a28c;cursor:pointer}
+#building-dialog #building-content .farmhouse-panel .field-row-remove:hover,#building-dialog #building-content .farmhouse-panel .field-row-remove:focus-visible{border-color:#e7cfc4;background:#fff4ef;color:#b0452d}
+#building-dialog #building-content .farmhouse-panel .field-row-remove svg{width:17px;height:17px}
+#building-dialog #building-content .farmhouse-panel .fh-remove{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 0;padding:10px 2px 0;border-top:1px solid #ece3d2}
+#building-dialog #building-content .farmhouse-panel .fh-remove>p{flex:1 1 220px;margin:0;font-size:12px;line-height:1.45;color:#8a7a5c}
+#building-dialog #building-content .farmhouse-panel .field-clear-all{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+#building-dialog #building-content .farmhouse-panel .field-clear-button{width:auto;min-height:36px;margin:0;padding:6px 12px;border:1px solid #e7cfc4;border-radius:12px;background:#fffdf4;box-shadow:none;color:#a1442f;font-size:13px;font-weight:700}
+#building-dialog #building-content .farmhouse-panel .field-clear-button:hover{border-color:#d9a896;background:#fff4ef}
+@media(min-width:721px){
+ #building-dialog #building-content .fh-map>span{height:14px}
+ #building-dialog #building-content .farmhouse-panel .field-list ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+}
+@media(max-width:720px){
+ #building-dialog #building-content .fh-next{grid-template-columns:44px minmax(0,1fr) auto;padding:10px 12px}
+ #building-dialog #building-content .fh-next-art{width:44px;height:44px;border-radius:12px}
+ #building-dialog #building-content .fh-next-art>.game-art{width:36px;height:36px}
+ #building-dialog #building-content .fh-next:not(.is-done) .fh-next-main{display:contents}
+ #building-dialog #building-content .fh-next:not(.is-done) .fh-next-main>:is(.fh-cost,.fh-why){grid-column:1/-1}
+ #building-dialog #building-content .fh-next>#expand-fields{grid-row:1;grid-column:3;min-width:96px;height:40px;min-height:40px;padding-inline:14px;font-size:14px}
+ #building-dialog #building-content .fh-map{gap:2px}
 }
 /* Collect all: one calm row above the batches (picture, how many and what, the button), also on phones. */
 #building-content .collect-all-panel{grid-template-columns:44px minmax(0,1fr) auto;gap:12px;padding:10px 12px;margin:0 0 10px;border-color:#cfe0c3;border-radius:16px;background:#f3f9ec;box-shadow:none}
