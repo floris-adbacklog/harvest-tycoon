@@ -1306,6 +1306,12 @@ function updateHint(){
 // updateUI shows them too, with everything else.
 function hudNumbers(){
  $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});fitText($('coins'));$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
+ // The coins open the Warehouse (23 Oct 2026, the owner, option 2): a thin line along the bottom of their pill says how full it is, green,
+ // amber from 90% and red once bringing in waits (warehouseTone, the Market button's badge and the Warehouse window's bar), so a harvest
+ // that waits is no surprise. A screen reader hears it as "Warehouse 820 / 1,100".
+ {const pill=$('coin-button'),fill=$('coin-warehouse-fill');if(pill&&fill){const tone=warehouseTone(state),stored=storedCount(state),room=warehouseCapacity(state),text=`Warehouse ${stored.toLocaleString('en-US')} / ${room.toLocaleString('en-US')}`,share=`${Math.min(100,Math.round(stored/Math.max(1,room)*100))}%`;
+  if(fill.style.width!==share)fill.style.width=share;pill.classList.toggle('is-near',tone==='near');pill.classList.toggle('is-full',tone==='full');
+  const said=$('coin-warehouse-text');if(said.textContent!==text)said.textContent=text;}}
  const lp=levelProgress(state),lvl=lp.level;
  $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
  // What the Market button counts: the goods its market buys (village goods in the village, the rest on the farm).
@@ -1958,6 +1964,7 @@ function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
+ $('coin-button')?.addEventListener('click',()=>warehouse?.open());
  $('help-button').addEventListener('click',()=>{renderWiki(state);openDialog('help-dialog');});
  // Feedback & bugs: the mailbox (public/feedback-ui.js), beside How to play and in the More menu.
  const feedback=createFeedback({level:()=>levelProgress(state).level});

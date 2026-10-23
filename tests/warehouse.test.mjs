@@ -191,3 +191,20 @@ test('differential: the old rules on new saves keep the Warehouse and play on; t
  // (One crop a harvest, merged in on 22 Oct 2026, adds mastery.kept too: the medals the old numbers gave, none on a new farm.)
  assert.deepEqual(n.warehouse,{level:1});delete n.warehouse;assert.deepEqual(n.mastery.kept,{});delete n.mastery.kept;assert.deepEqual(n,o);
 });
+
+// 23 Oct 2026 (the owner, option 2): the coin pill looked like a button but was none. It is one now and opens the Warehouse, with a thin
+// line along its bottom for how full it is, in the colours of the Market button's badge and the Warehouse window (warehouseTone).
+test('the coins open the Warehouse, and their pill shows how full it is',()=>{
+ const html=readFileSync(new URL('../public/farm.html',import.meta.url),'utf8'),game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/warehouse.css',import.meta.url),'utf8');
+ assert.match(html,/<button type="button" id="coin-button" class="coin-counter" title="Coins" aria-haspopup="dialog"><span class="coin-icon"><i data-lucide="coins"><\/i><\/span><strong id="coins">180<\/strong><span class="resource-label">coins<\/span><span class="coin-warehouse" aria-hidden="true"><i id="coin-warehouse-fill"><\/i><\/span><span class="sr-only" id="coin-warehouse-text"><\/span><\/button>/);
+ assert.doesNotMatch(html,/<div class="coin-counter"/,'no second, dead coin pill');
+ assert.match(game,/\$\('coin-button'\)\?\.addEventListener\('click',\(\)=>warehouse\?\.open\(\)\);/);
+ assert.match(game,/pill\.classList\.toggle\('is-near',tone==='near'\);pill\.classList\.toggle\('is-full',tone==='full'\);/);
+ // "Warehouse 820 / 1,100", the text every language already has, for a screen reader.
+ assert.match(game,/text=`Warehouse \$\{stored\.toLocaleString\('en-US'\)\} \/ \$\{room\.toLocaleString\('en-US'\)\}`/);
+ for(const rule of [/\.coin-warehouse>i\{[^}]*background:#5fae4f/,/\.coin-counter\.is-near \.coin-warehouse>i\{background:#e3a53c\}/,/\.coin-counter\.is-full \.coin-warehouse>i\{background:#c9573f\}/])assert.match(css,rule);
+ // The same tone as the window: amber from 90%, red once full.
+ const s=normalizeFarm(farm(30),now),room=warehouseCapacity(s);
+ s.inventory.wheat=Math.ceil(room*.9)-storedCount(s)+(s.inventory.wheat??0);assert.equal(warehouseNearFull(s),true);assert.equal(warehouseFull(s),false);
+ s.inventory.wheat+=room;assert.equal(warehouseFull(s),true);
+});
