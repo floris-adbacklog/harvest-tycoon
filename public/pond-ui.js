@@ -95,7 +95,10 @@ export function createPond({water:which='pond',place=null,state,scene,game,label
  const casts=()=>waterCasts(W,state,now());
  const current=()=>state[W.key]?.n??0;
  const pageTwo=()=>waterPageTwoOpen(W,state);
- function setPhase(next){phase=next;phaseAt=clock;dialog.dataset.phase=next;}
+ // The fish bar's side (23 Oct 2026, a player: the right thumb on the reel button covered the bar): left of the button, or right of it
+ // for a left-handed farmer (Settings › Graphics, Left-handed fishing; saved on this device by public/game.js).
+ const barSide=()=>{try{return localStorage.getItem('harvest-tycoon:pond-bar')==='right'?'right':'left';}catch{return 'left';}};
+ function setPhase(next){phase=next;phaseAt=clock;dialog.dataset.phase=next;dialog.dataset.bar=barSide();}
  // The button's word, on one line: a long one (Binnenhalen, Підтягнути) is made smaller once its language has put it there.
  function word(text){label.textContent=text;requestAnimationFrame(()=>fitText(label,10));}
  function tell(text,extra=''){sayLine.textContent=text;more.textContent=extra;more.hidden=!extra;}

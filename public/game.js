@@ -1945,6 +1945,9 @@ function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.ne
 // Settings › Graphics (21 Oct 2026, public/graphics-mode.js): Simple graphics on or off, saved on this device, and the farm opens again
 // with it as Try again does (on a portal its page opens the farm again). Its text says it also switches on by itself after trouble.
 function bindGraphicsSetting(){
+ // Left-handed fishing (23 Oct 2026, a player): the fish bar stands left of the reel button, or right of it when this is on (public/pond-ui.js).
+ const hand=$('pond-bar-right');
+ if(hand){try{hand.checked=localStorage.getItem('harvest-tycoon:pond-bar')==='right';}catch{}hand.onchange=()=>{try{localStorage.setItem('harvest-tycoon:pond-bar',hand.checked?'right':'left');}catch{}};}
  const box=$('graphics-simple');if(!box)return;
  box.checked=graphicsSimple;
  box.onchange=()=>{chooseGraphics(gfxStore,box.checked);$('graphics-status').textContent='Opening your farm again…';

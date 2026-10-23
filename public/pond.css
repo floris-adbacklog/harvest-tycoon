@@ -54,7 +54,7 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-view[data-phase="bite"] .pond-act{animation:pond-strike .32s ease-in-out infinite alternate;box-shadow:0 4px 0 var(--btn-main-edge),0 0 0 8px #f3c35399}
 @keyframes pond-strike{to{transform:scale(1.08)}}
 .pond-view[data-phase="cast"] .pond-act,.pond-view[data-phase="wait"] .pond-act{background:var(--btn-second);border-color:var(--btn-second-line);box-shadow:0 4px 0 var(--btn-second-edge);color:var(--btn-second-text)}
-.pond-bar{position:absolute;bottom:0;left:calc(50% + 66px);width:34px;height:min(158px,32vh);min-height:104px;border-radius:17px;background:linear-gradient(var(--btn-diamond),var(--btn-diamond-hover));border:3px solid var(--cream);box-shadow:var(--shadow);overflow:hidden}
+.pond-bar{position:absolute;bottom:0;left:calc(50% - 100px);width:34px;height:min(158px,32vh);min-height:104px;border-radius:17px;background:linear-gradient(var(--btn-diamond),var(--btn-diamond-hover));border:3px solid var(--cream);box-shadow:var(--shadow);overflow:hidden}
 .pond-zone{position:absolute;left:0;right:0;background:#3f8a4a8c;border-block:2px solid var(--btn-main);border-radius:6px}
 .pond-zone.is-out{background:#b4513f59;border-color:var(--btn-red)}
 .pond-mark{position:absolute;left:50%;width:30px;height:30px;transform:translate(-50%,50%);pointer-events:none}
@@ -119,7 +119,7 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
  .pond-play{bottom:10px;gap:5px}.pond-say{padding:5px 12px;font-size:14px}
  .pond-controls{height:80px}.pond-act{width:72px;height:72px;font-size:15px}
  .pond-view[data-phase="reel"] .pond-controls{height:calc(min(130px,42vh) + 6px)}
- .pond-bar{left:calc(50% + 56px);height:min(130px,42vh);min-height:90px}
+ .pond-bar{left:calc(50% - 90px);height:min(130px,42vh);min-height:90px}
  .pond-card{bottom:8px;max-height:calc(100% - 92px);padding:10px 14px}.pond-card-art{width:60px;height:60px}.pond-card h3{font-size:19px}
  .pond-tags{margin-top:4px}.pond-rewards{margin:4px 0 8px}
 }
@@ -132,3 +132,7 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 }
 /* The lake's Five casts now (20 Oct 2026): right under "No casts left", above the grey Cast button. */
 .pond-refill{pointer-events:auto}
+
+/* The fish bar left of the reel button, where a right thumb does not cover it; right of it for left-handed farmers (Settings, 23 Oct 2026). */
+.pond-view[data-bar="right"] .pond-bar{left:calc(50% + 66px)}
+@media (max-height:540px){.pond-view[data-bar="right"] .pond-bar{left:calc(50% + 56px)}}
