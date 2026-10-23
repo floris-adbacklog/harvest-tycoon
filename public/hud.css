@@ -178,3 +178,6 @@
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
  .reminder-nudge{bottom:124px}
 }
+/* The coins' digits all as wide (23 Oct 2026): a font shorthand on the pill's number set them back to Outfit's own widths, so a number that
+   counts up (public/game.js showCoins) made the pill and the whole top bar shake. */
+#coins{font-variant-numeric:tabular-nums}

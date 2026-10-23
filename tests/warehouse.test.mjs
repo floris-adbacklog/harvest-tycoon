@@ -211,4 +211,7 @@ test('coins that come in count up in 0.7 s; spending, the first draw and reduced
  assert.match(game,/coinNow=k<1\?Math\.round\(from\+\(goal-from\)\*\(1-\(1-k\)\*\*3\)\):goal;/,'slowing down at the end, landing exactly');
  assert.match(game,/if\(goal===coinGoal\)\{if\(!coinRun&&el\.textContent!==coinText\(goal\)\)/,'the same amount again never starts it over');
  assert.match(game,/const from=coinNow;coinGoal=goal;cancelAnimationFrame\(coinRun\);/,'a second gain on the way runs on from where the number is');
+ // No shaking top bar: digits all as wide, and the number keeps the new amount's width while it runs.
+ assert.match(readFileSync(new URL('../public/hud.css',import.meta.url),'utf8'),/#coins\{font-variant-numeric:tabular-nums\}/);
+ assert.match(game,/el\.style\.minWidth=`\$\{el\.getBoundingClientRect\(\)\.width\}px`;/);assert.match(game,/if\(!coinRun\)el\.style\.minWidth='';/);
 });

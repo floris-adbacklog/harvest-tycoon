@@ -1313,13 +1313,17 @@ const coinText=n=>n.toLocaleString('en-US',mobileLayout.matches?{notation:'compa
 function showCoins(goal){
  const el=$('coins');
  if(goal===coinGoal){if(!coinRun&&el.textContent!==coinText(goal)){el.textContent=coinText(goal);fitText(el);}return;}
- const from=coinNow;coinGoal=goal;cancelAnimationFrame(coinRun);coinRun=0;
+ const from=coinNow;coinGoal=goal;cancelAnimationFrame(coinRun);coinRun=0;el.style.minWidth='';
  el.textContent=coinText(goal);fitText(el);
  if(from==null||goal<=from||reducedMotion){coinNow=goal;return;}
+ // The number keeps the new amount's width while it runs (23 Oct 2026, the owner: "waarom shaked heel het coins scherm"): the coins' digits
+ // are all as wide (#coins, tabular-nums in hud.css), and a shorter number on the way (9,999 before 10,000) never narrows the pill, so
+ // nothing in the top bar moves.
+ el.style.minWidth=`${el.getBoundingClientRect().width}px`;
  // Its own animation frame: the pill's text only, nothing of the 3D view (frame() draws that, and the camera's glides run in it).
  const start=performance.now();
  // A frame's time can be a moment before start (it is when the frame began): never below 0, so the number never dips under where it was.
- const countCoins=at=>{const k=Math.max(0,Math.min(1,(at-start)/COIN_COUNT_MS));coinNow=k<1?Math.round(from+(goal-from)*(1-(1-k)**3)):goal;el.textContent=coinText(coinNow);coinRun=k<1?requestAnimationFrame(countCoins):0;};
+ const countCoins=at=>{const k=Math.max(0,Math.min(1,(at-start)/COIN_COUNT_MS));coinNow=k<1?Math.round(from+(goal-from)*(1-(1-k)**3)):goal;el.textContent=coinText(coinNow);coinRun=k<1?requestAnimationFrame(countCoins):0;if(!coinRun)el.style.minWidth='';};
  el.textContent=coinText(from);coinRun=requestAnimationFrame(countCoins);
 }
 function hudNumbers(){
