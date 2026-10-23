@@ -27,15 +27,17 @@
 #building-dialog #building-content .recipe-card.is-waiting{background:none}
 #buildings-dialog #building-catalog>.building-card:active{transform:none;box-shadow:none;background:#f7f1e7}
 #seed-dialog .seed-row:hover,#buildings-dialog #building-catalog>.building-card:hover{background:#f9f4eb}
-/* What is ready (or chosen) keeps a card, so it stands out from the rows. */
+/* What is ready (or chosen) keeps a card, so it stands out from the rows. The card reaches 10 px past the row on each side, so its
+   picture and words stand exactly where the rows' do (its 1 px border and 11 px padding are the rows' 2 px plus those 10; 23 Oct 2026,
+   the owner: the chosen seed was not lined up with the rest). */
 #buildings-dialog #building-catalog>.building-card:has(.building-status.ready),
 #task-list .quest-item.is-ready,
 #today-content .daily-card.is-ready,
 #today-content .daily-order.is-ready,
 #building-dialog #building-content .recipe-card.is-ready{
- margin-block:6px;padding-inline:12px;border:1px solid var(--calm-ready-line);border-radius:16px;background:var(--calm-ready-fill);box-shadow:0 2px 0 #b9d9a0
+ margin-block:6px;margin-inline:-10px;padding-inline:11px;border:1px solid var(--calm-ready-line);border-radius:16px;background:var(--calm-ready-fill);box-shadow:0 2px 0 #b9d9a0
 }
-#seed-dialog .seed-row.selected{padding-inline:12px;border:1px solid #d9c28d;border-radius:16px;background:#fff6dc;box-shadow:none}
+#seed-dialog .seed-row.selected{width:calc(100% + 20px);margin-inline:-10px;padding-inline:11px;border:1px solid #d9c28d;border-radius:16px;background:#fff6dc;box-shadow:none}
 /* Tiles that only hold a fact: the journal's four counts and the Silo's two now-values. */
 #journal-content .journal-stats>li,#utility-content .silo-now>div{border:0;background:none;padding-inline:4px}
 

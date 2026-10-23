@@ -15,7 +15,7 @@ test('the calm sheet comes after every window\'s own sheet and the shell, before
  for(const m of css.matchAll(/font(?:-size)?:[^;}]*?(\d+(?:\.\d+)?)px/g))assert.ok(Number(m[1])>=12,m[0]);
  // Rows, not cards; what is ready keeps its green card.
  assert.match(css,/#task-list \.quest-item,\n#seed-dialog \.seed-row,[^{]*\{\n border:0;border-bottom:1px solid var\(--calm-line\);border-radius:0;background:none;box-shadow:none;/);
- assert.match(css,/#task-list \.quest-item\.is-ready,[^{]*\{\n margin-block:6px;padding-inline:12px;border:1px solid var\(--calm-ready-line\);border-radius:16px;background:var\(--calm-ready-fill\);/);
+ assert.match(css,/#task-list \.quest-item\.is-ready,[^{]*\{\n margin-block:6px;margin-inline:-10px;padding-inline:11px;border:1px solid var\(--calm-ready-line\);border-radius:16px;background:var\(--calm-ready-fill\);/);
  assert.match(css,/--calm-ready-line:#8cc06a;--calm-ready-fill:#eef7e3/,'the house style\'s ready green');
  // Only "ready" stays a pill.
  assert.match(css,/#buildings-dialog \.building-status:not\(\.ready\)\{padding:0;background:none\}/);
