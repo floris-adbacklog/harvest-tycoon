@@ -55,22 +55,6 @@
 
 .project-kicker{flex-wrap:wrap}.project-rewards{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;max-width:100%}.project-rewards .game-art{width:21px;height:21px;flex:0 0 21px}.estate-step small{overflow-wrap:anywhere}
 
-/* Your fields (economy-ui.js, the Farmhouse): one compact row per planted field, with its progress and a remove button. */
-.field-list{margin-top:20px;padding:18px 18px 8px;background:#f1f5e8;border:1px solid #d5dfc6;border-radius:22px}
-.field-list-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.field-list-head h3{margin:0}.field-list-head span{color:#697a60;font-size:13px;font-weight:700;white-space:nowrap}
-.field-list>p{margin:4px 0 10px;color:#667956;font-size:13.5px;line-height:1.5}
-.field-list ul{margin:0;padding:0;list-style:none}
-.field-clear-all{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}.field-list .field-clear-button{width:auto;min-height:40px;padding:8px 14px;border-color:#e7cfc4;background:#fff8f4;color:#b0452d}.field-list .field-clear-button:hover{background:#fbe9e1;border-color:#d9a896}
-.field-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #dde5d0}
-.field-row>.game-art{width:40px;height:40px;flex:0 0 40px;object-fit:contain}
-.field-row-copy{display:grid;gap:4px;min-width:0;flex:1}
-.field-row-copy strong{display:flex;align-items:center;gap:7px;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.field-row-copy em{flex:none;padding:1px 7px;border-radius:999px;background:#e2ecd2;color:#56703f;font-size:12px;font-style:normal;font-weight:700}
-.field-row-copy small{color:#697a60;font-size:12.5px;font-weight:600}
-.field-row-bar{display:block;height:6px;border-radius:999px;background:#dfe6d3;overflow:hidden}.field-row-bar>i{display:block;height:100%;border-radius:inherit;background:#7fa25a}
-.field-row.is-ready .field-row-bar>i{background:#d9a531}.field-row.is-ready small{color:#8a6414;font-weight:700}
-.field-row-remove{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;margin:0;padding:0;border:1px solid #e7cfc4;border-radius:12px;background:#fff8f4;color:#b0452d;cursor:pointer}
-.field-row-remove:hover{background:#fbe9e1;border-color:#d9a896}.field-row-remove svg{width:18px;height:18px}
 /* Upgrade (economy-ui.js): one row with what it costs (coins and the building's own goods), the Upgrade button and what is still
    missing for it. */
 .upgrade-payments{gap:10px}
