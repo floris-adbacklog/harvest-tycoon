@@ -61,7 +61,7 @@ test('the building panel still says what an upgrade gives, and diamonds and coin
 });
 test('with many slots the batch picker has a Max button that respects what is available',()=>{
  const ui=read('public/economy-ui.js'),css=read('public/production-controls.css');
- assert.match(ui,/a\.maxCount>2\?` · <button type="button" class="batch-max" data-batch-step="max"/);
+ assert.match(ui,/a\.maxCount>2\?`<button type="button" class="batch-max" data-batch-step="max"[^`]*title="\$\{a\.maxCount\} available">Max<\/button>`/,'Max beside the stepper, how many are available on it');
  assert.match(ui,/button\.dataset\.batchStep==='max'\?Math\.max\(1,most\)/);
  assert.match(ui,/most\.disabled=mutating\|\|count>=max/);
  assert.match(css,/\.batch-max\{[^}]*min-height:32px/);

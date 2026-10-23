@@ -54,7 +54,7 @@ test('the Factory panel, the batch picker and the wiki say how big a batch is',(
  assert.match(ui,/A batch is twice the level of the building that normally makes it, up to ×20 \(a level-5 Dairy: cheese ×10\)\. Goods that take over an hour: its level, up to ×10\./);
  // The list comes from the rules' buildingRecipes since Oct 2026 (nothing of World II below level 100), each at this farm's batch size.
  assert.match(ui,/const recipeEntries=buildingRecipes\(state,key\)\.map\(id=>\[id,recipeFor\(state,id\)\]\);/);
- assert.match(ui,/function costList\(id,n=1\)\{const r=recipeFor\(state,id\);/);assert.match(ui,/<strong>\$\{jobName\(job\)\}<\/strong>/);
+ assert.match(ui,/function costList\(id,n=1\)\{const r=recipeFor\(state,id\);/);assert.match(ui,/<strong class=\"job-name\">\$\{jobName\(job\)\}<\/strong>/);
  assert.match(read('public/field-picker.js'),/jobName\(b\.job\)/);
  const wiki=read('public/wiki-content.js');
  assert.match(wiki,/A bulk batch is twice the level of the building that normally makes it, up to ×20: a level-5 Dairy makes cheese ×10\./);
