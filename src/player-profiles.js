@@ -6,7 +6,8 @@ import {ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
 import {skeleton} from '../public/skeleton.js';
 import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook,GIFT_PASSES,giftPass} from '../game/farm-state.js';
-import {framed,lookBadge,lookTitle,lookBackground} from '../public/look-marks.js';
+import {framed,lookBadge,lookTitle,lookBackground,lookColor} from '../public/look-marks.js';
+import {keepFolds} from '../public/keep-folds.js';
 
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const esc=escapeProfileText;
@@ -32,30 +33,35 @@ export function masteryByCrop(badges){
 }
 // The crop with its best medal pinned to it (6 Oct 2026: the tier's own picture, public/visual-icons.js MEDAL_ART).
 const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${best}" title="${esc(MASTERY_TIERS[best].name)} · ${esc(CROPS[crop].name)}"><span class="farmer-badge-art">${art(crop)}${art(MEDAL_ART[best],'farmer-badge-medal')}</span><strong>${esc(CROPS[crop].name)}</strong><span>${esc(MASTERY_TIERS[best].name)}</span><span class="farmer-badge-pips" role="img" aria-label="${tiers.size} of ${MASTERY_TIERS.length} medals">${MASTERY_TIERS.map((tier,i)=>`<i class="tier-${i}${tiers.has(i)?' is-earned':''}" title="${esc(tier.name)}"></i>`).join('')}</span></div>`;
-// The family card: with a family, a button to its profile (public/family-profile.js, 27 Sep 2026).
+// The family as a chip on the farmer's card (23 Oct 2026): with a family a button to its profile (public/family-profile.js, 27 Sep 2026)
+// with the emblem, the name as typed and the farmer's place in it; without one a quiet chip.
 function familyCard(family,emblem){
- const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<div><h4>${family?.name?ownWords(family.name):'No family yet'}</h4><p>${esc(family?.role??'Growing at their own pace')}</p></div>`;
- return family?.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(ownText(`${family.name}: family profile`,[family.name]))}">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:inner;
+ if(!family?.name)return `<span class="farmer-family-none">${art('familyhall')}No family yet</span>`;
+ const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<b>${ownWords(family.name)}</b>${family.role?`<small>${esc(family.role)}</small>`:''}`;
+ return family.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(ownText(`${family.name}: family profile`,[family.name]))}">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:`<span class="farmer-family-open">${inner}</span>`;
 }
+const foldChevron='<svg class="farmer-fold-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>';
 // 30 Sep 2026, cleaner: the name once (the window says Farmer profile), the VIP time left only on your own profile, and what
 // Online means in the dot's own tooltip rather than a line under the profile.
+// 23 Oct 2026 (the owner: "Profile en Leaderboard verbeteren UX/UI, houd het clean"): one card for the farmer (the face in its frame, the
+// name in its colour, the title, then chips for the level, online, the family and your VIP time, the dates in one quiet line), the
+// buttons as one compact row under it (yours: My farmer and Share my farm; someone else's: Send message, Invite, Report and Block),
+// the stat pages as compact chips, the medals in a fold (data-fold, kept open through the refresh: keepFolds) and the seasons small.
 export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false,village=false}={}){
  const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
  const badges=player.badges??[],mastered=masteryByCrop(badges);
- // The Season Pass's looks (Oct 2026, public/look-marks.js): a background behind the face and name, a frame around the face, a badge
- // beside the name and a title under it; the badges of every season collected in their own row.
- const bg=lookBackground(player.look);
- return `<div class="farmer-identity${bg?' has-look-bg':''}"${bg?` style="--look-bg:url('${bg}')"`:''}><div class="farmer-avatar" aria-hidden="true">${framed(player.look,`<img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false">`)}</div><div><h3>${ownWords(player.username)}${vipBadge(player.vipExpiresAt,now)}${lookBadge(player.look)}</h3>${lookTitle(player.look)}<div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}</div>${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div></div>
- ${self?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div></div>':''}
- <div class="farmer-chat" data-farmer-chat hidden></div>
- <section class="farmer-family" aria-label="Family">${familyCard(family,emblem)}<div class="farmer-invite" data-farmer-invite hidden></div></section>
+ // The Season Pass's looks (Oct 2026, public/look-marks.js): a background behind the face and name, a frame around the face, the name's
+ // colour (as in the chat), a badge beside the name and a title under it; the badges of every season collected in their own row.
+ const bg=lookBackground(player.look),color=lookColor(player.look),dates=`${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}`;
+ return `<div class="farmer-identity${bg?' has-look-bg':''}"${bg?` style="--look-bg:url('${bg}')"`:''}><div class="farmer-avatar" aria-hidden="true">${framed(player.look,`<img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false">`)}</div><div class="farmer-identity-copy"><h3><span class="farmer-profile-name"${color?` style="color:${esc(color)}"`:''}>${ownWords(player.username)}</span>${vipBadge(player.vipExpiresAt,now)}${lookBadge(player.look)}</h3>${lookTitle(player.look)}<div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}${familyCard(family,emblem)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div>${dates?`<div class="farmer-dates">${dates}</div>`:''}</div></div>
+ <div class="farmer-actions">${self?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div></div>':''}<div class="farmer-chat" data-farmer-chat hidden></div><div class="farmer-invite" data-farmer-invite hidden></div></div>
  ${renderStatPages(player,now,statPage,{village})}
- <section class="farmer-badges"><div class="farmer-section-heading"><h3 class="farmer-section-title">Medals</h3><span>${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span></div>${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</section>${seasonRow(player.seasons)}`;
+ <details class="farmer-badges farmer-fold" data-fold="medals"><summary><h3 class="farmer-section-title">Medals</h3><span class="farmer-fold-count">${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span>${foldChevron}</summary><div class="farmer-fold-body">${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</div></details>${seasonRow(player.seasons)}`;
 }
 // The badges of the seasons this farmer collected (the Season Pass), oldest first.
 function seasonRow(ids){
  const badges=(Array.isArray(ids)?ids:[]).map(seasonLook).filter(look=>look?.kind==='badge');if(!badges.length)return '';
- return `<section class="farmer-seasons"><div class="farmer-section-heading"><h3 class="farmer-section-title">Seasons</h3><span>${badges.length}</span></div><div class="farmer-season-badges">${badges.map(b=>`<span class="farmer-season-badge">${art(b.art)}<small>${esc(b.name)}</small></span>`).join('')}</div></section>`;
+ return `<section class="farmer-seasons"><div class="farmer-section-heading"><h3 class="farmer-section-title">Seasons</h3><span class="farmer-fold-count">${badges.length}</span></div><div class="farmer-season-badges">${badges.map(b=>`<span class="farmer-season-badge">${art(b.art)}<small>${esc(b.name)}</small></span>`).join('')}</div></section>`;
 }
 export function renderPlayerSearch(players,now=Date.now()){
  return players.map(p=>`<button type="button" class="farmer-search-result" data-player-id="${esc(p.playerId)}" aria-haspopup="dialog"><span class="farmer-search-avatar" aria-hidden="true">${avatarImage(p.avatarId)}</span><span class="farmer-search-name"><strong>${ownWords(p.username)}${vipBadge(p.vipExpiresAt,now)}</strong><small>${ownLine(`${p.family?p.family.name:'No family yet'} · Level ${fmt(p.level)}`,[p.family?.name])}</small></span>${presence(p.online)}<span aria-hidden="true">›</span></button>`).join('');
@@ -69,6 +75,7 @@ export function renderPlayerSearch(players,now=Date.now()){
 let adminCheck=null;
 // The farm log (supabase/functions/farm-api/player-log.js): newest first, grouped by day, each line with its time and category, and
 // who of the staff did it when that was not the farmer. Your own on your profile; the admin and the moderators see everyone's.
+// Since 23 Oct 2026 in a fold under the profile (it is read as before, right after the profile).
 export const LOG_LABELS=Object.freeze({all:'All',account:'Account',farm:'Farm',production:'Production',market:'Market',rewards:'Rewards',diamonds:'Diamonds',social:'Social',staff:'Staff',purchase:'Purchases'});
 const logDay=(ms,now)=>{const day=new Date(ms),today=new Date(now);const key=d=>d.toDateString();if(key(day)===key(today))return 'Today';const yesterday=new Date(now-86400000);if(key(day)===key(yesterday))return 'Yesterday';return day.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});};
 export function renderLogEntries(entries,now=Date.now()){
@@ -97,7 +104,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  search.innerHTML='<label for="farmer-search-input">Find a farmer</label><div class="farmer-search-control"><input id="farmer-search-input" type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Search by player name…" aria-describedby="farmer-search-status"><button type="button" class="small-button" id="farmer-search-clear" hidden>Clear</button></div><p id="farmer-search-status" role="status">Enter at least 2 characters to search all farmers.</p><div id="farmer-search-results"></div>';
  (board.querySelector('.rank-drawer')??board.querySelector('.leaderboard-filter')).before(search);
  const dialog=document.createElement('dialog');dialog.id='player-profile-dialog';dialog.className='game-dialog farmer-profile-dialog is-sheet is-m';dialog.setAttribute('aria-labelledby','farmer-profile-title');
- dialog.innerHTML='<div class="dialog-heading"><button type="button" class="small-button farmer-profile-back back-round">Back to leaderboard</button><span class="dialog-badge farmer-profile-badge" aria-hidden="true"></span><div class="dialog-titles"><h2 id="farmer-profile-title">Farmer profile</h2><p class="dialog-sub" id="farmer-profile-sub" hidden></p></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><section id="farmer-log" class="farmer-log" aria-labelledby="farmer-log-title" hidden><div class="farmer-section-heading"><h3 class="farmer-section-title" id="farmer-log-title"><span class="farmer-log-icon"></span>Farm log</h3><span>Last 90 days</span></div><div class="farmer-log-filters" role="group" aria-label="Show"></div><div class="farmer-log-entries" aria-live="polite"></div><button type="button" class="small-button farmer-log-more" hidden>Show older</button></section><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p>';
+ dialog.innerHTML='<div class="dialog-heading"><button type="button" class="small-button farmer-profile-back back-round">Back to leaderboard</button><span class="dialog-badge farmer-profile-badge" aria-hidden="true"></span><div class="dialog-titles"><h2 id="farmer-profile-title">Farmer profile</h2><p class="dialog-sub" id="farmer-profile-sub" hidden></p></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><details id="farmer-log" class="farmer-log farmer-fold" aria-labelledby="farmer-log-title" hidden><summary><h3 class="farmer-section-title" id="farmer-log-title"><span class="farmer-log-icon"></span>Farm log</h3><span class="farmer-fold-count">Last 90 days</span><svg class="farmer-fold-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary><div class="farmer-fold-body"><div class="farmer-log-filters" role="group" aria-label="Show"></div><div class="farmer-log-entries" aria-live="polite"></div><button type="button" class="small-button farmer-log-more" hidden>Show older</button></div></details><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p>';
  document.body.append(dialog);
  const input=search.querySelector('input'),clear=search.querySelector('#farmer-search-clear'),results=search.querySelector('#farmer-search-results'),status=search.querySelector('#farmer-search-status');
  const content=dialog.querySelector('#farmer-profile-content'),profileStatus=dialog.querySelector('#farmer-profile-status'),adminGrant=dialog.querySelector('#admin-grant');
@@ -270,7 +277,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  }
  // The farmer's page from a server answer (or the last one, while the newest loads).
  function paint(id,data){
-  clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;content.innerHTML=renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId,village:Boolean(village?.())});refreshVipBadges(dialog,Date.now()+clockOffset);
+  clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;keepFolds(content,renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId,village:Boolean(village?.())}));refreshVipBadges(dialog,Date.now()+clockOffset);
   // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
   bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
   profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showMyFarmer(id);showShare(id);

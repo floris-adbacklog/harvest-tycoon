@@ -8,7 +8,7 @@ import {rankArtKey} from '../public/rank-picker.js';
 import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem,WORLD_TWO_LEVEL} from '../public/farm-state.js';
 import {ONLINE_WINDOW} from './presence.js';
 import {countLines} from './player-counts.js';
-import {ownText,setOwnText} from '../public/i18n.js';
+import {ownText} from '../public/i18n.js';
 const CROP_BOARDS=Object.keys(CROPS).sort((a,b)=>(CROP_LEVELS[a]??1)-(CROP_LEVELS[b]??1));
 // The level at which a good can first be made: its earliest recipe outside the Factory (the building's level or the recipe's own).
 const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='factory'&&r.output[key]).map(r=>Math.max(BUILDING_LEVELS[r.building]??1,r.minLevel??1)),Infinity);
@@ -99,8 +99,24 @@ export function rankedRows(rows,category='level'){
  categoryFor(category);return rows.map((row,i)=>({row,rank:i+1,score:scoreOf(row,category)}));
 }
 // Ten farmers a page with Previous and Next (onPage gets the page to show); a farmer in the top 100 can jump to their own page.
-// players: {total,online} from fetchPlayerCounts, one line above the top 100 (and above an empty board): a grey dot before the
+// players: {total,online} from fetchPlayerCounts, above the top 100 (and above an empty board): two small chips, a grey dot before the
 // players, the green online dot before the online, in the words of the sign-in page's counts (src/player-counts.js countLines).
+// 23 Oct 2026 (the owner: "Profile en Leaderboard verbeteren UX/UI, houd het clean"): compact rows, the top three by their trophies,
+// your own row in gold with You beside the name; when your row is not on the page shown (another page, or outside the top 100) it is
+// pinned under the list as a row of its own, with Show to go to your page. The board's name stays the table's caption for a screen reader.
+// The farmer in a row: the face with its frame and online dot, the name as typed (17 Oct 2026, in its own kept span: the badges after it
+// are the game's and are translated), the VIP mark, the staff mark and the season badge, and You on your own row.
+function farmerCell(row,{playerId,onPlayer,now}){
+ const strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');
+ const typed=document.createElement('span');typed.setAttribute('translate','no');typed.textContent=row.username;strong.append(typed);
+ if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',ownText(`View ${row.username}'s profile`,[row.username]));strong.onclick=()=>onPlayer(row.player_id);}
+ const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');
+ const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));const seasonBadge=lookBadge(row.look);if(seasonBadge)strong.insertAdjacentHTML('beforeend',seasonBadge);
+ small.className='leaderboard-you';small.textContent=row.player_id===playerId?'You':'';
+ const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${framed(row.look,avatarImage(row.avatar_id))}</span>`;identity.firstElementChild.append(dot);
+ const copy=document.createElement('div');copy.className='leaderboard-name';copy.append(strong);if(small.textContent)copy.append(small);identity.append(copy);
+ return identity;
+}
 export function renderLeaderboard(container,{rows,own,rank,category='level',onlinePlayers=[],presenceReady=false,now=Date.now(),page=0,players=null},playerId,onPlayer,onPage){
  const config=categoryFor(category);container.replaceChildren();
  if(players){
@@ -112,28 +128,33 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
  // An empty board is a card with the board's own picture, not a lone sentence.
  if(!rows.length){const box=document.createElement('div');box.className='quest-empty leaderboard-empty';box.innerHTML=`${art(rankArtKey(category))}<h3>The valley is quiet</h3><p>Be the first farmer on this board.</p>`;container.append(box);return;}
  const table=document.createElement('table');table.className='leaderboard-table';
- const caption=document.createElement('caption');caption.className='leaderboard-caption';caption.textContent=`${config.label} · Top ${Math.min(rows.length,BOARD_SIZE)}`;table.append(caption);
+ const caption=document.createElement('caption');caption.className='leaderboard-caption';caption.textContent=config.label;table.append(caption);
  const head=document.createElement('thead'),header=document.createElement('tr');
  for(const title of ['Rank','Farmer',config.heading]){const th=document.createElement('th');th.scope='col';th.textContent=title;header.append(th);}head.append(header);table.append(head);
  const tbody=document.createElement('tbody');
  rankedRows(rows,category).slice(shown*BOARD_PAGE,(shown+1)*BOARD_PAGE).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);if(place<=3)tr.classList.add('is-podium',`is-rank-${place}`);
   const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=rankArt(place);
-  const name=document.createElement('td'),strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');
-  // The farmer's name as typed (17 Oct 2026), in its own kept span: the badges after it are the game's and are translated.
-  const typed=document.createElement('span');typed.setAttribute('translate','no');typed.textContent=row.username;strong.append(typed);
-  if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',ownText(`View ${row.username}'s profile`,[row.username]));strong.onclick=()=>onPlayer(row.player_id);}const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));const seasonBadge=lookBadge(row.look);if(seasonBadge)strong.insertAdjacentHTML('beforeend',seasonBadge);small.textContent=row.player_id===playerId?'You':'';const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${framed(row.look,avatarImage(row.avatar_id))}</span>`;identity.firstElementChild.append(dot);const copy=document.createElement('div');copy.append(strong);if(small.textContent)copy.append(small);identity.append(copy);name.append(identity);
-  const score=document.createElement('td');score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
- });table.append(tbody);container.append(table);updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
+  const name=document.createElement('td');name.className='leaderboard-who';name.append(farmerCell(row,{playerId,onPlayer,now}));
+  const score=document.createElement('td');score.className='leaderboard-score';score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
+ });table.append(tbody);container.append(table);
  if(pages>1){
   const pager=document.createElement('div');pager.className='leaderboard-pages';
   const step=(label,to,key)=>{const b=document.createElement('button');b.type='button';b.className='small-button';b.dataset.boardPage=key;b.textContent=label;b.disabled=to<0||to>=pages||!onPage;b.onclick=()=>onPage?.(to);return b;};
   const where=document.createElement('span');where.textContent=`Page ${shown+1} of ${pages}`;
   pager.append(step('‹ Previous',shown-1,'previous'),where,step('Next ›',shown+1,'next'));container.append(pager);
  }
- if(own&&rank){const line=document.createElement('div');line.className='your-rank';const label=document.createElement('strong'),value=document.createElement('span');label.textContent=`Your rank: #${rank}`;const score=scoreOf(own,category).toLocaleString('en-US');setOwnText(value,category==='level'?`Level ${score} · ${own.username}`:`${score} ${config.unit} · ${own.username}`,[own.username]);line.append(label,value);
-  const mine=Math.floor((rank-1)/BOARD_PAGE);if(onPage&&rank<=rows.length&&mine!==shown){const jump=document.createElement('button');jump.type='button';jump.className='small-button';jump.dataset.boardPage='you';jump.textContent='Show';jump.onclick=()=>onPage(mine);line.append(jump);}
-  container.append(line);}
+ // Your own row, pinned under the list while it is not on this page: your place, you, your score, and Show for your page in the top 100.
+ const mine=own&&rank?Math.floor((rank-1)/BOARD_PAGE):-1;
+ if(own&&rank&&!(rank<=rows.length&&mine===shown)){
+  const line=document.createElement('div');line.className='your-rank';line.setAttribute('role','group');
+  const label=document.createElement('strong');label.className='your-rank-place';label.textContent=`#${rank.toLocaleString('en-US')}`;line.setAttribute('aria-label',`Your rank: #${rank}`);
+  const value=document.createElement('span');value.className='leaderboard-score';value.textContent=scoreOf(own,category).toLocaleString('en-US');
+  line.append(label,farmerCell(own,{playerId,onPlayer,now}),value);
+  if(onPage&&rank<=rows.length){const jump=document.createElement('button');jump.type='button';jump.className='small-button';jump.dataset.boardPage='you';jump.textContent='Show';jump.onclick=()=>onPage(mine);line.append(jump);}
+  container.append(line);
+ }
+ updateOnlineIndicators(container,{onlinePlayers,presenceReady,now});
 }
 
 export function updateOnlineIndicators(container,{onlinePlayers=[],presenceReady=false,now=Date.now()}){

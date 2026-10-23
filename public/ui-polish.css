@@ -1,7 +1,6 @@
 /* Cross-cutting interface polish. Loaded last, so it overrides the older per-screen rules. */
 
 /* Leaderboard: "Rank by" as chips instead of a 19-item dropdown. */
-#leaderboard-dialog .leaderboard-filter{display:block;margin:16px 0}
 .rank-label{display:block;margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a7d68}
 .rank-chips{display:flex;flex-wrap:wrap;gap:8px}
 .rank-chip{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin:0;padding:6px 14px 6px 8px;border:1px solid #e0d6c9;border-radius:99px;background:#fbf8f3;color:#5d573f;font:700 13px/1.2 'DM Sans',system-ui,sans-serif;cursor:pointer;touch-action:manipulation;transition:background .15s,border-color .15s,transform .15s}
@@ -119,10 +118,5 @@
 @keyframes sweep-swing{35%{rotate:var(--swing,-32deg)}}
 .sweep-ghost{width:56px;height:56px;filter:drop-shadow(0 0 5px #fffbea) drop-shadow(0 3px 3px #3d2f1a55)}
 @media(prefers-reduced-motion:reduce){.sweep-tool.is-cutting>*{animation:none}}
-/* The leaderboard's Rank by in the window shell (18 Oct 2026, the owner: compact pills, not big segmented rows): the drawer's summary is a
-   pill that says what the board ranks by, and the chosen choice is raised cream with a gold ring instead of a dark chip. */
-#leaderboard-dialog .rank-drawer{border:0;background:none;margin:0 0 10px}
-#leaderboard-dialog .rank-drawer>summary{display:inline-flex;width:auto;min-height:40px;padding:6px 14px;border:2px solid var(--btn-second-line);border-radius:999px;background:var(--btn-second);box-shadow:0 3px 0 var(--btn-second-edge);color:var(--btn-second-text);font-weight:700}
-#leaderboard-dialog .rank-drawer .rank-label{font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink-soft,#7a705f);font-weight:600}
-#leaderboard-dialog .rank-drawer .leaderboard-filter{margin-top:10px;padding:10px;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf5;box-shadow:0 4px 0 #e2d3b3}
+/* The chosen board: raised cream with a gold ring instead of a dark chip (18 Oct 2026); the drawer around the chips: retention.css. */
 #leaderboard-dialog .rank-chip[aria-pressed=true]{background:#fff8e1;border-color:#d9c7a4;color:#453e28;box-shadow:0 0 0 2px #e5b64a,0 3px 0 #e2d3b3}

@@ -23,7 +23,6 @@
 .farmer-since{display:flex;align-items:center;gap:7px;margin:10px 0 0;font-size:13px;color:#7d7561}
 .farmer-since-icon{width:15px;height:15px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .farmer-since time{font-weight:700;color:#5d5641}.farmer-since+.farmer-last-online{margin-top:4px}.farmer-level{display:inline-flex;gap:6px;align-items:center;font-weight:700}.farmer-level .game-art{width:26px;height:26px}
-.farmer-family{display:flex;gap:16px;align-items:center;background:#eaf0df;border:1px solid #d9e1cb;border-radius:20px;padding:16px}.farmer-family>.game-art{width:60px;height:60px;flex:0 0 60px}.farmer-family>div{min-width:0}.farmer-family h4{font-size:21px;overflow-wrap:anywhere;margin:4px 0}.farmer-family p{margin:0;color:#6b7b60;font-size:14px}
 .farmer-section-title{font-size:20px;margin:24px 0 13px}
 /* The stat pages (src/profile-stats.js): two pages of 3 x 3, arrows in the heading, a swipe that snaps to a page on a phone. */
 .farmer-stats-heading{margin:24px 0 12px}.farmer-stats-heading .farmer-section-title{margin:0}.farmer-stats-nav{display:flex;align-items:center;gap:6px;flex:none}
@@ -101,7 +100,6 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 /* The family card shows the family's own emblem tile, and "Invite to <family>" for a leader looking at a farmer without one. */
 .farmer-family-emblem{display:grid;place-items:center;flex:0 0 60px;height:60px;border-radius:17px;background:color-mix(in srgb,var(--family-color) 17%,#fffdf4);border:1px solid color-mix(in srgb,var(--family-color) 45%,#fffdf4)}
 .farmer-family-emblem>.game-art{width:40px;height:40px}
-.farmer-family>div:not(.farmer-invite){flex:1}
 .farmer-invite{flex:none}
 .farmer-invite[hidden]{display:none}
 .farmer-invite-button{min-height:44px;white-space:nowrap}
@@ -119,7 +117,6 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-badge-pips i.is-earned.tier-2{background:#e2b53f;border-color:#e2b53f}
 .farmer-badge-pips i.is-earned.tier-3{background:#7fb3a6;border-color:#7fb3a6}
 .farmer-badge-more{margin:10px 2px 0;font-size:12px;color:#7d7561}
-@media(max-width:480px){.farmer-family{flex-wrap:wrap}.farmer-invite{flex-basis:100%}.farmer-invite-button{width:100%}.farmer-family-emblem{flex-basis:48px;height:48px}.farmer-family-emblem>.game-art{width:32px;height:32px}}
 .farmer-staff-view{display:flex;justify-content:flex-end;margin:-4px 0 12px}.farmer-staff-view[hidden]{display:none}
 /* The farm log (src/player-profiles.js): category chips, the lines per day, a coloured dot per category. */
 .farmer-log{margin:26px 0 6px}.farmer-log[hidden]{display:none}
@@ -138,11 +135,7 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 [data-log-category="rewards"]{--log-dot:#8c6bb1}[data-log-category="diamonds"]{--log-dot:#3884a0}[data-log-category="social"]{--log-dot:#4aa39a}
 [data-log-category="staff"]{--log-dot:#c45b4b}[data-log-category="purchase"]{--log-dot:#2f6a3f}
 /* With a family, the family card is a button to its profile (family-profile.js, 27 Sep 2026). */
-.farmer-family-open{flex:1;display:flex;align-items:center;gap:16px;min-width:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
-.farmer-family-open>div{flex:1;min-width:0}
-.farmer-family-open>.game-art{width:60px;height:60px;flex:0 0 60px}
 .farmer-family-more{flex-shrink:0;font-size:28px;line-height:1;color:#7a8b6c}
-.farmer-family-open:hover h4{text-decoration:underline;text-underline-offset:3px}
 /* The status line only when it says something (a refresh that failed). */
 .farmer-profile-status:empty{display:none}
 /* Share my farm on your own profile (Oct 2026, src/player-profiles.js): one quiet button under your name; the picture opens in place
@@ -163,3 +156,120 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 @media(max-width:480px){.farmer-own-actions{flex-direction:column}.farmer-own-actions :is(.farmer-mine .farmer-open-button,.farmer-share-button){width:100%}}
 .farmer-share .farm-share-box{margin:0}
 @media(max-width:480px){.farmer-share-button{justify-self:stretch}}
+
+/* The farmer profile, cleaner (23 Oct 2026, the owner: "Profile en Leaderboard verbeteren UX/UI, houd het clean"; as the chores, family and
+   farmhouse windows): one cream card for the farmer (the face in its frame, the name in its colour, the title, chips for the level,
+   online, the family and your VIP time, the dates in one quiet line), the buttons as one compact row under it (Send message and
+   Invite first, Report and Block small beside them; the moderation tools under them), the stats as compact chips, the medals and the
+   farm log in folds, the seasons small. Scoped to the window, so the chat's and the seasons' own rules elsewhere stay as they are. */
+#player-profile-dialog .farmer-identity{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:14px;margin:0 0 10px;padding:12px 14px;border:1px solid #ddd2c7;border-radius:18px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#player-profile-dialog .farmer-identity.has-look-bg{background:linear-gradient(90deg,#fffdf4f5 0%,#fffdf4e6 55%,#fffdf4b3 100%),var(--look-bg) center/cover}
+#player-profile-dialog .farmer-avatar{flex:none;width:88px;height:88px;border-radius:22px}
+#player-profile-dialog .farmer-identity-copy{min-width:0}
+#player-profile-dialog .farmer-identity h3{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;margin:0;font:700 24px/1.15 'Outfit',sans-serif;color:#3f3827;overflow-wrap:anywhere}
+#player-profile-dialog .farmer-profile-name{min-width:0}
+#player-profile-dialog .farmer-identity h3 .vip-badge{margin-inline-start:2px}
+#player-profile-dialog .farmer-identity h3 .vip-badge img{width:24px!important;height:24px!important}
+#player-profile-dialog .farmer-identity h3 .look-badge{width:26px;height:26px;margin-inline-start:2px;vertical-align:0}
+#player-profile-dialog .farmer-identity h3 .farmer-mod-badge{margin-inline-start:4px}
+#player-profile-dialog .farmer-identity .look-title{margin-top:3px;font-size:13px}
+/* The chips: the level in gold, online in green (offline grey), the family a button to its profile, your VIP time. */
+#player-profile-dialog .farmer-identity-meta{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:8px}
+#player-profile-dialog .farmer-identity-meta>:is(.farmer-level,.farmer-presence,.farmer-family-open,.farmer-family-none,.vip-badge-detail){display:inline-flex;align-items:center;gap:5px;box-sizing:border-box;max-width:100%;min-height:28px;margin:0;padding-block:2px;padding-inline:5px 10px;border:1px solid #ddd2c7;border-radius:999px;background:#fffdf4;box-shadow:none;font:700 12.5px/1.3 'DM Sans',sans-serif;color:#5c4a2e;white-space:nowrap}
+#player-profile-dialog .farmer-identity-meta .game-art{flex:none;width:18px;height:18px;object-fit:contain}
+#player-profile-dialog .farmer-identity-meta>.farmer-level{border-color:#e8cf86;background:#fff1c4;color:#7a5410}
+#player-profile-dialog .farmer-identity-meta>.farmer-presence{padding-inline-start:9px;color:#7a6b4b}
+#player-profile-dialog .farmer-presence .online-dot{width:8px;height:8px;margin:0;box-shadow:none}
+#player-profile-dialog .farmer-identity-meta>.farmer-presence:has(.is-online){border-color:#d3e2c4;background:#eef4e6;color:#42632e}
+#player-profile-dialog .farmer-presence .online-dot.is-online{background:#5e9b51}
+#player-profile-dialog .farmer-family-open{cursor:default}
+#player-profile-dialog button.farmer-family-open{cursor:pointer}
+#player-profile-dialog button.farmer-family-open:hover{border-color:#c9b98f;background:#fbf6ea}
+#player-profile-dialog button.farmer-family-open:hover b{text-decoration:underline;text-underline-offset:3px}
+#player-profile-dialog button.farmer-family-open:focus-visible{outline:3px solid #d9a433;outline-offset:2px}
+#player-profile-dialog .farmer-family-open b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#player-profile-dialog .farmer-family-open small{flex:none;font-size:12px;font-weight:400;color:#7a6b4b}
+#player-profile-dialog .farmer-family-emblem{flex:none;width:20px;height:20px;border-radius:7px}
+#player-profile-dialog .farmer-family-emblem>.game-art{width:16px;height:16px}
+#player-profile-dialog .farmer-family-more{font-size:16px;line-height:1;color:#9a8c72}
+#player-profile-dialog .farmer-identity-meta>.farmer-family-none{color:#9a8c72;font-weight:400}
+#player-profile-dialog .farmer-identity-meta>.vip-badge-detail{border-color:#ead9ad;background:#fff8e6;color:#7a5d1e}
+#player-profile-dialog .farmer-identity-meta>.vip-badge-detail img{width:18px!important;height:18px!important}
+#player-profile-dialog .farmer-dates{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:8px}
+#player-profile-dialog .farmer-since{margin:0;gap:5px;font-size:12px;line-height:1.4;color:#7a6b4b}
+#player-profile-dialog .farmer-since-icon{width:13px;height:13px}
+#player-profile-dialog .farmer-since time{color:#5c4a2e}
+/* The buttons: one compact row; the chat's and the invite's own boxes give their buttons to it. */
+#player-profile-dialog .farmer-actions{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:0 0 14px}
+#player-profile-dialog .farmer-actions:not(:has(>:not([hidden]))){display:none}
+#player-profile-dialog .farmer-actions>:is(.farmer-own-actions,.farmer-chat:not([hidden]),.farmer-invite:not([hidden])),#player-profile-dialog .farmer-actions .farmer-chat-row,#player-profile-dialog .farmer-own-actions>.farmer-share{display:contents}
+#player-profile-dialog .farmer-actions :is(.farmer-chat-send,.farmer-invite-button,.farmer-open-button,.farmer-share-button){display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 150px;box-sizing:border-box;width:auto;min-width:0;height:auto;min-height:44px;margin:0;padding:6px 14px;font-size:14px;white-space:nowrap}
+#player-profile-dialog .farmer-actions .farmer-mine{display:flex;flex:1 1 150px;margin:0}
+#player-profile-dialog .farmer-actions .farmer-mine[hidden]{display:none}
+#player-profile-dialog .farmer-actions .farmer-mine .farmer-open-button{flex:1}
+#player-profile-dialog .farmer-actions :is(.farmer-open-button,.farmer-chat-send) .game-art{width:24px;height:24px}
+#player-profile-dialog .farmer-actions .farmer-chat-send{order:1}
+#player-profile-dialog .farmer-actions .farmer-invite-button{order:2}
+#player-profile-dialog .farmer-actions .farmer-invite-button:not(:disabled){border:1px solid #8cc06a;background:#fffdf4;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset;color:#42632e}
+#player-profile-dialog .farmer-actions .farmer-invite-button:not(:disabled):hover{background:#f3f8ec}
+#player-profile-dialog .farmer-actions .farmer-chat-report{order:3;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;width:auto;min-height:44px;margin:0;padding:4px 12px;font-size:13px}
+#player-profile-dialog .farmer-actions .farmer-chat-report .game-art{width:18px;height:18px}
+#player-profile-dialog .farmer-actions .farmer-chat-report:not(:disabled){border:1px solid #ddd2c7;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3;color:#8a4a3a}
+#player-profile-dialog .farmer-actions .farmer-chat-report:not(:disabled):hover{border-color:#d9b3a6;background:#fbf1ec}
+#player-profile-dialog .farmer-actions .farmer-mod-tools{order:5;flex:1 1 100%;gap:8px;padding:10px 12px;border:1px solid #ddd2c7;border-radius:14px;background:#fbf8ef}
+#player-profile-dialog .farmer-actions .farm-share-box{order:6;flex:1 0 100%;margin:0}
+/* Sections: a small title, the stats as compact chips (icon, number, what it is), arrows and dots for the pages. */
+#player-profile-dialog .farmer-section-title{margin:0;font:700 17px/1.25 'Outfit',sans-serif;color:#3f3827}
+#player-profile-dialog .farmer-stats{margin:0 0 12px}
+#player-profile-dialog .farmer-stats-heading{margin:0 0 8px}
+#player-profile-dialog .farmer-stats-arrow{width:32px;height:32px;border-color:#ddd2c7;background:#fffdf4}
+#player-profile-dialog .farmer-stats-arrow svg{width:16px;height:16px}
+#player-profile-dialog .farmer-stat-grid{gap:6px}
+#player-profile-dialog .farmer-stat{display:grid;grid-template-columns:24px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;justify-items:start;column-gap:8px;row-gap:0;min-height:54px;padding:6px 8px;border:1px solid #ddd2c7;border-radius:12px;background:#fffdf4;text-align:start}
+#player-profile-dialog .farmer-stat>.game-art{grid-row:1/3;width:24px;height:24px;object-fit:contain}
+#player-profile-dialog .farmer-stat strong{font:700 15.5px/1.2 'Outfit',sans-serif;color:#3f3827;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#player-profile-dialog .farmer-stat strong small{font-size:12px;font-weight:400;color:#9a8c72}
+#player-profile-dialog .farmer-stat>span:not(.game-art){font-size:12px;line-height:1.25;color:#7a6b4b}
+#player-profile-dialog button.farmer-stat:hover{border-color:#c9b98f;background:#fbf6ea}
+#player-profile-dialog .farmer-stat.is-zero{background:#fbf8ef}
+#player-profile-dialog .farmer-stats-hint{margin:6px 0 0;font-size:12px;color:#9a8c72}
+/* Folds (the medals, the farm log) and the seasons: compact cards with a title, a count chip and the chevron. */
+#player-profile-dialog .farmer-fold,#player-profile-dialog .farmer-seasons{margin:0 0 10px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#player-profile-dialog .farmer-fold>summary{display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 14px;list-style:none;cursor:pointer}
+#player-profile-dialog .farmer-fold>summary::-webkit-details-marker{display:none}
+#player-profile-dialog .farmer-fold>summary .farmer-section-title{flex:1;min-width:0;font-size:16px}
+#player-profile-dialog .farmer-fold-count{flex:none;padding:1px 9px;border:1px solid #ead9ad;border-radius:999px;background:#fff8e6;font-size:12px;font-weight:700;line-height:1.4;color:#7a5d1e;white-space:nowrap;font-variant-numeric:tabular-nums}
+#player-profile-dialog .farmer-fold-chevron{flex:none;width:18px;height:18px;fill:none;stroke:#9a8c72;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+#player-profile-dialog .farmer-fold[open] .farmer-fold-chevron{transform:rotate(180deg)}
+#player-profile-dialog .farmer-fold-body{padding:0 12px 12px}
+#player-profile-dialog .farmer-badge-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+#player-profile-dialog .farmer-badge{gap:2px;padding:8px 4px;border-radius:12px}
+#player-profile-dialog .farmer-badge-art>.game-art:first-child{width:36px;height:36px}
+#player-profile-dialog .farmer-badge-art>.farmer-badge-medal{width:18px;height:18px}
+#player-profile-dialog .farmer-badge strong{font-size:13px}
+#player-profile-dialog .farmer-badge>span:not(.game-art):not(.farmer-badge-pips){font-size:12px}
+#player-profile-dialog .farmer-badge-more{margin:8px 2px 0}
+#player-profile-dialog .farmer-fold-body>.farmer-empty{padding:4px 2px;font-size:13px}
+#player-profile-dialog .farmer-seasons{padding:8px 14px 10px}
+#player-profile-dialog .farmer-seasons .farmer-section-heading{margin:0 0 6px}
+#player-profile-dialog .farmer-seasons .farmer-section-title{font-size:16px}
+#player-profile-dialog .farmer-season-badges{gap:6px}
+#player-profile-dialog .farmer-season-badge{display:inline-flex;align-items:center;gap:6px;width:auto;padding-block:3px;padding-inline:4px 10px;border:1px solid #ddd2c7;border-radius:999px;background:#fbf8ef}
+#player-profile-dialog .farmer-season-badge .game-art{width:28px;height:28px}
+#player-profile-dialog .farmer-season-badge small{font-size:12px;color:#5c4a2e}
+#player-profile-dialog .farmer-log{margin:0 0 10px}
+#player-profile-dialog .farmer-log[hidden]{display:none}
+#player-profile-dialog .farmer-log-icon .game-art{width:22px;height:22px;vertical-align:-5px;margin-inline-end:6px}
+#player-profile-dialog .farmer-log-day{margin:10px 0 6px}
+#player-profile-dialog .farmer-log-day:first-child{margin-top:4px}
+#player-profile-dialog .farmer-staff-view{margin:-6px 0 10px}
+#player-profile-dialog .admin-grant{margin:0 0 12px}
+#player-profile-dialog .farmer-profile-status{margin:10px 0 4px}
+@media(max-width:480px){
+ #player-profile-dialog .farmer-identity{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:10px 12px}
+ #player-profile-dialog .farmer-avatar{width:72px;height:72px;border-radius:18px}
+ #player-profile-dialog .farmer-identity h3{font-size:21px}
+ #player-profile-dialog .farmer-stat{grid-template-columns:20px minmax(0,1fr);column-gap:6px;padding:6px}
+ #player-profile-dialog .farmer-stat>.game-art{width:20px;height:20px}
+ #player-profile-dialog .farmer-stat strong{font-size:14.5px}
+}
