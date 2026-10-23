@@ -68,10 +68,13 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
  const toolbar=doc.createElement('div');toolbar.className='quest-toolbar';
  toolbar.innerHTML='<button type="button" class="quest-today-line" data-quest-today hidden></button><div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true"><i data-game-art="farm"></i><span>Farm</span></button><button data-quest-world="village" aria-pressed="false"><i data-game-art="village-badge"></i><span>Village</span></button></div><div id="quest-summary" role="status"></div>';
  list.before(toolbar);
+ // The quest card (23 Oct 2026, as the chores window): picture, title and its line, then one row with the bar and its count beside the
+ // reward chips; a quest that is done has its Claim beside the card (one tap per quest, never all at once), a claimed one its tick after the chips.
  function row({id,quest:q,value},group){
   const xp=questXp(q),rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
-  const end=group==='ready'?`<button class="primary-button" data-claim="${id}">Claim</button>`:group==='done'?'<span class="quest-state">Completed ✓</span>':'';
-  return `<article class="task-row quest-item is-${group}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><div class="quest-row-heading"><h3>${q.title}</h3></div><p>${q.description}</p>${group==='done'?'':`<div class="quest-meter"><progress value="${value}" max="${q.target}" aria-label="${q.title} progress"></progress><span>${number(value)} / ${number(q.target)}</span></div>`}<div class="task-bottom">${rewards}${end}</div></div></article>`;
+  const meter=group==='active'?`<div class="quest-meter"><progress value="${value}" max="${q.target}" aria-label="${q.title} progress"></progress><span>${number(value)} / ${number(q.target)}</span></div>`:'';
+  const tick=group==='done'?'<span class="quest-state">Completed ✓</span>':'',claim=group==='ready'?`<div class="quest-act"><button class="primary-button" data-claim="${id}">Claim</button></div>`:'';
+  return `<article class="task-row quest-item is-${group}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><div class="quest-row-heading"><h3>${q.title}</h3></div><p>${q.description}</p><div class="task-bottom">${meter}${rewards}${tick}</div></div>${claim}</article>`;
  }
  function render(){
   const both=worldTwoOpen(state);if(!both)world='farm';
@@ -80,7 +83,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
   const daily=readyDailies(state).length,line=toolbar.querySelector('[data-quest-today]');if(line)line.hidden=!daily||!openToday;
   if(line&&!line.hidden)line.innerHTML=`${art('gift')}<strong>${daily} daily challenge${daily===1?'':'s'} ready</strong><span>Today</span><i data-lucide="chevron-right"></i>`;
   const worlds=toolbar.querySelector('.quest-worlds');if(worlds){worlds.hidden=!both;worlds.querySelectorAll('[data-quest-world]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.questWorld===world)));}
-  toolbar.querySelector('#quest-summary').innerHTML=`${art(villageList?'village-badge':'quests')}<span><strong>${villageList?`${done} of ${all} village quests done`:`${done} of ${all} quests done`}</strong><progress max="${all}" value="${done}" aria-label="Quests completed"></progress></span>`;
+  toolbar.querySelector('#quest-summary').innerHTML=`${art(villageList?'village-badge':'quests')}<strong>${villageList?`${done} of ${all} village quests done`:`${done} of ${all} quests done`}</strong><progress max="${all}" value="${done}" aria-label="Quests completed"></progress>`;
   // One list, no tabs (30 Sep 2026): what you can claim comes first, then what is in progress; completed quests fold away at the
   // end. Every reward is claimed on its own, one tap per quest: that is the satisfying part.
   const open=[...groups.ready.map(entry=>row(entry,'ready')),...groups.active.map(entry=>row(entry,'active'))].join('');
