@@ -51,11 +51,6 @@
 #market-barn .warehouse-chip .game-art{width:20px;height:20px}
 #market-barn .warehouse-chip.is-near{border-color:#ecd08a;background:#fff1c4;color:#6b4712}
 #market-barn .warehouse-chip.is-full{border-color:#e7b3a6;background:#fbe6e0;color:#a1442f}
-/* The coins open the Warehouse (23 Oct 2026, the owner, option 2): the coin pill is a button, with a thin line along its bottom for how
-   full the Warehouse is, in the window's own colours (green, amber from 90%, red once full). */
-button.coin-counter{position:relative;text-align:start;overflow:hidden}
+/* The coins open the Warehouse (23 Oct 2026, the owner): the coin pill is a button, as its shadow always said. */
+button.coin-counter{position:relative;text-align:start}
 button.coin-counter:hover{background:#fff8ec}
-.coin-warehouse{position:absolute;inset-inline:12px;bottom:4px;height:4px;border-radius:999px;background:#ece3d3;overflow:hidden;pointer-events:none}
-.coin-warehouse>i{display:block;height:100%;width:0;border-radius:999px;background:#5fae4f;transition:width .3s}
-.coin-counter.is-near .coin-warehouse>i{background:#e3a53c}
-.coin-counter.is-full .coin-warehouse>i{background:#c9573f}
