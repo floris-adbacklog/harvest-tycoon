@@ -31,7 +31,8 @@ test('Autumn 2026: 100 tiers, 1,500 paid and 200 free diamonds, something on eve
  const s=S(),t=seasonTotals(s);
  assert.equal(s.tiers.length,100);
  assert.deepEqual({diamonds:t.diamonds,free:t.freeDiamonds,vip:t.vipDays,farmhand:t.farmhandDays,boosts:t.boosts,avatars:t.avatars,looks:t.otherLooks},{diamonds:1500,free:200,vip:21,farmhand:6,boosts:17,avatars:2,looks:10});
- assert.ok(t.shop>8800&&t.shop<8900,`the value line's "more than 8,800 diamonds": ${t.shop}`);
+ // 8,770 since 23 Oct 2026: Instant harvest costs 75 in the shop now (150 before), so the line says 8,700 (8,800 before).
+ assert.ok(t.shop>8700&&t.shop<8800,`the value line's "more than 8,700 diamonds": ${t.shop}`);
  assert.equal(s.tiers.reduce((n,x)=>n+(x.free.coins??0),0),6120,'6,120 × level coins in the free row');
  assert.equal(s.tiers.reduce((n,x)=>n+(x.free.seeds?.cranberries??0),0),13,'13 free seed packets');
  assert.equal(s.tiers.reduce((n,x)=>n+(x.paid.seeds?.cranberries??0),0),30,'30 paid packets: 3 on every tier ending in 8');
@@ -308,7 +309,7 @@ test('the window: the rule in one sentence, the value line without a euro beside
  assert.match(ui.seasonPhaseLine(v,now),/^Ends in /);
  const [holds,worth]=ui.seasonValueLines(S());
  assert.equal(holds,'Over 100 tiers: 1,500 diamonds, 21 days of VIP, 6 days of farmhand, 17 boosts, 2 avatars and 10 other season looks.');
- assert.equal(worth,'What you can buy of it in the shop costs more than 8,800 diamonds there. You get it by reaching tiers.');
+ assert.equal(worth,'What you can buy of it in the shop costs more than 8,700 diamonds there. You get it by reaching tiers.');
  assert.ok(!/€/.test(holds+worth),'no euro beside diamonds');
  const ios={documentElement:{getAttribute:name=>name==='data-app-os'?'ios':null}},web={documentElement:{getAttribute:()=>null}};
  assert.equal(ui.seasonSellsHere(ios,false),false,'not in the iPhone app while Apple does not sell it');assert.equal(ui.seasonSellsHere(ios),true,'on since the app 1.5');assert.equal(ui.seasonSellsHere(ios,true),true);assert.equal(ui.seasonSellsHere(web),true);

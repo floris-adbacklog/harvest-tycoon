@@ -38,7 +38,7 @@ test('normal crops clear; removing a planting validates the current cycle and aw
 });
 test('boosts and tractor never collect multiple cycles or grant stock without harvesting',()=>{
  const s=advanced();s.plots.forEach(p=>p.crop=null);act(s,{type:'field',id:0,action:'plant',crop:'apples'},now);act(s,{type:'field',id:1,action:'plant',crop:'berries'},now);
- act(s,{type:'finish_crop',id:0,expectedCost:10},now+1);assert.equal(s.inventory.apples,0);act(s,{type:'tractor',mode:'harvest'},now+2);assert.equal(s.inventory.apples,1);assert.equal(s.inventory.berries,0);
+ act(s,{type:'finish_crop',id:0,expectedCost:5},now+1);assert.equal(s.inventory.apples,0);act(s,{type:'tractor',mode:'harvest'},now+2);assert.equal(s.inventory.apples,1);assert.equal(s.inventory.berries,0);
  act(s,{type:'buy_boost',boost:'crops',expectedCost:BOOSTS.crops.cost},now+3);assert.equal(s.inventory.apples,1);act(s,{type:'tractor',mode:'harvest'},now+20000);assert.equal(s.inventory.apples,2);assert.equal(s.inventory.berries,1);
 });
 test('all new chains support three simultaneous batches and collect-all with positive processing value',()=>{

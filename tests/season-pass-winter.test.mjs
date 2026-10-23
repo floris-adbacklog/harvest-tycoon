@@ -20,12 +20,12 @@ const at=(month,day,hour=12,year=2026)=>Date.UTC(year,month-1,day,hour);
 function farm(level=40,now=at(11,9)){const s=createFarm(now-3*D);s.xp=xpForLevel(level)+5;return normalizeFarm(s,now);}
 const buy=(s,id=W)=>{s.passPremium=[...new Set([...(s.passPremium??[]),id])];return s;};
 
-test('Winter 2026: 100 tiers mirroring Autumn: 1,500 paid and 200 free diamonds, more than 8,800 in shop value, its looks once each',()=>{
+test('Winter 2026: 100 tiers mirroring Autumn: 1,500 paid and 200 free diamonds, more than 8,700 in shop value, its looks once each',()=>{
  const w=W_(),t=seasonTotals(w);
  assert.equal(w.tiers.length,100);
  assert.deepEqual({diamonds:t.diamonds,free:t.freeDiamonds,vip:t.vipDays,farmhand:t.farmhandDays,boosts:t.boosts,avatars:t.avatars,looks:t.otherLooks,parts:t.farmerParts},
   {diamonds:1500,free:200,vip:21,farmhand:6,boosts:17,avatars:2,looks:10,parts:3});
- assert.ok(t.shop>8800,`the value line's "more than 8,800 diamonds": ${t.shop}`);
+ assert.ok(t.shop>8700,`the value line's "more than 8,700 diamonds": ${t.shop}`);
  assert.equal(w.perTier,125,'1.4 × 89 days, rounded to 5');
  assert.deepEqual([w.startsAt,w.endsAt,w.claimUntil],[START,Date.UTC(2027,2,21),Date.UTC(2027,2,28)]);
  assert.equal(A_().endsAt,w.startsAt,'the seasons follow each other: Winter starts the moment Autumn ends');
@@ -232,7 +232,7 @@ test('the window: Winter\'s words in snowflakes, a tile for a farmer part with W
  assert.equal(ui.weekGoalText('sprouts',100),'Harvest 100 crops. Brussels sprouts count double.');
  const [holds,worth]=ui.seasonValueLines(W_());
  assert.equal(holds,'Over 100 tiers: 1,500 diamonds, 21 days of VIP, 6 days of farmhand, 17 boosts, 2 avatars, 10 other season looks and 3 things for My farmer.');
- assert.match(worth,/^What you can buy of it in the shop costs more than 8,800 diamonds there\./);assert.ok(!/€/.test(holds+worth));
+ assert.match(worth,/^What you can buy of it in the shop costs more than 8,700 diamonds there\./);assert.ok(!/€/.test(holds+worth));
  // A farmer part: its picture is its cell in My farmer's sheet, its name translated (the names here are farmer-parts.js's).
  const parts=ui.seasonRewardParts(pub.seasonReward({farmer:['costume_2']},40));
  assert.deepEqual(parts.map(p=>[p.farmer,p.main,p.sub]),[['costume_2','Penguin suit','My farmer']]);

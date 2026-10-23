@@ -21,7 +21,7 @@ test('daily challenges pay 1, 1 and 2 diamonds once, separately from login gifts
  assert.throws(()=>applyFarmAction(s,{type:'daily',id:0,day:utcDay(now)},now+DAY_MS),/new day/);
  assert.equal(s.diamonds,4+levelTotal);
 });
-// Diamond boosts (Instant harvest, Double XP, one crop for 10 diamonds) open at level 10 on every farm since 19 Oct 2026 (older farms
+// Diamond boosts (Instant harvest, Double XP, one crop for 5 diamonds since 23 Oct 2026, 10 before) open at level 10 on every farm since 19 Oct 2026 (older farms
 // had them from level 1): the boost tests play at 10; boost prices do not follow the level.
 test('old or manipulated boost quotes never charge a different price',()=>{
  const s=createFarm(now,{level:10});s.diamonds=1000;
@@ -30,15 +30,17 @@ test('old or manipulated boost quotes never charge a different price',()=>{
   assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost},now),/prices have changed/);
   assert.deepEqual(s,before);
  }
- const r=applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost:150},now);
- assert.equal(r.cost,150);assert.equal(s.diamonds,850);
+ // Instant harvest 75 since 23 Oct 2026 (150 before): the old quote is turned away too.
+ assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost:150},now),/prices have changed/);
+ const r=applyFarmAction(s,{type:'buy_boost',boost:'crops',expectedCost:75},now);
+ assert.equal(r.cost,75);assert.equal(s.diamonds,925);
 });
 test('free beginner diamonds still buy an entry boost; premium boost prices preserve their value',()=>{
  const s=createFarm(now,{level:10});s.diamonds=20;
  const id=s.plots.findIndex(p=>p.crop&&p.readyAt>now);
- applyFarmAction(s,{type:'finish_crop',id,expectedCost:10},now);assert.equal(s.diamonds,10);
+ applyFarmAction(s,{type:'finish_crop',id,expectedCost:5},now);assert.equal(s.diamonds,15);
  assert.equal(DAILY_DIAMONDS.reduce((a,b)=>a+b,0)+7*4,68,'a first week of gifts and challenges (136 until 7 Oct 2026)');
- assert.equal(Math.floor(1000/BOOSTS.crops.cost),6);
+ assert.equal(Math.floor(1000/BOOSTS.crops.cost),13);
  const before=structuredClone(s);assert.throws(()=>applyFarmAction(s,{type:'buy_boost',boost:'coins',expectedCost:100},now),/diamonds/);assert.deepEqual(s,before);
 });
 test('Double XP costs 50 diamonds and rejects the old 25-diamond quote',()=>{

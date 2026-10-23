@@ -133,7 +133,7 @@ test('a fair class, a trailer or a visitor set out before the change pays, and s
 test('unchanged: the beginner guide, the email bonus, invite a friend, VIP and boost prices',()=>{
  assert.equal(BEGINNER_REWARD,50);assert.equal(EMAIL_BONUS,10);assert.equal(INVITE_REWARD,150);
  assert.deepEqual([VIP_PLANS.week.cost,VIP_PLANS.month.cost],[500,1500]);
- assert.deepEqual(Object.values(BOOSTS).map(b=>b.cost),[50,75,100,150,150,200,250]);
+ assert.deepEqual(Object.values(BOOSTS).map(b=>b.cost),[50,75,100,150,75,200,250],'Instant harvest 75 since 23 Oct 2026 (150 before)');
 });
 
 // What the players read says the same (7 Oct 2026, phase 2): the event screen, the wiki, the estate screens and the tips. The event

@@ -1769,7 +1769,9 @@ export function finishSingleBatch(state,building,jobId,expectedCost,now=Date.now
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {building,jobId,cost:SINGLE_BATCH_COST,affected:1};
 }
-export const SINGLE_CROP_COST=10;
+// 23 Oct 2026 (the owner): 5 diamonds a field, was 10, and Instant harvest 75, was 150 (BOOSTS.crops), now that every harvest gives one
+// crop (one-crop): finishing a field is worth half what it was, so it costs half.
+export const SINGLE_CROP_COST=5;
 export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
  if(expectedCost!==SINGLE_CROP_COST)throw new Error('The price has changed. Reload the game.');
  if(!Number.isInteger(id)||id<0||id>=state.plots.length)throw new Error('Choose one unlocked field.');
@@ -1795,7 +1797,7 @@ export const BOOSTS=Object.freeze({
  // not the Factory ("de knecht werkt niet voor de factory": its batches are up to ×20). One length only; buying it again while it runs
  // adds a day after it. What it makes counts like any other batch.
  farmhand:{name:'Farmhand',cost:150,duration:86400000,lengthName:'1 day',art:'farmhand',description:'One more production slot in every building but the Factory for 24 hours.'},
- crops:{name:'Instant harvest',cost:150,art:'seeds',description:'Every growing crop ready to harvest now.'},
+ crops:{name:'Instant harvest',cost:75,art:'seeds',description:'Every growing crop ready to harvest now.'},
  production:{name:'Finish production',cost:200,art:'boost',description:'Every running batch ready now (not the Factory).'},
  upgrade:{name:'Buildings discount',cost:250,art:'hammer',description:'50% off the coins and goods of your next building upgrade. Never expires.'}
 });
