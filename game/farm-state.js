@@ -986,7 +986,7 @@ export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,baker
  // World II (Oct 2026): built from the golden brief at the market square (VILLAGE_BRIEFS), with these coins and the brief's goods. One
  // number for the brief, the wiki and the upgrade ladder's floor (150k / 150k / 200k / 300k from 30 Sep 2026, when they were built here).
  mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:23,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
  sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158});
 // The Fishing pond (11 Oct 2026, part C): POND_OPEN is its one switch. While it is false the pond is built but hidden: it is in no list
 // (not in FEATURE_LEVELS or FEATURE_NAMES, so no level card, Coming up, wiki or menu names it), the game loads none of it and farm-api
@@ -998,7 +998,7 @@ export const POND_OPEN=true,POND_LEVEL=4;
 export const LAKE_OPEN=true,LAKE_LEVEL=WORLD_TWO_LEVEL;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
-export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:26,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
+export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:5,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
 export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
@@ -4651,9 +4651,13 @@ function dispatchFarmAction(state,action,now,random){
 }
 
 // Silo research opens at level 26 (the unlock spread, 25 Sep 2026). 27 Sep 2026: the first three steps cost 140, 240 and 380 from the
-// days it opened early, so 30% quicker crops cost 760 coins at level 26; now 2,000, 4,000 and 8,000, rising to the 15,000 and 65,000 of the
-// last two. A farm keeps every step it already has.
-export const SILO_COSTS=[2000,4000,8000,15000,65000];
+// days it opened early, so 30% quicker crops cost 760 coins at level 26; then 2,000, 4,000 and 8,000, rising to the 15,000 and 65,000 of the
+// last two. 23 Oct 2026 (the owner: "dat mensen sneller de game voelen door lagere wachttijd", option 2): it opens at level 5, with Barley
+// and field 12, and the first three steps cost 500, 1,500 and 4,000. Farmers on level 5 have about 1,330 coins (the median, live): the
+// first step (crops 10% quicker, seeds 5% cheaper) right away, the second about level 7 to 8, the third (30% quicker) about level 10 to
+// 12; the last two stay 15,000 and 65,000. Level 26 keeps something new (the unlock spread: every level from 11 to 48): Apple & Berry
+// Juice moves there from 23, which still opens berries and the Berry Smoothie (one of the early game's, by 25). A farm keeps every step it already has.
+export const SILO_COSTS=[500,1500,4000,15000,65000];
 // Crop medals ask twice the harvests since one crop a harvest (22 Oct 2026, the owner: "verdubbel de doelen, ook de medailles"): 25 / 100 /
 // 300 / 1,000 became 50 / 200 / 600 / 2,000. A medal a farm had reached with the old numbers is never taken away: state.mastery.kept holds,
 // per crop, how many tiers the old numbers gave when the farm first loaded with this rule; those tiers stay reached (collected or not), and

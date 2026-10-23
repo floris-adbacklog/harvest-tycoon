@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,xpForLevel,levelOf,featureUnlocked,deliveryTierUnlocked,buildingEligible,FEATURE_LEVELS,DELIVERY_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,CROP_LEVELS,RECIPES,ACTIVE_STATIONS} from '../game/farm-state.js';
+import {createFarm,normalizeFarm,xpForLevel,levelOf,featureUnlocked,deliveryTierUnlocked,buildingEligible,FEATURE_LEVELS,DELIVERY_LEVELS,BUILDING_LEVELS,RECIPE_LEVELS,CROP_LEVELS,RECIPES,ACTIVE_STATIONS,SILO_COSTS} from '../game/farm-state.js';
 import {wikiArticle} from '../public/wiki-content.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,25,12);
@@ -10,7 +10,11 @@ function before(level){const s=createFarm(now);s.progression.version=4;s.xp=xpFo
 function fresh(level){const s=createFarm(now);s.xp=xpForLevel(level);s.xpOffset=0;normalizeFarm(s,now);return s;}
 
 test('the unlocks between levels 10 and 38 are spread out: one or more new things on every level from 11 to 48',()=>{
- assert.deepEqual([FEATURE_LEVELS.stall,FEATURE_LEVELS.tractor,FEATURE_LEVELS.silo,FEATURE_LEVELS.projects,DELIVERY_LEVELS.commission,BUILDING_LEVELS.packing],[19,18,26,27,16,11]);
+ // Silo research at level 5 since 23 Oct 2026 (the owner: quicker crops early; 26 before); Apple & Berry Juice took level 26 (23 before).
+ assert.deepEqual([FEATURE_LEVELS.stall,FEATURE_LEVELS.tractor,FEATURE_LEVELS.silo,FEATURE_LEVELS.projects,DELIVERY_LEVELS.commission,BUILDING_LEVELS.packing],[19,18,5,27,16,11]);
+ assert.equal(RECIPE_LEVELS.orchardjuice,26);
+ // And its first three steps cheaper (500, 1,500, 4,000; 2,000, 4,000 and 8,000 before): a level-5 farmer has about 1,330 coins (live).
+ assert.deepEqual(SILO_COSTS,[500,1500,4000,15000,65000]);
  assert.deepEqual(['windflour','berrycheesecake','harvesthamper','vegetablefeast','berrytart'].map(id=>RECIPE_LEVELS[id]),[14,33,35,36,38]);
  assert.deepEqual([FEATURE_LEVELS.chores,FEATURE_LEVELS.family,FEATURE_LEVELS.boosts],[15,10,10],'Farm Family and (since 5 Oct 2026) diamond boosts at 10, chores at 15 (since 9 Oct 2026; 10 before); the Starter Pack stays at 14');
  const levels=new Set([...Object.values(CROP_LEVELS),...Object.values(BUILDING_LEVELS),...Object.values(FEATURE_LEVELS),...Object.values(DELIVERY_LEVELS),
@@ -25,7 +29,7 @@ test('a farm from before the spread keeps the buildings, recipes and order tiers
  for(const key of ['stall','tractor']){assert.ok(twelve.progression.kept.features.includes(key),`level 12 had ${key}`);assert.ok(!featureUnlocked(twelve,key),`${key} waits for level ${FEATURE_LEVELS[key]}`);}
  const at=level=>{const s=structuredClone(twelve);s.xp=xpForLevel(level);return s;};
  assert.ok(!featureUnlocked(at(17),'tractor')&&featureUnlocked(at(18),'tractor'),'the Tractor at 18');assert.ok(!featureUnlocked(at(18),'stall')&&featureUnlocked(at(19),'stall'),'the stall at 19');
- for(const key of ['silo','projects'])assert.ok(!featureUnlocked(twelve,key),`${key} was not reached yet`);
+ assert.ok(!featureUnlocked(twelve,'projects'),'projects was not reached yet');assert.ok(featureUnlocked(twelve,'silo'),'Silo research opens at level 5 (23 Oct 2026)');
  assert.ok(deliveryTierUnlocked(twelve,'commission'),'commission orders stay');assert.ok(buildingEligible(twelve,'packing'));
  assert.deepEqual(twelve.progression.kept.recipes?.filter(id=>['windflour','berrytart'].includes(id)),['windflour']);
  const thirty=before(30);
@@ -39,7 +43,7 @@ test('a farm from before the spread keeps the buildings, recipes and order tiers
 });
 test('a new farm follows the new levels',()=>{
  const s=fresh(17);assert.equal(s.progression.version,6);assert.equal(levelOf(s),17);
- assert.ok(!featureUnlocked(s,'tractor')&&!featureUnlocked(s,'stall')&&!featureUnlocked(s,'silo'));assert.ok(featureUnlocked(fresh(18),'tractor'));assert.ok(featureUnlocked(fresh(19),'stall'));
+ assert.ok(!featureUnlocked(s,'tractor')&&!featureUnlocked(s,'stall'));assert.ok(!featureUnlocked(fresh(4),'silo')&&featureUnlocked(fresh(5),'silo'),'Silo research at level 5');assert.ok(featureUnlocked(fresh(18),'tractor'));assert.ok(featureUnlocked(fresh(19),'stall'));
  assert.ok(!deliveryTierUnlocked(fresh(15),'commission'));assert.ok(deliveryTierUnlocked(fresh(16),'commission'));
  assert.ok(!buildingEligible(fresh(10),'packing'));assert.ok(buildingEligible(fresh(11),'packing'));
 });

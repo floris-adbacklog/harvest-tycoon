@@ -75,12 +75,16 @@ test('at most one next bonus per group, after the ones the farm has, with the le
   assert.ok(g.rows.length,'a group with nothing is left out');
  }
  const at=(l,id,change)=>groupOf(farm(l,change),id).rows.find(r=>!r.active),vipOn=s=>{s.vipExpiresAt=now+7*DAY_MS;},withVip=change=>s=>{vipOn(s);change?.(s);};
- // No VIP: from level 10 (the shop) VIP is the next bonus where it makes crops, batches or sales better, and says where to get it.
- for(const [id,sub] of [['crops','10% faster crops'],['production','10% faster production'],['market','+5% market coins']])
-  assert.deepEqual(at(12,id,s=>{s.vipExpiresAt=0;}),{id:'vip',name:'VIP',sub,value:'Boosts',active:false},id);
+ // No VIP: from level 10 (the shop) VIP is the next bonus where it makes crops, batches or sales better, and says where to get it. Crops
+ // once every Silo step is done: Silo research opens at level 5 since 23 Oct 2026, and its next step goes first (below).
+ for(const [id,sub,change] of [['crops','10% faster crops',s=>{s.siloLevel=5;}],['production','10% faster production'],['market','+5% market coins']])
+  assert.deepEqual(at(12,id,s=>{s.vipExpiresAt=0;change?.(s);}),{id:'vip',name:'VIP',sub,value:'Boosts',active:false},id);
+ assert.equal(at(12,'crops',s=>{s.vipExpiresAt=0;}).id,'silo','level 12: the first Silo step comes before VIP');
  assert.equal(at(40,'crops',s=>{s.vipExpiresAt=0;s.siloLevel=1;}).id,'silo','crops: the next Silo step goes before VIP while there is one');
  assert.equal(at(40,'crops',s=>{s.vipExpiresAt=0;s.siloLevel=5;}).id,'vip');
- assert.deepEqual(at(10,'crops',withVip()),{id:'silo',name:'Silo research',sub:'−10% growing time',value:`From level ${FEATURE_LEVELS.silo}`,active:false});
+ // Below Silo research's level (5 since 23 Oct 2026; it was 26): the level it opens at. From it: its first step.
+ assert.deepEqual(at(4,'crops',withVip()),{id:'silo',name:'Silo research',sub:'−10% growing time',value:`From level ${FEATURE_LEVELS.silo}`,active:false});
+ assert.deepEqual(at(10,'crops',withVip()),{id:'silo',name:'Silo research',sub:'Level 1 of 5',value:'Next step: −10%',active:false});
  assert.deepEqual(at(40,'crops',withVip(s=>{s.siloLevel=3;})),{id:'silo',name:'Silo research',sub:'Level 4 of 5',value:'Next step: −5%',active:false});
  assert.deepEqual(at(40,'cheaper',s=>{s.siloLevel=0;}),{id:'silo',name:'Seed price',sub:'Silo research',value:'Next step: −5%',active:false});
  assert.equal(at(76,'crops',withVip(s=>{s.siloLevel=5;})).value,'Estate Workshop','Orchard ladders can be built');
