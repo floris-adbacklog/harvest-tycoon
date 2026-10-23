@@ -67,7 +67,7 @@ function page({path,title,heading,description,body,data=null,badge=''}){
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96.png"><link rel="canonical" href="${SITE}${path}">${data?ldScript(data):''}<link rel="manifest" href="/manifest.webmanifest"><script src="/android-app.js"></script><link rel="stylesheet" href="/legal.css"><link rel="stylesheet" href="/wiki.css"></head>
 <body class="wiki-page">
 <header class="legal-hero">
- <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp?v=20261021" alt="Harvest Tycoon" width="1024" height="1024"></a>
+ <a class="legal-logo" href="/" aria-label="Harvest Tycoon home"><img src="/assets/harvest-tycoon-logo.webp?v=20261023" alt="Harvest Tycoon" width="1024" height="1024"></a>
 </header>
 <main class="legal-card wiki">
  <div class="wiki-window-head">${badge}<div class="wiki-window-titles"><h1>${esc(heading)}</h1><p class="updated">${esc(description)}</p></div><a class="wiki-play" href="/">Play free</a></div>
