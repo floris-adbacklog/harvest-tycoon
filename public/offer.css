@@ -1,6 +1,6 @@
 /* The special offer (src/offer-ui.js, 29 Sep 2026). The buttons: on a computer a small one next to the diamonds (after the
    Starter Pack's), on a phone a tile above the bottom bar, above the Starter Pack tile when that one shows too. */
-#offer-button{position:fixed;inset-inline-start:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 4px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif;-webkit-touch-callout:none}   /* no callout (14 Oct 2026): a long press on an iPhone lifted the chest picture to the top of the screen */
+#offer-button{position:fixed;inset-inline-start:max(14px,env(safe-area-inset-left));bottom:max(20px,var(--safe-bottom));z-index:12;width:72px;min-height:84px;display:flex;align-items:center;flex-direction:column;gap:2px;padding:5px 4px 7px;border:2px solid #e0a13a;border-radius:19px;background:#fff3d6;box-shadow:0 2px 0 #a8742a33,0 10px 24px #3a2a1030;color:#6b4412;font-family:'DM Sans',sans-serif;-webkit-touch-callout:none}   /* no callout (14 Oct 2026): a long press on an iPhone lifted the chest picture to the top of the screen */
 #offer-button img{width:48px;height:48px;border-radius:13px;object-fit:cover}
 #offer-button span{font-size:12px;font-weight:700;white-space:nowrap}
 #offer-button small{padding:0 6px;border-radius:99px;background:#d9482b;color:#fff;font-size:12px;font-weight:700}
@@ -88,7 +88,7 @@
 }
 
 /* The banner at the top of the Diamond shop (src/offer-ui.js): the chest, "Special offer" and the time left, the price. */
-.shop-offer{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33;color:#3d2f14;text-align:start;font-family:'DM Sans',sans-serif;cursor:pointer}
+.shop-offer{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:10px 14px 10px 10px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 2px 0 #b8862a33;color:#3d2f14;text-align:start;font-family:'DM Sans',sans-serif;cursor:pointer}
 .shop-offer[hidden]{display:none}
 .shop-offer:hover{border-color:#d69a2c}
 .shop-offer img{width:58px;height:58px;flex:none;border-radius:13px;object-fit:cover}

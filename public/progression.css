@@ -106,7 +106,7 @@
 /* Short frames (11 Oct 2026, Part A A14: 918x516 and 840x430 on CrazyGames cut Keep growing off below the card): the card's main button, or
    its row of buttons, stays in sight at the bottom of the card while the rest scrolls under it, on a cream edge of its own. */
 @media(max-height:599px){
- #level-up-dialog>.level-up-done,#gift-dialog>.gift-done{position:sticky;bottom:-12px;z-index:2;box-shadow:0 3px 0 var(--btn-main-edge),0 0 0 12px #fffdf4}
+ #level-up-dialog>.level-up-done,#gift-dialog>.gift-done{position:sticky;bottom:-12px;z-index:2;box-shadow:0 2px 0 var(--btn-main-edge),0 0 0 12px #fffdf4}
  #level-up-dialog>.level-up-actions,#gift-dialog>.gift-actions{position:sticky;bottom:-24px;z-index:2;margin-bottom:-24px;padding:12px 0 24px;background:#fffdf4}
 }
 

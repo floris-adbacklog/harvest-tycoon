@@ -1104,6 +1104,20 @@ function farmerCheers(){
  const asked=performance.now(),now=()=>{if(modalOpen()&&performance.now()-asked<CHEER_WAIT){setTimeout(now,400);return;}const at=walker.celebrate();if(at)confettiAt(...at);};
  setTimeout(now,CHEER_BEAT);
 }
+// Confetti over a building as it opens for you (23 Oct 2026, the owner: "Doe confetti als je een nieuw gebouw opent en koopt"): when a level
+// makes it yours to build, over it on the farm, once the window in front (the level-up card) has closed, as the farmer's cheer waits.
+// Buying one throws its confetti in the window, from the button (economy-ui.js, public/confetti.js). The first look at a farm only notes
+// what is open; a building of the other world has no place here.
+let buildingsOpen=null;
+function cheerNewBuildings(){
+ const open=new Set(Object.keys(BUILDINGS).filter(key=>buildingEligible(state,key)));
+ const fresh=buildingsOpen?[...open].filter(key=>!buildingsOpen.has(key)):[];buildingsOpen=open;
+ for(const key of fresh){
+  const view=buildingViews.get(key);if(!view?.object)continue;
+  const asked=performance.now(),now=()=>{if(modalOpen()&&performance.now()-asked<CHEER_WAIT){setTimeout(now,400);return;}const box=new THREE.Box3().setFromObject(view.object);confettiAt((box.min.x+box.max.x)/2,box.max.y+.4,(box.min.z+box.max.z)/2,40);};
+  setTimeout(now,CHEER_BEAT);
+ }
+}
 // Where a spot on the farm is on the screen (in page pixels).
 function toScreen(x,y,z){const p=new THREE.Vector3(x,y,z).project(camera),r=world.getBoundingClientRect();return {x:r.left+(p.x*.5+.5)*r.width,y:r.top+(-p.y*.5+.5)*r.height};}
 // The harvest flies from the field to the Market button (harvest-fly.js), where it goes into your stock.
@@ -1389,6 +1403,7 @@ function updateUI(){
  {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0)+readyDailies(state,farmNow()).length;$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
  // The medals of the first basket, a moment after the first sale (A11).
  if(heldMedals.length&&!guideAt('sell')){const medals=heldMedals;heldMedals=[];clearTimeout(heldTimer);heldTimer=0;setTimeout(()=>medalToast(medals),2600);}
+ if(ready)cheerNewBuildings();
  familyUI?.refresh();passUI?.refresh();seasonUI?.refresh();lookSettings?.refresh();beginner?.refresh();updateHint();economy?.refresh();retention?.refresh();growth?.refresh();valley?.refresh();villageSquare?.refresh();boat?.refresh();estatePlaces?.refresh();boosts?.refresh();rookie?.refresh();quests?.refresh();mobileUI?.refresh();activities?.refresh();progression?.refresh();liveEvents?.refresh();
 }
 function renderMarket(){economy.renderMarket();}

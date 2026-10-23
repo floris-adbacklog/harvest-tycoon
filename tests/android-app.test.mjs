@@ -110,7 +110,7 @@ test('play.html, the language pages, farm.html and the website\'s wiki load the 
  const play=read('public/play.html'),farm=read('public/farm.html');
  assert.ok(before(play,'play.html')<play.indexOf('/app-mode.js'));assert.ok(before(farm,'farm.html')<farm.indexOf('/app-mode.js'));
  assert.equal(play.match(/android-app\.js/g).length,1);assert.equal(farm.match(/android-app\.js/g).length,1);
- const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);assert.equal(sheets[sheets.indexOf('/portal.css')+1],'/android.css');assert.equal(sheets.slice(-3).join(' '),'/pwa-layout.css /dialog-shell.css /hud.css','18 Oct 2026: the window shell and the farm screen\'s look come after it');
+ const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);assert.equal(sheets[sheets.indexOf('/portal.css')+1],'/android.css');assert.equal(sheets.slice(-4).join(' '),'/pwa-layout.css /dialog-shell.css /calm-windows.css /hud.css','18 Oct 2026 (the calmer windows 23 Oct): the window shell and the farm screen\'s look come after it');
  assert.doesNotMatch(read('public/crazygames.html'),/android-app\.js|android\.css/);
  const out=mkdtempSync(join(tmpdir(),'android-app-'));writeFileSync(join(out,'sitemap.xml'),read('public/sitemap.xml'));
  buildLanguagePages(out,play);

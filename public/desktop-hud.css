@@ -65,14 +65,11 @@
  /* Only the rows you can sell go side by side; "Not in stock · today's prices", its price list and the empty note take the whole width. */
  #market-items>:not(.market-card){grid-column:1/-1}
  #market-items .market-price-list{grid-template-columns:repeat(4,minmax(0,1fr))}
- :is(#crop-catalog,#building-dialog .recipe-list,#today-content .daily-list){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
- :is(#crop-catalog,#building-dialog .recipe-list)>.future-unlocks{grid-column:1/-1}
- :is(#crop-catalog,#building-dialog .recipe-list) .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #building-dialog .future-unlocks .recipe-card{grid-column:auto}
- /* The Factory's groups: an open one takes the whole row, its recipes side by side, so the group next to it keeps its size. */
- #building-dialog .recipe-list>.factory-recipe-group{align-self:start}
- #building-dialog .recipe-list>.factory-recipe-group[open]{grid-column:1/-1}
- #building-dialog .factory-recipe-group[open] .factory-recipe-group-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ :is(#crop-catalog,#today-content .daily-list){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ #crop-catalog>.future-unlocks{grid-column:1/-1}
+ #crop-catalog .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ /* A building's recipes one under the other, each the window's whole width, the Factory's groups too (23 Oct 2026, the owner: "Zet de
+    batches gewoon op een rij zodat je meer ruimte hebt": side by side a card was too narrow for its line and its Start). */
 }
 /* The names under the side buttons are white with a soft dark shadow, readable over the fuller colours of the farm (26 Sep 2026). */
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
@@ -156,13 +153,9 @@
  #market-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
  #market-items>:not(.market-card){grid-column:1/-1}
  #market-items .market-price-list{grid-template-columns:repeat(4,minmax(0,1fr))}
- :is(#crop-catalog,#building-dialog .recipe-list,#today-content .daily-list){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
- :is(#crop-catalog,#building-dialog .recipe-list)>.future-unlocks{grid-column:1/-1}
- :is(#crop-catalog,#building-dialog .recipe-list) .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- #building-dialog .future-unlocks .recipe-card{grid-column:auto}
- #building-dialog .recipe-list>.factory-recipe-group{align-self:start}
- #building-dialog .recipe-list>.factory-recipe-group[open]{grid-column:1/-1}
- #building-dialog .factory-recipe-group[open] .factory-recipe-group-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ :is(#crop-catalog,#today-content .daily-list){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #crop-catalog>.future-unlocks{grid-column:1/-1}
+ #crop-catalog .future-unlocks-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
  /* My farmer: the twelve parts in two rows (one row ran on past the window's edge: Costume, Shoes and Gloves only by a sideways scroll a
     mouse cannot find). */
  dialog.farmer-maker .farmer-maker-tabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));overflow:visible}

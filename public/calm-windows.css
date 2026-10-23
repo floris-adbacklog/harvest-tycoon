@@ -1,0 +1,80 @@
+/* Calmer windows (23 Oct 2026, the owner: "Ik bedoelde vooral de dialogen dat ze te druk ogen", then "doe alles" to the five ideas).
+   One sheet over every window's own, loaded after them (before hud.css, which is the farm screen's): what each window shows and does
+   stays with its own sheet and script; this only takes away the noise.
+   1. Rows, not cards: a list's items are plain rows with a thin line between them, as the Market and Settings already were. Only what is
+      ready keeps a card: a green edge and a light-green fill. The seed you have chosen keeps its gold.
+   2. No pills for plain facts: a level, a count, a reward, an ingredient is its picture and its number in a line of text, in its own
+      colour (diamonds and XP blue, a missing ingredient red). Only "ready" stays a green pill.
+   3. A window's rules (how it works, where flour comes from) wait behind its ⓘ button (public/window-hints.js), next to Close.
+   5. A recipe's time and profit read first, at 14 px; its XP and ingredients come after, smaller (never under 12 px).
+   The edges under buttons are lighter everywhere (buttons.css, hud.css: the owner, 23 Oct 2026, "Al die shadows maken de dialogen/game
+   design heel druk", then "nu is het te plain. randschaduwen is niet erg, maar minder heftig"). */
+:root{--calm-line:#ebe3d7;--calm-ready-line:#8cc06a;--calm-ready-fill:#eef7e3}
+
+/* ---- 1. Rows, not cards ---- */
+#buildings-dialog .building-catalog,#task-list,#today-content .daily-list{gap:0}
+#buildings-dialog .building-catalog{column-gap:18px}
+#buildings-dialog #building-catalog>.building-card,
+#task-list .quest-item,
+#seed-dialog .seed-row,
+#today-content .daily-card,
+#today-content .daily-order,
+#building-dialog #building-content .recipe-card,
+#estate-content .stall-upgrade{
+ border:0;border-bottom:1px solid var(--calm-line);border-radius:0;background:none;box-shadow:none;padding-inline:2px;transform:none
+}
+#building-dialog #building-content .recipe-card{padding-block:12px}
+#building-dialog #building-content .recipe-card.is-waiting{background:none}
+#buildings-dialog #building-catalog>.building-card:active{transform:none;box-shadow:none;background:#f7f1e7}
+#seed-dialog .seed-row:hover,#buildings-dialog #building-catalog>.building-card:hover{background:#f9f4eb}
+/* What is ready (or chosen) keeps a card, so it stands out from the rows. */
+#buildings-dialog #building-catalog>.building-card:has(.building-status.ready),
+#task-list .quest-item.is-ready,
+#today-content .daily-card.is-ready,
+#today-content .daily-order.is-ready,
+#building-dialog #building-content .recipe-card.is-ready{
+ margin-block:6px;padding-inline:12px;border:1px solid var(--calm-ready-line);border-radius:16px;background:var(--calm-ready-fill);box-shadow:0 2px 0 #b9d9a0
+}
+#seed-dialog .seed-row.selected{padding-inline:12px;border:1px solid #d9c28d;border-radius:16px;background:#fff6dc;box-shadow:none}
+/* Tiles that only hold a fact: the journal's four counts and the Silo's two now-values. */
+#journal-content .journal-stats>li,#utility-content .silo-now>div{border:0;background:none;padding-inline:4px}
+
+/* ---- 2. No pills for plain facts ---- */
+.reward-chips{gap:4px 12px}
+:is(.reward-chips>b,#task-list .quest-rewards>b,#journal-content .journal-next>b,#family-dialog :is(.family-chips>b,.family-chest-head>.family-chest-gives>b,.family-time-chip),
+ .event-reward-amounts .coin-reward,.event-chip,#estate-content .stall-facts>span,#estate-content .stall-gains>b){
+ padding:0;border:0;border-radius:0;background:none;box-shadow:none
+}
+#task-list .quest-rewards,#family-dialog :is(.family-chips,.family-chest-head>.family-chest-gives),#estate-content .stall-gains{column-gap:12px}
+#buildings-dialog .building-level-chip{padding:0;background:none;color:#8a7a5c}
+#buildings-dialog .building-status:not(.ready){padding:0;background:none}
+#family-dialog .family-meta-chip,#family-dialog .family-meta-chip.is-level{padding:0;border:0;background:none}
+#family-dialog .family-meta-chip.is-level{color:#7a5410}
+.tag-info{padding:0;border:0;background:none}
+#seed-dialog .seed-row-price{padding:0;background:none}
+#seed-dialog .seed-pace{padding:0;background:none;text-transform:none;letter-spacing:0;color:#5d7d45}
+#journal-content .roadmap-level{padding:0;background:none}
+#boost-dialog .boost-detail:not([data-state=ready]){padding:0;background:none}
+/* Ingredients: "0/4 Flour" with its picture, red while it is short. */
+#building-dialog #building-content :is(.recipe-needs,.recipe-output) .ingredient,#today-content .daily-order .ingredient{padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#building-dialog #building-content :is(.recipe-needs,.recipe-output){column-gap:12px}
+#building-dialog #building-content :is(.recipe-needs,.recipe-output) .ingredient.missing,#today-content .daily-order .ingredient.missing{color:#a3473a}
+
+/* ---- 5. A recipe: time and profit first ---- */
+#building-dialog #building-content .recipe-meta{font-size:14px;font-weight:700;color:#5b513f}
+#building-dialog #building-content .recipe-value{font-size:14px}
+#building-dialog #building-content .recipe-xp{font-size:12px;font-weight:700}
+
+/* ---- 3. A window's rules wait behind its ⓘ ---- */
+/* The lines that explain (not what is going on now): hidden until the ⓘ is pressed. Keep this list and the one under it the same.
+   !important: a window's own sheet shows some of them by its id (#daily-gift .gift-note{display:block}), which a class rule cannot beat. */
+dialog:not(.show-hints) :is(.milling-chain,.milling-note:not(.first-batch-note):not(.recipes-busy),.production-capacity>p,.recipe-section-heading>span,
+ .seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.shop-earn,.season-rule,.pass-rule,.tractor-rule,.family-footnote),
+#seed-dialog:not(.show-hints)>p{display:none!important}
+/* The ⓘ shows only in a window that has such a line (a browser without :has shows it in every window, where it does nothing). */
+dialog:not(:has(:is(.milling-chain,.milling-note:not(.first-batch-note):not(.recipes-busy),.production-capacity>p,.recipe-section-heading>span,
+ .seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.shop-earn,.season-rule,.pass-rule,.tractor-rule,.family-footnote))):not(#seed-dialog) .hints-button{display:none}
+.dialog-heading .hints-button{flex:none;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;margin-inline-start:auto;padding:0;border:2px solid var(--btn-icon-line);border-radius:14px;background:var(--btn-icon);box-shadow:0 2px 0 var(--btn-icon-edge);color:var(--btn-icon-text);font:700 22px/1 'Outfit',sans-serif;cursor:pointer}
+.dialog-heading .hints-button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
+.dialog-heading .hints-button[aria-pressed=true]{border-color:#e0a13a;background:#fff3d6;box-shadow:0 2px 0 #c98f2e}
+.dialog-heading .hints-button+.close-dialog{margin-inline-start:8px}

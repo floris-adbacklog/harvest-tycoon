@@ -93,7 +93,8 @@ test('a modal window is never a grid (Safari grew one to its max-height on 29 Se
 
 test('the shell and the farm screen\'s look come last, and no screen sets the padding of a sheet (the shell owns its foot)',()=>{
  const sheets=[...farm.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m=>m[1]);
- assert.deepEqual(sheets.slice(-2),['/dialog-shell.css','/hud.css']);
+ // The calmer windows (23 Oct 2026, public/calm-windows.css) come right after the shell: they take the noise out of every window's own.
+ assert.deepEqual(sheets.slice(-3),['/dialog-shell.css','/calm-windows.css','/hud.css']);
  const sheetIds=[...farm.matchAll(/<dialog id="([^"]+)" class="[^"]*is-sheet[^"]*"/g)].map(m=>m[1]);
  for(const file of scripts)for(const m of read(file).matchAll(/\.id='([\w-]+)';[^\n]*?className='[^']*is-sheet/g))sheetIds.push(m[1]);
  assert.ok(sheetIds.length>25,sheetIds.join(' '));

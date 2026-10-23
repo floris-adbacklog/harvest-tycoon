@@ -23,7 +23,7 @@
 .season-tabs button[aria-pressed=true]{border-color:#e2b04d;background:#fff4e0}
 .season-tabs .game-art{width:28px;height:28px;object-fit:contain}
 .season-top{display:grid;gap:8px;margin:2px 0 12px}
-.season-banner{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;border-radius:16px;box-shadow:0 3px 0 #b8862a2b}
+.season-banner{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;border-radius:16px;box-shadow:0 2px 0 #b8862a2b}
 .season-top-copy{display:grid;gap:2px}
 .season-phase{margin:0;font:700 17px/1.3 'Outfit',sans-serif;color:#8a4f12}
 .season-rule{margin:0;font-size:14px;line-height:1.5;color:#6f6a5a}
@@ -44,13 +44,13 @@
 .season-waiting{margin:0 0 10px;padding:8px 12px;border-radius:12px;background:#f3f8ec;color:#3f6b2c;font-size:14px;font-weight:700}
 .season-skip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 12px}
 .season-skip small{font-size:12px;color:#7a705f}
-.season-skip-button{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:6px 14px;border:1px solid var(--btn-diamond-line,#8cc7df);border-radius:999px;background:var(--btn-diamond,#dff3fb);color:var(--btn-diamond-text,#1f5a73);font:700 14px/1 'DM Sans',sans-serif;box-shadow:var(--btn-top,none),0 3px 0 var(--btn-diamond-edge,#8cc7df);cursor:pointer}
+.season-skip-button{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:6px 14px;border:1px solid var(--btn-diamond-line,#8cc7df);border-radius:999px;background:var(--btn-diamond,#dff3fb);color:var(--btn-diamond-text,#1f5a73);font:700 14px/1 'DM Sans',sans-serif;box-shadow:var(--btn-top,none),0 2px 0 var(--btn-diamond-edge,#8cc7df);cursor:pointer}
 .season-skip-button:disabled{opacity:.6;cursor:default}
 .season-skip-button .game-art{width:22px;height:22px}
 .season-skip-button b{display:inline-flex;align-items:center;gap:3px}
 .season-skip-button b .game-art{width:16px;height:16px}
 
-.season-paid-box{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px 14px;margin:0 0 14px;padding:12px 14px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 3px 0 #b8862a33}
+.season-paid-box{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px 14px;margin:0 0 14px;padding:12px 14px;border:2px solid #e2b04d;border-radius:18px;background:linear-gradient(110deg,#fff1c9,#fffaf0 55%,#ffe9d6);box-shadow:0 2px 0 #b8862a33}
 .season-paid-looks{display:grid;grid-template-columns:repeat(2,52px);gap:6px}
 .season-paid-look{display:grid;place-items:center;width:52px;height:52px;padding:2px;border:1px solid #ead9ad;border-radius:14px;background:#fffdf5;cursor:pointer}
 .season-paid-look .game-art,.season-paid-look img{width:44px;height:44px;object-fit:contain;border-radius:10px}
@@ -58,7 +58,7 @@
 .season-paid-copy strong{font:700 18px/1.2 'Outfit',sans-serif;color:#3d2f14}
 .season-paid-copy small{font-size:13px;line-height:1.45;color:#6f5a35}
 .season-paid-copy .season-value{font-weight:700;color:#2f7a34}
-#season-dialog .primary-button.season-buy{grid-column:1/-1;justify-self:end;min-width:190px;background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:var(--btn-top),0 4px 0 var(--btn-main-edge)}
+#season-dialog .primary-button.season-buy{grid-column:1/-1;justify-self:end;min-width:190px;background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text);box-shadow:var(--btn-top),0 2px 0 var(--btn-main-edge)}
 #season-dialog .primary-button.season-buy:hover:not(:disabled){background:var(--btn-main-hover)}
 #season-dialog .primary-button.season-buy:disabled{background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;transform:none;cursor:default}
 .season-feedback{grid-column:1/-1;margin:0;font-size:13px;color:#8a4f12}
@@ -211,7 +211,7 @@ button.season-reward{cursor:zoom-in}
 #season-dot{background:var(--badge-wait);color:var(--badge-wait-text);border:2px solid #fffdf5;border-radius:999px;font:700 11px/1 'DM Sans',sans-serif}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){
  #event-rail>#season-button{display:none}
- #event-rail>#season-button.is-waiting:not([hidden]){position:relative;display:grid;place-items:center;width:52px;height:52px;min-width:52px;min-height:52px;margin:0;padding:0;border-radius:50%;box-shadow:0 3px 0 var(--btn-icon-edge),0 8px 18px #3a2a1026;order:5}
+ #event-rail>#season-button.is-waiting:not([hidden]){position:relative;display:grid;place-items:center;width:52px;height:52px;min-width:52px;min-height:52px;margin:0;padding:0;border-radius:50%;box-shadow:0 2px 0 var(--btn-icon-edge),0 8px 18px #3a2a1026;order:5}
  #event-rail>#season-button>.game-art{width:36px;height:36px}
  #event-rail #season-dot{position:absolute;top:-4px;inset-inline-end:-4px;display:grid;place-items:center;box-sizing:border-box;min-width:21px;height:21px;padding:0 5px;border-radius:999px}
 }
@@ -233,7 +233,7 @@ button.season-reward{cursor:zoom-in}
 /* Winter 2026 (21 Oct 2026): the next season in its pre-sale, a cream card at the very bottom of the window (season-ui.js comingCard);
    from 22 December the last season's collecting week as a strip at the top that opens to its waiting rewards (prevStrip); a part for
    your own farmer as its cell in My farmer's picture sheet. */
-.season-coming{display:grid;gap:10px;margin:18px 0 6px;padding:12px;border:2px solid #b8d6e6;border-radius:18px;background:#fffdf5;box-shadow:0 3px 0 #9fc4da55}
+.season-coming{display:grid;gap:10px;margin:18px 0 6px;padding:12px;border:2px solid #b8d6e6;border-radius:18px;background:#fffdf5;box-shadow:0 2px 0 #9fc4da55}
 .season-coming .season-banner{box-shadow:none}
 .season-coming-copy{display:grid;gap:8px}
 .season-coming h3{display:flex;align-items:center;gap:8px;margin:0;font:700 19px/1.2 'Outfit',sans-serif;color:#3d2f14}

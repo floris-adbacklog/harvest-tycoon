@@ -1,5 +1,5 @@
 /* Shared production controls: comfortably tappable, without OS select menus. */
-.collect-all-panel{display:grid;grid-template-columns:66px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px;margin:16px 0;border:1px solid #d7c6b3;border-radius:18px;background:linear-gradient(115deg,#f4e8de,#fff9e7);box-shadow:0 3px 0 #d3c5b52b}
+.collect-all-panel{display:grid;grid-template-columns:66px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px;margin:16px 0;border:1px solid #d7c6b3;border-radius:18px;background:linear-gradient(115deg,#f4e8de,#fff9e7);box-shadow:0 2px 0 #d3c5b52b}
 .collect-all-art{display:grid;place-items:center;width:66px;height:66px;background:#fffdf4;border-radius:16px}
 .collect-all-art .game-art{display:block;width:62px;height:62px;object-fit:contain}
 .collect-all-copy{min-width:0}.collect-all-copy strong{display:block;font:600 22px 'Outfit',sans-serif;color:#464130}.collect-all-copy>span{display:block;margin-top:5px;color:#766653;font-size:13px;line-height:1.5}
@@ -83,6 +83,6 @@
 #building-content .recipe-section-heading h3{font:700 20px/1.2 'Outfit',sans-serif}
 /* The Buildings list and the helping hand's stops in the window shell (18 Oct 2026): each row is a tappable card with the press edge of
    the game's buttons, on the one card surface. */
-#building-catalog>.building-card,#activities-hub-grid>.building-card{border:2px solid #e6ddd1;background:#fbf8f3;box-shadow:0 3px 0 #e6dccb;transition:transform .1s,box-shadow .1s}
+#building-catalog>.building-card,#activities-hub-grid>.building-card{border:2px solid #e6ddd1;background:#fbf8f3;box-shadow:0 2px 0 #e6dccb;transition:transform .1s,box-shadow .1s}
 #building-catalog>.building-card:active,#activities-hub-grid>.building-card:active{transform:translateY(2px);box-shadow:0 1px 0 #e6dccb}
 @media(prefers-reduced-motion:reduce){#building-catalog>.building-card,#activities-hub-grid>.building-card{transition:none}}

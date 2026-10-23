@@ -16,9 +16,9 @@
 .farmer-tab-thumb{display:block;width:38px;height:38px;border-radius:10px;background-color:#fffaf0;background-repeat:no-repeat}
 .farmer-maker-tabs button.is-empty .farmer-tab-thumb{opacity:.45}
 .farmer-maker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;padding:2px 2px 8px}
-.farmer-part{position:relative;aspect-ratio:1;border-radius:14px;background-color:#fffaf0;background-repeat:no-repeat;border:2px solid var(--btn-second-line);box-shadow:0 3px 0 var(--btn-second-edge);cursor:pointer;padding:0;transition:transform .1s,box-shadow .1s,border-color .1s}
+.farmer-part{position:relative;aspect-ratio:1;border-radius:14px;background-color:#fffaf0;background-repeat:no-repeat;border:2px solid var(--btn-second-line);box-shadow:0 2px 0 var(--btn-second-edge);cursor:pointer;padding:0;transition:transform .1s,box-shadow .1s,border-color .1s}
 .farmer-part:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-second-edge)}
-.farmer-part[aria-pressed="true"]{border-color:var(--btn-main);box-shadow:0 3px 0 var(--btn-main-edge),0 0 0 2px #3f8a4a40}
+.farmer-part[aria-pressed="true"]{border-color:var(--btn-main);box-shadow:0 2px 0 var(--btn-main-edge),0 0 0 2px #3f8a4a40}
 .farmer-part.is-none{display:grid;place-items:center;color:var(--btn-second-text)}
 .farmer-part.is-none svg{width:30px;height:30px;opacity:.7}
 /* Not earned yet (21 Oct 2026: nearly everything is earned now): the picture faded under a cream veil and a bigger gold lock, so a locked

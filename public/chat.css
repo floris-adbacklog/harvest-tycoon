@@ -44,7 +44,7 @@
 .chat-compose input{flex:1;min-width:0;min-height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d6c9b8;border-radius:12px;background:#fff;color:#3d382a;font:400 15px 'DM Sans',sans-serif}
 .chat-compose input::placeholder{color:#a3968a}
 .chat-compose input:focus{outline:3px solid #f3c35355;border-color:#c9a45a}
-.chat-send{flex-shrink:0;display:grid;place-items:center;width:52px;height:46px;padding:0;border:1px solid #d4c7b8;border-radius:12px;background:#f1e7de;box-shadow:0 3px 0 #dccdbb;cursor:pointer}
+.chat-send{flex-shrink:0;display:grid;place-items:center;width:52px;height:46px;padding:0;border:1px solid #d4c7b8;border-radius:12px;background:#f1e7de;box-shadow:0 2px 0 #dccdbb;cursor:pointer}
 .chat-send .game-art{width:32px;height:32px;object-fit:contain}
 .chat-send:hover{background:#f6eee6}
 .chat-send:active{transform:translateY(2px);box-shadow:0 1px 0 #dccdbb}

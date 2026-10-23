@@ -10,15 +10,18 @@ import {confirmAction} from './confirm-dialog.js';
 import {flyHarvest,bump} from './harvest-fly.js';
 import {keepFolds} from './keep-folds.js';
 import {QUICK_CROP_MS,cropChoiceText} from './wait-tip.js';
+import {confettiFrom} from './confetti.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 // What one market tab's stock is worth at today's prices, as Sell all would pay (11 Oct 2026, Part A A11: the Market button's badge from
 // the first harvest to the first sale says the same number as the Crops tab's "This basket is worth").
 export function marketWorth(state,tab,now=Date.now()){return marketPay(state,marketItems(state,tab).reduce((v,k)=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
 const seconds=formatDuration;
-// The seed shop's tabs by a crop's own growing time (16 Oct 2026, the owner: Quick is 5 minutes or less, wheat and lettuce; it was 15, which
-// put corn there too). Hours: above that and under 8 hours; Overnight: 8 hours or more.
-export const seedTab=duration=>duration<=QUICK_CROP_MS?'quick':duration<28800000?'later':'overnight';
+// The seed shop's tabs by the time a crop takes with water and care, the time its row shows (23 Oct 2026, the owner: "Dit klopt niet meer
+// nu we tijden aangepast hebben": since one crop a harvest, water and care take a crop to a quarter of its time, so 8 hours became 2 and
+// nothing takes a night). Quick: 5 minutes or less (wheat, lettuce, corn); Minutes: under an hour (barley, green beans, cabbage); Hours: an
+// hour or more. Before, by the growing time alone (16 Oct 2026): Quick 5 minutes or less, Hours under 8 hours, Overnight from 8.
+export const seedTab=cared=>cared<=QUICK_CROP_MS?'quick':cared<3600000?'minutes':'hours';
 // 8 Oct 2026: a built building in the Buildings list says what it is doing in separate chips under its name, which wrap instead of
 // being cut off with … (French, Russian and Czech on a phone, English on a computer): green "4 ready", amber "1 working", plain
 // "2 free" (slots; always with its number, a bare "free" is translated as "gratis") and, while nothing is ready yet, a quiet
@@ -94,7 +97,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function renderSeeds(){
   document.querySelectorAll('[data-seed-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.seedFilter===seedFilter);b.setAttribute('aria-pressed',String(b.dataset.seedFilter===seedFilter));});
-  keepFolds($('crop-catalog'),()=>{$('crop-catalog').innerHTML=seasonSeedRows()+Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([,c])=>seedFilter==='all'||seedTab(c.duration)===seedFilter).map(([key,c])=>{
+  keepFolds($('crop-catalog'),()=>{$('crop-catalog').innerHTML=seasonSeedRows()+Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([key])=>seedFilter==='all'||seedTab(caredDuration(state,key,false,farmNow()))===seedFilter).map(([key,c])=>{
    const paceTitle=c.perennial?`Plant once · First harvest ${seconds(caredDuration(state,key,false,farmNow()))} with water and care\nThen ${seconds(caredDuration(state,key,true,farmNow()))} after each collection.\nOne harvest waits; no offline stockpiling.`:'';
    // One compact row per crop, like the market: picture, name (plus "Regrows" for orchard crops), time and today's price,
    // the seed price on the right. The filter tabs already say how quick a crop is.
@@ -227,12 +230,13 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    const coinsOk=cost!==null&&state.coins>=cost,canBuy=cost!==null&&levelOk&&coinsOk&&hasMaterials;
    // Why it cannot be bought yet, in one short line: the level first, then the coins, then the goods (their chips are red with have/need).
    const why=cost===null||canBuy?'':!levelOk?`Field ${n+1} unlocks at level ${needLevel}. You are level ${levelOf(state)}.`:!coinsOk?`You need ${number(cost-state.coins)} more coins.`:'You need more of the goods in red.';
-   // A plain gold bar (23 Oct 2026, the owner found the little row of 40 field slots ugly).
-   const fieldMap=`<div class="fh-bar" aria-hidden="true"><i style="width:${Math.round(n/MAX_PLOTS*100)}%"></i></div>`;
+   // Your growing space as a small gold card: a picture, how many of the fields are yours in big figures and a thick gold bar (23 Oct
+   // 2026: the owner found the little row of 40 field slots ugly, then the plain bar under a heading "heel karig").
+   const fieldMap=`<div class="fh-space-card"><span class="fh-space-art">${art('seeds')}</span><div class="fh-space-main"><div class="fh-space-head"><strong>Your growing space</strong><span>${n} / ${MAX_PLOTS} fields</span></div><div class="fh-bar" aria-hidden="true"><i style="width:${Math.round(n/MAX_PLOTS*100)}%"></i></div></div></div>`;
    const rule=state.plots.length<12?'While you start out, every new level opens one more field, up to 12. No supplies needed.':`Unlock one field at a time. Each new field needs more coins and a different mix of farm supplies.${needLevel>1?' The last twelve fields are long-term goals: they also ask for a higher farm level.':''}`;
    const nextField=cost===null?`<div class="fh-next is-done"><span class="fh-next-art"><i data-lucide="check" data-line-icon></i></span><div class="fh-next-main"><strong>Your farm is fully expanded.</strong><small>${MAX_PLOTS} fields, twelve crops and room to build a lasting estate.</small></div></div>`
     :`<div class="fh-next ${canBuy?'is-ready':'is-waiting'}"><span class="fh-next-art">${art('farm')}</span><div class="fh-next-main"><strong>Field ${n+1}</strong><div class="ingredients fh-cost"><span class="ingredient ${coinsOk?'':'missing'}">${art('coins')}<span>${number(cost)} coins</span></span>${needLevel>1?`<span class="ingredient fh-level ${levelOk?'':'missing'}">${art('xp')}<span>Level ${needLevel}</span></span>`:''}${itemList(materials,true)}</div>${why?`<small class="fh-why">${why}</small>`:''}</div><button id="expand-fields" class="primary-button" ${canBuy?'':'disabled'}>Buy</button></div>`;
-   content+=`<div class="farmhouse-panel"><section class="fh-space"><div class="fh-space-head"><strong>Your growing space</strong><span>${n} / ${MAX_PLOTS} fields</span></div>${fieldMap}${nextField}${cost===null?'':`<details class="fold fh-rule" data-fold="farmhouse-rule"><summary>How it works</summary><p>${rule}</p></details>`}</section>`;
+   content+=`<div class="farmhouse-panel"><section class="fh-space">${fieldMap}${nextField}${cost===null?'':`<details class="fold fh-rule" data-fold="farmhouse-rule"><summary>How it works</summary><p>${rule}</p></details>`}</section>`;
    content+=`<button ${featureUnlocked(state,'projects')?'':'hidden'} id="farmhouse-estate" class="estate-entry">${art('estate')}<span><strong>Your next chapter</strong><small>Estate projects, passive income and medals</small></span><i data-lucide="chevron-right"></i></button>`;
    // Your fields: one compact row per planted field, ripe ones first, the rest by time left, with a quiet button to remove it (clearPlanting: nothing back).
    const now=farmNow();
@@ -287,7 +291,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
     const made=job.output??recipe.output,first=Object.keys(made)[0];
     content+=`<div class="job-tile ${isReady?'is-ready':'is-working'}${isReady&&room==='full'?' is-full':''}" data-production-job="${job.id}" title="${jobName(job)}"><span class="job-art">${art(first)}<b>${number(made[first])}×</b></span><strong class="job-name">${jobName(job)}</strong>${isReady?`<span class="job-state">${room==='full'?'Full':'Ready'}</span>`:`<span class="job-state" data-job-time="${job.id}">${seconds(job.readyAt-farmNow())} left</span><progress data-job-progress="${job.id}" max="100" value="${Math.max(0,Math.min(100,(farmNow()-job.startedAt)/Math.max(1,job.readyAt-job.startedAt)*100))}" aria-label="Batch ${index+1} production progress"></progress>`}${isReady?`<button data-collect-job="${job.id}" class="primary-button job-collect">Collect</button>`:''}</div>`;
    }
-   content+=`${'<div class="job-tile is-free" aria-hidden="true"><span class="job-art"><i data-lucide="plus"></i></span><span class="job-state">Free</span></div>'.repeat(free)}</div></section>`;
+   // The free slots as one tile with how many (23 Oct 2026, the owner: five empty dashed tiles looked busy).
+   content+=`${free?`<div class="job-tile is-free" aria-hidden="true"><span class="job-art"><i data-lucide="plus"></i></span><span class="job-state">${number(free)} free</span></div>`:''}</div></section>`;
    content+=`<div class="recipe-section-heading"><h3>What shall we make?</h3><span>Ingredients are used when you start.</span></div>`;
    // A guided farm's first batch in a building is ready in 30 seconds (11 Oct 2026, farm-state.js batchDuration): said once above the
    // recipes while the building has never made one, and every card's clock shows the quick time.
@@ -302,7 +307,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
     const [output,...more]=Object.entries(r.output);
     // A missing ingredient already shows in its badge (have/need, red): no second line saying the same (23 Oct 2026, the owner).
     const status=a.locked?`${art('lock','unlock-lock')} Locked · ${recipeUnlockHint(state,rid)}`:a.missing.length?'':a.poor?`You need ${number(a.price)} coins for a batch.`:'';
-    return `<article class="recipe-card ${a.canStart?'is-ready':'is-waiting'}" data-recipe-card="${rid}"><span class="recipe-art">${art(output[0])}<b class="recipe-yield">${number(output[1]*count)}×</b></span><div class="recipe-main"><h4>${r.name}</h4><div class="recipe-meta"><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span><p class="recipe-value">${art('coins')}<strong>${signed(value.added)}</strong> profit</p><span class="recipe-xp">${art('xp')}+${r.xp} XP</span></div></div><div class="ingredients recipe-needs">${costList(rid)}</div>${more.length?`<div class="recipe-output">${itemList(Object.fromEntries(more))}</div>`:''}${status?`<p class="recipe-status">${status}</p>`:''}<div class="recipe-act"><button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button>${a.slots>1&&a.canStart?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div>${a.maxCount>2?`<button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}" title="${a.maxCount} available">Max</button>`:''}</div>`:''}</div></article>`;
+    return `<article class="recipe-card ${a.canStart?'is-ready':'is-waiting'}" data-recipe-card="${rid}"><span class="recipe-art">${art(output[0])}</span><div class="recipe-main"><h4>${r.name}</h4><div class="recipe-meta"><span><i data-lucide="clock-3"></i> ${seconds(duration)}</span><p class="recipe-value">${art('coins')}<strong>${signed(value.added)}</strong> profit</p><span class="recipe-xp">${art('xp')}+${r.xp} XP</span></div></div><div class="recipe-trade"><div class="ingredients recipe-needs">${costList(rid,count)}</div><span class="recipe-to" aria-hidden="true">→</span><div class="recipe-output">${itemList(Object.fromEntries([output,...more].map(([k,n])=>[k,n*count])))}</div></div>${status?`<p class="recipe-status">${status}</p>`:''}<div class="recipe-act"><button class="small-button start-recipe" data-recipe="${rid}" ${a.canStart?'':'disabled'}>Start batch<i data-lucide="play"></i></button>${a.slots>1&&a.canStart?`<div class="batch-picker"><span id="batch-label-${rid}">Batches</span><div class="batch-stepper" role="group" aria-labelledby="batch-label-${rid}"><button type="button" data-batch-step="-1" data-for-recipe="${rid}" aria-label="Fewer batches of ${r.name}" ${count<=1||!a.maxCount?'disabled':''}>−</button><output data-batch-count="${rid}" data-max="${a.maxCount}" aria-live="polite" aria-label="Number of batches for ${r.name}">${count}</output><button type="button" data-batch-step="1" data-for-recipe="${rid}" aria-label="More batches of ${r.name}" ${count>=a.maxCount?'disabled':''}>+</button></div>${a.maxCount>2?`<button type="button" class="batch-max" data-batch-step="max" data-for-recipe="${rid}" aria-label="Start the most batches of ${r.name}" title="${a.maxCount} available">Max</button>`:''}</div>`:''}</div></article>`;
    };
    const recipeEntries=buildingRecipes(state,key).map(id=>[id,recipeFor(state,id)]);
    // Every good any other building makes, in one huge batch — that is the Factory's whole point, but it also
@@ -351,8 +356,10 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   const recipeList=$('building-content').querySelector('.recipe-list');if(recipeList)foldLocked(recipeList,'[data-recipe-card]',card=>recipeAvailability(state,card.dataset.recipeCard).locked,'Coming later','recipes-locked');});
   $('building-content').querySelectorAll('[data-factory-filter]').forEach(b=>b.addEventListener('click',()=>{factoryFilter=b.dataset.factoryFilter;renderBuilding();}));
   $('building-content').querySelectorAll('[data-factory-group]').forEach(g=>g.addEventListener('toggle',()=>{if(g.open)openFactoryGroups.add(g.dataset.factoryGroup);else openFactoryGroups.delete(g.dataset.factoryGroup);}));
-  $('construct-building')?.addEventListener('click',()=>mutate(async()=>{await runAction({type:'construct',building:key});return `${b.name} is open. Start your first batch!`;}));
-  $('building-content').querySelector('[data-village-build]')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'village_build',place:key});return r.place==='villagefields'?`The ${r.name} are built! +${number(r.xp)} XP.`:`The ${r.name} is built! +${number(r.xp)} XP.${r.place==='pier'?' The town boat waits at the pier.':''}`;}));
+  // Confetti from the button once it is bought (23 Oct 2026, the owner: "Doe confetti als je een nieuw gebouw opent en koopt"); where the
+  // button was, read before the window draws itself again.
+  $('construct-building')?.addEventListener('click',e=>{const at=e.currentTarget.getBoundingClientRect();mutate(async()=>{await runAction({type:'construct',building:key});confettiFrom(at);return `${b.name} is open. Start your first batch!`;});});
+  $('building-content').querySelector('[data-village-build]')?.addEventListener('click',e=>{const at=e.currentTarget.getBoundingClientRect();mutate(async()=>{const r=await runAction({type:'village_build',place:key});confettiFrom(at);return r.place==='villagefields'?`The ${r.name} are built! +${number(r.xp)} XP.`:`The ${r.name} is built! +${number(r.xp)} XP.${r.place==='pier'?' The town boat waits at the pier.':''}`;});});
   $('open-windmill')?.addEventListener('click',()=>openBuilding('windmill'));
   $('building-content').querySelector('[data-open-warehouse]')?.addEventListener('click',()=>onWarehouse?.());
   // "Remove all" and "Remove all but regrowing": one save for every field, after typing ALL. The fields go as they were shown; if one
@@ -398,12 +405,11 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    card.querySelector('[data-batch-step="1"]').disabled=mutating||count>=max;
    const most=card.querySelector('[data-batch-step="max"]');if(most)most.disabled=mutating||count>=max;
    const multiply=items=>Object.fromEntries(Object.entries(items).map(([k,n])=>[k,n*count]));
-   // The card shows the whole order: the ingredients, how many it makes (on its picture, and any second good after the ingredients) and
-   // the XP, all times the batches.
-   const [first,...more]=Object.entries(multiply(r.output));
+   // The card shows the whole order: what goes in, an arrow and what comes out (23 Oct 2026, the owner: "Eerst zag je hoeveel je kreeg en
+   // hoeveel het kostte, nu zie je alleen hoeveel het kost", "heel verwarrend": no longer only a count on the picture), and the XP, all
+   // times the batches.
    card.querySelector('.recipe-needs').innerHTML=costList(id,count);
-   card.querySelector('.recipe-yield').textContent=`${number(first[1])}×`;
-   if(more.length)card.querySelector('.recipe-output').innerHTML=itemList(Object.fromEntries(more));
+   card.querySelector('.recipe-output').innerHTML=itemList(multiply(r.output));
    card.querySelector('.recipe-xp').innerHTML=`${art('xp')}+${r.xp*count} XP`;
    const value=recipeValue(id,farmNow(),state);
    // A recipe that costs coins (the Village Fields' sowing) shows its profit too: recipeValue counts the coins in, and the coins are one

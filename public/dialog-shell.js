@@ -18,9 +18,26 @@ function measure(dialog){
  if(h>0)dialog.style.setProperty('--head-h',`${h}px`);
 }
 const sizes=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{for(const e of entries){const d=e.target.closest?.('dialog');if(d)measure(d);}}):null;
+// The ⓘ beside Close (23 Oct 2026, the owner: the windows too busy; public/calm-windows.css): a window's rules (how it works, where flour
+// comes from) wait behind it. A press shows them, a second hides them, and each time the window opens they start hidden. Its sheet hides
+// it in a window that has no such line. Its name is the words the game already has ("How it works"), so the page translates it.
+export function hintsButton(dialog,doc=dialog?.ownerDocument??globalThis.document){
+ const close=dialog?.querySelector?.('.dialog-heading .close-dialog');
+ if(!close)return null;
+ let button=close.parentElement.querySelector(':scope>.hints-button');
+ if(!button){
+  button=doc.createElement('button');button.type='button';button.className='hints-button';button.textContent='i';
+  button.setAttribute('aria-label','How it works');
+  button.addEventListener('click',()=>{const on=dialog.classList.toggle('show-hints');button.setAttribute('aria-pressed',String(on));});
+  close.before(button);
+ }
+ dialog.classList.remove('show-hints');button.setAttribute('aria-pressed','false');
+ return button;
+}
 function watch(dialog){
  if(!dialog?.matches?.(SHELL))return;
  if(!dialog.open){dialog.removeAttribute('data-scrolled');return;}
+ try{hintsButton(dialog);}catch{}
  measure(dialog);
  const head=dialog.querySelector(':scope>.dialog-top,:scope>.dialog-heading');
  if(head&&sizes&&!head.dataset.watched){head.dataset.watched='';sizes.observe(head);}

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,xpForLevel,applyFarmAction as act,CROPS,cropDuration,formatDuration,POND_OPEN} from '../public/farm-state.js';
+import {createFarm,xpForLevel,applyFarmAction as act,CROPS,cropDuration,caredDuration,formatDuration,POND_OPEN} from '../public/farm-state.js';
 import {cropChoiceText,waitTip,waitTipText,createWaitTip,quickCrop,quickestCrop,QUICK_CROP_MS,LONG_WAIT_LEVEL,LONG_WAIT_MS,WAIT_TIP_KEY,WAIT_TIP_SHOW_MS} from '../public/wait-tip.js';
 import {toastParts} from '../public/toast-ui.js';
 import {seedTab} from '../public/economy-ui.js';
@@ -148,18 +148,23 @@ test('2. game.js: the note after a planting tap and after a plant sweep, with th
  assert.match(read('public/farm.html'),/<link rel="modulepreload" href="\/wait-tip\.js">/);
 });
 
-test('3. the seed shop\'s Quick tab: 5 minutes or less (wheat and lettuce); Hours from above 5 minutes to 8 hours',()=>{
- const tab=tab=>Object.keys(CROPS).filter(k=>seedTab(CROPS[k].duration)===tab).sort();
- assert.deepEqual(tab('quick'),['lettuce','wheat']);
- for(const key of ['corn','barley','cabbage','greenbeans','cauliflower'])assert.equal(seedTab(CROPS[key].duration),'later',key);
- assert.equal(seedTab(QUICK_CROP_MS),'quick');assert.equal(seedTab(QUICK_CROP_MS+1),'later');
- assert.equal(seedTab(28800000-1),'later');assert.equal(seedTab(28800000),'overnight');assert.equal(seedTab(CROPS.pumpkin.duration),'overnight');
+// 23 Oct 2026 (the owner: "Dit klopt niet meer nu we tijden aangepast hebben"): the tabs follow the time with water and care, the time
+// each row shows, a quarter of the growing time since one crop a harvest. Overnight is gone: with care nothing takes a night.
+test('3. the seed shop\'s tabs by the time with water and care: Quick 5 minutes or less, Minutes under an hour, Hours from an hour',()=>{
+ // A farm from two days ago (its beginner boost over): water and care take a crop to a quarter of its time.
+ const s=farmer({level:40,at:now}),tab=tab=>Object.keys(CROPS).filter(k=>seedTab(caredDuration(s,k,false,later))===tab).sort();
+ assert.deepEqual(tab('quick'),['corn','lettuce','wheat']);
+ assert.deepEqual(tab('minutes'),['barley','cabbage','greenbeans']);
+ for(const key of ['cauliflower','polebeans','pumpkin','sunflower'])assert.equal(seedTab(caredDuration(s,key,false,later)),'hours',key);
+ assert.equal(seedTab(QUICK_CROP_MS),'quick');assert.equal(seedTab(QUICK_CROP_MS+1),'minutes');
+ assert.equal(seedTab(3600000-1),'minutes');assert.equal(seedTab(3600000),'hours');
  const ui=read('public/economy-ui.js');
- assert.match(ui,/\.filter\(\(\[,c\]\)=>seedFilter==='all'\|\|seedTab\(c\.duration\)===seedFilter\)/,'the list follows seedTab');
+ assert.match(ui,/\.filter\(\(\[key\]\)=>seedFilter==='all'\|\|seedTab\(caredDuration\(state,key,false,farmNow\(\)\)\)===seedFilter\)/,'the list follows seedTab, by the time the row shows');
  assert.doesNotMatch(ui,/duration<=900000|duration>900000/,'no 15-minute boundary left');
  // The tabs seedTab names are the dialog's own, and no text about the tabs speaks of 15 minutes.
  const html=read('public/farm.html'),dialog=html.slice(html.indexOf('<dialog id="seed-dialog"'),html.indexOf('</dialog>',html.indexOf('<dialog id="seed-dialog"')));
- for(const key of ['quick','later','overnight'])assert.match(dialog,new RegExp(`data-seed-filter="${key}"`));
+ for(const key of ['quick','minutes','hours'])assert.match(dialog,new RegExp(`data-seed-filter="${key}"`));
+ assert.doesNotMatch(dialog,/data-seed-filter="(later|overnight)"/);
  assert.match(dialog,/<p>Quick crops for active play, longer ones for when you are away\.<\/p>/);
  assert.doesNotMatch(dialog,/15 ?m(in|inutes)?\b/);
  assert.match(read('public/wiki-content.js'),/Quick crops are good while you play; longer ones grow while you are away\./);

@@ -119,4 +119,4 @@
 .sweep-ghost{width:56px;height:56px;filter:drop-shadow(0 0 5px #fffbea) drop-shadow(0 3px 3px #3d2f1a55)}
 @media(prefers-reduced-motion:reduce){.sweep-tool.is-cutting>*{animation:none}}
 /* The chosen board: raised cream with a gold ring instead of a dark chip (18 Oct 2026); the drawer around the chips: retention.css. */
-#leaderboard-dialog .rank-chip[aria-pressed=true]{background:#fff8e1;border-color:#d9c7a4;color:#453e28;box-shadow:0 0 0 2px #e5b64a,0 3px 0 #e2d3b3}
+#leaderboard-dialog .rank-chip[aria-pressed=true]{background:#fff8e1;border-color:#d9c7a4;color:#453e28;box-shadow:0 0 0 2px #e5b64a,0 2px 0 #e2d3b3}

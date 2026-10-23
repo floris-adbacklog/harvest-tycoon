@@ -17,7 +17,7 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-view button{font-family:inherit}
 .pond-top{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));inset-inline:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
 .pond-top>*{pointer-events:auto}
-.pond-back,.pond-book-open{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:6px 14px;background:var(--btn-second);border:1px solid var(--btn-second-line);border-radius:var(--btn-radius);box-shadow:0 3px 0 var(--btn-second-edge);color:var(--btn-second-text);font-weight:700;font-size:15px;cursor:pointer}
+.pond-back,.pond-book-open{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:6px 14px;background:var(--btn-second);border:1px solid var(--btn-second-line);border-radius:var(--btn-radius);box-shadow:0 2px 0 var(--btn-second-edge);color:var(--btn-second-text);font-weight:700;font-size:15px;cursor:pointer}
 .pond-back>span:first-child{font-size:22px;line-height:1;margin-top:-2px}
 .pond-back:hover,.pond-book-open:hover{background:var(--btn-second-hover)}
 .pond-book-open .game-art{width:28px;height:28px;object-fit:contain;margin:-4px 0}
@@ -42,7 +42,7 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 /* While reeling the bar stands beside the button: the line of text moves up above it. */
 .pond-view[data-phase="reel"] .pond-controls{height:calc(min(158px,32vh) + 6px)}
 .pond-controls>*{pointer-events:auto}
-.pond-act{position:relative;width:88px;height:88px;margin-bottom:6px;border-radius:50%;background:var(--btn-main);border:1px solid var(--btn-main-line);box-shadow:0 4px 0 var(--btn-main-edge);color:var(--btn-main-text);font-weight:700;font-size:16px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .08s,background .12s}
+.pond-act{position:relative;width:88px;height:88px;margin-bottom:6px;border-radius:50%;background:var(--btn-main);border:1px solid var(--btn-main-line);box-shadow:0 2px 0 var(--btn-main-edge);color:var(--btn-main-text);font-weight:700;font-size:16px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .08s,background .12s}
 .pond-act:active{transform:translateY(2px);box-shadow:0 2px 0 var(--btn-main-edge)}
 .pond-act:hover:not(:disabled){background:var(--btn-main-hover)}
 .pond-act:disabled{background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;cursor:default}
@@ -51,9 +51,9 @@ body.fishing #game::after{display:none}   /* the cream panel behind a phone's to
 .pond-ring{position:absolute;inset:-9px;width:calc(100% + 18px);height:calc(100% + 18px);transform:rotate(-90deg);pointer-events:none}
 .pond-ring circle{fill:none;stroke:#fffdf5;stroke-width:6;opacity:.85}
 .pond-ring .pond-ring-fill{stroke:var(--yellow);opacity:1;stroke-dasharray:100;stroke-dashoffset:100;stroke-linecap:round}
-.pond-view[data-phase="bite"] .pond-act{animation:pond-strike .32s ease-in-out infinite alternate;box-shadow:0 4px 0 var(--btn-main-edge),0 0 0 8px #f3c35399}
+.pond-view[data-phase="bite"] .pond-act{animation:pond-strike .32s ease-in-out infinite alternate;box-shadow:0 2px 0 var(--btn-main-edge),0 0 0 8px #f3c35399}
 @keyframes pond-strike{to{transform:scale(1.08)}}
-.pond-view[data-phase="cast"] .pond-act,.pond-view[data-phase="wait"] .pond-act{background:var(--btn-second);border-color:var(--btn-second-line);box-shadow:0 4px 0 var(--btn-second-edge);color:var(--btn-second-text)}
+.pond-view[data-phase="cast"] .pond-act,.pond-view[data-phase="wait"] .pond-act{background:var(--btn-second);border-color:var(--btn-second-line);box-shadow:0 2px 0 var(--btn-second-edge);color:var(--btn-second-text)}
 .pond-bar{position:absolute;bottom:0;left:calc(50% - 100px);width:34px;height:min(158px,32vh);min-height:104px;border-radius:17px;background:linear-gradient(var(--btn-diamond),var(--btn-diamond-hover));border:3px solid var(--cream);box-shadow:var(--shadow);overflow:hidden}
 .pond-zone{position:absolute;left:0;right:0;background:#3f8a4a8c;border-block:2px solid var(--btn-main);border-radius:6px}
 .pond-zone.is-out{background:#b4513f59;border-color:var(--btn-red)}
