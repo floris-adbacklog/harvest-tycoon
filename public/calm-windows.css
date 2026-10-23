@@ -5,9 +5,9 @@
       ready keeps a card: a green edge and a light-green fill. The seed you have chosen keeps its gold.
    2. No pills for plain facts: a level, a count, a reward, an ingredient is its picture and its number in a line of text, in its own
       colour (diamonds and XP blue, a missing ingredient red). Only "ready" stays a green pill.
-   3. A window's rules (how it works) wait behind its ⓘ button (public/dialog-shell.js), next to Close. A building's window keeps its
-      lines in view, as it was before 23 Oct (the owner: "dezelfde layout en informatie"; its own layout is back in economy-ui.js).
-   5. A recipe's time and profit read first, at 14 px; its XP and ingredients come after, smaller (never under 12 px).
+   3. A window's rules (how it works) wait behind its ⓘ button (public/dialog-shell.js), next to Close.
+   A building's production window is left out of all this: it is as it was before 23 Oct 2026, its look too (the owner, that evening:
+   "vroeger was nog steeds beter", "ook niet groen"); only what you cannot make there is greyed out (retention.css).
    The edges under buttons are lighter everywhere (buttons.css, hud.css: the owner, 23 Oct 2026, "Al die shadows maken de dialogen/game
    design heel druk", then "nu is het te plain. randschaduwen is niet erg, maar minder heftig"). */
 :root{--calm-line:#ebe3d7;--calm-ready-line:#8cc06a;--calm-ready-fill:#eef7e3}
@@ -20,12 +20,9 @@
 #seed-dialog .seed-row,
 #today-content .daily-card,
 #today-content .daily-order,
-#building-dialog #building-content .recipe-card,
 #estate-content .stall-upgrade{
  border:0;border-bottom:1px solid var(--calm-line);border-radius:0;background:none;box-shadow:none;padding-inline:2px;transform:none
 }
-#building-dialog #building-content .recipe-card{padding-block:12px}
-#building-dialog #building-content .recipe-card.is-waiting{background:none}
 #buildings-dialog #building-catalog>.building-card:active{transform:none;box-shadow:none;background:#f7f1e7}
 #seed-dialog .seed-row:hover,#buildings-dialog #building-catalog>.building-card:hover{background:#f9f4eb}
 /* What is ready (or chosen) keeps a card, so it stands out from the rows. The card reaches 10 px past the row on each side, so its
@@ -34,8 +31,7 @@
 #buildings-dialog #building-catalog>.building-card:has(.building-status.ready),
 #task-list .quest-item.is-ready,
 #today-content .daily-card.is-ready,
-#today-content .daily-order.is-ready,
-#building-dialog #building-content .recipe-card.is-ready{
+#today-content .daily-order.is-ready{
  margin-block:6px;margin-inline:-10px;padding-inline:11px;border:1px solid var(--calm-ready-line);border-radius:16px;background:var(--calm-ready-fill);box-shadow:0 2px 0 #b9d9a0
 }
 #seed-dialog .seed-row.selected{width:calc(100% + 20px);margin-inline:-10px;padding-inline:11px;border:1px solid #d9c28d;border-radius:16px;background:#fff6dc;box-shadow:none}
@@ -59,14 +55,8 @@
 #journal-content .roadmap-level{padding:0;background:none}
 #boost-dialog .boost-detail:not([data-state=ready]){padding:0;background:none}
 /* Ingredients: "0/4 Flour" with its picture, red while it is short. */
-#building-dialog #building-content .recipe-flow .ingredient,#today-content .daily-order .ingredient{padding:0;border:0;border-radius:0;background:none;box-shadow:none}
-#building-dialog #building-content .recipe-flow{column-gap:12px}#building-dialog #building-content .recipe-flow .ingredients{column-gap:12px}
-#building-dialog #building-content .recipe-flow .ingredient.missing,#today-content .daily-order .ingredient.missing{color:#a3473a}
-
-/* ---- 5. A recipe: time and profit first ---- */
-#building-dialog #building-content .recipe-meta{font-size:14px;font-weight:700;color:#5b513f}
-#building-dialog #building-content .recipe-value{font-size:14px}
-#building-dialog #building-content .recipe-xp{font-size:12px;font-weight:700}
+#today-content .daily-order .ingredient{padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#today-content .daily-order .ingredient.missing{color:#a3473a}
 
 /* ---- 3. A window's rules wait behind its ⓘ ---- */
 /* The lines that explain (not what is going on now): hidden until the ⓘ is pressed. Keep this list and the one under it the same.

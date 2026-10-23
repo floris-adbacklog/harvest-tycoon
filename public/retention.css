@@ -639,6 +639,11 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
    the result after them, and the batch stepper next to the start button. */
 #building-content .recipe-card{padding:12px;border-radius:18px}
 #building-content .recipe-card.is-ready{border-color:#cfe0c3;background:#f8fbf3}
+/* A recipe you cannot make now is greyed out: a light grey card, its picture faded, its words quieter (23 Oct 2026, the owner: "ik vond
+   greyed out beter van wat je niet kan maken"). */
+#building-content .recipe-card:not(.is-ready){background:#f3efe8}
+#building-content .recipe-card:not(.is-ready) .recipe-art>.game-art{filter:saturate(.45);opacity:.7}
+#building-content .recipe-card:not(.is-ready) :is(.recipe-title,.recipe-flow){opacity:.72}
 #building-content .recipe-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 #building-content .recipe-art{flex:0 0 48px;display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#f1e9dc}
 #building-content .recipe-art>.game-art{flex:none;width:40px;height:40px;object-fit:contain}
@@ -1658,7 +1663,7 @@ html[data-portal] .feedback-copy{display:none!important}
 #journal-content .journal-first>.collection-picture{width:46px;height:46px;margin-bottom:2px;filter:none;opacity:1}
 #journal-content .journal-first strong{color:#5c4a2e}
 /* What you can do now is filled light green, not only edged (23 Oct 2026, the owner: "het helemaal lichtgroen maken valt meer op"). */
-.event-collect,.event-hero.is-done,#building-dialog #building-content .job-tile.is-ready,#building-dialog #building-content .recipe-card.is-ready,#building-dialog #building-content .fh-next.is-ready,#building-dialog #building-content .farmhouse-panel .field-row.is-ready,#task-list .quest-item.is-ready{background:#eef7e3}
+.event-collect,.event-hero.is-done,#building-dialog #building-content .job-tile.is-ready,#building-dialog #building-content .fh-next.is-ready,#building-dialog #building-content .farmhouse-panel .field-row.is-ready,#task-list .quest-item.is-ready{background:#eef7e3}
 
 /* The leaderboard, cleaner (23 Oct 2026, the owner: "Profile en Leaderboard verbeteren UX/UI, houd het clean"; as the chores, family and
    farmhouse windows): the search and Rank by on one row (src/ui.js .leaderboard-tools; the search's own parts take the row's places, its

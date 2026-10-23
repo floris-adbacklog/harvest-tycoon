@@ -48,12 +48,14 @@ test('the ⓘ beside Close: added once, its name the game\'s own words, a press 
  assert.ok('How it works' in JSON.parse(read('i18n/catalog.json')),'translated already');
 });
 
-test('a building\'s window is as it was before the redesign, in the newer look: a recipe\'s time and profit first, its ingredients as text',()=>{
- const ui=read('public/economy-ui.js');
+test('a building\'s window is as it was before the redesign, its look too, with what you cannot make greyed out',()=>{
+ const ui=read('public/economy-ui.js'),retention=read('public/retention.css');
  assert.doesNotMatch(ui,/\.repeat\(free\)|job-tile/);assert.match(ui,/<div class="job-panel /);
- assert.match(css,/#building-dialog #building-content \.recipe-meta\{font-size:14px;font-weight:700;/);
- assert.match(css,/#building-dialog #building-content \.recipe-xp\{font-size:12px;/);
- assert.match(css,/#building-dialog #building-content \.recipe-flow \.ingredient,#today-content \.daily-order \.ingredient\{padding:0;border:0;/);
+ // The calm sheet leaves the production window alone (the owner, 23 Oct 2026: "vroeger was nog steeds beter", "ook niet groen").
+ assert.doesNotMatch(css,/recipe-card|recipe-flow|recipe-meta|recipe-xp/);
+ assert.doesNotMatch(retention,/#building-dialog #building-content \.recipe-card\.is-ready,/,'not in the light-green ready rule');
+ assert.match(retention,/#building-content \.recipe-card\.is-ready\{border-color:#cfe0c3;background:#f8fbf3\}/,'its own quiet ready look, as before');
+ assert.match(retention,/#building-content \.recipe-card:not\(\.is-ready\)\{background:#f3efe8\}/,'what you cannot make is greyed out');
  // On a computer two recipes side by side again (desktop-hud.css).
  assert.match(read('public/desktop-hud.css'),/:is\(#crop-catalog,#building-dialog \.recipe-list,#today-content \.daily-list\)\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
