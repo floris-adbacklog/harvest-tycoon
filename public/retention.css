@@ -734,12 +734,12 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #journal-content .journal-next>span{margin-inline-end:2px}
 #journal-content .journal-next>b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border:1px solid #ead9ad;border-radius:999px;background:#fffaf0;font-size:13px;color:#5d4a22}
 #journal-content .journal-next .game-art{flex:none;width:18px;height:18px}
-#journal-content .journal-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 20px}
-#journal-content .journal-tiles>div{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:10px 6px;border:1px solid #e8ded2;border-radius:14px;background:#f6f0e8;text-align:center}
-#journal-content .journal-tiles .game-art{flex:none;width:30px;height:30px}
-#journal-content .journal-tiles p{display:grid;min-width:0;margin:0}
-#journal-content .journal-tiles strong{font:600 20px/1.2 'Outfit',sans-serif;color:#5c4d33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#journal-content .journal-tiles span{font-size:12px;line-height:1.3;color:#857663}
+/* The four lifetime totals as one row of small chips (23 Oct 2026): the number beside its picture, the name under it. */
+#journal-content .journal-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 18px;padding:0;list-style:none}
+#journal-content .journal-stats>li{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:2px 6px;min-width:0;padding:7px 10px;border:1px solid #e8ded2;border-radius:14px;background:#fffdf4}
+#journal-content .journal-stats .game-art{flex:none;width:22px;height:22px}
+#journal-content .journal-stats strong{min-width:0;font:700 17px/1.2 'Outfit',sans-serif;color:#5c4d33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+#journal-content .journal-stats>li>span:last-child{grid-column:1/-1;font-size:12px;line-height:1.25;color:#857663;overflow-wrap:break-word;hyphens:auto}
 #journal-content .journal-collection-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:0 0 10px}
 #journal-content .journal-collection-head h3{font:600 20px 'Outfit',sans-serif;color:#453e28}
 #journal-content .journal-tabs{flex:0 1 260px;margin:0}
@@ -765,9 +765,10 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
  #journal-content .journal-medallion>b{font-size:25px;line-height:27px}
  #journal-content .journal-hero-top{flex-wrap:wrap;gap:0 8px}
  #journal-content .journal-hero-top strong{font-size:16px}
- #journal-content .journal-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
- #journal-content .journal-tiles>div{flex-direction:row;gap:9px;padding:9px 10px;text-align:start}
- #journal-content .journal-tiles strong{font-size:18px}
+ #journal-content .journal-stats{gap:5px;margin-bottom:14px}
+ #journal-content .journal-stats>li{gap:2px 4px;padding:6px 7px;border-radius:12px}
+ #journal-content .journal-stats .game-art{width:20px;height:20px}
+ #journal-content .journal-stats strong{font-size:15px}
  #journal-content .journal-tabs{flex-basis:100%}
  #journal-content .collection-grid{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
  #journal-content .collection-crop{padding:7px 3px 8px;border-radius:12px}
@@ -969,37 +970,42 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
  #today-content .quest-art>.game-art,#today-content .order-icon>.game-art{width:31px;height:31px}
 }
 
-/* Daily streak: a streak line, seven days that always fit on one row, today's gift as chips beside Collect. */
-#daily-gift .streak-panel{padding:14px;margin-bottom:14px;border-radius:18px}
+/* Daily streak (23 Oct 2026, the owner: bigger and readable on a phone). The streak and the best beside the flame; the week as seven
+   tiles you can read: a collected day is its green check, today has a gold edge (to collect) or a green one (collected), and once
+   today is collected tomorrow has a dashed gold edge. Tomorrow's gift, or today's Collect, on its own card; the rule as one line. */
+#daily-gift .streak-panel{padding:14px 14px 12px;margin-bottom:14px;border:1px solid #e8d7a8;border-radius:18px}
 #daily-gift .streak-head{display:flex;align-items:center;gap:12px;margin:0 0 12px}
-#daily-gift .streak-flame{flex:none;width:40px;height:40px}
+#daily-gift .streak-flame{flex:none;width:46px;height:46px}
 #daily-gift .streak-head>div{flex:1;min-width:0}
-#daily-gift .streak-head h3{font:600 19px/1.2 'Outfit',sans-serif;letter-spacing:0;color:#4a3c1c}
-#daily-gift .streak-head p{margin:2px 0 0;font-size:12px;color:#806e5f}
-#daily-gift .streak-count{flex:none;display:grid;place-items:center;min-width:40px;height:40px;padding:0 8px;border-radius:12px;background:#f3dcb4;font:600 22px 'Outfit',sans-serif;color:#a0621f}
-#daily-gift .streak-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:0 0 12px;padding:0;list-style:none;overflow:visible}
-#daily-gift .streak-day{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;min-height:0;padding:7px 2px;border:1px solid #e3d9bd;border-radius:11px;background:#fffaf0b3;color:#8f7a4c}
-#daily-gift .streak-day small{font-size:12px;color:#8f7f6f;white-space:nowrap}
-#daily-gift .streak-day .game-art{width:22px;height:22px}
-#daily-gift .streak-day svg{width:22px;height:22px;padding:3px;border-radius:50%;background:#7c9a5c;color:#fff;stroke-width:3}
-#daily-gift .streak-day b{font:600 15px 'Outfit',sans-serif;color:#2f6a80}
-#daily-gift .streak-day.current{border-color:#c59c38;background:#f9dfa0;box-shadow:0 0 0 2px #e3bb5740}
-#daily-gift .streak-day.collected{border-color:#d5dfc6;background:#eef3e5}
-#daily-gift .streak-day.collected b{color:#5d7a4a}
+#daily-gift .streak-head h3{margin:0;font:700 22px/1.15 'Outfit',sans-serif;letter-spacing:0;color:#4a3c1c}
+#daily-gift .streak-head p{margin:2px 0 0;font-size:13px;color:#806e5f}
+#daily-gift .streak-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:0 0 12px;padding:4px 0 0;list-style:none;overflow:visible}
+#daily-gift .streak-day{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;min-width:0;height:auto;min-height:88px;padding:10px 2px 9px;border:1px solid #ddd2c7;border-radius:14px;background:#fffdf4;color:#8f7a4c;box-shadow:0 2px 0 #ece3d2}
+#daily-gift .streak-day small{font-size:12px;font-weight:700;color:#8a7a5c;white-space:nowrap}
+#daily-gift .streak-day .game-art{width:28px;height:28px}
+#daily-gift .streak-day b{font:700 16px/1 'Outfit',sans-serif;color:#2f6a80;font-variant-numeric:tabular-nums}
+#daily-gift .streak-day svg{box-sizing:border-box;width:30px;height:30px;padding:5px;border-radius:50%;background:#8cc06a;color:#fff;stroke-width:3.5}
+#daily-gift .streak-day.collected{border-color:#cfe0c0;background:#f3f8ec;box-shadow:0 2px 0 #dcebd0}
+#daily-gift .streak-day.collected small{color:#5d7a4a}
+#daily-gift .streak-day.collected b{display:none}
+#daily-gift .streak-day.current{border:2px solid #d9a53c;background:#fff1c4;box-shadow:0 3px 0 #e6c470}
+#daily-gift .streak-day.current small,#daily-gift .streak-day.is-next small{color:#7a5512}
+#daily-gift .streak-day.collected.is-today{border:2px solid #8cc06a;box-shadow:0 3px 0 #b9d9a0}
+#daily-gift .streak-day.is-next{border:2px dashed #d9a53c;background:#fffaf0;box-shadow:none}
 /* Days 3, 5 and 7 of every streak week bring a boost: a small badge in the corner of the day, and a chip with today's gift. */
-#daily-gift .streak-day{position:relative}
-#daily-gift .streak-boost{position:absolute;top:-7px;inset-inline-end:-5px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #cfe0c0;border-radius:50%;background:#f3f8ec;box-shadow:0 1px 3px #3c2f1426}
+#daily-gift .streak-boost{position:absolute;top:-9px;inset-inline-end:-6px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #cfe0c0;border-radius:50%;background:#f3f8ec;box-shadow:0 1px 3px #3c2f1426}
 #daily-gift .streak-boost .game-art{width:17px;height:17px}
 /* Plan F (13 Oct 2026, proposal 5): on a phone a day is about 43 px wide and the corner badge covered the 3, 5 and 7 of "Day 3": there it
    sits on the top edge, in the middle, above the day's name. */
 @media(max-width:560px){#daily-gift .streak-day{padding-top:12px}#daily-gift .streak-boost{top:-10px;inset-inline-end:auto;left:50%;width:20px;height:20px;transform:translateX(-50%)}#daily-gift .streak-boost .game-art{width:14px;height:14px}}
-#daily-gift .streak-claim{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:#fffaf0}
-#daily-gift .streak-claim>span:not(.streak-done){flex:1;min-width:0;display:grid;gap:5px}
-#daily-gift .streak-claim strong{font:600 15px 'Outfit',sans-serif;color:#4a3c1c}
-#daily-gift #checkin-gift{flex:none;width:auto;min-height:42px;padding:8px 18px}
-#daily-gift .streak-done{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#5d7a4a}
+#daily-gift .streak-claim{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #ecd08a;border-radius:16px;background:#fff6dc}
+#daily-gift .streak-panel.is-claimed .streak-claim{border-color:#ddd2c7;background:#fffdf4}
+#daily-gift .streak-claim>span:not(.streak-done){flex:1;min-width:0;display:grid;gap:6px}
+#daily-gift .streak-claim strong{font:700 16px 'Outfit',sans-serif;color:#4a3c1c}
+#daily-gift #checkin-gift{flex:none;width:auto;min-height:44px;padding:8px 22px}
+#daily-gift .streak-done{flex:none;align-self:flex-start;display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 6px;border-radius:999px;background:#e6f2dc;font-size:13px;font-weight:700;color:#42632e;white-space:nowrap}
 #daily-gift .streak-done svg{width:16px;height:16px}
-#daily-gift .gift-note{margin-top:8px;font-size:12px}
+#daily-gift .gift-note{display:block;margin:10px 4px 0;font-size:13px;line-height:1.45;color:#74654f;text-align:center}
 /* Collected: one tap to be reminded when tomorrow's gift is ready (only where notifications can work and are off). */
 #daily-gift .gift-remind{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px;padding:8px 12px;border:1px dashed #d8c48f;border-radius:12px;background:#fffaf0;font:600 13px 'DM Sans',sans-serif;color:#7a5d1e;cursor:pointer}
 #daily-gift .gift-remind:hover{background:#fff3d6}
@@ -1007,11 +1013,9 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 /* A streak of 3+ not collected in the evening: a flame on the Today button instead of the "!". */
 #today-dot.is-streak{display:grid;place-items:center;padding:0;background:#fff3d6;border-color:#e3b447}
 #today-dot.is-streak .today-flame{width:15px;height:15px}
-#daily-gift .streak-panel.is-claimed .streak-claim strong{color:#5d7a4a}
 @media(max-width:360px){
  #daily-gift .streak-days{gap:3px}
- #daily-gift .streak-day small{font-size:12px}
- #daily-gift .streak-day b{font-size:12px}
+ #daily-gift .streak-day b{font-size:14px}
 }
 
 /* Silo research: one line on what it does, the bonus you have now, the next level (of 5) as gains + price. */
@@ -1538,15 +1542,8 @@ html[data-portal] .feedback-copy{display:none!important}
 #welcome-back-dialog .welcome-family{flex-wrap:wrap}
 #welcome-back-dialog .welcome-family .welcome-gift-copy{flex:1 1 150px}
 #welcome-back-dialog .welcome-family .small-button{margin-inline-start:auto}
-/* Today in the window shell (18 Oct 2026, the owner: cleaner, more like a game). The streak once (its number is in the title), a day you
-   have collected is just its check, a day to come its diamond and amount; tomorrow's gift on its own row and "Collected" a small line
-   under it; Remind me is a plain second button with the bell; the tabs stay on top under the heading while the list scrolls. */
-#daily-gift .streak-count{display:none}
-#daily-gift .streak-day.collected b{display:none}
-#daily-gift .streak-day.collected svg{width:28px;height:28px}
-#daily-gift .streak-claim{flex-wrap:wrap;row-gap:4px}
-#daily-gift .streak-claim>span:not(.streak-done){flex:1 1 100%}
-#daily-gift .streak-done{flex:1 1 100%;font-size:12.5px;color:#7a8f68}
+/* Today in the window shell (18 Oct 2026, the owner: cleaner, more like a game). Remind me is a plain second button with the bell; the
+   tabs stay on top under the heading while the list scrolls. */
 #daily-gift .gift-remind.secondary-button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 0;padding:8px 14px;border-style:solid;font-size:14px}
 #daily-gift .gift-remind.secondary-button[hidden]{display:none}
 #daily-gift .gift-remind .game-art{width:26px;height:26px}
@@ -1570,3 +1567,13 @@ html[data-portal] .feedback-copy{display:none!important}
 /* Confirm your email and Feedback: the close sits in the heading's row now (the window shell), beside the title, not over it. */
 .email-check-dialog .dialog-heading .email-check-close,.feedback-dialog .dialog-heading .feedback-close{position:relative;top:auto;inset-inline-end:auto}
 .email-check-dialog .dialog-heading,.feedback-dialog .dialog-heading{text-align:start}
+/* Farm journal, nothing collected yet (23 Oct 2026, the owner): a small card instead of a big empty block; on the Crops tab the crop to
+   harvest first, as the dashed card it will become. */
+#journal-content .journal-empty{display:flex;align-items:center;gap:14px;margin:0;padding:12px 14px;border:1px dashed #dccfbd;border-radius:16px;background:#fbf8ef;text-align:start}
+#journal-content .journal-empty>.game-art{flex:none;width:44px;height:44px;margin:0}
+#journal-content .journal-empty>div:last-child{flex:1;min-width:0}
+#journal-content .journal-empty h3{margin:0 0 3px;font:700 17px/1.2 'Outfit',sans-serif;color:#4a3c1c}
+#journal-content .journal-empty p{margin:0;font-size:13px;line-height:1.45;color:#7a6c58}
+#journal-content .journal-empty .journal-first{flex:none;width:78px;padding:6px 4px 8px;border:2px dashed #d9a53c;border-radius:14px;background:#fffaf0}
+#journal-content .journal-first>.collection-picture{width:46px;height:46px;margin-bottom:2px;filter:none;opacity:1}
+#journal-content .journal-first strong{color:#5c4a2e}
