@@ -189,7 +189,9 @@ test('the sale: Autumn and Winter on sale together, each checkout names its seas
  assert.match(checkout,/const seasons=seasonsOnSale\(\)\.map\(s=>\(\{id:s\.id,cents:SEASON_SALE\.cents,level:SEASON_SALE\.level,startsAt:s\.startsAt,endsAt:s\.endsAt,ready:seasonReady\}\)\);/);
  assert.match(checkout,/custom_text:\{submit:\{message:seasonCheckoutText\(seasonSale\(row\.pass_id\),body\.language\)\}\}/,'the Stripe page names the season');
  // Every page's checkout sends the season: the website, the apps' stores and Kongregate.
- assert.match(read('src/main.js'),/bridge\.checkout=async\(pack,requestId,offerId,\{season\}=\{\}\)=>/);
+ // 23 Oct 2026: the website's card flow is cardCheckout, with the payment choice in front of it (withPayChoice passes the season on).
+ assert.match(read('src/main.js'),/const cardCheckout=async\(pack,requestId,offerId,\{season\}=\{\}\)=>/);
+ assert.match(read('src/main.js'),/bridge\.checkout=inApp\?cardCheckout:withPayChoice\(cardCheckout,/);
  assert.match(read('src/main.js'),/const storeCheckout=async\(pack,offerId,season\)=>\{\n\s+const made=await bridge\.payments\(\{operation:'create',pack,requestId:crypto\.randomUUID\(\),\.\.\.\(offerId\?\{offerId\}:\{\}\),\.\.\.\(season\?\{season\}:\{\}\)\}\);/);
  assert.match(read('src/kongregate-kreds.js'),/bridge\.checkout=async\(pack,_requestId,offerId,\{season\}=\{\}\)=>\{/);
  assert.match(read('public/season-ui.js'),/await bridge\(\)\.checkout\('season',requestIds\[id\],undefined,\{season:id\}\)/);

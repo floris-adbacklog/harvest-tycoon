@@ -15,6 +15,7 @@ import {watchLoading,errorLine} from '../public/loading-screen.js';
 import {startTranslation} from '../public/i18n.js';
 import {createPopupUI} from './popup-ui.js';
 import {createOfferUI} from './offer-ui.js';
+import {createCheckoutReminder} from './checkout-reminder-ui.js';
 import {createPortalUI} from './portal-ui.js';
 import {portalSells} from '../public/portal.js';
 import {markAdminView,startAdminView} from './admin-view.js';
@@ -149,6 +150,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
    // A pop-up from the admin (news with a button), once, when nothing else is open. It does not wait for the Starter Pack's catalog.
    void createPopupUI({client:bridge.chat,chat,state:firstState}).start();
    // The special offer listens for the Starter Pack's catalogue, so it starts first.
+   // The reminder of a website purchase started but not paid (23 Oct 2026, src/checkout-reminder-ui.js): it listens for the same
+   // catalogue and waits until nothing else is open (the special offer opens first); never on a portal.
+   if(shop&&!portal)part(()=>createCheckoutReminder(bridge));
    if(shop){createOfferUI(bridge);
    await createStarterPackUI(bridge);}
    // One screen from a notification, a shortcut on the app icon or a link (public/app-links.js). src/main.js keeps it until the farm is

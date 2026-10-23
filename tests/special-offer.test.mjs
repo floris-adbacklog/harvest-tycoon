@@ -169,7 +169,8 @@ test('the iPhone app never shows or sells a special offer until Apple sells spec
  assert.equal(APPLE_PRODUCTS.offer,'special_offer');assert.equal(PLAY_PRODUCTS.offer,'special_offer','Google Play sells it as before');
  // The server: no offer in the iPhone app's catalogue, and its offer checkout finds none ('This offer has ended.').
  const fn=read('supabase/functions/diamond-checkout/index.ts');
- assert.match(fn,/\(body\.operation==='catalog'\|\|body\.pack==='offer'\)&&\(!apple\|\|APPLE_SELLS_OFFER\)\?currentOffer\(user\.id\):null\]\);/);
+ // 23 Oct 2026: the catalogue's look-up of the farmer's last day (checkout recovery) follows it in the same Promise.all.
+ assert.match(fn,/\(body\.operation==='catalog'\|\|body\.pack==='offer'\)&&\(!apple\|\|APPLE_SELLS_OFFER\)\?currentOffer\(user\.id\):null,\n/);
  assert.match(fn,/const play=body\.store==='google_play',apple=body\.store==='app_store',/);
  assert.match(fn,/if\(!special\|\|special\.id!==body\.offerId\)return reply\(\{error:'This offer has ended\.'\},409\);/);
  for(const name of ['diamond-checkout','stripe-webhook','play-voided','app-store-notify'])assert.equal(read(`supabase/functions/${name}/payments.js`),read('game/payments.js'),name);

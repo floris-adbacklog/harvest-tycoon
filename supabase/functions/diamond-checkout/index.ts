@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,offerShownCents,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonsOnSale,seasonForCheckout,seasonSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,offerValueCents,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,offerShownCents,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonsOnSale,seasonForCheckout,seasonSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,offerValueCents,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT,UNFINISHED_HOURS,unfinishedCheckout} from './payments.js';
 import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 import {verifyAppleJws} from './app-store.js';
 import {kongId,kongToken,KongregateRefused,REFUSED_TEXT,verifyKongregate,kongUserItems,kongUseItem,kongItemPrices} from './kongregate-api.js';
@@ -201,10 +201,14 @@ Deno.serve(async req=>{
   // Never in the iPhone app while Apple does not sell special_offer (APPLE_SELLS_OFFER, 13 Oct 2026): its catalogue has no offer and
   // its offer checkout is refused ('This offer has ended.'), whatever level the offer opens at.
   // The Starter Pack's and the special offer's look-ups run at the same time.
-  const [existingStarter,offerRow,special]=await Promise.all([
+  // Checkout recovery (23 Oct 2026): the website's catalogue also reads this farmer's purchases of the last day, for the game's reminder
+  // card (game/payments.js unfinishedCheckout), in the same round trip. Never for the apps' stores or Kongregate. A failure here only
+  // leaves the reminder out.
+  const [existingStarter,offerRow,special,recent]=await Promise.all([
    body.operation==='catalog'||body.pack==='starter'?admin.from('harvest_purchases').select('*').eq('player_id',user.id).eq('pack','starter').eq('livemode',live).neq('status','expired').maybeSingle():null,
    body.operation==='catalog'||body.pack==='starter'?admin.from('player_farms').select('offer:state->starterOffer').eq('player_id',user.id).maybeSingle():null,
-   (body.operation==='catalog'||body.pack==='offer')&&(!apple||APPLE_SELLS_OFFER)?currentOffer(user.id):null]);
+   (body.operation==='catalog'||body.pack==='offer')&&(!apple||APPLE_SELLS_OFFER)?currentOffer(user.id):null,
+   body.operation==='catalog'&&!play&&!apple&&!kong?admin.from('harvest_purchases').select('id,pack,status,store,livemode,created_at,offer_id,pass_id,diamonds').eq('player_id',user.id).gte('created_at',new Date(Date.now()-UNFINISHED_HOURS*3600000).toISOString()).order('created_at',{ascending:false}).limit(25):null]);
   if(existingStarter?.error)throw existingStarter.error;
   if(offerRow?.error)throw offerRow.error;
   const starter=starterEligibility(offerRow?.data?.offer?.unlockedAt,['credited','test_paid'].includes(existingStarter?.data?.status));
@@ -218,7 +222,7 @@ Deno.serve(async req=>{
   const onSale=seasonOnSale(),seasonReady=Boolean(SEASON_SALE.price)&&!seasonStoreProblem(apple?'app_store':'other');
   const season=onSale?{id:onSale.id,cents:SEASON_SALE.cents,level:SEASON_SALE.level,endsAt:onSale.endsAt,ready:seasonReady}:null;
   const seasons=seasonsOnSale().map(s=>({id:s.id,cents:SEASON_SALE.cents,level:SEASON_SALE.level,startsAt:s.startsAt,endsAt:s.endsAt,ready:seasonReady}));
-  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':apple?'app_store':kong?'kongregate':'stripe',serverNow:Date.now(),starter,offer:special,pass,season,seasons,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
+  if(body.operation==='catalog')return reply({enabled,mode,store:play?'google_play':apple?'app_store':kong?'kongregate':'stripe',serverNow:Date.now(),starter,offer:special,pass,season,seasons,unfinished:recent&&!recent.error?unfinishedCheckout(recent.data):null,packs:Object.entries(PAYMENT_PACKS).map(([id,p])=>({id,diamonds:p.diamonds,coins:p.coins??0,cents:p.cents,currency:'eur'}))});
   if(body.operation==='status'){
    if(!UUID.test(body.purchaseId??''))return reply({error:'Invalid purchase.'},400);
    const r=await admin.from('harvest_purchases').select('*').eq('id',body.purchaseId).eq('player_id',user.id).maybeSingle();if(r.error)throw r.error;if(!r.data)return reply({error:'Purchase not found for this account.'},404);

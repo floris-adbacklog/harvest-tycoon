@@ -351,9 +351,10 @@ test('app-store.sql: only new things (a store value, two columns, two functions)
 test('the App Store code is synced into both functions, byte for byte; app-store-notify runs without a sign-in',()=>{
  const sync=read('scripts/sync-game.mjs');
  assert.match(sync,/for\(const name of \['diamond-checkout','app-store-notify'\]\)copyFileSync\(new URL\('\.\.\/game\/app-store\.js'/);
- assert.match(sync,/for\(const name of \['diamond-checkout','stripe-webhook','play-voided','app-store-notify'\]\)copyFileSync\(new URL\('\.\.\/game\/payments\.js'/);
+ // 23 Oct 2026: also into checkout-reminder (the reminder email checks whether a pack is still for sale).
+ assert.match(sync,/for\(const name of \['diamond-checkout','stripe-webhook','play-voided','app-store-notify','checkout-reminder'\]\)copyFileSync\(new URL\('\.\.\/game\/payments\.js'/);
  for(const fn of ['diamond-checkout','app-store-notify'])assert.equal(read(`supabase/functions/${fn}/app-store.js`),read('game/app-store.js'),fn);
- for(const fn of ['diamond-checkout','stripe-webhook','play-voided','app-store-notify'])assert.equal(read(`supabase/functions/${fn}/payments.js`),read('game/payments.js'),fn);
+ for(const fn of ['diamond-checkout','stripe-webhook','play-voided','app-store-notify','checkout-reminder'])assert.equal(read(`supabase/functions/${fn}/payments.js`),read('game/payments.js'),fn);
  assert.equal(read('supabase/functions/app-store-notify/deno.json'),read('supabase/functions/play-voided/deno.json'));
  assert.match(read('supabase/functions/app-store-notify/index.ts'),/deployed with --no-verify-jwt/);
  assert.doesNotMatch(read('game/app-store.js'),/\bimport\b/,'no dependencies: Web Crypto only');

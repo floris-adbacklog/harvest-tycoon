@@ -27,6 +27,8 @@ import {createPlayStore,PLAY_ERRORS} from './play-store.js';
 import {createAppStore,APP_STORE_ERRORS} from './app-store.js';
 import {signInOf,passwordMail,passwordSession} from './account-sign-in.js';
 import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER,appleProduct} from '../game/payments.js';
+import {payWays,deviceTimeZone} from './pay-ways.js';
+import {withPayChoice} from './pay-choice-ui.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
@@ -356,13 +358,19 @@ async function openFarm(){
   // In a frame (framed) Stripe's page opens in a new tab, made on the tap itself (one opened after waiting for the server is blocked as
   // a pop-up), and the farm waits for the payment in its purchase window (bridge.purchaseDone with tab, src/payment-ui.js). In the
   // Galaxy Store app (webPay) the app opens Stripe's page in the phone's browser, and the farm waits the same way.
-  bridge.checkout=async(pack,requestId,offerId,{season}={})=>{if(inApp&&!inAppStore&&!webPay)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId,season);
+  const cardCheckout=async(pack,requestId,offerId,{season}={})=>{if(inApp&&!inAppStore&&!webPay)appShop();bridge.trackCommerce('diamond_pack_started',{pack});if(inAppStore)return storeCheckout(pack,offerId,season);
    const tab=framed?window.open('','_blank'):null;if(framed&&!tab)throw new Error('Allow pop-ups for this page to pay in a new tab.');
    try{const data=await bridge.payments({operation:'create',pack,requestId,language:document.documentElement?.lang,...(offerId?{offerId}:{}),...(season?{season}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');
     if(webPay){bridge.purchaseDone?.(data.purchaseId,{tab:true,app:true});location.assign(url.href);return {store:'browser'};}
     if(!tab){location.assign(url.href);return;}
     tab.opener=null;tab.location.href=url.href;bridge.purchaseDone?.(data.purchaseId,{tab:true});return {store:'tab'};}
    catch(error){tab?.close();throw error;}};
+  // Checkout recovery (23 Oct 2026, the owner's options 1 and 4; src/pay-ways.js, src/pay-choice-ui.js): on the website, Buy on an
+  // Android phone first asks Pay by card or Pay with Google Play, and where card payment cannot work (the device's time zone in a
+  // country Stripe does not serve) it says so instead of opening Stripe. Everywhere else, and always in our apps, Buy goes straight on
+  // as before. The sheet is drawn in the farm's page (the game frame), where the window style lives.
+  bridge.checkout=inApp?cardCheckout:withPayChoice(cardCheckout,{ways:()=>payWays({ua:navigator.userAgent,timeZone:deviceTimeZone()}),
+   doc:()=>{try{return frame?.contentDocument?.body?frame.contentDocument:document;}catch{return document;}},track:(event,pack)=>bridge.trackCommerce(event,{pack})});
   bridge.paymentReturn=()=>{if(inApp&&!webPay)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
