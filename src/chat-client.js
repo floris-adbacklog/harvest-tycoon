@@ -30,9 +30,14 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
  async function rpc(name,args){check();const {data,error}=await supabase.rpc(name,args);if(error)throw chatError(error);check();return data;}
  async function rows(query){check();const {data,error}=await query;if(error)throw chatError(error);check();return data??[];}
  const emit=event=>{for(const listener of listeners){try{listener(event);}catch{}}};
+ // Each chat its own channel name (23 Oct 2026): supabase-js hands back a channel that already has the name, and after a new sign-in or a
+ // renewed session the last chat's channel is still leaving (its removal waits for the server, and one that never answers stays for
+ // good): it came back subscribed, and adding the listeners to it threw "cannot add postgres_changes callbacks … after subscribe()", so
+ // that chat heard nothing live. The name is only a name: what reaches a farmer is decided by the tables' own rules.
+ const topic=`chat:${playerId}:${Math.random().toString(36).slice(2,10)}`;
  function connect(){
   if(channel)return;
-  channel=supabase.channel(`chat:${playerId}`)
+  channel=supabase.channel(topic)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>emit({type:'message',message:payload.new}))
    .on('postgres_changes',{event:'DELETE',schema:'public',table:'chat_messages'},payload=>emit({type:'deleted',id:payload.old?.id}))
    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_messages'},payload=>emit({type:'edited',message:payload.new}))

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-portal="crazygames" class="i18n-wait"><head><meta charset="utf-8">
+<html lang="en" data-portal="crazygames" class="i18n-wait"><head><meta charset="utf-8"><script src="/compat.js"></script>
 <!-- Harvest Tycoon on CrazyGames (Oct 2026): this page runs inside our small page on CrazyGames (crazygames/ in the repository), which
      runs their SDK. No sign-in, cookie banner, tracking, links or app here: src/crazygames.js signs a player in through CrazyGames or
      as a guest and opens the same farm as the website. Not for search engines (vercel.json says so too). -->
@@ -20,6 +20,7 @@
      lowest priority after this page's own files (scripts/module-preload.mjs writes the list). -->
 <!-- farm-prefetch:start -->
 <link rel="prefetch" href="/farm.html">
+<link rel="prefetch" href="/compat.js">
 <link rel="prefetch" href="/app-mode.js">
 <link rel="prefetch" href="/styles.css">
 <link rel="prefetch" href="/beta.css">

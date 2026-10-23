@@ -433,8 +433,9 @@ test('discord.html: no script written in the page, no inline handlers, no addres
  for(const banned of [/googletagmanager|GTM-|dataLayer|gtag\(/,/cookie-consent|harvestConsent|Cookie settings/,/account-card|account-form|type="email"|type="password"|Create account|social-login|data-provider/,/<footer|site-legal|footer-social/,/rel="manifest"|apple-touch|apple-mobile-web-app|mobile-web-app-capable/,/og:|twitter:|rel="canonical"|ld\+json/,/browser-gate|data-gate/,/\/partners|\/wiki"|facebook\.com|tiktok\.com|instagram\.com|crazygames|kongregate/i,/cloud\/cloud\.js|i18n-boot\.js/,/mailto:/,/supabase\.co|preconnect/])assert.doesNotMatch(code,banned,String(banned));
  assert.match(html,/<html lang="en" data-portal="discord" class="i18n-wait">/);assert.match(html,/<meta name="robots" content="noindex, nofollow">/);assert.match(html,/<meta name="harvest-version" content="dev">/);
  assert.match(html,/<meta name="referrer" content="strict-origin">/,'Discord puts its launch in the address: only our own address goes along');
- // Discord's frame runs no script written into a page and no handler in an attribute: one script, the page's own bundle.
- assert.deepEqual([...code.matchAll(/<script\b[^>]*>/g)].map(m=>m[0]),['<script type="module" src="/cloud/discord.js">']);
+ // Discord's frame runs no script written into a page and no handler in an attribute: our own files only, the page's own bundle and before
+ // it public/compat.js (23 Oct 2026: what older browsers lack, and the first thing that breaks).
+ assert.deepEqual([...code.matchAll(/<script\b[^>]*>/g)].map(m=>m[0]),['<script src="/compat.js">','<script type="module" src="/cloud/discord.js">']);
  assert.match(code,/<script type="module" src="\/cloud\/discord\.js"><\/script>/);
  assert.doesNotMatch(code,/\son[a-z]+\s*=/i,'no onclick="…" and the like');assert.doesNotMatch(code,/javascript:/i);
  assert.deepEqual([...new Set([...code.matchAll(/https?:\/\/[^\s'"`)<,]+/g)].map(m=>m[0]))],[PRIVACY_URL],'no address but the privacy policy: everything else is ours, through Discord\'s proxy');

@@ -152,5 +152,13 @@
  "WebGL2Unavailable",
  "during play",
  "while loading",
- "out of sight"
+ "out of sight",
+ "Edge",
+ "Firefox",
+ "Opera",
+ "Safari {0}",
+ "Samsung Internet",
+ "This browser has no import maps.",
+ "load failed {0}",
+ "no import maps"
 ]

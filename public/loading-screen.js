@@ -275,8 +275,11 @@ const stallId=()=>{try{return globalThis.crypto.randomUUID();}catch{return null;
 // 21 Oct 2026: and the graphics chip and the mode the farm ran in (public/game.js sets them with the renderer; graphics-mode.js).
 const GFX=['full','noshadow','simple'];
 const gpuLine=value=>typeof value==='string'&&value.trim()?Array.from(value.replace(/\s+/g,' ').trim()).slice(0,100).join(''):null;
-const startupOf=win=>{try{const s=win?.harvestStartup;return s?{stage:STARTUP_STAGES.includes(s.stage)?s.stage:null,error:typeof s.error==='string'?cut160(s.error):null,
- gpu:gpuLine(s.gpu),gfx:GFX.includes(s.gfx)?s.gfx:null}:{};}catch{return {};}};
+// 23 Oct 2026: a farm page whose own code never ran (no harvestStartup, or one without an error) gives the first thing that broke before it,
+// with the browser and its version (public/compat.js harvestBoot): '[boot] load failed /game.js (Chrome 96)'.
+const bootError=win=>{try{const b=win?.harvestBoot;return typeof b?.error==='string'&&b.error?cut160(`[boot] ${b.error}${b.browser?` (${b.browser})`:''}`):null;}catch{return null;}};
+const startupOf=win=>{try{const s=win?.harvestStartup,boot=bootError(win);if(!s)return boot?{error:boot}:{};return {stage:STARTUP_STAGES.includes(s.stage)?s.stage:null,error:typeof s.error==='string'?cut160(s.error):boot,
+ gpu:gpuLine(s.gpu),gfx:GFX.includes(s.gfx)?s.gfx:null};}catch{return {};}};
 function noteStall(storage,{kind,step,percent,models,view,total,hidden,doc,win,page=win,at,error}){
  try{
   const note={id:stallId(),kind,step,percent:Math.round(Number(percent))||0,models,view,total,hidden,online:page?.navigator?.onLine??null,protocol:navProtocol(win)||navProtocol(page),...(doc&&win?missingFiles(doc,win):{waiting:0,files:[]}),...startupOf(win),...(typeof error==='string'?{error:cut160(error)}:{}),at};

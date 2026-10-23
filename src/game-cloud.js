@@ -33,6 +33,9 @@ const startup=window.harvestStartup={stage:'begin',error:null};
 const firstError=(reason,event)=>{try{if(!startup.error)startup.error=errorLine(reason,event);}catch{}};
 window.addEventListener('error',event=>firstError(event?.error??event?.message,event));
 window.addEventListener('unhandledrejection',event=>firstError(event?.reason));
+// A browser without import maps (public/compat.js, 23 Oct 2026: Firefox before 108, Chrome before 89) cannot load the game's modules:
+// compat.js shows why on this page's own card, and nothing here starts. Before, the farm page was opened again and again, then Try again.
+if(window.harvestBoot?.tooOld){window.harvestBoot.show?.();throw new Error('This browser has no import maps.');}
 // One part of this page that breaks (18 Oct 2026, review of the 12% fix): its error is the first error, and the page carries on without
 // it, so the farm still opens, the watch hears so (and notes the broken part for farm-api: 'part') and the steps after the farm (payment
 // return, pop-ups, CrazyGames' start, links from notifications) still run. Before, the rest of this page stopped there.
