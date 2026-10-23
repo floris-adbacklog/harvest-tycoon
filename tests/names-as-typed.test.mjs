@@ -151,8 +151,10 @@ test('every place a name reaches the screen uses the shared way (the screens abo
  has('src/chat-ui.js',/title\.setAttribute\('aria-label',ownText\(`Chat with \$\{thread\.otherName\}`,\[thread\.otherName\]\)\)/,'the private chat\'s heading');
  // The leaderboard, profiles, the account, the invite on the sign-in page.
  has('src/leaderboard.js',/typed\.setAttribute\('translate','no'\);typed\.textContent=row\.username;/,'a farmer on the board');
- has('src/leaderboard.js',/setOwnText\(value,category==='level'\?/,'your own line');
- has('src/player-profiles.js',/<h3>\$\{ownWords\(player\.username\)\}\$\{vipBadge\(/,'a profile');
+ // 23 Oct 2026: your own place pinned under the list is a row like the others, its name in the same kept span; the profile's name in
+ // its look's colour.
+ has('src/leaderboard.js',/line\.append\(label,farmerCell\(own,\{playerId,onPlayer,now\}\),value\);/,'your own row');
+ has('src/player-profiles.js',/<h3><span class="farmer-profile-name"\$\{color\?` style="color:\$\{esc\(color\)\}"`:''\}>\$\{ownWords\(player\.username\)\}<\/span>\$\{vipBadge\(/,'a profile');
  has('src/player-profiles.js',/setOwnText\(button,sent\?'Invited':label,\[offer\.familyName\]\)/,'"Invite to <family>"');
  has('src/ui.js',/setOwnText\(\$\('player-name'\),profile\?profile\.username:'Pick your farmer name',\[profile\?\.username\]\);/,'your farmer name in Settings');
  has('src/ui.js',/<b id="name-nudge-current" translate="no">/,'your default name');

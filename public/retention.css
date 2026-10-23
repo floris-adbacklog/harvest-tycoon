@@ -608,50 +608,6 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #events-dialog>.event-loading{margin:12px 0;font-size:14px;color:#807463}
 #sharing-dialog>.sharing-empty{margin:12px 0;font-size:14px;color:#807463}
 
-/* Leaderboard: a slim search field, "Rank by" as one line that folds open, and rows as cards (podium tints for the
-   top 3, the online dot on the portrait, names on one line). */
-#leaderboard-dialog .leaderboard-intro{margin:0 0 10px;font-size:13px;line-height:1.5;color:#807463}
-#leaderboard-dialog .farmer-search{margin:0 0 10px;padding:0;border:0;background:none}
-#leaderboard-dialog .farmer-search>label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-#leaderboard-dialog .farmer-search input{min-height:44px;padding:10px 14px 10px 40px;border:1px solid #e0d6c9;border-radius:14px;background:#fbf8f2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a8c78' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 13px center/18px}
-#leaderboard-dialog .farmer-search input:focus{border-color:#cdbb85;outline:none;box-shadow:0 0 0 3px #f1e3b8}
-#leaderboard-dialog #farmer-search-status{margin:6px 2px 0;font-size:12px;color:#8a7d68}
-#leaderboard-dialog .farmer-search:has(input:placeholder-shown) #farmer-search-status{display:none}
-.rank-drawer{margin:0 0 6px;border:1px solid #e3d8cd;border-radius:16px;background:#fbf8f2}
-.rank-drawer>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer}
-.rank-drawer>summary::-webkit-details-marker{display:none}
-.rank-drawer .rank-label{margin:0;font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#8f816f}
-.rank-current{flex:1;display:inline-flex;align-items:center;gap:7px;min-width:0;font:600 16px 'Outfit',sans-serif;color:#453e28}
-.rank-current .game-art{flex:none;width:26px;height:26px}
-.rank-current b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rank-drawer-chevron{flex:none;width:18px;height:18px;color:#a09684;transition:transform .15s}
-.rank-drawer[open] .rank-drawer-chevron{transform:rotate(180deg)}
-.rank-drawer .leaderboard-filter{margin:0;padding:0 12px 12px;border:0;background:none}
-#leaderboard-description{margin:4px 2px 6px;font-size:12px;line-height:1.5;color:#8a7d68}
-#leaderboard-dialog .leaderboard-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 6px}
-#leaderboard-dialog .leaderboard-table thead{display:none}
-#leaderboard-dialog .leaderboard-caption{padding:6px 2px 0;font-size:12px;font-weight:700;color:#8a7d68;text-align:start}
-/* How many farmers (grey dot) and how many online (green dot) (6 Oct 2026, src/leaderboard.js): one quiet chip under the filters, above the top 100. */
-#leaderboard-dialog .leaderboard-players{display:flex;align-items:center;gap:16px;width:fit-content;margin:4px 0 2px;padding:5px 12px;border:1px solid #eee6da;border-radius:999px;background:#fbf8f2;font-size:12px;font-weight:700;color:#736859}
-#leaderboard-dialog .leaderboard-players>span{display:inline-flex;align-items:center;gap:6px}
-#leaderboard-dialog .leaderboard-players .online-dot{flex:none;width:8px;height:8px;margin:0;border-radius:50%;background:#c8c4b8}
-#leaderboard-dialog .leaderboard-players .online-dot.is-online{background:#5e9b51}
-#leaderboard-dialog .leaderboard-table td{padding:8px;border-top:1px solid #eee6da;border-bottom:1px solid #eee6da;background:#fbf8f2;vertical-align:middle;overflow-wrap:normal}
-#leaderboard-dialog .leaderboard-table td:first-child{width:46px;padding-inline:4px;border-inline-start:1px solid #eee6da;border-radius:14px 0 0 14px;text-align:center}
-#leaderboard-dialog .leaderboard-table td:last-child{width:86px;padding-inline-end:12px;border-inline-end:1px solid #eee6da;border-radius:0 14px 14px 0;font:700 16px 'Outfit',sans-serif;color:#806322;white-space:nowrap;text-align:end}
-#leaderboard-dialog .leaderboard-table tr.is-rank-1 td{background:#fff3c8;border-color:#ecd48a}
-#leaderboard-dialog .leaderboard-table tr.is-rank-2 td{background:#f2f0ea;border-color:#dcd8cd}
-#leaderboard-dialog .leaderboard-table tr.is-rank-3 td{background:#f8e7d7;border-color:#e6c7a7}
-#leaderboard-dialog .leaderboard-table tr.is-you td{background:#fff6dc;border-color:#d9c28d}
-#leaderboard-dialog .leaderboard-place .rank-trophy>.game-art{width:34px;height:38px}
-.leaderboard-farmer{display:flex;align-items:center;gap:10px;min-width:0}
-.leaderboard-portrait{position:relative;flex:0 0 40px;width:40px;height:40px}
-.leaderboard-portrait .player-avatar-thumb{display:block;width:40px;height:40px;border-radius:12px}
-.leaderboard-portrait .online-dot{position:absolute;inset-inline-end:-3px;bottom:-2px;width:11px;height:11px;margin:0;border:2px solid #fffdf5;border-radius:50%;background:#c8c4b8}
-.leaderboard-portrait .online-dot.is-online{background:#5e9b51}
-#leaderboard-dialog .leaderboard-farmer strong,#leaderboard-dialog .leaderboard-farmer .player-name-link{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;font-size:15px}
-#leaderboard-dialog .leaderboard-table small{margin-top:1px;font-size:12px}
-#leaderboard-dialog .your-rank{margin-top:10px;padding:12px 14px;border:1px solid #d9c28d;border-radius:14px;background:#fff6dc}
 
 /* Family "This week": the order first, the reward preview folded below it, no disabled buttons without stock. */
 .family-none{font-size:12px;font-weight:700;color:#a09684}
@@ -1654,10 +1610,6 @@ html[data-portal] .feedback-copy{display:none!important}
 /* The leaderboard (src/leaderboard.js, 30 Sep 2026): ten farmers a page, Previous and Next under the list; the sync line only
    shows when something is wrong (it refreshes by itself every 30 seconds). */
 #leaderboard-dialog .cloud-sync:has(#cloud-status:empty){display:none}
-#leaderboard-dialog .leaderboard-pages{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 6px}
-#leaderboard-dialog .leaderboard-pages span{color:#6f6450;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
-#leaderboard-dialog .leaderboard-pages .small-button{width:auto;min-height:40px;padding:6px 14px}
-#leaderboard-dialog .your-rank .small-button{width:auto;min-height:34px;margin-inline-start:auto;padding:4px 12px}
 /* Empty states as cards (30 Sep 2026): the Journal before your first harvest or batch, and an empty leaderboard. */
 #journal-content .journal-empty,#leaderboard-dialog .leaderboard-empty{padding:26px 18px}
 #journal-content .journal-empty>.game-art,#leaderboard-dialog .leaderboard-empty>.game-art{display:block;width:60px;height:60px;margin:0 auto 10px}
@@ -1713,3 +1665,91 @@ html[data-portal] .feedback-copy{display:none!important}
 #journal-content .journal-empty .journal-first{flex:none;width:78px;padding:6px 4px 8px;border:2px dashed #d9a53c;border-radius:14px;background:#fffaf0}
 #journal-content .journal-first>.collection-picture{width:46px;height:46px;margin-bottom:2px;filter:none;opacity:1}
 #journal-content .journal-first strong{color:#5c4a2e}
+
+/* The leaderboard, cleaner (23 Oct 2026, the owner: "Profile en Leaderboard verbeteren UX/UI, houd het clean"; as the chores, family and
+   farmhouse windows): the search and Rank by on one row (src/ui.js .leaderboard-tools; the search's own parts take the row's places, its
+   status and results under it), Rank by's chips as a panel under that row, the board's line and the farmer counts as small chips; the
+   farmers as compact cream rows, the top three by their trophies, your own row in gold with You beside the name, pinned under the list
+   while it is not on the page shown (src/leaderboard.js). Long numbers stay whole, in a column as wide as they need. */
+#leaderboard-dialog .leaderboard-tools{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 8px;margin:0 0 6px}
+#leaderboard-dialog .leaderboard-tools>.farmer-search{display:contents}
+#leaderboard-dialog .farmer-search>label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#leaderboard-dialog .farmer-search-control{grid-column:1;grid-row:1;display:flex;align-items:center;gap:6px;min-width:0}
+#leaderboard-dialog .farmer-search input{box-sizing:border-box;width:100%;min-width:0;min-height:44px;margin:0;padding-block:8px;padding-inline:38px 12px;border:1px solid #ddd2c7;border-radius:14px;background:#fffdf4 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a8c78' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 12px center/18px;box-shadow:0 2px 0 #e4dbd3;font:400 15px/1.3 'DM Sans',sans-serif;color:#3f3827}
+[dir=rtl] #leaderboard-dialog .farmer-search input{background-position:right 12px center}
+#leaderboard-dialog .farmer-search input:focus{border-color:#d9b75c;outline:none;box-shadow:0 0 0 3px #f1e3b8}
+#leaderboard-dialog #farmer-search-clear{flex:none;width:auto;min-height:36px;margin:0;padding:4px 10px;font-size:13px}
+#leaderboard-dialog #farmer-search-status{grid-column:1/-1;margin:0 2px;font-size:12px;line-height:1.4;color:#7a6b4b}
+#leaderboard-dialog .farmer-search:has(input:placeholder-shown) #farmer-search-status{display:none}
+#leaderboard-dialog #farmer-search-results{grid-column:1/-1;display:grid;gap:6px}
+#leaderboard-dialog #farmer-search-results:empty{display:none}
+#leaderboard-dialog .farmer-search-result{display:flex;align-items:center;gap:10px;min-height:52px;margin:0;padding-block:6px;padding-inline:8px 12px;border:1px solid #ddd2c7;border-radius:14px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#leaderboard-dialog .farmer-search-result:hover{background:#fbf6ea}
+#leaderboard-dialog .farmer-search-avatar{flex:0 0 36px;width:36px;height:36px;border-radius:12px;background:#f1e9dc;overflow:hidden}
+#leaderboard-dialog .farmer-search-name strong{display:flex;align-items:center;gap:4px;font-size:15px;line-height:1.25;color:#3f3827;overflow-wrap:anywhere}
+#leaderboard-dialog .farmer-search-name small{margin-top:1px;font-size:12px;line-height:1.35;color:#7a6b4b}
+#leaderboard-dialog .farmer-search-result .farmer-presence{font-size:12px;color:#7a6b4b}
+#leaderboard-dialog .farmer-search-result>span:last-child{flex:none;font-size:20px;line-height:1;color:#a09684}
+/* Rank by: one pill that says what the board ranks by; its chips open as a panel under the row. */
+#leaderboard-dialog .rank-drawer{grid-column:2;grid-row:1;min-width:0;margin:0;border:0;background:none}
+#leaderboard-dialog .rank-drawer>summary{display:flex;align-items:center;gap:6px;box-sizing:border-box;max-width:min(260px,48vw);min-height:44px;padding-block:4px;padding-inline:12px 10px;border:1px solid #ddd2c7;border-radius:14px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3;list-style:none;cursor:pointer}
+#leaderboard-dialog .rank-drawer>summary::-webkit-details-marker{display:none}
+#leaderboard-dialog .rank-drawer>summary:hover{background:#fbf6ea}
+#leaderboard-dialog .rank-drawer[open]>summary{border-color:#d9b75c;box-shadow:0 0 0 3px #f1e3b8}
+#leaderboard-dialog .rank-drawer .rank-label{flex:none;margin:0;font:400 12px/1.2 'DM Sans',sans-serif;letter-spacing:0;text-transform:none;color:#7a6b4b;white-space:nowrap}
+#leaderboard-dialog .rank-current{display:inline-flex;align-items:center;gap:5px;min-width:0;font:700 15px/1.2 'Outfit',sans-serif;color:#3f3827}
+#leaderboard-dialog .rank-current .game-art{flex:none;width:22px;height:22px}
+#leaderboard-dialog .rank-current b{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#leaderboard-dialog .rank-drawer-chevron{flex:none;width:16px;height:16px;color:#9a8c72;transition:transform .15s}
+#leaderboard-dialog .rank-drawer[open] .rank-drawer-chevron{transform:rotate(180deg)}
+#leaderboard-dialog .rank-drawer .leaderboard-filter{position:absolute;inset-inline:0;top:50px;z-index:6;display:block;max-height:min(420px,60vh);margin:0;padding:10px;overflow-y:auto;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3,0 14px 30px #3b322033}
+#leaderboard-dialog .rank-chip-small{font-size:12px}
+/* The board's line and the farmer counts: quiet, small. */
+#leaderboard-dialog #leaderboard-description{margin:0 2px 8px;font-size:12px;line-height:1.45;color:#7a6b4b}
+#leaderboard-dialog .leaderboard-players{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px;padding:0;border:0;background:none}
+#leaderboard-dialog .leaderboard-players>span{display:inline-flex;align-items:center;gap:6px;padding-block:2px;padding-inline:8px 10px;border:1px solid #ddd2c7;border-radius:999px;background:#fffdf4;font:700 12px/1.4 'DM Sans',sans-serif;color:#5c4a2e;white-space:nowrap;font-variant-numeric:tabular-nums}
+#leaderboard-dialog .leaderboard-players .online-dot{flex:none;width:8px;height:8px;margin:0;border-radius:50%;background:#c8c4b8;box-shadow:none}
+#leaderboard-dialog .leaderboard-players .online-dot.is-online{background:#5e9b51}
+/* The rows. */
+#leaderboard-dialog .leaderboard-table{width:100%;table-layout:auto;border-collapse:separate;border-spacing:0 6px;margin:0}
+#leaderboard-dialog .leaderboard-table thead{display:none}
+#leaderboard-dialog .leaderboard-caption{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#leaderboard-dialog .leaderboard-table td{padding:4px 6px;border-block:1px solid #ddd2c7;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3;vertical-align:middle;overflow-wrap:normal}
+#leaderboard-dialog .leaderboard-table td.leaderboard-place{width:40px;padding-inline:4px 0;border-inline-start:1px solid #ddd2c7;border-start-start-radius:14px;border-end-start-radius:14px;text-align:center}
+#leaderboard-dialog .leaderboard-table td.leaderboard-who{width:100%;max-width:0;padding-inline:6px}
+#leaderboard-dialog .leaderboard-table td.leaderboard-score{width:1%;padding-inline:8px 14px;border-inline-end:1px solid #ddd2c7;border-start-end-radius:14px;border-end-end-radius:14px}
+#leaderboard-dialog .leaderboard-score{font:700 15px/1.2 'Outfit',sans-serif;color:#5c4a2e;white-space:nowrap;text-align:end;font-variant-numeric:tabular-nums}
+#leaderboard-dialog .leaderboard-place .rank-number{display:inline-grid;place-items:center;min-width:0;min-height:0;font:700 15px/1 'Outfit',sans-serif;color:#9a8c72;font-variant-numeric:tabular-nums}
+#leaderboard-dialog .leaderboard-place .rank-trophy{display:inline-grid;place-items:center}
+#leaderboard-dialog .leaderboard-place .rank-trophy>.game-art{width:30px;height:34px}
+#leaderboard-dialog .leaderboard-table tr.is-podium .leaderboard-score{color:#3f3827}
+#leaderboard-dialog .leaderboard-table tr.is-you td{border-color:#e8cf86;background:#fff8e1;box-shadow:0 2px 0 #eadbb0}
+#leaderboard-dialog .leaderboard-table tr.is-you .rank-number{color:#7a5410}
+#leaderboard-dialog .leaderboard-farmer{display:flex;align-items:center;gap:10px;min-width:0}
+#leaderboard-dialog .leaderboard-portrait{position:relative;flex:0 0 36px;width:36px;height:36px}
+#leaderboard-dialog .leaderboard-portrait .player-avatar-thumb{display:block;width:36px;height:36px;border-radius:11px}
+#leaderboard-dialog .leaderboard-portrait .online-dot{position:absolute;inset-inline-end:-3px;bottom:-2px;width:10px;height:10px;margin:0;border:2px solid #fffdf4;border-radius:50%;background:#c8c4b8;box-shadow:none}
+#leaderboard-dialog .leaderboard-portrait .online-dot.is-online{background:#5e9b51}
+#leaderboard-dialog .leaderboard-name{display:flex;align-items:center;gap:6px;min-width:0}
+#leaderboard-dialog .leaderboard-name>:is(strong,.player-name-link){display:flex;align-items:center;gap:2px;min-width:0;max-width:100%;min-height:40px;margin:0;padding:0;overflow:hidden;font:700 15px/1.25 'DM Sans',sans-serif;color:#3f3827;white-space:nowrap}
+#leaderboard-dialog .leaderboard-name>:is(strong,.player-name-link)>span[translate]{min-width:0;font-size:inherit;overflow:hidden;text-overflow:ellipsis}
+#leaderboard-dialog .leaderboard-name>:is(strong,.player-name-link)>:not([translate]){flex:none}
+#leaderboard-dialog .leaderboard-name .vip-badge img{width:20px!important;height:20px!important}
+#leaderboard-dialog .leaderboard-name .look-badge{width:20px;height:20px;margin-inline-start:3px;vertical-align:0}
+#leaderboard-dialog .leaderboard-name .staff-badge{margin-inline-start:4px;font-size:12px}
+#leaderboard-dialog .leaderboard-you{flex:none;padding:1px 8px;border-radius:999px;background:#f3dc95;font:700 12px/1.4 'DM Sans',sans-serif;color:#6b4c0f}
+/* Previous, the page and Next under the list. */
+#leaderboard-dialog .leaderboard-pages{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 0}
+#leaderboard-dialog .leaderboard-pages span{font-size:13px;font-weight:700;color:#7a6b4b;font-variant-numeric:tabular-nums}
+#leaderboard-dialog .leaderboard-pages .small-button{width:auto;min-height:36px;margin:0;padding:4px 14px;font-size:13px}
+/* Your own row while it is not on the page: pinned to the bottom of the window, on a strip of the window's cream. */
+#leaderboard-dialog .your-rank{position:sticky;bottom:calc(10px - var(--panel-pad,20px));z-index:3;display:grid;grid-template-columns:minmax(40px,auto) minmax(0,1fr) auto auto;align-items:center;gap:6px;margin:12px 0 0;padding-block:4px;padding-inline:4px 10px;border:1px solid #e8cf86;border-radius:14px;background:#fff8e1;box-shadow:0 2px 0 #eadbb0,0 0 0 12px var(--panel,#fffdf5)}
+#leaderboard-dialog .your-rank-place{padding-inline:2px;font:700 14px/1 'Outfit',sans-serif;color:#7a5410;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+#leaderboard-dialog .your-rank .leaderboard-farmer{padding-inline-start:2px}
+#leaderboard-dialog .your-rank .leaderboard-score{padding-inline-end:4px}
+#leaderboard-dialog .your-rank .small-button{width:auto;min-height:34px;margin:0;padding:4px 12px;font-size:13px}
+@media(max-width:480px){
+ #leaderboard-dialog .rank-drawer>summary{max-width:46vw;padding-inline:10px 8px}
+ #leaderboard-dialog .leaderboard-farmer{gap:8px}
+ #leaderboard-dialog .leaderboard-table td.leaderboard-score{padding-inline:6px 12px}
+}
