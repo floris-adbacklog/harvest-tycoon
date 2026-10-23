@@ -781,10 +781,8 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #building-dialog #building-content .fh-space-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px}
 #building-dialog #building-content .fh-space-head strong{font:700 16px/1.3 'Outfit',sans-serif;color:#453e28}
 #building-dialog #building-content .fh-space-head span{font-size:13px;font-weight:700;color:#8a7a5c;white-space:nowrap;font-variant-numeric:tabular-nums}
-#building-dialog #building-content .fh-map{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px;margin:0 0 4px}
-#building-dialog #building-content .fh-map>span{height:12px;border:1px dashed #e0d6c9;border-radius:4px;background:#f6f1ea}
-#building-dialog #building-content .fh-map>.is-field{border:1px solid #a87a4e;background:radial-gradient(circle at 50% 50%,#8fbf5a 0 2px,transparent 2.5px),linear-gradient(180deg,#b98a5c,#9c6f45)}
-#building-dialog #building-content .fh-map>.is-next{border:1.5px dashed #d0a64a;background:#fff3cf}
+#building-dialog #building-content .fh-bar{height:10px;margin:0 0 4px;border-radius:999px;background:#ece3d2;overflow:hidden}
+#building-dialog #building-content .fh-bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#d9a53c,#e8b94e)}
 #building-dialog #building-content .fh-next{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:6px 12px;margin:0;padding:12px 14px;border:1px solid #ddd2c7;border-radius:18px;background:#fffdf4;box-shadow:0 2px 0 #ece3d2}
 #building-dialog #building-content .fh-next.is-ready{border-color:#8cc06a;background:#f6fbef;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
 #building-dialog #building-content .fh-next.is-waiting{border-color:#e6ddd1;background:#f8f4ea;box-shadow:none}
@@ -839,7 +837,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #building-dialog #building-content .farmhouse-panel .field-clear-button{width:auto;min-height:36px;margin:0;padding:6px 12px;border:1px solid #e7cfc4;border-radius:12px;background:#fffdf4;box-shadow:none;color:#a1442f;font-size:13px;font-weight:700}
 #building-dialog #building-content .farmhouse-panel .field-clear-button:hover{border-color:#d9a896;background:#fff4ef}
 @media(min-width:721px){
- #building-dialog #building-content .fh-map>span{height:14px}
+
  #building-dialog #building-content .farmhouse-panel .field-list ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 }
 @media(max-width:720px){
@@ -849,7 +847,7 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
  #building-dialog #building-content .fh-next:not(.is-done) .fh-next-main{display:contents}
  #building-dialog #building-content .fh-next:not(.is-done) .fh-next-main>:is(.fh-cost,.fh-why){grid-column:1/-1}
  #building-dialog #building-content .fh-next>#expand-fields{grid-row:1;grid-column:3;min-width:96px;height:40px;min-height:40px;padding-inline:14px;font-size:14px}
- #building-dialog #building-content .fh-map{gap:2px}
+
 }
 /* Collect all: one calm row above the batches (picture, how many and what, the button), also on phones. */
 #building-content .collect-all-panel{grid-template-columns:44px minmax(0,1fr) auto;gap:12px;padding:10px 12px;margin:0 0 10px;border-color:#cfe0c3;border-radius:16px;background:#f3f9ec;box-shadow:none}
