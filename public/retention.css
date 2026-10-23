@@ -5,29 +5,133 @@
 .mobile-menu-grid button[hidden]{display:none}
 
 /* Farm events */
-.event-intro{margin:4px 0 12px}
-.event-intro .estate-icon,.events-dialog .quest-empty .estate-icon{width:64px;height:64px;padding:5px;box-sizing:border-box;background:linear-gradient(145deg,#f7eed8,#ecdcc4);border-radius:18px}
-.event-intro .estate-icon>.game-art,.events-dialog .quest-empty .estate-icon>.game-art{display:block;width:100%;height:100%;object-fit:contain}
-.events-dialog .quest-empty .estate-icon{margin:0 auto 12px}
-.event-intro h3{margin-top:2px}
-.event-intro p{margin-top:4px}
+/* The Events window (23 Oct 2026, the owner: "Events UX/UI kan ook schoner"; as the chores, medals and quests windows): a reward to
+   collect on top with a green edge and Collect beside it; the event in one card (time left, title, the goal with its bar, where you
+   stand, a green edge once finished); your league and the prizes in one card, four tiles on one row and the family bonus as a line of
+   chips with its count; compact standings with your own row marked. */
+.events-dialog .quest-empty .estate-icon{width:64px;height:64px;margin:0 auto 12px;padding:5px;box-sizing:border-box;background:linear-gradient(145deg,#f7eed8,#ecdcc4);border-radius:18px}
+.events-dialog .quest-empty .estate-icon>.game-art{display:block;width:100%;height:100%;object-fit:contain}
+.event-collect-list{display:grid;gap:10px;margin:0 0 14px}
+.event-collect{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid #8cc06a;border-radius:18px;background:#fffdf4;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+.event-collect>.game-art{width:44px;height:44px;object-fit:contain}
+.event-collect h3{margin:0;font:700 16px/1.25 'Outfit',sans-serif;color:#4a3a24}
+.event-collect p{margin:2px 0 0;font-size:13px;line-height:1.4;color:#7a6c55}
+.event-collect>button{margin:0;min-width:96px;white-space:nowrap}
+.event-reward-amounts{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.event-reward-amounts .coin-reward,.event-chip{display:inline-flex;align-items:center;gap:4px;margin:0;padding:3px 9px 3px 5px;border-radius:999px;background:#f3ead5;color:#6b4f0f;font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;font-variant-numeric:tabular-nums}
+.event-reward-amounts .coin-reward .game-art,.event-chip>.game-art{width:18px;height:18px}
+.event-hero{margin:0 0 12px;padding:14px 16px;border:1px solid #ddd2c7;border-radius:18px;background:#fffdf4}
+.event-hero.is-done{border-color:#8cc06a;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+.event-hero-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px}
 .event-when{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:999px;background:#efe7dc;color:#6f624d;font-size:12px;font-weight:700;letter-spacing:.2px}
 .event-when.is-live{background:#e3efd9;color:#3f6b2c}
 .event-when.is-live::before{content:'';width:7px;height:7px;border-radius:50%;background:#5e9b51;box-shadow:0 0 0 3px #cfe3c4}
-.event-summary{font-size:13px;line-height:1.6;color:#756754;margin:0}
-.event-goals .family-line-copy>span{min-height:20px}
-.event-goals .family-done{font-size:13px}
-.event-reward{padding:14px 0;margin:0 0 12px;font-size:13px}
-.event-reward-amounts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 16px}
-.event-reward-amounts .coin-reward{display:inline-flex;align-items:center;gap:6px;margin:0;color:#806322;font-size:15px}
-.event-reward-amounts .coin-reward .game-art{width:22px;height:22px}
+.event-count{font-size:13px;color:#8a7a5c;font-variant-numeric:tabular-nums}
+.event-hero>h3{margin:8px 0 0;font:700 21px/1.2 'Outfit',sans-serif;color:#3b2c12}
+.event-hero-text{margin:3px 0 0;font-size:13.5px;line-height:1.45;color:#7a6c55}
+.event-summary,#events-dialog>.event-summary{margin:2px 0 0;font-size:13px;line-height:1.5;color:#7a6c55}
+.event-hero .event-summary{margin-top:6px}
+.event-hero .event-note{margin:10px 0 0}
+.event-goals{display:grid;gap:8px;margin:12px 0 0}
+.event-goal{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:#f8f1e2}
+.event-goal>.game-art{width:44px;height:44px;object-fit:contain}
+.event-goal p{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0}
+.event-goal strong{min-width:0;font-size:16px;color:#4a3a24}
+.event-goal p>span{flex:none;font-size:15px;font-weight:700;color:#6b4f0f;font-variant-numeric:tabular-nums}
+.event-goal .family-done{color:#4f7d36;font-size:14px}
+.event-goal progress{display:block;width:100%;height:10px;margin:7px 0 0;appearance:none;border:0;border-radius:999px;background:#ece3d2;overflow:hidden}
+.event-goal progress::-webkit-progress-bar{background:#ece3d2;border-radius:999px}
+.event-goal progress::-webkit-progress-value{background:linear-gradient(90deg,#d9a53c,#e8b94e);border-radius:999px}
+.event-goal progress::-moz-progress-bar{background:#d9a53c;border-radius:999px}
+.event-goal.is-done progress::-webkit-progress-value{background:#6fae4f}
+.event-goal.is-done progress::-moz-progress-bar{background:#6fae4f}
+.event-you{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;margin:12px 0 0;padding-top:12px;border-top:1px solid #ece3d2}
+.event-you-rank{display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;background:#f3ead5;color:#6b4f0f;font:700 16px 'Outfit',sans-serif;font-variant-numeric:tabular-nums}
+.event-you-rank>.game-art{width:34px;height:34px;object-fit:contain}
+.event-you.is-new .event-you-rank{border:2px dashed #d8cbb4;background:none}
+.event-you.is-done .event-you-rank{background:#e1eed5;color:#4f7d36}
+.event-you>div{min-width:0}
+.event-you strong{display:block;font-size:15px;color:#4a3a24}
+.event-you.is-done strong{color:#4f7d36}
+.event-you small{display:block;margin-top:1px;font-size:12.5px;line-height:1.4;color:#8a7a5c}
+.event-you-pay{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+.event-you-note{margin:8px 0 0;font-size:13px;line-height:1.45;color:#7a6c55}
+.event-prizes{padding:12px 14px;border:1px solid #ddd2c7;border-radius:18px;background:#fffdf4}
+.event-league{display:flex;align-items:center;gap:10px}
+.event-league img{flex:none;width:40px;height:40px;object-fit:contain}
+.event-league>div{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;min-width:0}
+.event-league>div>span{flex-basis:100%;font-size:12px;font-weight:700;color:#8a7a5c}
+.event-league strong{margin-inline-end:2px;font:700 16px/1.2 'Outfit',sans-serif;color:#3b2c12}
+.event-league small{padding:1px 8px;border-radius:999px;background:#f3ead5;font-size:12px;font-weight:700;color:#7a5f2a;white-space:nowrap}
+.event-podium{margin:10px 0 0;padding:10px 0 0;border-top:1px solid #ece3d2;color:#6b5a2a}
+.event-podium>span{display:block;margin-bottom:7px;font-size:12px;font-weight:700;color:#8a7a5c}
+.event-podium ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none}
+.event-podium li{display:grid;justify-items:center;align-content:start;gap:3px;min-width:0;padding:8px 4px;border-radius:14px;background:#f8f1e2;text-align:center;font-size:13px}
+.event-podium li:nth-child(1){background:#fbf0cc}
+.event-podium li:nth-child(2){background:#f1eee7}
+.event-podium li:nth-child(3){background:#f8e8da}
+.event-podium li>.game-art{width:28px;height:28px;object-fit:contain}
+.event-podium li>i{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e1eed5;color:#4f7d36;font:normal 700 15px/1 'DM Sans',sans-serif}
+.event-podium li>i::before{content:'✓'}
+.event-podium li b{max-width:100%;font-size:12px;line-height:1.2;color:#7a6c55;overflow-wrap:anywhere}
+.event-podium li span{display:inline-flex;align-items:center;gap:3px;font-weight:700;color:#6b4f0f;white-space:nowrap;font-variant-numeric:tabular-nums}
+.event-podium li span .game-art{width:16px;height:16px}
+.event-family-bonus{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:8px 10px;border-radius:14px;background:#f2f6ea;color:#4d6b3a}
+.event-family-bonus>.game-art{flex:none;width:30px;height:30px}
+.event-family-bonus>span{display:flex;flex-wrap:wrap;align-items:center;flex:1;gap:4px 6px;min-width:0}
+.event-family-bonus>span>b{font-size:14px;color:#3f5a30}
+.event-family-bonus .event-chip{padding:1px 8px 1px 4px;border:1px solid #d3e2c4;background:#fffdf6;color:#4d6b3a}
+.event-family-bonus .event-chip>.game-art{width:16px;height:16px}
+.event-family-bonus small{flex-basis:100%;font-size:12px;line-height:1.35;color:#647a52}
+/* The family bonus's count (21 Oct 2026): "1 / 3" as a small pill; green with a ✓ once enough finished. */
+.event-family-count{flex:none;padding:3px 9px;border:1px solid #d3e2c4;border-radius:999px;background:#fffdf6;font-size:13px;font-weight:700;color:#4d6b3a;white-space:nowrap;font-variant-numeric:tabular-nums}
+.event-family-count.is-done{border-color:#9cc28a;background:#e1eed5;color:#557448}
+.event-section-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:22px 0 0}
+.event-section-title{margin:22px 0 0;font:700 18px 'Outfit',sans-serif;color:#3b2c12}
+.event-section-head>.event-section-title{margin:0}
+.event-league-name{font-size:12px;font-weight:700;color:#8a7443}
+/* Standings (compact since 23 Oct 2026): rank, portrait and name, what they win or a bar; the podium tinted, your own row marked. */
+.event-standings{display:grid;gap:4px;margin-top:8px}
+.event-standings .event-standing{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:8px;margin:0;padding:6px 10px;border:1px solid #ece3d2;border-radius:14px;background:#fffdf4}
+.event-standing.is-rank-1{background:#fdf3d2;border-color:#ecd48a}
+.event-standing.is-rank-2{background:#f5f3ee;border-color:#ddd8cc}
+.event-standing.is-rank-3{background:#fbefe4;border-color:#e8cfb4}
+.event-standings .event-standing.is-you{background:#fff3cf;border-color:#e0b84f;box-shadow:0 0 0 1px #e0b84f inset}
+.event-rank{display:grid;place-items:center;width:30px;font:700 15px 'Outfit',sans-serif;color:#8a7d68;font-variant-numeric:tabular-nums}
+.event-rank>.game-art{display:block;width:30px;height:30px;object-fit:contain}
+.event-standing .family-member-portrait,.event-standing .player-avatar-thumb{display:block;width:34px;height:34px}
+/* The farmer (picture and name) opens their profile (26 Sep 2026). */
+.event-standing-who{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:8px;min-width:0;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.event-standing-who>div{min-width:0}.event-standing-who:hover strong{text-decoration:underline;text-underline-offset:2px}.event-standing-who:focus-visible{outline:3px solid #6c8f3f;outline-offset:2px;border-radius:10px}
+.event-standing-who>div>span{display:block;font-size:12.5px;line-height:1.3;color:#8a7a5c}
+.event-standing strong{display:block;font-size:15px;line-height:1.3;color:#4a3a24;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-standing strong .vip-badge{vertical-align:-3px}
+.event-standing-reward{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px;min-width:72px}
+.event-standing-reward b{display:inline-flex;align-items:center;gap:3px;padding:2px 7px 2px 4px;border-radius:999px;background:#f3ead5;color:#6b4f0f;font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.event-standing-reward .game-art{width:16px;height:16px}
+.event-mini{display:block;width:72px;height:7px;appearance:none;border:0;border-radius:999px;background:#ece3d2;overflow:hidden}
+.event-mini::-webkit-progress-bar{background:#ece3d2;border-radius:999px}
+.event-mini::-webkit-progress-value{background:#d9a53c;border-radius:999px}
+.event-mini::-moz-progress-bar{background:#d9a53c;border-radius:999px}
+.event-standings-gap{margin:0;text-align:center;color:#b3a894;letter-spacing:3px;line-height:1}
+.event-history .family-list-row{padding:9px 0}
+.event-history .family-list-row strong{font-size:15px}
+.event-history .family-list-row span{display:block;font-size:13px;color:#8a7a5c}
+@media(max-width:720px){
+ .event-collect{grid-template-columns:40px minmax(0,1fr) auto;gap:10px;padding:12px}
+ .event-collect>.game-art{width:40px;height:40px;align-self:start}
+ .event-collect>button{min-width:88px;padding-inline:10px;font-size:14px}
+ .event-hero{padding:12px}
+ .event-hero>h3{font-size:19px}
+ .event-goal{grid-template-columns:40px minmax(0,1fr);gap:10px;padding:9px 10px}
+ .event-goal>.game-art{width:40px;height:40px}
+ .event-prizes{padding:12px}
+ .event-podium ol{gap:5px}
+ .event-podium li{padding:7px 2px}
+}
 .event-note{margin:0;font-size:14px;line-height:1.55}
 .event-note.is-blocked{border-inline-start-color:#d6ae4b;background:#faf1dc}
-.event-section-title{font:600 20px 'Outfit',sans-serif;margin:26px 0 0}
-.events-dialog .task-row .task-bottom{flex-wrap:wrap}
-.event-history .family-list-row{padding:12px 0}
-.event-history .family-list-row span{color:#7c7d6e}
-.event-rules{margin-top:24px}
+.event-rules{margin-top:20px}
 .event-rules ul{margin:12px 0 0;padding-inline-start:18px;font-size:14px;line-height:1.6;color:#6f6a58}
 .event-rules li+li{margin-top:6px}
 .event-feedback{margin:12px 0 0;font-size:14px;color:#9a4b35}
@@ -141,38 +245,7 @@
 .chore-missed{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 14px;border-radius:14px;background:#f3efe7;text-align:start;font-size:13px;line-height:1.5;color:#6f6a58}
 .chore-missed>.game-art{width:34px;height:34px;flex-shrink:0;filter:grayscale(1);opacity:.55}
 .chore-missed b{color:#453e28}
-/* Event standings: medal, portrait, name and what they earn. */
-.event-section-title.is-first{margin-top:4px}
-.event-divider{height:1px;background:#e2ddcf;margin:18px 0 20px}
 .family-order-line.is-done progress{accent-color:#5e9b51}
-/* Every standings row uses the same four columns (rank, portrait, name, reward) and the same padding, so the
-   podium cards and the plain rows line up exactly; the podium only adds a tinted background. */
-.event-standings{margin-top:6px}
-.event-standings .event-standing{display:grid;grid-template-columns:36px minmax(0,1fr) 100px;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid transparent;border-radius:16px}
-.event-standings .event-standing+.event-standing{border-top-color:transparent;box-shadow:0 -1px 0 #e2ddcf}
-.event-standings .event-standing.is-podium{margin-bottom:6px;box-shadow:none}
-.event-standings .event-standing:not(.is-podium):not(.is-you){border-radius:0}
-.event-standings .event-standing.is-podium+.event-standing{box-shadow:none}
-.event-standing.is-rank-1{background:linear-gradient(135deg,#fff3c8,#fbe7a8);border-color:#ecd48a}
-.event-standing.is-rank-2{background:linear-gradient(135deg,#f5f4f0,#e6e4dd);border-color:#d9d6cc}
-.event-standing.is-rank-3{background:linear-gradient(135deg,#fbeee2,#f1d9c3);border-color:#e6c7a7}
-.event-standings .event-standing.is-you{background:#fff6dc;border-color:#ecd9a0;box-shadow:none}
-.event-standings .event-standing.is-you+.event-standing{box-shadow:none}
-.event-rank{display:grid;place-items:center;width:36px;font:700 16px 'Outfit',sans-serif;color:#8a7d68}
-.event-rank>.game-art{display:block;width:36px;height:36px;object-fit:contain}
-.event-standing .family-member-portrait{width:40px;height:40px}
-.event-standing .player-avatar-thumb{display:block;width:40px;height:40px}
-.event-standing>div{min-width:0}
-/* The farmer (picture and name) opens their profile (26 Sep 2026). */
-.event-standing-who{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px;min-width:0;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
-.event-standing-who>div{min-width:0}.event-standing-who:hover strong{text-decoration:underline;text-underline-offset:2px}.event-standing-who:focus-visible{outline:3px solid #6c8f3f;outline-offset:2px;border-radius:10px}
-.event-standing-who span:not(.family-member-portrait):not(.vip-badge){display:block}
-.event-standing strong{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.event-standing-reward{display:grid;grid-template-columns:minmax(0,1fr) 40px;align-items:center;justify-items:end;column-gap:6px}
-.event-standing-reward b{display:inline-flex;align-items:center;gap:4px;color:#806322;font-size:14px;white-space:nowrap}
-.event-standing-reward .game-art{width:18px;height:18px}
-.event-mini{grid-column:1/-1;width:100%;height:7px;accent-color:#a88a5c}
-.event-standings-gap{margin:0;text-align:center;color:#b3a894;letter-spacing:3px;line-height:1}
 
 /* Farmers' market: a card per thing you can sell, a compact price list for what you do not have. */
 #market-items .market-row.market-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:16px 0;border-bottom:1px solid #e8e1da}
@@ -227,17 +300,6 @@
 
 /* Leaderboard "Rank by" chips: every label on one line, left-aligned next to its icon. */
 .rank-chip>span:not(.game-art){text-align:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* Podium prize list under the event reward: medal, place, coins, diamonds. */
-.event-podium{margin:14px 0 16px;padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,#fff6dc,#fbeecb);border:1px solid #ecd9a0;color:#6b5a2a}
-.event-podium>span{display:block;margin-bottom:4px;font-size:13px;font-weight:700}
-.event-podium ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.event-podium li{display:grid;grid-template-columns:26px 104px 110px 1fr;align-items:center;gap:8px;font-size:14px}
-/* An event that pays no coins (the first hourly events, 20 Oct 2026): place and diamonds, no coins column. */
-.event-podium.no-coins li{grid-template-columns:26px 120px 1fr}
-.event-podium li>.game-art{width:24px;height:24px}
-.event-podium li b{color:#6b5a2a}
-.event-podium li span{display:inline-flex;align-items:center;gap:4px;font-weight:700;color:#6b4f0f}
-.event-podium li span .game-art{width:18px;height:18px}
 .family-order-line.is-done progress::-webkit-progress-value{background:#5e9b51}
 .family-order-line.is-done progress::-moz-progress-bar{background:#5e9b51}
 
@@ -542,7 +604,6 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 #sharing-dialog>.sharing-rules{margin:22px 0 0;padding-top:14px;border-top:1px solid #e8e0d4;font-size:12px;line-height:1.5;color:#8a7d68}
 #sharing-dialog>.sharing-feedback,#events-dialog>.event-feedback{margin:10px 0 0;font-size:14px;color:#9a4b35}
 #sharing-dialog>.sharing-feedback:empty,#events-dialog>.event-feedback:empty{display:none}
-#events-dialog>.event-summary{margin:0 0 4px;font-size:13px;line-height:1.6;color:#756754}
 #events-dialog>.event-note{margin:0;font-size:14px;line-height:1.55}
 #events-dialog>.event-loading{margin:12px 0;font-size:14px;color:#807463}
 #sharing-dialog>.sharing-empty{margin:12px 0;font-size:14px;color:#807463}
@@ -1422,14 +1483,6 @@ html[data-portal] .feedback-copy{display:none!important}
 #admin-dashboard-dialog .admin-device-split{margin:0 0 10px;font-size:15px;color:#4a4232}#admin-dashboard-dialog .admin-device-split strong{font:700 20px 'Outfit',sans-serif;color:#3f5a30}
 #admin-dashboard-dialog .admin-device-split small,#admin-dashboard-dialog .admin-device-week small{margin-inline-start:6px;color:#8a7c69;font-size:12px}
 #admin-dashboard-dialog .admin-device-week{margin:10px 0 0;font-size:13px;color:#5d5140}
-/* Farm events: the family bonus under the prizes (27 Sep 2026). */
-.event-family-bonus{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:8px 10px;border-radius:12px;background:#f2f6ea;font-size:12.5px;color:#4d6b3a}
-.event-family-bonus>.game-art{flex:none;width:30px;height:30px}
-.event-family-bonus .game-art:not(:first-child){width:15px;height:15px;vertical-align:-2px}
-/* The family bonus's count (21 Oct 2026): "1 / 3" as a small pill behind the sentence; green with a ✓ once enough finished. */
-.event-family-bonus>span{flex:1;min-width:0}
-.event-family-count{flex:none;padding:3px 9px;border:1px solid #d3e2c4;border-radius:999px;background:#fffdf6;font-size:13px;font-weight:700;color:#4d6b3a;white-space:nowrap;font-variant-numeric:tabular-nums}
-.event-family-count.is-done{border-color:#9cc28a;background:#e1eed5;color:#557448}
 /* Purchases (27 Sep 2026): a small status label per checkout. */
 .admin-purchase-list li{align-items:center}
 .admin-purchase-status{flex:none;padding:2px 9px;border-radius:99px;font:700 11.5px/1.6 'DM Sans',sans-serif;white-space:nowrap}
@@ -1543,14 +1596,6 @@ html[data-portal] .feedback-copy{display:none!important}
 #journal-content .journal-empty>.game-art,#leaderboard-dialog .leaderboard-empty>.game-art{display:block;width:60px;height:60px;margin:0 auto 10px}
 #journal-content .journal-empty h3,#leaderboard-dialog .leaderboard-empty h3{margin:0 0 6px;font:700 20px 'Outfit',sans-serif}
 #journal-content .journal-empty p,#leaderboard-dialog .leaderboard-empty p{margin:0;font-size:14px;line-height:1.5}
-/* Your league in farm events (1 Oct 2026): the league's badge, its name, its levels and its coins. */
-.event-league{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:10px 14px;border:1px solid #e2d6bf;border-radius:14px;background:#fffaf0}
-.event-league img{flex:none;width:56px;height:56px;object-fit:contain}
-.event-league div{display:grid;gap:1px;min-width:0}
-.event-league>div>span{font-size:13px;font-weight:700;color:#7a705f}
-.event-league strong{font:700 18px/1.15 'Outfit',sans-serif;color:#3b2c12}
-.event-league small{font-size:13px;color:#7a6c55}
-.event-league-name{margin:-4px 0 4px;font-size:13px;font-weight:700;color:#8a7443}
 .event-league-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 12px;margin:8px 0 2px}
 .event-league-list>span{display:flex;align-items:center;gap:6px;min-width:0}
 .event-league-list img{flex:none;width:28px;height:28px;object-fit:contain}

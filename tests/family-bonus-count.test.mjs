@@ -115,21 +115,24 @@ test('the events window: "1 / 3" behind the family bonus, "✓ 3 / 3" once reach
  for(const [family,count] of cases){
   const p=page({events:[hourEvent(family===undefined?{}:{family})],now:clock});
   t.after(()=>{p.ui.dispose();delete globalThis.document;});
-  await p.ui.open();const line=bonusLine(p.html());
-  assert.match(line,/^<p class="event-family-bonus"><img class="game-art[^>]*data-art="family-members"[^>]*><span>Family bonus: /,JSON.stringify(family));
-  assert.ok(line.endsWith(`you each get 500 coins and 3 diamonds more. <span>${SAME}</span></span>${count}</p>`),`${JSON.stringify(family)}: ${line}`);
+  await p.ui.open();const html=p.html(),line=bonusLine(html);
+  // Since 23 Oct 2026 (the Events window made cleaner) one line of chips with the count; the whole sentence and the same-league
+  // sentence are in How events work.
+  assert.match(line,/^<p class="event-family-bonus"><img class="game-art[^>]*data-art="family-members"[^>]*><span><b>Family bonus<\/b><span class="event-chip">[^]*\+500<\/span><span class="event-chip">[^]*\+3<\/span>/,JSON.stringify(family));
+  assert.ok(line.endsWith(`<small>When 3 or more of your family finish, in any league.</small></span>${count}</p>`),`${JSON.stringify(family)}: ${line}`);
   assert.doesNotMatch(line,/ · /);
+  assert.ok(html.includes(`<li>Family bonus: when 3 or more of your Farm Family finish, you each get 500 coins and 3 diamonds more. <span>${SAME}</span></li>`));
  }
- // The next event (the server sends no count for it): the sentence, no count.
+ // The next event (the server sends no count for it): the line, no count.
  const p=page({events:[hourEvent({id:'next',starts_at:iso(START+60*M),ends_at:iso(START+115*M)})],now:clock});
  t.after(()=>{p.ui.dispose();delete globalThis.document;});
  await p.ui.open();
- assert.ok(bonusLine(p.html()).endsWith(`<span>${SAME}</span></span></p>`));
+ assert.ok(bonusLine(p.html()).endsWith('</small></span></p>'));
 });
 
 test('the same-league sentence: in the window, the wiki and the family cards, in every language',()=>{
  const wiki=read('public/wiki-content.js');
- assert.ok(read('public/live-events-ui.js').includes(`<span>\${bonus} <span>${SAME}</span></span>\${count}</p>`));
+ assert.ok(read('public/live-events-ui.js').includes(`<li>\${familySentence(own??prize)} <span>${SAME}</span></li>`),'How events work (23 Oct 2026)');
  assert.ok(wiki.includes(`diamonds more. <span>${SAME}</span>\`],`),'How to play › Events › Family bonus');
  assert.ok(wiki.includes(`on top of their own prize. <span>${SAME}</span> See \${h.link('events')}.</p>`),'How to play › Farm family › Events together');
  assert.ok(read('public/family-ui.js').includes(`diamonds extra. <span>${SAME}</span>\`],`),'What your family gives you');

@@ -208,7 +208,8 @@ test('Collect and Recent events: the coins of an hourly event, in one text every
 test('the standings caption follows the event: coins and diamonds, or diamonds only',()=>{
  const ui=read('public/live-events-ui.js');
  assert.match(ui,/eventPrizes\(e\.rewards\)\.paysCoins\?'Prizes if the event ended now\. The first three to finish in your league win the most coins and diamonds\.':'Prizes if the event ended now\. The first three to finish in your league win the most diamonds\.'/);
- assert.match(read('public/retention.css'),/\.event-podium\.no-coins li\{grid-template-columns:26px 120px 1fr\}/);
+ // 23 Oct 2026: the prizes are four tiles on one row; an event without coins has the same tiles, with diamonds only.
+ assert.match(read('public/retention.css'),/\.event-podium ol\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
 test('every new or changed text is in the catalog and in all 15 languages, without middle dots or other game names',()=>{

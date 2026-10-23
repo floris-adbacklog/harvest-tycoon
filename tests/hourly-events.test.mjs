@@ -206,7 +206,9 @@ test('the events window: a new event every hour; a first hourly event shows diam
  // The rewards card: diamonds only, with the family bonus.
  const card=html.slice(html.indexOf('<div class="event-podium no-coins">'),html.indexOf('</div>',html.indexOf('<div class="event-podium no-coins">')));
  assert.ok(card.length>0);assert.doesNotMatch(card,/data-art="coins"|art-coins/);
- assert.match(card,/Family bonus: when 3 or more of your Farm Family finish, you each get 3 diamonds more\./);
+ // Since 23 Oct 2026 the family bonus is a line of chips there; the whole sentence is in How events work.
+ assert.match(card,/<b>Family bonus<\/b><span class="event-chip">[^]*\+3<\/span><small>When 3 or more of your family finish, in any league\.<\/small>/);
+ assert.match(html,/<li>Family bonus: when 3 or more of your Farm Family finish, you each get 3 diamonds more\. <span>/);
  // Collect: the hourly reward shows diamonds only, the older one coins and diamonds. History: "Collected 1 diamond".
  assert.match(html,/8 diamonds<\/strong>/);assert.match(html,/2,200 coins<\/strong>/);
  assert.match(html,/<span>Collected 1 diamond · 3 of 4 finished<\/span>/);

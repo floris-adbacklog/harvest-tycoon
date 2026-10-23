@@ -97,40 +97,58 @@ export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:
  const leagueGoals=e=>{const own=e?.leagues?.[leagueOf(e).index];return own?{...e,title:own.title,description:own.description,objectives:own.objectives}:e;};
  // Its name and levels, and under them how much its coins are worth when the event pays coins (the first hourly events of 20 Oct
  // 2026 paid none, so no coins line for them).
- const leagueCard=(l,coins)=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="56" height="56" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small>${leagueRange(l)}</small>${coins?`<small>Coins ×${l.coins}</small>`:''}</div></div>`;
- // One list of what a farmer wins per place, from the event's own prizes (eventPrizes): its coins plus the place's, × the league, and
- // the place's diamonds. No coins column for an event that pays none (the first hourly events of 20 Oct 2026).
+ // Since 23 Oct 2026 (the owner: "Events UX/UI kan ook schoner") a small row at the top of the prizes card, not a card of its own.
+ const leagueCard=(l,coins)=>`<div class="event-league"><img src="/assets/icons/league-${l.id}.webp" alt="" width="40" height="40" draggable="false"><div><span>Your league</span><strong>${l.name}</strong><small>${leagueRange(l)}</small>${coins?`<small>Coins ×${l.coins}</small>`:''}</div></div>`;
+ // The family bonus as one sentence, for How events work (23 Oct 2026; under the prizes until then). One sentence for an hourly event,
+ // no picture inside it (20 Oct 2026: a picture cut it in two, and "{0} more." read badly on its own). The family coins are flat: the
+ // same in every league.
+ const familySentence=prize=>{
+  const fam=prize.family;
+  return !prize.hour?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(fam.coins)} and ${art('diamonds')}${num(fam.diamonds)} more.`
+   :fam.coins?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.coins)} coins and ${num(fam.diamonds)} diamonds more.`
+   :`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.diamonds)} diamonds more.`;
+ };
+ // One card with what a farmer wins (23 Oct 2026): your league small on top, then the prize per place as four tiles on one row, from
+ // the event's own prizes (eventPrizes): its coins plus the place's, × the league, and the place's diamonds. No coins for an event
+ // that pays none (the first hourly events of 20 Oct 2026). Under them the family bonus as one line of chips with its count; the
+ // whole sentence is in How events work.
  const rewards=e=>{
   const prize=eventPrizes(e.rewards),league=leagueOf(e),fam=prize.family,coins=prize.paysCoins;
   const row=(p,medal,place)=>`<li>${medal}<b>${place}</b>${coins?`<span>${art('coins')}${num((prize.coins+p.coins)*league.coins)}</span>`:''}<span>${art('diamonds')}${num(p.diamonds)}</span></li>`;
-  // One sentence for an hourly event, no picture inside it (20 Oct 2026: a picture cut it in two, and "{0} more." read badly on its
-  // own). The family coins are flat: the same in every league.
-  const bonus=!prize.hour?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${art('coins')}${num(fam.coins)} and ${art('diamonds')}${num(fam.diamonds)} more.`
-   :fam.coins?`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.coins)} coins and ${num(fam.diamonds)} diamonds more.`
-   :`Family bonus: when ${fam.finishers} or more of your Farm Family finish, you each get ${num(fam.diamonds)} diamonds more.`;
   // 21 Oct 2026, the owner: "Toon hier achter 1 /3. hoeveel mensen het gehaald hebben en zet erbij dat ze niet alle 3 in dezelfde
   // liga hoeven te zitten". The count is the server's (farm-api withFamilyCounts: your family's members who finished this event,
   // each in their own league) in the Family Order's "41 / 60" look, held at the number needed and with a ✓ once it is reached.
   // Without a family, or from an older farm-api (no family field), no count.
   const have=Number.isInteger(e.family?.finished)?Math.min(e.family.finished,fam.finishers):null,reached=have!=null&&have>=fam.finishers;
   const count=have==null?'':`<b class="event-family-count ${reached?'is-done':''}">${reached?'✓ ':''}${num(have)} / ${num(fam.finishers)}</b>`;
-  return `${leagueCard(league,coins)}<div class="event-podium ${coins?'':'no-coins'}"><span>What you win when you finish</span><ol>${prize.podium.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(prize.finisher,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span>${bonus} <span>They do not have to be in the same league.</span></span>${count}</p></div>`;
+  const extra=`${!prize.hour||fam.coins?`<span class="event-chip">${art('coins')}+${num(fam.coins)}</span>`:''}<span class="event-chip">${art('diamonds')}+${num(fam.diamonds)}</span>`;
+  return `<div class="event-prizes">${leagueCard(league,coins)}<div class="event-podium ${coins?'':'no-coins'}"><span>What you win when you finish</span><ol>${prize.podium.map((p,i)=>row(p,art(MEDALS[i]),placeLabel(i+1))).join('')}${row(prize.finisher,'<i aria-hidden="true"></i>','Everyone else')}</ol><p class="event-family-bonus">${art('family-members')}<span><b>Family bonus</b>${extra}<small>When ${num(fam.finishers)} or more of your family finish, in any league.</small></span>${count}</p></div></div>`;
  };
- // Goals use the Family Order line: picture, name, "41 / 60" and a bar.
+ // The goal inside the event's card (23 Oct 2026): picture, name and "41 / 60" on one line, a gold bar under them; "✓ Complete" once
+ // it is full, "Goal: 40" for the next event.
  function goals(e,{preview=false}={}){
-  return `<div class="family-order event-goals">${e.objectives.map(o=>{
+  return `<div class="event-goals">${e.objectives.map(o=>{
    const goal=EVENT_GOALS[o.stat]??{label:o.stat,art:'quests'},value=Math.min(o.target,e.player?.progress?.[o.stat]??0),done=!preview&&value>=o.target;
-   return `<article class="family-order-line ${done?'is-done':''}">${art(goal.art)}<div class="family-line-copy"><strong>${goal.label}</strong><span>${preview?`Goal: ${num(o.target)}`:done?'<span class="family-done">✓ Complete</span>':`${num(value)} / ${num(o.target)}`}</span>${preview?'':`<progress max="${o.target}" value="${value}" aria-label="${goal.label}"></progress>`}</div></article>`;
+   return `<article class="event-goal ${done?'is-done':''}">${art(goal.art)}<div><p><strong>${goal.label}</strong><span>${preview?`Goal: ${num(o.target)}`:done?'<span class="family-done">✓ Complete</span>':`${num(value)} / ${num(o.target)}`}</span></p>${preview?'':`<progress max="${o.target}" value="${value}" aria-label="${goal.label}"></progress>`}</div></article>`;
   }).join('')}</div>`;
  }
+ // Your own row in your league's standings (farm-api standings: in the top 10, or "you" under it), or null.
+ const ownRow=e=>e?.standings?.top?.find(r=>r.isYou)??e?.standings?.you??null;
+ const justPlay=e=>leagueOf(e).world===2?'Just play: digging, sawing, packing lunches, helping villagers and fishing on the lake count automatically.':'Just play your farm: harvesting, watering and collecting count automatically.';
+ // Where you stand, at the bottom of the event's card (23 Oct 2026): your place in your league, with the prize it pays once you
+ // finished, or "Not started yet" with what counts. From an older farm-api (no standings) the sentence of before.
  function status(e){
-  const blocked=eligibilityNote(data?.eligibility,now()),p=e.player;
+  const blocked=eligibilityNote(data?.eligibility,now()),p=e.player,me=ownRow(e);
   if(blocked)return `<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`;
-  if(hasQualified(e))return '<p class="family-notice event-note">You finished! Collect your reward here when the event ends.</p>';
-  if(p)return `<p class="family-notice event-note">You are taking part · ${num(p.actions)} contribution${p.actions===1?'':'s'} so far.</p>`;
-  return leagueOf(e).world===2?'<p class="family-notice event-note">Just play: digging, sawing, packing lunches, helping villagers and fishing on the lake count automatically.</p>':'<p class="family-notice event-note">Just play your farm: harvesting, watering and collecting count automatically.</p>';
+  const pays=r=>r?.finished?`<span class="event-you-pay">${r.coins?`<span class="event-chip">${art('coins')}${num(r.coins)}</span>`:''}${r.diamonds?`<span class="event-chip">${art('diamonds')}${num(r.diamonds)}</span>`:''}</span>`:'';
+  if(hasQualified(e))return `<div class="event-you is-done"><span class="event-you-rank">${me?.podium?art(MEDALS[me.rank-1]):me?num(me.rank):'✓'}</span><div><strong>✓ Finished</strong>${me?`<small>${placeLabel(me.rank)}</small>`:''}</div>${pays(me)}</div><p class="event-you-note">You finished! Collect your reward here when the event ends.</p>`;
+  if(p&&me)return `<div class="event-you"><span class="event-you-rank">${num(me.rank)}</span><div><strong>${placeLabel(me.rank)}</strong><small>${me.progress}% done</small></div></div>`;
+  if(p)return `<p class="event-you-note">You are taking part · ${num(p.actions)} contribution${p.actions===1?'':'s'} so far.</p>`;
+  return `<div class="event-you is-new"><span class="event-you-rank" aria-hidden="true"></span><div><strong>Not started yet</strong><small>${justPlay(e)}</small></div></div>`;
  }
- const intro=(e,when,live)=>`<div class="estate-intro event-intro"><span class="estate-icon">${art('live-events')}</span><div><span class="event-when ${live?'is-live':''}">${when}</span><h3>${esc(e.title)}</h3><p>${esc(e.description)}</p></div></div>`;
+ // The event in one card (23 Oct 2026): when it ends (or starts) and how many take part, its title, the goal with its bar, and where
+ // you stand; a green edge once you finished.
+ const intro=(e,when,live,{count='',body=''}={})=>`<section class="event-hero ${live&&hasQualified(e)?'is-done':''}"><div class="event-hero-top"><span class="event-when ${live?'is-live':''}">${when}</span>${count}</div><h3>${esc(e.title)}</h3>${e.description?`<p class="event-hero-text">${esc(e.description)}</p>`:''}${body}</section>`;
  // The top 10 with what each farmer earns: exact after the event, "if it ended now" while it runs.
  function standings(e,{final=false}={}){
   const s=e?.standings;if(!s?.top?.length)return '';
@@ -139,19 +157,21 @@ export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:
   const label=r=>r.podium?placeLabel(r.rank):r.finished?'✓ Finished':`${r.progress}% done`;
   const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="${esc(ownText(`Open ${r.username}’s profile`,[r.username]))}"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`${r.coins?`<b>${art('coins')}${num(r.coins)}</b>`:''}${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" translate="no" aria-label="${esc(ownText(`${r.username}: ${r.progress}% done`,[r.username]))}"></progress>`}</span></article>`;
   const league=s.league?leagueOf(e).name:'';
-  return `<h3 class="event-section-title">${final?`Final standings · ${esc(ownTitle(e))}`:'Top farmers'}</h3>${league?`<p class="event-league-name">${league}</p>`:''}<p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:eventPrizes(e.rewards).paysCoins?'Prizes if the event ended now. The first three to finish in your league win the most coins and diamonds.':'Prizes if the event ended now. The first three to finish in your league win the most diamonds.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
+  return `<div class="event-section-head"><h3 class="event-section-title">${final?`Final standings · ${esc(ownTitle(e))}`:'Top farmers'}</h3>${league?`<span class="event-league-name">${league}</span>`:''}</div><p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:eventPrizes(e.rewards).paysCoins?'Prizes if the event ended now. The first three to finish in your league win the most coins and diamonds.':'Prizes if the event ended now. The first three to finish in your league win the most diamonds.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }
  function hero(){
   // Each league sees its own title and goals (1 Oct 2026).
   const view=eventView(data.events,now()),live=view.live&&leagueGoals(view.live),next=view.next&&leagueGoals(view.next);
-  if(live)return intro(live,`Live · ends in ${countdown(Date.parse(live.ends_at))}`,true)+`<p class="event-summary">${num(live.participants)} farmer${live.participants===1?'':'s'} taking part</p>`+goals(live)+rewards(live)+status(live)+standings(live);
-  if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false)+`<p class="event-summary">${Date.parse(next.starts_at)-now()<=GAP_MS?'The prizes are being handed out. Here is what comes next.':'No event right now. Here is what comes next.'}</p>`+goals(next,{preview:true})+rewards(next)+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`:'')+standings(data.events.find(e=>e.standings),{final:true});}
+  if(live)return intro(live,`Live · ends in ${countdown(Date.parse(live.ends_at))}`,true,{count:`<span class="event-count">${num(live.participants)} farmer${live.participants===1?'':'s'} taking part</span>`,body:goals(live)+status(live)})+rewards(live)+standings(live);
+  if(next){const blocked=eligibilityNote(data.eligibility,now());return intro(next,`Next event in ${countdown(Date.parse(next.starts_at))}`,false,{body:`<p class="event-summary">${Date.parse(next.starts_at)-now()<=GAP_MS?'The prizes are being handed out. Here is what comes next.':'No event right now. Here is what comes next.'}</p>`+goals(next,{preview:true})+(blocked?`<p class="family-notice event-note is-blocked">${esc(blocked)}</p>`:'')})+rewards(next)+standings(data.events.find(e=>e.standings),{final:true});}
   return `<div class="quest-empty"><span class="estate-icon">${art('live-events')}</span><h3>The next event is on its way</h3><p>Check back soon.</p></div>`;
  }
+ // Rewards to collect on top (23 Oct 2026, as Collect in medals and quests): a card with a green edge, what it pays as chips and the
+ // button beside it, on a phone too.
  function collect(){
   const {owed}=eventView(data.events,now());
   if(!owed.length)return '';
-  return `<h3 class="event-section-title is-first">Rewards to collect</h3>${owed.map(e=>`<article class="task-row"><div class="quest-row-heading"><h3>${esc(ownTitle(e))}</h3></div><p>You finished. Your reward is ready.</p><div class="task-bottom"><span class="event-reward-amounts">${e.player.coins>0?`<strong class="coin-reward">${art('coins')}${num(e.player.coins)} coins</strong>`:''}${e.player.diamonds?`<strong class="coin-reward">${art('diamonds')}${num(e.player.diamonds)} diamond${e.player.diamonds===1?'':'s'}</strong>`:''}</span><button class="primary-button" data-claim="${esc(e.id)}">Collect reward</button></div></article>`).join('')}<div class="event-divider"></div>`;
+  return `<div class="event-collect-list">${owed.map(e=>`<article class="event-collect">${art('live-events')}<div><h3>${esc(ownTitle(e))}</h3><p>You finished. Your reward is ready.</p><span class="event-reward-amounts">${e.player.coins>0?`<strong class="coin-reward">${art('coins')}${num(e.player.coins)} coins</strong>`:''}${e.player.diamonds?`<strong class="coin-reward">${art('diamonds')}${num(e.player.diamonds)} diamond${e.player.diamonds===1?'':'s'}</strong>`:''}</span></div><button class="primary-button" data-claim="${esc(e.id)}">Collect</button></article>`).join('')}</div>`;
  }
  function history(){
   const {past}=eventView(data.events,now());
@@ -172,7 +192,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:
  const rules=()=>{
   const view=eventView(data.events,now()),shown=view.live??view.next,world=(shown?leagueOf(shown):eventLeague(levelOf(state))).world;
   const own=shown&&eventPrizes(shown.rewards),prize=own?.hour?own:eventPrizes(HOUR_EVENT_REWARDS),[first,second,third]=prize.podium.map(p=>num(p.diamonds));
-  return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li>${prize.paysCoins?'<li>Everyone who finishes wins coins too; the sooner you finish, the more.</li>':''}<li>You race in your league, against farmers of about your level. Your league is set when you join an event (your first action that counts), and you finish that event in that league, even if you level up.<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>${prize.paysCoins?'Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.':'Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.'}</li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
+  return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li>${prize.paysCoins?'<li>Everyone who finishes wins coins too; the sooner you finish, the more.</li>':''}<li>You race in your league, against farmers of about your level. Your league is set when you join an event (your first action that counts), and you finish that event in that league, even if you level up.<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>${prize.paysCoins?'Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.':'Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.'}</li><li>${familySentence(own??prize)} <span>They do not have to be in the same league.</span></li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  };
  function render(){
   const heading='<div class="dialog-heading">'+art('live-events','dialog-badge')+'<div class="dialog-titles"><h2 id="events-title">Events</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
