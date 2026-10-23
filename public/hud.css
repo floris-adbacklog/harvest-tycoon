@@ -128,12 +128,25 @@
  #event-rail>.side-tool>span>:is(.game-art,svg),#event-rail>#pass-button>.game-art{width:36px;height:36px}
  #event-rail>.side-tool>b{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
  #event-rail em,#event-rail #pass-dot{position:absolute;top:-4px;inset-inline-end:-4px;display:grid;place-items:center;box-sizing:border-box;min-width:21px;height:21px;padding:0 5px;border-radius:999px}
+ /* One button for them all (public/event-rail.js, the owner, 23 Oct 2026: "Doe 2"): while two or more show, the rail is one round button
+    with the first one's picture, a second disc just under it and how many there are; its list opens beside it, toward the middle. */
+ #event-rail.is-stacked>:not(#rail-stack):not(#rail-panel){display:none}
+ #rail-stack:not([hidden]){position:relative;display:grid;place-items:center;width:52px;height:52px;min-width:52px;min-height:52px;margin:0;padding:0;border-radius:50%;box-shadow:0 3px 0 var(--btn-icon-edge),0 8px 18px #3a2a1026}
+ #rail-stack::before{content:'';position:absolute;z-index:-1;inset:9px -2px -9px;border:2px solid var(--btn-icon-line);border-radius:50%;background:var(--btn-icon);box-shadow:0 3px 0 var(--btn-icon-edge)}
+ #rail-stack>:is(img,.game-art,svg){width:36px;height:36px;object-fit:contain}
+ #rail-panel:not([hidden]){position:absolute;z-index:1;top:-4px;inset-inline-end:calc(100% + 10px);display:flex;flex-direction:column;width:max-content;min-width:190px;max-width:calc(100vw - 96px);padding:4px 0;overflow:hidden;border:2px solid #e6ddd1;border-radius:18px;background:#fbf8f3;box-shadow:0 12px 28px #3a2a1033}
+ #rail-panel>button{display:flex;align-items:center;gap:12px;min-height:54px;margin:0;padding:6px 18px 6px 12px;border:0;border-radius:0;background:none;color:#453e28;font:700 16px/1.2 'Outfit','DM Sans',sans-serif;text-align:start;cursor:pointer;-webkit-tap-highlight-color:transparent}
+ #rail-panel>button+button{border-top:1px solid #ece3d6}
+ #rail-panel>button:active{background:#f3ecdf}
+ #rail-panel>button>:is(img,.game-art,svg){flex:none;width:38px;height:38px;object-fit:contain}
 }
 #event-rail:empty{display:none}
 /* A phone on its side: the column would run into the tools, so the rail is a row under the boosts pill, the offer at the edge. */
 @media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){
  #event-rail{flex-direction:row-reverse;align-items:flex-start;width:auto;gap:10px;top:calc(var(--mobile-top) + 92px)}
  #event-rail>:is(#today-button,#events-button,#pass-button).is-waiting:not([hidden]){width:48px;height:48px;min-width:48px;min-height:48px}
+ #rail-stack:not([hidden]){width:48px;height:48px;min-width:48px;min-height:48px}
+ #rail-panel:not([hidden]){top:calc(100% + 14px);inset-inline-end:0}
 }
 
 /* ---- Small computer windows: the rail stays icon-only with the name beside it under the mouse (desktop-hud.css) ---- */

@@ -198,6 +198,32 @@ test('the phone\'s event rail: Today, Events and the pass only while their badge
  assert.match(read('public/game.js'),/(^|\n)import '\.\/event-rail\.js';\n/);
 });
 
+// One button for them all (23 Oct 2026, the owner: the farm too busy, "Doe 2"): two or more in the rail are one round button with the
+// first one's picture and how many; its list holds each one's picture and name and opens it through its own button. One alone as before.
+test('the phone\'s event rail is one button while two or more show: the first one\'s picture, how many, a list that opens each',async()=>{
+ globalThis.matchMedia??=()=>({matches:true,addEventListener(){}});
+ const {railShown}=await import('../public/event-rail.js');
+ const node=(id,{hidden=false,waiting=false}={})=>({id,hidden,classList:{contains:n=>n==='is-waiting'&&waiting}});
+ const page={'offer-button':node('offer-button',{hidden:true}),'today-button':node('today-button',{waiting:true}),'events-button':node('events-button'),
+  'pass-button':node('pass-button',{waiting:true}),'season-button':node('season-button',{hidden:true,waiting:true})};
+ const doc={getElementById:id=>page[id]??null};
+ assert.deepEqual(railShown(doc).map(b=>b.id),['today-button','pass-button'],'the offer while it runs, the others while they wait and show');
+ page['offer-button'].hidden=false;assert.deepEqual(railShown(doc).map(b=>b.id),['offer-button','today-button','pass-button'],'in the rail\'s order');
+ assert.deepEqual(railShown({getElementById:()=>{throw new Error('gone');}}),[],'never throws');
+ const rail=read('public/event-rail.js');
+ assert.match(rail,/const shown=mobileLayout\.matches\?railShown\(\):\[\],on=shown\.length>=2;/,'two or more, on a phone only');
+ assert.match(rail,/row\.addEventListener\('click',\(\)=>\{closeStack\(\);button\.click\(\);\}\);/,'a row opens it through its own button');
+ assert.match(rail,/stackButton\.setAttribute\('aria-label',shown\.map\(nameOf\)\.filter\(Boolean\)\.join\(', '\)\);/,'its name says what is in it');
+ assert.doesNotMatch(rail,/:has\(/,'no :has(): the older web views of compat.js would throw');
+ const phone=hud.slice(hud.indexOf(`${PHONE}{\n #active-boosts`));
+ assert.match(phone,/#event-rail\.is-stacked>:not\(#rail-stack\):not\(#rail-panel\)\{display:none\}/);
+ assert.match(phone,/#rail-stack:not\(\[hidden\]\)\{position:relative;display:grid;[^}]*border-radius:50%;/);
+ assert.match(phone,/#rail-stack::before\{content:'';position:absolute;z-index:-1;/,'a second disc under it');
+ assert.match(phone,/#rail-panel:not\(\[hidden\]\)\{position:absolute;[^}]*inset-inline-end:calc\(100% \+ 10px\);[^}]*background:#fbf8f3;/,'beside it, toward the middle, cream');
+ // Its open list never moves the pins (game.js clearRail measures the rail's buttons only).
+ assert.match(read('public/game.js'),/const blocks=\[\.\.\.rail\.children\]\.filter\(b=>b\.id!=='rail-panel'\)/);
+});
+
 // The review of 18 Oct 2026, after the owner's a to d.
 test('every round back button keeps its name for a screen reader: its words in an .sr-only span, as its own text, or an aria-label',()=>{
  let seen=0;

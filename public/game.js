@@ -1968,7 +1968,8 @@ function positionBuildingLabels(){
 function clearRail(){
  if(!mobileLayout.matches)return;
  const rail=document.getElementById('event-rail');if(!rail)return;
- const blocks=[...rail.children].map(b=>b.getClientRects().length?b.getBoundingClientRect():null).filter(r=>r&&r.width>0);
+ // The one button's open list (public/event-rail.js) is only there for a moment: the pins stay where they are under it.
+ const blocks=[...rail.children].filter(b=>b.id!=='rail-panel').map(b=>b.getClientRects().length?b.getBoundingClientRect():null).filter(r=>r&&r.width>0);
  if(!blocks.length)return;
  // At the right-hand edge, or the left one in Arabic: a pin moves away from the edge the rail is at.
  const atRight=(blocks[0].left+blocks[0].right)/2>innerWidth/2;
