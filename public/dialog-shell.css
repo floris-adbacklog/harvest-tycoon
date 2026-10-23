@@ -74,10 +74,13 @@ dialog[data-scrolled] .dialog-top .dialog-heading{box-shadow:none}
 dialog.is-cheer .dialog-heading{position:static;justify-content:center}
 
 /* ---- Back: the same round button as the close, a chevron in it; the words stay its name ---- */
-.back-round{display:inline-grid!important;place-items:center;box-sizing:border-box;width:44px;height:44px;min-width:44px;min-height:44px!important;padding:0!important;margin:0;
+.back-round{display:inline-flex!important;align-items:center;justify-content:center;gap:0;box-sizing:border-box;width:44px;height:44px;min-width:44px;min-height:44px!important;padding:0!important;margin:0;
  border-radius:14px!important;background:var(--btn-icon)!important;border:2px solid var(--btn-icon-line)!important;box-shadow:0 3px 0 var(--btn-icon-edge)!important;color:var(--btn-icon-text);
  font-size:0!important;line-height:0;position:relative;flex:none;cursor:pointer;gap:0!important}
 .back-round>*:not(.sr-only){display:none!important}
+/* A button whose words are its own text (Back to leaderboard) made a second grid row and pushed the arrow up (23 Oct 2026, the owner):
+   flex and no words on screen keep the arrow in the middle of every round back button. */
+.back-round{font-size:0!important;line-height:0!important}.back-round::before{flex:none}
 .back-round[hidden]{display:none!important}
 .back-round::before{content:"";width:10px;height:10px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;rotate:45deg;translate:2px 0;border-radius:1px}
 /* In Arabic the way back points right (the chevron turned round, not mirrored after its turn). */
