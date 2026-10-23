@@ -22,14 +22,14 @@ test('the calm sheet comes after every window\'s own sheet and the shell, before
 });
 
 test('a window\'s rules wait behind its ⓘ: the same lines in both lists, each one still in the game',()=>{
- const lists=[...css.matchAll(/:is\((\.milling-chain,[^)]*\([^)]*\)[^)]*\([^)]*\)[^)]*)\)/g)].map(m=>m[1].replace(/\s+/g,''));
+ const lists=[...css.matchAll(/:is\((\.seed-yield-line,[^)]*)\)/g)].map(m=>m[1].replace(/\s+/g,''));
  assert.equal(lists.length,2,'the hidden lines and the ⓘ\'s own check');assert.equal(lists[0],lists[1]);
  const sources=['public/farm.html','public/economy-ui.js','public/retention-ui.js','public/warehouse-ui.js','public/growth-ui.js','public/boosts-ui.js','public/season-ui.js','public/pass-ui.js','public/family-ui.js'].map(read).join('\n');
- for(const name of lists[0].match(/\.[\w-]+/g).filter(n=>!['.first-batch-note','.recipes-busy'].includes(n)))assert.ok(sources.includes(name.slice(1)),`still made by the game: ${name}`);
+ for(const name of lists[0].match(/\.[\w-]+/g))assert.ok(sources.includes(name.slice(1)),`still made by the game: ${name}`);
  // Shown again with the ⓘ: the rule hides them only while the window is not .show-hints, and beats a window's own id rule.
  assert.match(css,/dialog:not\(\.show-hints\) :is\(/);assert.match(css,/#seed-dialog:not\(\.show-hints\)>p\{display:none!important\}/);
- // The first batch's promise and "every slot taken" say what is going on now: they stay.
- assert.match(css,/\.milling-note:not\(\.first-batch-note\):not\(\.recipes-busy\)/);
+ // A building's window keeps its lines in view (23 Oct 2026, the owner: "dezelfde layout en informatie").
+ assert.doesNotMatch(lists[0],/milling|production-capacity|recipe-section/);
 });
 
 test('the ⓘ beside Close: added once, its name the game\'s own words, a press shows the rules, each opening starts with them hidden',()=>{
@@ -48,12 +48,14 @@ test('the ⓘ beside Close: added once, its name the game\'s own words, a press 
  assert.ok('How it works' in JSON.parse(read('i18n/catalog.json')),'translated already');
 });
 
-test('the free slots are one tile with how many; a recipe\'s time and profit first',()=>{
+test('a building\'s window is as it was before the redesign, in the newer look: a recipe\'s time and profit first, its ingredients as text',()=>{
  const ui=read('public/economy-ui.js');
- assert.doesNotMatch(ui,/\.repeat\(free\)/);assert.match(ui,/\$\{number\(free\)\} free<\/span>/);
- assert.ok('{0} free' in JSON.parse(read('i18n/catalog.json')));
+ assert.doesNotMatch(ui,/\.repeat\(free\)|job-tile/);assert.match(ui,/<div class="job-panel /);
  assert.match(css,/#building-dialog #building-content \.recipe-meta\{font-size:14px;font-weight:700;/);
  assert.match(css,/#building-dialog #building-content \.recipe-xp\{font-size:12px;/);
+ assert.match(css,/#building-dialog #building-content \.recipe-flow \.ingredient,#today-content \.daily-order \.ingredient\{padding:0;border:0;/);
+ // On a computer two recipes side by side again (desktop-hud.css).
+ assert.match(read('public/desktop-hud.css'),/:is\(#crop-catalog,#building-dialog \.recipe-list,#today-content \.daily-list\)\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 test('confetti on the screen: the farm\'s colours, in the open window, never with reduced motion, never in the way',()=>{

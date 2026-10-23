@@ -42,29 +42,25 @@ test('the seed shop is one compact row per crop with its price on the right, and
  assert.match(ui,/<span class="seed-row-price">\$\{art\('coins'\)\}\$\{seedCost\(state,key\)\}<\/span>/);
  assert.match(read('public/game.js'),/floatChip\(state\.plots\[id\]\.crop\?\?selectedCrop,'Planted'\)\+floatChip\('coins',`−\$\{result\.cost\}`,'is-cost'\)/);
 });
-// 23 Oct 2026 (the owner's production window redesign): the slots as tiles on top, a free slot as an empty tile, and each recipe as one
-// compact card with Start beside it; the old head/footer markup (recipe-head, recipe-footer) is gone on purpose.
-test('production: slot tiles on top and compact recipe cards, Collect only when ready',()=>{
+// 23 Oct 2026, the same evening: the production window is back as it was before that day's redesign, its layout and what it says (the
+// owner: "Ik vind de UX van de buildings nog steeds beter helemaal voordat we de schermen hadden aangepakt", picked 1, "De stijl mag best
+// nieuwer zijn, maar dezelfde layout en informatie"): a row per running batch, each recipe with a head, what goes in → what comes out, and
+// a footer with the stepper and Start. The calm sheet's newer look stays over it.
+test('production: compact recipe cards and one row per running batch, Collect only when ready',()=>{
  const ui=read('public/economy-ui.js'),css=read('public/retention.css');
- // What goes in → what comes out on one line again (23 Oct 2026, the owner: "Eerst zag je hoeveel je kreeg en hoeveel het kostte", "heel
- // verwarrend"); no count on the picture any more.
- assert.match(ui,/<span class="recipe-art">\$\{art\(output\[0\]\)\}<\/span>/);assert.doesNotMatch(ui,/recipe-yield/);
- assert.match(ui,/<div class="recipe-trade"><div class="ingredients recipe-needs">\$\{costList\(rid,count\)\}<\/div><span class="recipe-to" aria-hidden="true">→<\/span><div class="recipe-output">\$\{itemList\(/);
- assert.match(ui,/card\.querySelector\('\.recipe-output'\)\.innerHTML=itemList\(multiply\(r\.output\)\);/,'the stepper keeps it in step');
+ assert.match(ui,/<div class="recipe-head"><span class="recipe-art">\$\{art\(Object\.keys\(r\.output\)\[0\]\)\}<\/span>/);
  assert.match(ui,/<span class="recipe-xp">\$\{art\('xp'\)\}\+\$\{r\.xp\} XP<\/span>/);
  assert.match(ui,/\$\{isReady\?`<button data-collect-job="\$\{job\.id\}" class="primary-button job-collect">Collect<\/button>`:''\}/,'no disabled button while a batch is running');
- assert.match(ui,/\$\{free\?`<div class="job-tile is-free" aria-hidden="true">[^`]*<span class="job-state">\$\{number\(free\)\} free<\/span><\/div>`:''\}/,'the free slots are one empty tile with how many (23 Oct 2026: five dashed tiles looked busy)');
- assert.match(ui,/time\.textContent=now>=job\.readyAt\?'Ready':`\$\{seconds\(job\.readyAt-now\)\} left`;/);
- assert.match(ui,/a\.missing\.length\?'':a\.poor\?/,'a missing ingredient shows only in its red badge, no second "Missing:" line (23 Oct 2026, the owner)');
- assert.match(css,/#building-dialog #building-content \.recipe-card\{display:grid;grid-template-columns:52px minmax\(0,1fr\) auto;/,'Start beside the card');
- assert.match(css,/#building-dialog #building-content \.job-tile\.is-ready\{border-color:#8cc06a;/,'a ready slot has the green edge');
+ assert.match(ui,/time\.textContent=now>=job\.readyAt\?\(warehouseFull\(state\)\?'Full':'Ready'\):`\$\{seconds\(job\.readyAt-now\)\} left`;/);
+ assert.match(css,/#building-content \.recipe-footer \.start-recipe\{height:42px;min-height:42px;padding-block:0\}/,'the start button lines up with the stepper');
+ assert.doesNotMatch(ui,/job-tile|recipe-trade|recipe-yield/,'the redesign\'s slot tiles and recipe line are gone');
 });
-// The player's report (23 Oct 2026): a ready batch did not come in while the Warehouse was full. The slots say so (its chip, and Full on a
-// ready tile); Collect stays, and a batch finished with diamonds is a ready tile with Collect like any other.
-test('production: with something ready and the Warehouse (nearly) full, the slots show its chip and Full',()=>{
+// The player's report (23 Oct 2026): a ready batch did not come in while the Warehouse was full. The window says so (its chip above the
+// batches, and Full on a ready batch); Collect stays. Kept in the old layout.
+test('production: with something ready and the Warehouse (nearly) full, the window shows its chip and Full',()=>{
  const ui=read('public/economy-ui.js');
- assert.match(ui,/const room=warehouseFull\(state\)\?'full':warehouseNearFull\(state\)\?'near':'ok'/);
+ assert.match(ui,/const room=warehouseFull\(state\)\?'full':warehouseNearFull\(state\)\?'near':'ok';/);
  assert.match(ui,/\$\{ready\.length&&room!=='ok'\?`<div class="production-room is-\$\{room\}"><button type="button" class="warehouse-chip is-\$\{room\}" data-open-warehouse>/);
- assert.match(ui,/\$\{room==='full'\?'Full':'Ready'\}/);
+ assert.match(ui,/\$\{isReady\?\(room==='full'\?'Full':'Ready'\):/);
  assert.match(ui,/querySelector\('\[data-open-warehouse\]'\)\?\.addEventListener\('click',\(\)=>onWarehouse\?\.\(\)\)/);
 });

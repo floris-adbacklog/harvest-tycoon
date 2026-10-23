@@ -7,8 +7,7 @@ test('on a computer the windows with a long list are wider, with the list in two
  const css=read('public/desktop-hud.css');
  assert.match(css,/@media\(min-width:1200px\) and \(pointer:fine\)\{\s*:is\(#market-dialog,#seed-dialog,#today-dialog,#building-dialog:has\(\.recipe-list\)\)\{width:min\(1000px,calc\(100% - 96px\)\)/);
  assert.match(css,/#market-items\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
- // A building's recipes one under the other since 23 Oct 2026 (the owner: "Zet de batches gewoon op een rij zodat je meer ruimte hebt").
- assert.doesNotMatch(css,/#building-dialog \.recipe-list[^{]*\{[^}]*grid-template-columns/,'no columns for recipes');assert.doesNotMatch(css,/factory-recipe-group-cards\{display:grid/);
+ assert.match(css,/#building-dialog \.recipe-list>\.factory-recipe-group\[open\]\{grid-column:1\/-1\}/,'an open Factory group takes the whole row');
  assert.match(css,/#market-items>:not\(\.market-card\)\{grid-column:1\/-1\}/,'"Not in stock" and its price list take the whole width, not one column');
 });
 

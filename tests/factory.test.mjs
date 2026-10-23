@@ -146,7 +146,7 @@ test('the yard, models and icon ship with the game',()=>{
 test('the building panel shows the coin price of bottled honey, orders the Factory recipes by their source and fits the Factory slots',()=>{
  const ui=read('public/economy-ui.js');
  assert.match(ui,/function costList\(id,n=1\)/);assert.match(ui,/r\.coins\?`<span class="ingredient \$\{state\.coins<r\.coins\*n\?'missing':''\}">\$\{art\('coins'\)\}<span>\$\{number\(r\.coins\*n\)\} coins<\/span><\/span>`:''/);
- assert.match(ui,/<div class="ingredients recipe-needs">\$\{costList\(rid,count\)\}<\/div>/);assert.match(ui,/innerHTML=costList\(id,count\)/);
+ assert.match(ui,/<div class="ingredients">\$\{costList\(rid\)\}<\/div>/);assert.match(ui,/innerHTML=costList\(id,count\)/);
  assert.match(ui,/a\.poor\?`You need \$\{number\(a\.price\)\} coins for a batch\.`/);
  assert.match(ui,/slots=buildingSlots\(state,key,now\)/);assert.match(ui,/slots=buildingSlots\(state,key,farmNow\(\)\)/);assert.match(ui,/The Factory gets a slot every two levels, up to five\./);
  assert.match(ui,/sourceOf=r=>r\.base\?buildingOrder\.indexOf\(RECIPES\[r\.base\]\.building\):-1/);
