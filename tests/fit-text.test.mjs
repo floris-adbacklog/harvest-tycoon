@@ -14,6 +14,7 @@ test('a number that does not fit its pill is made smaller, a pixel at a time, an
   const tiny=make(80,10);fitText(tiny);assert.equal(tiny.style.fontSize,'11px','never smaller than 11px');
   wide.style.fontSize='99px';fitText(wide);assert.equal(wide.style.fontSize,'99px','same text, same room: nothing is measured again');
  }finally{globalThis.getComputedStyle=previous;}
- assert.match(read('public/game.js'),/fitText\(\$\('coins'\)\);/);assert.match(read('public/boosts-ui.js'),/fitText\(\$\('diamonds'\)\);/);
+ // The coins count up when they come in (23 Oct 2026): the pill is fitted to the new amount first, then only the number runs.
+ assert.match(read('public/game.js'),/function showCoins\(goal\)\{\n const el=\$\('coins'\);[\s\S]*?el\.textContent=coinText\(goal\);fitText\(el\);/);assert.match(read('public/boosts-ui.js'),/fitText\(\$\('diamonds'\)\);/);
  assert.match(read('public/mobile.css'),/\.diamond-counter>span:last-child\{position:absolute;top:-5px;inset-inline-end:-5px;/,'the + is a badge on the corner, not a column of its own');
 });

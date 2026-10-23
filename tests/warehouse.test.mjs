@@ -208,3 +208,13 @@ test('the coins open the Warehouse, and their pill shows how full it is',()=>{
  s.inventory.wheat=Math.ceil(room*.9)-storedCount(s)+(s.inventory.wheat??0);assert.equal(warehouseNearFull(s),true);assert.equal(warehouseFull(s),false);
  s.inventory.wheat+=room;assert.equal(warehouseFull(s),true);
 });
+
+// 23 Oct 2026 (the owner: "Het geld moet bij binnenkomen dynamisch stijgen"): coins that come in count up to the new amount.
+test('coins that come in count up in 0.7 s; spending, the first draw and reduced motion show the amount at once',()=>{
+ const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.match(game,/const COIN_COUNT_MS=700;/);assert.match(game,/const k=Math\.max\(0,Math\.min\(1,\(at-start\)\/COIN_COUNT_MS\)\);/,'never below where it was');
+ assert.match(game,/if\(from==null\|\|goal<=from\|\|reducedMotion\)\{coinNow=goal;return;\}/);
+ assert.match(game,/coinNow=k<1\?Math\.round\(from\+\(goal-from\)\*\(1-\(1-k\)\*\*3\)\):goal;/,'slowing down at the end, landing exactly');
+ assert.match(game,/if\(goal===coinGoal\)\{if\(!coinRun&&el\.textContent!==coinText\(goal\)\)/,'the same amount again never starts it over');
+ assert.match(game,/const from=coinNow;coinGoal=goal;cancelAnimationFrame\(coinRun\);/,'a second gain on the way runs on from where the number is');
+});

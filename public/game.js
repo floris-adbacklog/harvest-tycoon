@@ -1304,8 +1304,26 @@ function updateHint(){
 }
 // The numbers in the header that a sweep moves field by field (Oct 2026): coins, level and XP, and what the Market button counts.
 // updateUI shows them too, with everything else.
+// Coins that come in count up (23 Oct 2026, the owner: "Het geld moet bij binnenkomen dynamisch stijgen"): from what the pill shows to the
+// new amount in 0.7 s, slowing down at the end. Spending, the first draw and reduced motion show the new amount at once. The pill is sized
+// for the new amount first (fitText), so its size never jumps while the number runs; a second gain on the way runs on from where it is.
+const COIN_COUNT_MS=700;
+let coinGoal=null,coinNow=null,coinRun=0;
+const coinText=n=>n.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});
+function showCoins(goal){
+ const el=$('coins');
+ if(goal===coinGoal){if(!coinRun&&el.textContent!==coinText(goal)){el.textContent=coinText(goal);fitText(el);}return;}
+ const from=coinNow;coinGoal=goal;cancelAnimationFrame(coinRun);coinRun=0;
+ el.textContent=coinText(goal);fitText(el);
+ if(from==null||goal<=from||reducedMotion){coinNow=goal;return;}
+ // Its own animation frame: the pill's text only, nothing of the 3D view (frame() draws that, and the camera's glides run in it).
+ const start=performance.now();
+ // A frame's time can be a moment before start (it is when the frame began): never below 0, so the number never dips under where it was.
+ const countCoins=at=>{const k=Math.max(0,Math.min(1,(at-start)/COIN_COUNT_MS));coinNow=k<1?Math.round(from+(goal-from)*(1-(1-k)**3)):goal;el.textContent=coinText(coinNow);coinRun=k<1?requestAnimationFrame(countCoins):0;};
+ el.textContent=coinText(from);coinRun=requestAnimationFrame(countCoins);
+}
 function hudNumbers(){
- $('coins').textContent=state.coins.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});fitText($('coins'));$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
+ showCoins(state.coins);$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
  // The coins open the Warehouse (23 Oct 2026, the owner, option 2): a thin line along the bottom of their pill says how full it is, green,
  // amber from 90% and red once bringing in waits (warehouseTone, the Market button's badge and the Warehouse window's bar), so a harvest
  // that waits is no surprise. A screen reader hears it as "Warehouse 820 / 1,100".

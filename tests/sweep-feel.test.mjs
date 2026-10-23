@@ -232,7 +232,7 @@ test('per field only the field and three header numbers are drawn; the full redr
  assert.match(field,/hudNumbers\(\)/);assert.match(field,/particleBurst\(id,false,5\)/,'5 particles a field instead of 13');assert.match(field,/run\.flights=run\.flights\.filter\(t=>now-t<900\);if\(run\.flights\.length<8\)\{run\.flights\.push\(now\);harvestFlight\(id,f\.crop,1\);\}/,'one picture a field, at most 8 in the air');
  assert.match(field,/farmAudio\.snip\(n\);haptic\('sweep'\);sweepTool\.cut\(\);/);assert.match(field,/drawCrop\(id,run\.tilt\)/);
  assert.match(end,/floatReward\(last,/);assert.match(end,/soundForAction\(\{type:'fields',action\},result,run\.level,levelProgress\(state\)\.level\)/);assert.match(end,/beginner\?\.afterAction\(result\)/);
- assert.match(game,/function hudNumbers\(\)\{[\s\S]*?fitText\(\$\('coins'\)\);[\s\S]*?\$\('xp-text'\)[\s\S]*?\$\('stock-count'\)/);assert.match(game,/function updateUI\(\)\{\n hudNumbers\(\);/);
+ assert.match(game,/function hudNumbers\(\)\{\n showCoins\(state\.coins\);[\s\S]*?\$\('xp-text'\)[\s\S]*?\$\('stock-count'\)/);assert.match(game,/function updateUI\(\)\{\n hudNumbers\(\);/);
  // Reduced motion keeps the rings and sounds, without flights, bursts or swings.
  assert.match(game,/function particleBurst\(id,water=false,count=13\)\{\n if\(reducedMotion\)return;/);assert.match(game,/function flyToMarket\(x,y,z,html,count,delay=0\)\{\n if\(reducedMotion\)return;/);
  assert.match(game,/createSweepTool\(\{reducedMotion\}\),sweepGhost=createSweepGhost\(\{reducedMotion\}\)/);assert.match(read('public/ui-polish.css'),/@media\(prefers-reduced-motion:reduce\)\{\.sweep-tool\.is-cutting>\*\{animation:none\}\}/);
