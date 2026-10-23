@@ -154,3 +154,5 @@
  .mastery-row>.mastery-picture{width:40px;height:40px}
  .mastery-pay{min-width:70px}
 }
+/* What you can do now is filled light green, not only edged (23 Oct 2026, the owner: "het helemaal lichtgroen maken valt meer op"). */
+.chore-card.is-ready,.mastery-list .mastery-card.is-ready{background:#eef7e3}

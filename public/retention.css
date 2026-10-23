@@ -1713,3 +1713,5 @@ html[data-portal] .feedback-copy{display:none!important}
 #journal-content .journal-empty .journal-first{flex:none;width:78px;padding:6px 4px 8px;border:2px dashed #d9a53c;border-radius:14px;background:#fffaf0}
 #journal-content .journal-first>.collection-picture{width:46px;height:46px;margin-bottom:2px;filter:none;opacity:1}
 #journal-content .journal-first strong{color:#5c4a2e}
+/* What you can do now is filled light green, not only edged (23 Oct 2026, the owner: "het helemaal lichtgroen maken valt meer op"). */
+.event-collect,.event-hero.is-done,#building-dialog #building-content .job-tile.is-ready,#building-dialog #building-content .recipe-card.is-ready,#building-dialog #building-content .fh-next.is-ready,#building-dialog #building-content .farmhouse-panel .field-row.is-ready,#task-list .quest-item.is-ready{background:#eef7e3}

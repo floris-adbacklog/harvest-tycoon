@@ -820,3 +820,5 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-dialog .family-stats-tiles.is-two .family-stats-tile strong{grid-area:value}
 #family-dialog .family-stats-tiles.is-two .family-stats-tile>span{grid-area:label}
 #family-dialog .family-stats-tiles.is-two .family-stats-tile small{grid-area:note}
+/* What you can do now is filled light green, not only edged (23 Oct 2026, the owner). */
+#family-dialog .family-order-line.is-ready,#family-dialog .family-sharing .sharing-row:has(.sharing-give),#family-dialog .family-rejoin,#family-dialog .family-incoming-invitation,#family-dialog .family-requests .family-list-row,#family-dialog .family-requests .family-list-row+.family-list-row,#family-dialog .family-reward,#family-dialog .family-reward+.family-reward{background:#eef7e3}
