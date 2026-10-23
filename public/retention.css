@@ -568,13 +568,10 @@ button.tractor-card:hover:not(:disabled) .tractor-price{background:var(--btn-dia
 .seed-row.is-locked .seed-row-price{background:#efeae1;color:#a09684}
 .seed-row-check{position:absolute;top:-6px;inset-inline-end:-6px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#b08a3c;color:#fff;font-size:12px;font-weight:700;box-shadow:0 0 0 2px #fffdf5}
 .seed-yield-line{margin:0 0 12px;font-size:13px;color:#807463}
-/* A crop's time with water and care (22 Oct 2026): the water and care pictures, small, before the time (seed shop, seed picker). */
-.cared-time{display:inline-flex;align-items:center;white-space:nowrap}.cared-time .game-art{width:13px;height:13px;margin-inline-end:1px}.seed-row-copy small .cared-time .game-art{width:13px;height:13px;vertical-align:0}
-.seed-yield-line .cared-time{margin-inline-end:6px;vertical-align:-3px}.seed-yield-line .cared-time .game-art{width:17px;height:17px}
-/* The growing time before it (22 Oct 2026): the hourglass, a little apart from the time with water and care. */
+/* A crop's growing time (22 Oct 2026; alone since 23 Oct, the owner: "show bij crops enkel total time"): the hourglass before it. */
 .crop-time{display:inline-flex;align-items:center;white-space:nowrap;margin-inline-end:8px;opacity:.85}.crop-time .game-art{width:13px;height:13px;margin-inline-end:2px}.seed-yield-line .crop-time{margin-inline-end:4px;vertical-align:-3px}.seed-yield-line .crop-time .game-art{width:17px;height:17px}.seed-yield-line .crop-time+span{margin-inline-end:10px}
 /* In the chosen-crop button its picture rule (.seed#selected-crop-button img, 27-40 px) would take the time's small pictures too. */
-.seed#selected-crop-button .crop-time img,.seed#selected-crop-button .cared-time img{width:13px;height:13px}
+.seed#selected-crop-button .crop-time img{width:13px;height:13px}
 .seed-filters button{white-space:nowrap;padding-inline:6px}
 @media(max-width:340px){.seed-filters button{padding-inline:3px;font-size:12px}}
 

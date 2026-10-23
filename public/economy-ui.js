@@ -17,11 +17,10 @@ const icons=refreshArt;
 // the first harvest to the first sale says the same number as the Crops tab's "This basket is worth").
 export function marketWorth(state,tab,now=Date.now()){return marketPay(state,marketItems(state,tab).reduce((v,k)=>v+sellableStock(state,k,now)*marketQuote(k,now).price,0),now);}
 const seconds=formatDuration;
-// The seed shop's tabs by the time a crop takes with water and care, the time its row shows (23 Oct 2026, the owner: "Dit klopt niet meer
-// nu we tijden aangepast hebben": since one crop a harvest, water and care take a crop to a quarter of its time, so 8 hours became 2 and
-// nothing takes a night). Quick: 5 minutes or less (wheat, lettuce, corn); Minutes: under an hour (barley, green beans, cabbage); Hours: an
-// hour or more. Before, by the growing time alone (16 Oct 2026): Quick 5 minutes or less, Hours under 8 hours, Overnight from 8.
-export const seedTab=cared=>cared<=QUICK_CROP_MS?'quick':cared<3600000?'minutes':'hours';
+// The seed shop's tabs by the growing time its rows show, each tab's name true to it (23 Oct 2026, the owner: "Dit klopt niet meer nu we
+// tijden aangepast hebben", then "show bij crops enkel total time"): Quick 5 minutes or less (wheat, lettuce), Minutes under an hour (corn,
+// barley), Hours under 8 hours, Overnight 8 hours or more. Before (16 Oct 2026) Hours ran from above 5 minutes, corn's 15 too.
+export const seedTab=duration=>duration<=QUICK_CROP_MS?'quick':duration<3600000?'minutes':duration<28800000?'hours':'overnight';
 // 8 Oct 2026: a built building in the Buildings list says what it is doing in separate chips under its name, which wrap instead of
 // being cut off with … (French, Russian and Czech on a phone, English on a computer): green "4 ready", amber "1 working", plain
 // "2 free" (slots; always with its number, a bare "free" is translated as "gratis") and, while nothing is ready yet, a quiet
@@ -78,13 +77,9 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   return {text:`${jobs.length} / ${slots} working · ${seconds(next)}`,kind:'working',...counts,next};
  }
  // A season crop (the Season Pass's cranberries, Oct 2026) is planted with its seed packets, never coins: its row says how many are left.
- // The seed shop and the seed picker show a crop's time with water and care (22 Oct 2026, the owner: "zet bij Zaden de tijd die het zou
- // kosten met water en care"), with the water and care pictures beside it; the dialog's line under the filter says so in words. A field's
- // own timer keeps its real time left.
- const caredTime=(key,regrowing=false)=>`<span class="cared-time" title="With water and care">${art('water')}${art('care')}${seconds(caredDuration(state,key,regrowing,farmNow()))}</span>`;
- // Both times (22 Oct 2026, the owner: "zet bij crops total tijd en tijd met water en full care"): the growing time on its own (an
- // hourglass), then the time with water and care.
- const growTimes=(key,regrowing=false)=>`<span class="crop-time" title="Growing time">${art('hourglass')}${seconds(cropDuration(state,key,regrowing,farmNow()))}</span>${caredTime(key,regrowing)}`;
+ // The seed shop and the seed picker show a crop's growing time only, with an hourglass (23 Oct 2026, the owner: "show bij crops enkel
+ // total time"; from 22 Oct the time with water and care stood beside it). A field's own timer keeps its real time left.
+ const growTimes=(key,regrowing=false)=>`<span class="crop-time" title="Growing time">${art('hourglass')}${seconds(cropDuration(state,key,regrowing,farmNow()))}</span>`;
  const cropPrice=key=>seasonCrop(key)?`${seasonSeedsOf(state,key)} packets · ${growTimes(key)}`:`${seedCost(state,key)} · ${growTimes(key)}`;
  function chooseCrop(key){if(seasonCrop(key)?seasonSeedsOf(state,key)<1||!seasonCropOpen(key,farmNow()):!cropUnlocked(state,key)){notify(cropUnlockHint(state,key));return;}selectedCrop=key;$('selected-crop-art').innerHTML=art(key);$('selected-crop-name').textContent=CROPS[key].name;$('selected-crop-price').innerHTML=cropPrice(key);onCrop(key);}
  // The season crop's row on top of the seeds while its season runs or a farm still has packets: the packets instead of a price.
@@ -97,7 +92,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  }
  function renderSeeds(){
   document.querySelectorAll('[data-seed-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.seedFilter===seedFilter);b.setAttribute('aria-pressed',String(b.dataset.seedFilter===seedFilter));});
-  keepFolds($('crop-catalog'),()=>{$('crop-catalog').innerHTML=seasonSeedRows()+Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([key])=>seedFilter==='all'||seedTab(caredDuration(state,key,false,farmNow()))===seedFilter).map(([key,c])=>{
+  keepFolds($('crop-catalog'),()=>{$('crop-catalog').innerHTML=seasonSeedRows()+Object.entries(CROPS).sort((a,b)=>a[1].duration-b[1].duration).filter(([key])=>seedFilter==='all'||seedTab(cropDuration(state,key,false,farmNow()))===seedFilter).map(([key,c])=>{
    const paceTitle=c.perennial?`Plant once · First harvest ${seconds(caredDuration(state,key,false,farmNow()))} with water and care\nThen ${seconds(caredDuration(state,key,true,farmNow()))} after each collection.\nOne harvest waits; no offline stockpiling.`:'';
    // One compact row per crop, like the market: picture, name (plus "Regrows" for orchard crops), time and today's price,
    // the seed price on the right. The filter tabs already say how quick a crop is.

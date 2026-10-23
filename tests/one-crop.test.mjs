@@ -94,14 +94,14 @@ test('per field and hour: the same crops for every way of playing, the same wort
  }
 });
 
-test('the seed shop and the seed picker show a crop\'s time with water and care, with the water and care pictures; the fields keep their real time',()=>{
+// 23 Oct 2026 (the owner: "show bij crops enkel total time"): the seed shop and the seed picker show the growing time only; from 22 Oct
+// the time with water and care stood beside it.
+test('the seed shop and the seed picker show a crop\'s growing time only, with the hourglass; the fields keep their real time',()=>{
  const ui=read('public/economy-ui.js'),html=read('public/farm.html');
- assert.match(ui,/const caredTime=\(key,regrowing=false\)=>`<span class="cared-time" title="With water and care">\$\{art\('water'\)\}\$\{art\('care'\)\}\$\{seconds\(caredDuration\(state,key,regrowing,farmNow\(\)\)\)\}<\/span>`;/);
+ assert.doesNotMatch(ui,/caredTime|cared-time/);assert.doesNotMatch(read('public/retention.css'),/\.cared-time/);
  assert.match(ui,/\$\('selected-crop-price'\)\.innerHTML=cropPrice\(key\);/);assert.match(ui,/:`\$\{growTimes\(key\)\} · sells for \$\{marketQuote\(key,farmNow\(\)\)\.price\}`\}<\/small>/);
- assert.match(html,/<p class="seed-yield-line"><span class="crop-time"><i data-game-art="hourglass"><\/i><\/span><span>Growing time<\/span> <span class="cared-time"><i data-game-art="water"><\/i><i data-game-art="care"><\/i><\/span>Times with water and care\. Every harvest gives 1 crop\.<\/p>/);
- assert.match(read('public/retention.css'),/\.cared-time\{display:inline-flex/);
- // Both times (22 Oct 2026): the growing time with an hourglass before the time with water and care.
- assert.match(ui,/const growTimes=\(key,regrowing=false\)=>`<span class="crop-time" title="Growing time">\$\{art\('hourglass'\)\}\$\{seconds\(cropDuration\(state,key,regrowing,farmNow\(\)\)\)\}<\/span>\$\{caredTime\(key,regrowing\)\}`;/);
+ assert.match(html,/<p class="seed-yield-line"><span class="crop-time"><i data-game-art="hourglass"><\/i><\/span><span>Growing time<\/span> <span>Every harvest gives 1 crop\.<\/span><\/p>/);
+ assert.match(ui,/const growTimes=\(key,regrowing=false\)=>`<span class="crop-time" title="Growing time">\$\{art\('hourglass'\)\}\$\{seconds\(cropDuration\(state,key,regrowing,farmNow\(\)\)\)\}<\/span>`;/);
  assert.doesNotMatch(read('public/game.js'),/\+1 crop/,'no "+1 crop" for water or care any more');
  const s=farm();assert.equal(caredDuration(s,'wheat',false,now),30000,'wheat: 2 minutes, 30 seconds with water and care (care opens at 18 s, above the 15-second minimum)');
  assert.ok(caredDuration(s,'apples',true,now)<cropDuration(s,'apples',true,now)*.26);
@@ -114,7 +114,7 @@ test('the texts say the new rule: one crop a harvest, water and care make it rip
  assert.match(wiki,/'With water and care'/);
  assert.match(read('public/loading-screen.js'),/Water and care for a field: it is ready in about a quarter of the time\./);
  assert.match(read('public/retention-ui.js'),/it opens after 15% of the growing time/);
- for(const lang of ['nl','de','es','fr','ja']){const t=JSON.parse(read(`public/i18n/${lang}.json`));assert.ok(t['Times with water and care. Every harvest gives 1 crop.'],lang);assert.ok(t['{0} sooner'],lang);}
+ for(const lang of ['nl','de','es','fr','ja']){const t=JSON.parse(read(`public/i18n/${lang}.json`));assert.ok(t['Every harvest gives 1 crop.'],lang);assert.ok(t['{0} sooner'],lang);}
 });
 
 // "Verdubbel de doelen, ook de medailles" (22 Oct 2026): harvests come about twice as often, so every goal that counts harvests asks twice as many.
