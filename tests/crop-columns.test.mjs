@@ -29,5 +29,12 @@ test('the farmer profile counts the badges of every crop, so a new crop raises t
 });
 test('the mastery list shows every crop: the ones still to come greyed, with the level they open at',()=>{
  const ui=read('public/growth-ui.js');
- assert.match(ui,/Object\.keys\(CROPS\)\.filter\(key=>!cropUnlocked\(state,key\)\)/);assert.match(ui,/class="mastery-card is-locked"/);assert.match(ui,/Opens at level \$\{cropLevel\(key\)\}/);
+ // 23 Oct 2026 (the Medals tab as the chores window): medals to collect on top, then the crops on their way, and the crops with no
+ // harvests yet and the ones still to open folded away as rows, the open ones first, then by the level they open at.
+ assert.match(ui,/const crops=Object\.keys\(CROPS\)\.map\(key=>/,'every crop');
+ assert.match(ui,/const later=crops\.filter\(x=>!x\.open\|\|x\.all\.every\(t=>!t\.claimed&&!t\.progress\)\)\.sort\(\(a,b\)=>Number\(b\.open\)-Number\(a\.open\)\|\|\(a\.open\?0:cropLevel\(a\.key\)-cropLevel\(b\.key\)\)\);/);
+ assert.match(ui,/<div class="mastery-later\$\{open\?'':' is-locked'\}">/);assert.match(ui,/Opens at level \$\{cropLevel\(key\)\}/);
+ assert.match(ui,/<details class="future-unlocks mastery-unlocks" data-fold="medals-later">/,'folded, and it stays open over a re-render');
+ assert.match(ui,/\$\{ready\.map\(card\)\.join\(''\)\}\$\{going\.length\?/,'medals to collect first');
+ assert.match(ui,/<article class="mastery-card is-ready">[^\n]*data-mastery="\$\{key\}" data-tier="\$\{next\.id\}">Collect<\/button>/);
 });

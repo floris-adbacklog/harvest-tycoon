@@ -46,7 +46,8 @@ test('the four tier medals are painted WebP pictures, used on the Medals tab, th
  assert.deepEqual([...MEDAL_ART],['medal-bronze','medal-silver','medal-gold','medal-platinum']);
  for(const key of MEDAL_ART){assert.equal(artSource(key).src,`/assets/icons/${key}.webp`);assert.ok(existsSync(new URL(`../public/assets/icons/${key}.webp`,import.meta.url)),key);}
  assert.match(withMedals([{crop:'wheat',tier:3}],'x'),/data-art="medal-platinum"/);
- assert.match(read('public/growth-ui.js'),/<span class="mastery-medal\$\{t\.claimed\?' earned':''\}" title="\$\{t\.name\}: \$\{number\(t\.target\)\} harvests">\$\{art\(MEDAL_ART\[t\.id\]\)\}<\/span>/);
+ // 23 Oct 2026 (the Medals tab as the chores window): a medal earned and not collected yet shows in colour too, with a green ring.
+ assert.match(read('public/growth-ui.js'),/<span class="mastery-medal\$\{t\.claimed\?' earned':t\.progress>=t\.target\?' is-ready':''\}" title="\$\{t\.name\}: \$\{number\(t\.target\)\} harvests">\$\{art\(MEDAL_ART\[t\.id\]\)\}<\/span>/);
  assert.match(read('src/player-profiles.js'),/<span class="farmer-badge-art">\$\{art\(crop\)\}\$\{art\(MEDAL_ART\[best\],'farmer-badge-medal'\)\}<\/span>/);
  assert.match(read('public/rank-picker.js'),/badges:'medal-gold'/);assert.match(read('public/visual-icons.js'),/medal:'medal-gold'/,'every medal symbol (Medals in More, a project\'s medals) is the gold medal');
 });
