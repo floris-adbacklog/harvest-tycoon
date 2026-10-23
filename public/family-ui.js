@@ -44,13 +44,15 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  const familyProfile=createFamilyProfile({emblem,act,openFamily:()=>open()});
  const inviteSearch=createFamilyInviteSearch({request:body=>window.parent.harvestBridge.request(body),onInvite:act,getView:()=>view,playerId:window.parent.harvestBridge.playerId,isBusy:()=>busy});
  const disabled=condition=>condition||busy?'disabled':'';
- const actionButton=(type,label,data='',condition=false)=>`<button type="button" class="small-button" data-family-action="${type}" ${data} ${disabled(condition)}>${label}</button>`;
+ const actionButton=(type,label,data='',condition=false,look='small-button')=>`<button type="button" class="${look}" data-family-action="${type}" ${data} ${disabled(condition)}>${label}</button>`;
  // What a reward is for: the weekly order, the tournament, or a tier of the Family Chest (with its own chest picture).
  const CHEST_NAMES={'chest-wood':'Wooden chest','chest-iron':'Iron chest','chest-silver':'Silver chest','chest-gold':'Golden chest'};
- const rewardName=r=>r.kind==='order'?'Family Order':CHEST_NAMES[r.kind]?`Family Chest · ${CHEST_NAMES[r.kind]}`:'Family Tournament';
+ // The Family window (23 Oct 2026, as the chores and quests windows): what you can collect is a card with a green edge on top of its tab,
+ // the chest's own picture or the gift, its name, what it gives as chips and its Collect beside it (on a phone too).
+ const rewardName=r=>r.kind==='order'?'Family Order':CHEST_NAMES[r.kind]??'Family Tournament';
  const rewardArt=r=>CHEST_NAMES[r.kind]?art(`family-${r.kind}`):art('gift');
- const isChest=r=>Boolean(CHEST_NAMES[r.kind]);
- const rewardRow=(r,short=false)=>`<div class="family-reward">${rewardArt(r)}<div><strong>${short&&CHEST_NAMES[r.kind]?CHEST_NAMES[r.kind]:rewardName(r)}</strong><span>${[r.coins?`${num(r.coins)} coins`:null,r.xp?`${num(r.xp)} XP`:null,r.diamonds?`${num(r.diamonds)} diamonds`:null].filter(Boolean).join(' · ')}</span><small>Collect within ${formatDuration(r.expiresAt-farmNow())}</small></div><button type="button" class="primary-button" data-family-action="family_claim" data-reward-id="${esc(r.id)}" ${disabled(false)}>Collect</button></div>`;
+ const rewardChips=r=>`${r.coins?`<b>${art('coins')}${num(r.coins)}</b>`:''}${r.xp?`<b>${art('xp')}${num(r.xp)} XP</b>`:''}${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`;
+ const rewardRow=r=>`<div class="family-reward"><span class="family-reward-art">${rewardArt(r)}</span><div><strong>${rewardName(r)}</strong><span class="family-chips">${rewardChips(r)}</span><small>Collect within ${formatDuration(r.expiresAt-farmNow())}</small></div><button type="button" class="primary-button" data-family-action="family_claim" data-reward-id="${esc(r.id)}" ${disabled(false)}>Collect</button></div>`;
  const rewardCards=(list=view.rewards)=>list.length?`<section class="family-rewards"><h3>Rewards to collect</h3>${list.map(rewardRow).join('')}</section>`:'';
  // What a family gives a farmer (5 Oct 2026, the owner's wish): four cards with the real numbers, on the landing for a farmer without a
  // family and in a fold on This week for members, with the way to the wiki's Farm family page. Only what holds for every family, and
@@ -69,7 +71,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function rejoinCard(){
   const r=view.rejoin;if(!r)return '';
   // In the farmer's language here and kept from the page's translation, as Welcome back does (welcome-ui.js): the family's name stays.
-  return `<section class="family-alone family-rejoin">${emblem(r.emblem)}<div><strong translate="no">${esc(t('You left {0} after {1} days away.',r.name,Number(r.days)))}</strong><span>You can join it again straight away.</span></div>${actionButton('family_rejoin','Join again',`data-family-id="${esc(r.familyId)}"`)}</section>`;
+  return `<section class="family-alone family-rejoin">${emblem(r.emblem)}<div><strong translate="no">${esc(t('You left {0} after {1} days away.',r.name,Number(r.days)))}</strong><span>You can join it again straight away.</span></div>${actionButton('family_rejoin','Join again',`data-family-id="${esc(r.familyId)}"`,false,'primary-button')}</section>`;
  }
  function landing(){
   // Only the family that removed this farmer waits a while (2 Oct 2026); every other family can be joined at once.
@@ -88,7 +90,9 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    :f.mode==='request'?(mine?.family.id===f.id?actionButton('family_request_cancel','Cancel request',`data-request-id="${esc(mine.id)}"`):actionButton('family_request','Ask to join',`data-family-id="${esc(f.id)}"`,!!mine))
    :`<span class="family-mode-chip">${FAMILY_JOIN_MODES[f.mode]}</span>`;
   const note=mine?`<p class="family-notice">${ownLine(`You asked to join ${mine.family.name}. Their leader or a co-leader can accept it for ${formatDuration(mine.expiresAt-farmNow())}.`,[mine.family.name])}</p>`:'';
-  return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong><span translate="no">${esc(f.name)}</span> <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active${(f.minLevel??FAMILY_MIN_LEVEL)>FAMILY_MIN_LEVEL&&(f.mode==='open'||f.mode==='request')&&!low(f)?` · level ${f.minLevel}+`:''}</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${more?'<button type="button" class="small-button family-browse-more" data-family-more>Show more</button>':''}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
+  // A family you cannot join now (full, invite only, closed, above your level, or the one that removed you) is a quieter row.
+  const muted=f=>f.full||blocked?.family===f.id||low(f)||!(f.mode==='open'||f.mode==='request');
+  return `<section class="family-browse"><h3>Join a family</h3>${note}${list.length?list.map(f=>`<div class="family-list-row${mine?.family.id===f.id?' is-requested':muted(f)?' is-muted':''}"><button type="button" class="family-list-open" data-family-profile="${esc(f.id)}">${emblem(f.emblem)}<div><strong><span translate="no">${esc(f.name)}</span> <small class="family-level-chip">Level ${f.level??1}</small></strong><span>${f.members} / ${view.config.maxMembers} farmers · ${f.active??0} active${(f.minLevel??FAMILY_MIN_LEVEL)>FAMILY_MIN_LEVEL&&(f.mode==='open'||f.mode==='request')&&!low(f)?` · level ${f.minLevel}+`:''}</span></div></button>${action(f)}</div>`).join(''):'<p>No families yet. Create the first one!</p>'}${more?'<button type="button" class="small-button family-browse-more" data-family-more>Show more</button>':''}${list.some(f=>!f.full&&f.mode!=='open')?'<p class="family-footnote">Request to join: the leader or a co-leader decides. Invite only: they invite you by your player name.</p>':''}</section>`;
  }
  function prizePreview(){
   const t=view.tournament;
@@ -97,7 +101,6 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function week(){
   const o=view.order,locked=view.contributionLocked;
   const lines=Object.entries(o.lines),isDone=([k,n])=>(o.filled[k]??0)>=n,complete=lines.filter(isDone).length;
-  const total=lines.reduce((n,[,t])=>n+t,0),delivered=lines.reduce((n,[k,t])=>n+Math.min(t,o.filled[k]??0),0);
   const place=[...view.members].sort((a,b)=>b.points-a.points).findIndex(m=>m.isSelf)+1;
   // What you can hand in now comes first, then what still needs stock, and finished lines last.
   const order=([k,n])=>isDone([k,n])?2:!locked&&(state.inventory[k]??0)>0?0:1;
@@ -105,17 +108,22 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const waitsLater=([key,target])=>(o.filled[key]??0)<target&&(state.inventory[key]??0)<1&&!itemAvailable(state,key);
   // …unless every open line waits: then nothing is folded away and the order shows as it is.
   const open=lines.filter(l=>!isDone(l)),later=l=>waitsLater(l)&&open.some(x=>!waitsLater(x));
+  // 23 Oct 2026 (as the chores window): a line you can deliver to now is a card with a green edge and its Deliver beside it (Deliver 1
+  // under it for a careful farmer); a line you have nothing for is a quieter card without a button.
   const line=([key,target])=>{
-   const filled=o.filled[key]??0,stock=state.inventory[key]??0,max=Math.min(stock,target-filled),done=filled>=target;
-   // One clear button for everything you can hand in now, and +1 beside it for a careful farmer.
-   const actions=done?'<span class="family-done">✓ Complete</span>':locked||stock<1?'':`${max>1?actionButton('family_contribute','Deliver 1',`data-item="${key}" data-count="1"`):''}<button type="button" class="primary-button family-deliver" data-family-action="family_contribute" data-item="${key}" data-count="${max}" ${disabled(max<1)}>Deliver ${num(max)}</button>`;
-   return `<article class="family-order-line${done?' is-done':order([key,target])===0?' is-ready':''}">${art(key)}<div class="family-line-copy"><strong>${ITEMS[key].name}</strong><span>${num(filled)} / ${num(target)} delivered · ${stock<1&&!done&&!itemAvailable(state,key)?(levelOf(state)<itemUnlockLevel(key)?`unlocks at level ${itemUnlockLevel(key)}`:`needs the ${BUILDINGS[itemBuilding(key)]?.name??'right building'}`):`${num(stock)} in stock`}</span><progress max="${target}" value="${filled}" aria-label="${ITEMS[key].name} delivered"></progress></div><div class="family-line-actions">${actions}</div></article>`;
+   const filled=o.filled[key]??0,stock=state.inventory[key]??0,max=Math.min(stock,target-filled),done=filled>=target,ready=!done&&order([key,target])===0;
+   const actions=done?'<span class="family-done">✓ Complete</span>':!ready?'':`<button type="button" class="primary-button family-deliver" data-family-action="family_contribute" data-item="${key}" data-count="${max}" ${disabled(max<1)}>Deliver ${num(max)}</button>${max>1?actionButton('family_contribute','Deliver 1',`data-item="${key}" data-count="1"`):''}`;
+   const where=stock<1&&!done&&!itemAvailable(state,key)?(levelOf(state)<itemUnlockLevel(key)?`unlocks at level ${itemUnlockLevel(key)}`:`needs the ${BUILDINGS[itemBuilding(key)]?.name??'right building'}`):`${num(stock)} in stock`;
+   return `<article class="family-order-line${done?' is-done':ready?' is-ready':' is-waiting'}"><span class="family-line-art">${art(key)}</span><div class="family-line-copy"><strong>${ITEMS[key].name}</strong><div class="family-line-meter"><progress max="${target}" value="${filled}" aria-label="${ITEMS[key].name} delivered"></progress><b>${num(filled)} / ${num(target)}</b></div><span class="family-line-stock${stock>0?' has-stock':''}">${where}</span></div><div class="family-line-actions">${actions}</div></article>`;
   };
   // A delivered line is a small chip (26 Sep 2026: four finished lines took a full row each); open lines keep their buttons.
   const chip=([key,target])=>`<span class="family-done-chip">${art(key)}<span>✓ ${ITEMS[key].name} ${num(Math.min(o.filled[key]??0,target))}/${num(target)}</span></span>`;
   const done=lines.filter(isDone),chips=`<div class="family-done-chips">${done.map(chip).join('')}</div>`;
-  // 2. The Family Order as one card: title, where it stands and the time left in one line, and the bar (27 Sep 2026: three blocks).
-  return `${rewardCards(view.rewards.filter(r=>!isChest(r)))}${aloneNote()}${chestCard()}<section class="family-order-card"><div class="family-order-head">${art('family-weekly-order')}<div><h3>${o.completed?'Order complete!':'Family Order'}</h3><p><b>${complete} / ${lines.length}</b> lines · <b>${num(view.yourPoints)}</b> ${view.yourPoints>0&&place?`your points (#${place})`:'your points'} · <b data-family-countdown>${formatDuration(Math.max(0,view.endsAt-farmNow()))}</b> left</p></div></div><progress max="${Math.max(1,total)}" value="${delivered}" aria-label="Family Order delivered"></progress>${locked?'<p class="family-notice">You have already contributed to another family this week. You can help this family next week.</p>':''}${o.completed?'':`<details class="family-rewards-fold" data-fold="order-rewards"><summary><strong>Your rewards</strong><span>${view.yourOrderPoints>=view.config.minPoints?orderShareText(orderShare(view).full,orderShare(view).lines):'Keep delivering to qualify.'}</span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${renderFamilyOrderRewards(view)}</details>`}</section>
+  // 2. The Family Order as one card: title, your points and the time left, then one piece of bar per line (23 Oct 2026: the order is
+  // paid per full line, so its bar shows the lines) with how many are full beside it.
+  const piece=([key,target])=>`<i class="${isDone([key,target])?'is-full':''}"><i style="width:${Math.round(Math.min(1,(o.filled[key]??0)/target)*100)}%"></i></i>`;
+  // Everything to collect comes first: the chests' rewards too (23 Oct 2026; they sat inside the chest card).
+  return `${rewardCards()}${aloneNote()}${chestCard()}<section class="family-order-card"><div class="family-order-head">${art('family-weekly-order')}<div><h3>${o.completed?'Order complete!':'Family Order'}</h3><p><b>${num(view.yourPoints)}</b> ${view.yourPoints>0&&place?`your points (#${place})`:'your points'}</p></div><span class="family-time-chip">${art('hourglass')}<b data-family-countdown>${formatDuration(Math.max(0,view.endsAt-farmNow()))}</b> left</span></div><div class="family-order-lines"><span class="family-order-pieces" aria-hidden="true">${lines.map(piece).join('')}</span><b>${complete} / ${lines.length} lines</b></div>${locked?'<p class="family-notice">You have already contributed to another family this week. You can help this family next week.</p>':''}${o.completed?'':`<details class="family-rewards-fold" data-fold="order-rewards"><summary><strong>Your rewards</strong><span>${view.yourOrderPoints>=view.config.minPoints?orderShareText(orderShare(view).full,orderShare(view).lines):'Keep delivering to qualify.'}</span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${renderFamilyOrderRewards(view)}</details>`}</section>
 
   ${o.completed?`${view.rewards.some(r=>r.kind==='order')?'':renderFamilyOrderRewards(view)}<details class="family-done-fold" data-fold="order-done"><summary><span><strong>✓ ${done.length} ${done.length===1?'line':'lines'} delivered</strong></span><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary>${chips}</details>`
    :`<div class="family-order">${open.filter(l=>!later(l)).sort((a,b)=>order(a)-order(b)).map(line).join('')}</div>${done.length?`<div class="family-done-row"><span>Delivered</span>${chips}</div>`:''}`}
@@ -128,22 +136,20 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const available=Object.entries(ITEMS).filter(([k,item])=>item.sell>0&&state.inventory[k]>0&&!worldTwoItem(k));   // never World II's goods
   return `<details class="family-extra" data-fold="tournament-goods"><summary><span><strong>Tournament goods</strong><small>${extrasOpen?'Extra points for your family':'Fill an order line to unlock'}</small></span></summary><p>Extra goods count for the weekly tournament only (no coins, XP or diamonds), as many as you like. They are handed in permanently.</p>${extrasOpen&&available.length?`<form data-family-form="extra"><label for="family-extra-item">Goods to contribute</label><select id="family-extra-item" name="item">${available.map(([key,item])=>`<option value="${key}" data-art="${key}" data-note="${num(state.inventory[key])} in stock · ${num(item.sell)} points each">${esc(item.name)}</option>`).join('')}</select><label for="family-extra-count">Quantity</label><input id="family-extra-count" name="count" type="number" inputmode="numeric" min="1" step="1" value="1" required><button class="small-button" ${disabled(locked)}>Contribute goods</button></form>`:extrasOpen?'<p>No spare goods in storage yet.</p>':''}</details>`;
  }
- // The Family Chest: one progress bar with the four chests along it, what you have put in, and what each chest gives you.
+ // The Family Chest: the bar to the next chest and what it gives, what you have put in, and what each chest gives you (in its fold).
  function chestCard(){
   const c=view.chest;if(!c)return '';
-  const top=c.tiers.at(-1).points,next=c.tiers.find(t=>!t.reached),level=view.standing?.level??1,bonus=Math.round((view.standing?.bonus??0)*100);
-  const marker=t=>`<span class="family-chest-marker${t.reached?' is-reached':''}" style="inset-inline-start:${Math.min(100,t.points/top*100)}%">${art(`family-chest-${t.id}`)}</span>`;
+  const top=c.tiers.at(-1).points,next=c.tiers.find(t=>!t.reached),bonus=Math.round((view.standing?.bonus??0)*100);
   const tier=t=>`<li class="${t.reached?'is-reached':''}">${art(`family-chest-${t.id}`)}<div><strong>${t.name}</strong><span>${num(t.points)} points</span></div><span class="family-chest-gives"><b>${art('diamonds')}${num(t.diamonds)}</b><b>${art('coins')}${num(t.coins)}</b></span>${t.reached?'<i class="family-chest-check" aria-label="Reached">✓</i>':''}</li>`;
   const mine=c.mine>=c.minPoints?`You put in ${num(c.mine)} points: you share in every chest.`:`You put in ${num(c.mine)} points. From ${num(c.minPoints)} you share in every chest.`;
   // The family level (5 Oct 2026: the line said every chest raises it): chests opened in all weeks together, 3 for level 2, 8 for level 3 …
   const s=view.standing,step=Math.round(FAMILY_LEVEL_BONUS*100),max=step*(FAMILY_LEVEL_STEPS.length-1);
   const levelLine=`${s?.next!=null?`Every chest your family opens counts towards the family level: ${num(s.tiers)} of ${num(s.next)} chests for level ${s.level+1}.`:'Your family is at the highest level.'} Each level adds ${step}% to the chest and the weekly order, up to +${max}%.`;
-  return `<section class="family-chest"><div class="family-chest-head">${art(next?`family-chest-${next.id}`:'family-chest-open')}<div>${bonus?`<span class="tag-info">+${bonus}% rewards</span>`:''}<h3>${next?`${num(c.points)} / ${num(next.points)} to the ${next.name.toLowerCase()}`:'Every chest is open this week!'}</h3></div></div>
-   <div class="family-chest-track"><progress max="${top}" value="${Math.min(c.points,top)}" aria-label="Family Chest points"></progress>${c.tiers.map(marker).join('')}</div>
-   <p class="family-chest-mine">${mine}</p>${chestRewards()}<details class="family-chest-fold" data-fold="chest"><summary><strong>What each chest gives you</strong><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><p class="family-chest-how">Everything your family does on the farm fills it. A new chest every Monday.</p><ul class="family-chest-tiers">${c.tiers.map(tier).join('')}</ul><p class="family-footnote">Coins grow with your level. ${levelLine}</p></details></section>`;
+  // 23 Oct 2026: one strip, the next chest with its own bar and what it gives beside it; the four chests in the fold.
+  const gives=next?`<span class="family-chest-gives"><b>${art('diamonds')}${num(next.diamonds)}</b><b>${art('coins')}${num(next.coins)}</b></span>`:'';
+  return `<section class="family-chest"><div class="family-chest-head">${art(next?`family-chest-${next.id}`:'family-chest-open')}<div class="family-chest-copy">${bonus?`<span class="tag-info">+${bonus}% rewards</span>`:''}<h3>${next?`${num(c.points)} / ${num(next.points)} to the ${next.name.toLowerCase()}`:'Every chest is open this week!'}</h3><progress max="${next?next.points:top}" value="${Math.min(c.points,next?next.points:top)}" aria-label="Family Chest points"></progress></div>${gives}</div>
+   <p class="family-chest-mine">${mine}</p><details class="family-chest-fold" data-fold="chest"><summary><strong>What each chest gives you</strong><i class="factory-chevron" data-lucide="chevron-down" data-line-icon></i></summary><p class="family-chest-how">Everything your family does on the farm fills it. A new chest every Monday.</p><ul class="family-chest-tiers">${c.tiers.map(tier).join('')}</ul><p class="family-footnote">Coins grow with your level. ${levelLine}</p></details></section>`;
  }
- // Chest rewards waiting: small rows on the chest card, each with its own Collect.
- function chestRewards(){const list=view.rewards.filter(isChest);return list.length?`<div class="family-chest-ready">${list.map(r=>rewardRow(r,true)).join('')}</div>`:'';}
  // Alone in a family for three days: a quiet line (no pop-up) to find a busier one; leaving a family of one has no wait.
  function aloneNote(){
   if(!view.alone)return '';
@@ -172,7 +178,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  function joinRequests(){
   if(!view.joinRequests?.length)return '';
   const full=view.members.length>=view.config.maxMembers;
-  return `<section class="family-requests"><h3>Asking to join (${view.joinRequests.length})</h3>${full?'<p class="family-notice">Your family is full. Make room before you accept.</p>':''}${view.joinRequests.map(r=>`<div class="family-list-row"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}</strong><span>Level ${r.level} · ${formatDuration(r.expiresAt-farmNow())} left to answer</span></div>${actionButton('family_request_decline','Decline',`data-request-id="${esc(r.id)}"`)}${actionButton('family_request_accept','Accept',`data-request-id="${esc(r.id)}"`,full)}</div>`).join('')}</section>`;
+  return `<section class="family-requests"><h3>Asking to join (${view.joinRequests.length})</h3>${full?'<p class="family-notice">Your family is full. Make room before you accept.</p>':''}${view.joinRequests.map(r=>`<div class="family-list-row"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}</strong><span>Level ${r.level} · ${formatDuration(r.expiresAt-farmNow())} left to answer</span></div>${actionButton('family_request_decline','Decline',`data-request-id="${esc(r.id)}"`)}${actionButton('family_request_accept','Accept',`data-request-id="${esc(r.id)}"`,full,'primary-button')}</div>`).join('')}</section>`;
  }
  // Help, gifts and requests (public/social-ui.js draws into this box and keeps it up to date itself).
  function sharing(){return '<div class="family-sharing" data-sharing-root aria-live="polite"></div>';}
@@ -218,10 +224,12 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   // The family's own emblem and name on top, with who is in it; the chat and the settings sit beside the close button.
   const f=view?.family,heading=document.getElementById('family-subtitle');
   heading.textContent=f?'FARM FAMILY':'A place to grow together';const title=document.getElementById('family-title');title.toggleAttribute('translate',!!f);if(f)title.setAttribute('translate','no');title.textContent=f?f.name:'Farm Family';   // a family's own name is never translated
-  const badge=document.getElementById('family-heading-emblem');badge.hidden=!f;if(f)badge.innerHTML=`${emblem(f.emblem)}<b class="family-level-badge" title="Family level ${view.standing?.level??1}">${view.standing?.level??1}</b>`;
+  // 23 Oct 2026: the family level is a gold chip in the line under the name (it was a small number on the emblem's corner).
+  const badge=document.getElementById('family-heading-emblem');badge.hidden=!f;if(f)badge.innerHTML=emblem(f.emblem);
   // Your family's emblem and name open its profile, as other families' do in the list and the tournament.
   for(const el of [badge,document.getElementById('family-title')]){el.classList.toggle('family-profile-link',!!f);if(f){el.setAttribute('role','button');el.tabIndex=0;el.title='Family profile';el.onclick=()=>familyProfile.open(f.id);el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();familyProfile.open(f.id);}};}else{el.removeAttribute('role');el.removeAttribute('tabindex');el.removeAttribute('title');el.onclick=el.onkeydown=null;}}
-  const meta=document.getElementById('family-meta');meta.hidden=!f;if(f)meta.textContent=`${view.members.length} / ${view.config.maxMembers} farmers · ${view.members.filter(m=>m.online).length} online`;
+  // Who is in it, as chips: the farmers, who is online (the green dot) and the family level.
+  const meta=document.getElementById('family-meta');meta.hidden=!f;if(f)meta.innerHTML=`<span class="family-meta-chip">${art('family-members')}${view.members.length} / ${view.config.maxMembers} farmers</span><span class="family-meta-chip"><i class="online-dot is-online" aria-hidden="true"></i>${view.members.filter(m=>m.online).length} online</span><span class="family-meta-chip is-level" title="Family level ${view.standing?.level??1}">Level ${view.standing?.level??1}</span>`;
   document.getElementById('family-chat').hidden=!f||!window.harvestChat;document.getElementById('family-settings').hidden=!f;
   dialog.querySelector('#family-settings').classList.toggle('active',tab==='settings');
   setOwnText(document.getElementById('family-feedback'),error,[...namesIn(view),...inviteSearch.names()]);

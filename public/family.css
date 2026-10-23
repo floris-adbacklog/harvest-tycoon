@@ -548,3 +548,275 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 .family-share-chat:disabled>.game-art{filter:saturate(.45);opacity:.8}
 .family-share-chat:disabled strong{color:#6b6450}
 .family-share-chat:disabled>svg,.family-share-chat:disabled>[data-line-icon]{visibility:hidden}
+
+/* The Family window, cleaner (23 Oct 2026, as the chores and quests windows): compact cream cards (#fffdf4, edge #ddd2c7); what you can do
+   now first with a green edge and its button beside it, on a phone too (a reward to collect, an order line you have goods for, a
+   request to answer); what waits is quieter; your own row in gold; details in folds; chips for the numbers and gold bars. */
+#family-dialog .family-heading-meta{display:flex;flex-wrap:wrap;align-items:center;gap:5px;white-space:normal;overflow:visible}
+#family-dialog .family-meta-chip{display:inline-flex;align-items:center;gap:5px;padding-block:2px;padding-inline:4px 9px;border:1px solid #ddd2c7;border-radius:999px;background:#fffdf4;font:700 12px/1.4 'DM Sans',sans-serif;color:#5c4a2e;white-space:nowrap;font-variant-numeric:tabular-nums}
+#family-dialog .family-meta-chip>.game-art{flex:none;width:18px;height:18px;object-fit:contain}
+#family-dialog .family-meta-chip>.online-dot{display:block;flex:none;width:8px;height:8px;margin-inline:4px 1px;border-radius:50%;background:#5e9b51}
+#family-dialog .family-meta-chip.is-level{padding-inline-start:9px;border-color:#e8cf86;background:#fff1c4;color:#7a5410}
+#family-dialog #family-tabs{margin:10px 0 2px}
+#family-dialog #family-content>:first-child{margin-top:0}
+/* Chips: what a reward or a chest gives, the time left. */
+#family-dialog :is(.family-chips,.family-chest-head>.family-chest-gives){display:flex;flex-wrap:wrap;gap:5px}
+#family-dialog :is(.family-chips>b,.family-chest-head>.family-chest-gives>b,.family-time-chip){display:inline-flex;align-items:center;gap:4px;padding-block:2px;padding-inline:4px 8px;border:1px solid #ead9ad;border-radius:999px;background:#fff8e6;font-size:12px;font-weight:700;line-height:1.4;color:#7a5d1e;white-space:nowrap;font-variant-numeric:tabular-nums}
+#family-dialog :is(.family-chips,.family-chest-head>.family-chest-gives,.family-time-chip) .game-art{flex:none;width:17px;height:17px;object-fit:contain}
+#family-dialog .family-time-chip b{font-weight:700}
+/* What you can collect: a card with a green edge, its Collect beside it. */
+#family-dialog .family-rewards{display:grid;gap:8px;margin:0 0 12px;padding:0;border:0;background:none;box-shadow:none}
+#family-dialog .family-rewards h3{margin:0;font:700 14px/1.3 'Outfit',sans-serif;color:#5c4a2e}
+#family-dialog .family-reward,#family-dialog .family-reward+.family-reward{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:12px;margin:0;padding:10px 12px;border:1px solid #8cc06a;border-radius:16px;background:#fffdf4;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#family-dialog .family-reward-art{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#e6f2d9}
+#family-dialog .family-reward-art>.game-art{width:38px;height:38px;object-fit:contain}
+#family-dialog .family-reward strong{font:700 15.5px/1.25 'Outfit',sans-serif;color:#3f3827}
+#family-dialog .family-reward .family-chips{margin:4px 0 2px}
+#family-dialog .family-reward small{font-size:12px;color:#9a8c72}
+#family-dialog .family-reward>button{width:auto;min-width:96px;min-height:40px;margin:0;padding:7px 16px;white-space:nowrap}
+/* The Family Chest as one strip: the next chest, its bar and what it gives; the four chests in the fold. */
+#family-dialog .family-chest{margin:0 0 12px;padding:10px 14px;border-radius:16px;box-shadow:0 2px 0 #eadfc2}
+#family-dialog .family-chest-head{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:12px}
+#family-dialog .family-chest-head>.game-art{width:48px;height:48px}
+#family-dialog .family-chest-copy{display:grid;gap:6px;min-width:0}
+#family-dialog .family-chest-copy .tag-info{justify-self:start;margin:0}
+#family-dialog .family-chest-head h3{margin:0;font:700 15px/1.25 'Outfit',sans-serif;color:#3d3522;font-variant-numeric:tabular-nums}
+#family-dialog .family-chest-head>.family-chest-gives{justify-content:flex-end}
+#family-dialog :is(.family-chest-copy,.family-line-meter)>progress{display:block;width:100%;height:8px;margin:0;appearance:none;-webkit-appearance:none;border:0;border-radius:999px;background:#ece3d2;overflow:hidden}
+#family-dialog :is(.family-chest-copy,.family-line-meter)>progress::-webkit-progress-bar{background:#ece3d2;border-radius:999px}
+#family-dialog :is(.family-chest-copy,.family-line-meter)>progress::-webkit-progress-value{background:linear-gradient(90deg,#d9a53c,#e8b94e);border-radius:999px}
+#family-dialog :is(.family-chest-copy,.family-line-meter)>progress::-moz-progress-bar{background:#d9a53c;border-radius:999px}
+#family-dialog .family-chest-mine{margin:8px 0 0;font-size:12.5px;line-height:1.4;color:#7a6b4b}
+#family-dialog .family-chest-fold{margin-top:6px;padding-top:6px;border-top:1px solid #efe4c8}
+#family-dialog .family-chest-fold>summary{min-height:30px}
+/* The Family Order: title, your points and the time left; one piece of bar per line and how many are full. */
+#family-dialog .family-order-card{margin:0 0 12px;padding:10px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-order-head{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:12px}
+#family-dialog .family-order-head>.game-art{width:48px;height:48px}
+#family-dialog .family-order-head h3{margin:0;font:700 16px/1.25 'Outfit',sans-serif}
+#family-dialog .family-order-head p{margin:1px 0 0;font-size:12.5px;line-height:1.4;color:#7a6b4b}
+#family-dialog .family-order-lines{display:flex;align-items:center;gap:10px;margin-top:10px}
+#family-dialog .family-order-pieces{flex:1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+#family-dialog .family-order-pieces>i{display:block;height:10px;border-radius:999px;background:#ece3d2;overflow:hidden}
+#family-dialog .family-order-pieces>i>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d9a53c,#e8b94e)}
+#family-dialog .family-order-pieces>i.is-full>i{background:linear-gradient(90deg,#7c9a5c,#9dbb72)}
+#family-dialog .family-order-lines>b{flex:none;font-size:12.5px;font-weight:700;color:#5c4a2e;font-variant-numeric:tabular-nums}
+#family-dialog .family-order-card>.family-rewards-fold{margin:10px 0 0;padding-top:2px}
+#family-dialog .family-order-card>.family-rewards-fold>summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1px 8px;padding:8px 0 0}
+#family-dialog .family-order-card>.family-rewards-fold>summary strong{font:700 14px/1.3 'Outfit',sans-serif}
+#family-dialog .family-order-card>.family-rewards-fold>summary span{grid-row:2;margin:0;font-size:12px;font-weight:700;line-height:1.4}
+#family-dialog .family-order-card>.family-rewards-fold>summary .factory-chevron{grid-column:2;grid-row:1/3}
+/* The order's lines: one you can deliver to now first, with a green edge and Deliver beside it; one you have nothing for is quieter. */
+#family-dialog .family-order{display:grid;gap:8px}
+#family-dialog .family-order-line{grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-order-line.is-ready{border-color:#8cc06a;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#family-dialog .family-order-line.is-waiting{background:#fbf8ef;box-shadow:none}
+#family-dialog .family-line-art{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:#f1e9dc}
+#family-dialog .family-order-line.is-ready .family-line-art{background:#e6f2d9}
+#family-dialog .family-line-art>.game-art{width:34px;height:34px;object-fit:contain}
+#family-dialog .family-order-line.is-waiting .family-line-art>.game-art{opacity:.75}
+#family-dialog .family-line-copy{min-width:0}
+#family-dialog .family-line-copy strong{font:700 15.5px/1.25 'Outfit',sans-serif;color:#3f3827}
+#family-dialog .family-line-meter{display:flex;align-items:center;gap:8px;margin-top:5px}
+#family-dialog .family-line-meter>progress{flex:1;min-width:40px}
+#family-dialog .family-line-meter>b{flex:none;font-size:12px;font-weight:700;color:#7a6c58;font-variant-numeric:tabular-nums}
+#family-dialog .family-line-copy .family-line-stock{display:inline-block;margin:5px 0 0;font-size:12px;line-height:1.4;color:#9a8c72}
+#family-dialog .family-line-copy .family-line-stock.has-stock{padding:1px 8px;border:1px solid #d3e2c4;border-radius:999px;background:#eef4e6;font-weight:700;color:#42632e}
+#family-dialog .family-line-actions{grid-column:auto;display:grid;justify-items:stretch;gap:5px;min-width:108px}
+#family-dialog .family-line-actions button{width:100%;margin:0;white-space:nowrap}
+#family-dialog .family-line-actions .family-deliver{min-height:40px;padding:7px 14px;font-size:14px}
+#family-dialog .family-line-actions .small-button{min-height:32px;padding:4px 10px;font-size:12px}
+#family-dialog .family-later{margin:10px 0}
+#family-dialog .family-later .family-order{padding:0 10px 10px}
+#family-dialog .family-done-row{margin:10px 0 2px}
+/* Members: compact cards, your own in gold, the ⋯ beside each; farmers asking to join first, with a green edge and Accept beside. */
+#family-dialog .family-member-list{display:grid;gap:6px}
+#family-dialog .family-member{gap:2px;padding-block:0;padding-inline:2px 4px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-member.is-self{border-color:#e8cf86;background:#fff8e1;box-shadow:0 2px 0 #eadbb0}
+#family-dialog .family-member-open{min-height:54px;margin:0;padding:7px 8px}
+#family-dialog .family-member-open:not(:disabled):hover{background:none}
+#family-dialog .family-member-copy{gap:2px}
+#family-dialog .family-member-copy strong{font-size:15px}
+#family-dialog .family-member-bar{height:5px;margin-top:2px}
+#family-dialog .family-requests{display:grid;gap:8px;margin:0 0 14px;padding:0;border:0;background:none}
+#family-dialog .family-requests h3{margin:0;font:700 14px/1.3 'Outfit',sans-serif;color:#5c4a2e}
+#family-dialog .family-requests .family-list-row,#family-dialog .family-requests .family-list-row+.family-list-row{flex-wrap:nowrap;gap:10px;padding:8px 12px;border:1px solid #8cc06a;border-radius:16px;background:#fffdf4;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#family-dialog .family-requests .family-list-row :is(.small-button,.primary-button){flex:none;width:auto;min-height:38px;margin:0;padding:6px 12px;font-size:13px}
+#family-dialog .family-idle-rule{margin:10px 2px 4px}
+#family-dialog .family-share-entry{gap:12px;margin:10px 0 0;padding:10px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-share-entry>.game-art{width:40px;height:40px}
+#family-dialog .family-share-entry strong{font:700 15.5px/1.25 'Outfit',sans-serif}
+#family-dialog .family-share-entry small{margin-top:1px;font-size:12.5px;line-height:1.4}
+#family-dialog .family-share-chat:disabled{background:#f8f3e8;box-shadow:none}
+#family-dialog .family-name-invite{margin:10px 0 0;padding:12px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-invite-head{margin-bottom:8px}
+#family-dialog .family-invite-head>.game-art{width:40px;height:40px}
+#family-dialog .family-invite-head h3{margin:0;font:700 16px/1.25 'Outfit',sans-serif}
+#family-dialog .family-name-invite>small{margin-top:8px}
+#family-dialog .family-sent-invitations{margin:10px 0 0}
+/* Tournament: a compact heading with the time left, your family's place in gold, the families as compact rows (yours in gold too). */
+#family-dialog .family-tournament-banner{grid-template-columns:44px minmax(0,1fr);gap:12px;margin:0 0 10px;padding:10px 14px;border-radius:16px}
+#family-dialog .family-tournament-banner>.game-art{width:44px;height:44px}
+#family-dialog .family-tournament-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px}
+#family-dialog .family-tournament-title h3{margin:0;font-size:18px;line-height:1.2}
+#family-dialog .family-tournament-title>span:last-child{padding:2px 10px;border:1px solid #d3e2c4;border-radius:999px;background:#fffdf4;font-size:12px;color:#5d7350;white-space:nowrap}
+#family-dialog .family-your-place{margin:0 0 14px;padding:8px 12px;border:1px solid #e8cf86;border-radius:16px;background:#fff8e1;box-shadow:0 2px 0 #eadbb0}
+#family-dialog .family-your-place span{color:#7a6b4b}
+#family-dialog .family-standings-heading{margin-bottom:8px}
+#family-dialog .family-podium{gap:6px}
+#family-dialog .family-podium-row{grid-template-columns:36px minmax(0,1fr) auto;gap:10px;padding:6px 12px;border-radius:14px;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-podium-row .family-place{min-height:36px;font-size:18px}
+#family-dialog .family-podium-row .family-place .rank-trophy>.game-art{width:30px;height:34px}
+#family-dialog .family-podium-identity>.family-emblem{width:36px;height:36px;border-radius:11px}
+#family-dialog .family-podium-identity .family-emblem>.game-art{width:26px;height:26px}
+#family-dialog .family-podium-identity strong{font-size:15px}
+#family-dialog .family-podium-identity>div>span{margin-top:1px}
+#family-dialog .family-podium-row.is-yours{border-color:#e8cf86;background:#fff8e1;box-shadow:0 2px 0 #eadbb0}
+#family-dialog .family-podium-prize{padding:4px 9px;font-size:14px}
+#family-dialog .family-podium-prize .game-art{width:17px;height:17px}
+#family-dialog .family-prize-preview{margin:0 0 14px;padding:10px 14px;border-radius:16px}
+#family-dialog .family-extra{margin:12px 0 0;padding:12px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4}
+#family-dialog .family-rules{padding:10px 0}
+#family-dialog .family-rules>summary{min-height:36px}
+/* Stats: the same cards, a little tighter; your own row in gold. */
+#family-dialog .family-stats{gap:10px}
+#family-dialog .family-stats-card{padding:12px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-stats-card h3{margin:0 0 8px;font-size:16px}
+#family-dialog .family-stats-place{padding:8px 12px}
+#family-dialog .family-stats-tiles{gap:6px;margin-top:8px}
+#family-dialog .family-stats-tile{padding:8px 6px;border-color:#ebe2d4;background:#fbf8ef}
+#family-dialog .family-stats-tile>.game-art{width:26px;height:26px}
+#family-dialog .family-stats-tile strong{font-size:18px}
+#family-dialog .family-stats-farmer{padding:8px 6px}
+#family-dialog .family-stats-farmer.is-self{background:#fff8e1;box-shadow:0 0 0 1px #e8cf86 inset}
+/* Sharing: the requests you can give to have a green edge and their Give beside them; today's count as two chips. */
+#family-dialog .family-sharing .sharing-intro{grid-template-columns:40px minmax(0,1fr) auto;gap:12px;padding:10px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-sharing .sharing-intro>.game-art{width:40px;height:40px}
+#family-dialog .family-sharing .sharing-intro strong{font:700 15.5px/1.25 'Outfit',sans-serif}
+#family-dialog .family-sharing .sharing-intro span{margin-top:1px;font-size:12.5px;line-height:1.4}
+#family-dialog .family-sharing .sharing-today{gap:5px}
+#family-dialog .family-sharing .sharing-today div{min-width:0;padding:2px 10px;border:1px solid #ead9ad;border-radius:999px;background:#fff8e6;box-shadow:none}
+#family-dialog .family-sharing .sharing-today dd{font-size:15px}
+#family-dialog .family-sharing .sharing-section{margin-top:16px}
+#family-dialog .family-sharing .sharing-section h3{margin:0;font:700 16px/1.3 'Outfit',sans-serif}
+#family-dialog .family-sharing .sharing-hint{margin:2px 0 8px;font-size:12.5px;line-height:1.45}
+#family-dialog .family-sharing .sharing-list{display:grid;gap:6px;margin-top:8px}
+#family-dialog .family-sharing .sharing-row{flex-wrap:wrap;gap:10px;padding:8px 12px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-sharing .sharing-row:has(.sharing-give){border-color:#8cc06a;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#family-dialog .family-sharing .sharing-row:has(.sharing-chip){background:#fbf8ef;box-shadow:none}
+#family-dialog .family-sharing .sharing-row>.sharing-item{width:40px;height:40px}
+#family-dialog .family-sharing .sharing-who>strong{font:700 15px/1.3 'Outfit',sans-serif;color:#3f3827}
+#family-dialog .family-sharing .sharing-who>strong span{display:inline;margin:0;font-size:inherit;color:inherit}
+#family-dialog .family-sharing .sharing-row>.sharing-person{flex:1 1 140px}
+#family-dialog .family-sharing .sharing-row>.sharing-gift{flex:1 1 100%}
+#family-dialog .family-sharing .sharing-give{display:grid;grid-template-columns:1fr 1fr;gap:4px;flex:none;width:124px;max-width:none}
+#family-dialog .family-sharing .sharing-give .sharing-action{min-height:32px;padding:4px 6px;font-size:12px}
+#family-dialog .family-sharing .sharing-give .sharing-action.is-primary{grid-column:1/-1;grid-row:1;min-height:38px;font-size:13px}
+#family-dialog .family-sharing .sharing-actions{margin-inline-start:auto}
+#family-dialog .family-sharing .sharing-actions .sharing-action{min-height:38px;padding:5px 10px}
+/* Without a family: Join again and an invitation with a green edge; the welcome and what a family gives in compact rows; the families
+   to join as compact cards, the ones you cannot join now quieter. */
+#family-dialog .family-alone{padding:10px 12px;border-radius:16px}
+#family-dialog .family-rejoin{border:1px solid #8cc06a;background:#fffdf4;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#family-dialog .family-rejoin>.primary-button{width:auto;min-height:40px;margin-inline-start:auto;padding:7px 16px;white-space:nowrap}
+#family-dialog .family-incoming-invitation{margin:0 0 12px;padding:12px 14px;border:1px solid #8cc06a;border-radius:16px;background:#fffdf4;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+#family-dialog .family-invitation-identity{margin:0 0 6px}
+#family-dialog .family-invitation-identity h3{font-size:18px}
+#family-dialog .family-incoming-invitation>p{margin:4px 0;font-size:13px}
+#family-dialog .family-invitation-actions{margin-top:10px}
+#family-dialog .family-welcome.is-compact{margin:0 0 10px}
+#family-dialog .family-welcome.is-compact>.game-art{width:44px;height:44px}
+#family-dialog .family-welcome.is-compact h3{font-size:16px}
+#family-dialog .family-welcome.is-compact p{font-size:12.5px;line-height:1.45}
+#family-dialog .family-gives{gap:6px}
+#family-dialog .family-gives>div{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:start;align-content:start;gap:2px 10px;padding:10px 12px;border-color:#ddd2c7;border-radius:14px;background:#fffdf4}
+#family-dialog .family-gives .game-art{grid-row:1/3;width:32px;height:32px;margin:0}
+#family-dialog .family-gives strong{font:700 14px/1.3 'Outfit',sans-serif}
+#family-dialog .family-gives span{font-size:12px;line-height:1.4}
+#family-dialog .family-gives-wiki{margin:2px 0 12px}
+#family-dialog .family-create-fold{margin:10px 0 14px;border-color:#ddd2c7;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-browse>h3{margin:0 0 8px;font:700 17px/1.3 'Outfit',sans-serif}
+#family-dialog .family-browse>.family-notice{margin:0 0 8px;font-size:13px;line-height:1.45}
+#family-dialog .family-browse .family-list-row,#family-dialog .family-browse .family-list-row+.family-list-row{flex-wrap:nowrap;gap:10px;margin:6px 0 0;padding:8px 12px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-browse .family-list-row.is-muted{background:#f8f3e8;box-shadow:none}
+#family-dialog .family-browse .family-list-row.is-muted .family-emblem{opacity:.75}
+#family-dialog .family-browse .family-list-row.is-requested{border-color:#e8cf86;background:#fff8e1;box-shadow:0 2px 0 #eadbb0}
+#family-dialog .family-browse .family-list-open{gap:12px}
+#family-dialog .family-browse .family-list-open>.family-emblem{width:40px;height:40px;border-radius:12px}
+#family-dialog .family-browse .family-list-open .family-emblem>.game-art{width:28px;height:28px}
+#family-dialog .family-browse .family-list-open strong{font:700 15.5px/1.3 'Outfit',sans-serif;color:#3f3827}
+#family-dialog .family-browse .family-list-open strong>span{font-size:inherit}
+#family-dialog .family-browse .family-list-open>div>span{margin-top:1px;font-size:12px;color:#7a6b4b}
+#family-dialog .family-invitation-identity p{margin:0;font-size:13px}
+#family-dialog .family-list-row strong .family-level-chip{display:inline-block;margin:0;margin-inline-start:6px}
+#family-dialog .family-browse .family-list-row .small-button{flex:none;width:auto;min-height:38px;padding:6px 12px}
+/* Family settings: the same cards. */
+#family-dialog .family-card{margin:10px 0;padding:12px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-dialog .family-card>h3{margin:0 0 10px;font-size:16px}
+#family-dialog .family-settings-title{margin:0 0 10px}
+#family-dialog .family-leave{margin-top:18px}
+@media(max-width:600px){
+ #family-dialog .family-reward,#family-dialog .family-reward+.family-reward{grid-template-columns:44px minmax(0,1fr) auto;gap:10px;padding:10px}
+ #family-dialog .family-reward-art{width:44px;height:44px;border-radius:12px}
+ #family-dialog .family-reward-art>.game-art{width:34px;height:34px}
+ #family-dialog .family-reward>button{min-width:84px;padding-inline:12px;font-size:14px}
+ #family-dialog .family-chest{padding:10px 12px}
+ #family-dialog .family-chest-head,#family-dialog .family-order-head{grid-template-columns:40px minmax(0,1fr) auto;gap:10px}
+ #family-dialog .family-chest-head>.game-art,#family-dialog .family-order-head>.game-art{width:40px;height:40px}
+ #family-dialog .family-chest-head h3{font-size:14px}
+ #family-dialog .family-chest-head>.family-chest-gives{flex-direction:column;align-items:flex-end}
+ #family-dialog .family-order-card{padding:10px 12px}
+ #family-dialog .family-order-line{grid-template-columns:40px minmax(0,1fr) auto;gap:10px;padding:10px}
+ #family-dialog .family-line-art{width:40px;height:40px;border-radius:11px}
+ #family-dialog .family-line-art>.game-art{width:31px;height:31px}
+ #family-dialog .family-line-copy strong{font-size:15px}
+ #family-dialog .family-line-actions{min-width:96px}
+ #family-dialog .family-line-actions .family-deliver{padding-inline:10px}
+ #family-dialog .family-tournament-banner{padding:10px 12px}
+ #family-dialog .family-podium-row{grid-template-columns:32px minmax(0,1fr) auto;gap:8px;padding:6px 10px}
+ #family-dialog .family-sharing .sharing-intro{grid-template-columns:40px minmax(0,1fr)}
+ #family-dialog .family-sharing .sharing-today{grid-column:1/-1}
+ #family-dialog .family-sharing .sharing-today div{flex:none}
+ #family-dialog .family-gives{grid-template-columns:minmax(0,1fr)}
+ #family-dialog .family-browse .family-list-row,#family-dialog .family-browse .family-list-row+.family-list-row{padding:8px 10px}
+ #family-dialog .family-requests .family-list-row,#family-dialog .family-requests .family-list-row+.family-list-row{flex-wrap:wrap;padding:8px 10px}
+ #family-dialog .family-requests .family-list-row>div{flex:1 1 120px}
+}
+/* A family's profile: its farmers as the same compact cards as Members, the cards in the window's cream. */
+#family-profile-dialog .family-member-list{display:grid;gap:6px}
+#family-profile-dialog .family-member{gap:2px;padding-block:0;padding-inline:2px 4px;border:1px solid #ddd2c7;border-radius:16px;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-profile-dialog .family-member-open{min-height:52px;margin:0;padding:6px 8px}
+#family-profile-dialog .family-member-copy strong{font-size:15px}
+#family-profile-dialog :is(.family-profile-level,.family-profile-stat){border-color:#ddd2c7;background:#fffdf4;box-shadow:0 2px 0 #e4dbd3}
+#family-profile-dialog .family-profile-hero{padding:12px 14px;border-radius:16px}
+#family-profile-dialog .family-profile-recent .family-list-row{padding:8px 0}
+/* Your order rewards: the same block, smaller (the three numbers with their picture beside them). */
+#family-dialog .family-order-rewards.is-compact{margin:0 0 12px;padding:12px 14px;border-radius:16px;box-shadow:0 2px 0 #eadfc2}
+#family-dialog .family-order-card .family-order-rewards.is-compact{box-shadow:none}
+#family-dialog .family-order-rewards.is-compact .family-order-rewards-heading{gap:10px}
+#family-dialog .family-order-rewards.is-compact .family-order-rewards-heading>.game-art{width:36px;height:36px;flex-basis:36px}
+#family-dialog .family-order-rewards.is-compact .family-order-rewards-heading h3{font-size:16px}
+#family-dialog .family-order-rewards.is-compact .family-reward-caption{margin:1px 0 0;font-size:12.5px;line-height:1.4}
+#family-dialog .family-order-rewards.is-compact .family-order-reward-grid{margin:10px 0 8px;gap:6px}
+#family-dialog .family-order-rewards.is-compact .family-order-reward-cell{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 6px;padding:6px 8px;border-radius:12px}
+#family-dialog .family-order-rewards.is-compact .family-order-reward-cell>.game-art{width:22px;height:22px;align-self:center}
+#family-dialog .family-order-rewards.is-compact .family-order-reward-cell strong{font-size:17px}
+#family-dialog .family-order-rewards.is-compact .family-order-reward-cell>span:last-child{font-size:12px}
+#family-dialog .family-order-rewards.is-compact .family-completion-bonus{padding:8px 10px;font-size:12px;line-height:1.45}
+#family-dialog .family-order-rewards.is-compact .family-footnote{margin:8px 0 0}
+/* Ask for goods: the picture, the list and the stepper on one row, the button under them. */
+#family-dialog .family-sharing .sharing-picker{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"art select stepper";gap:8px}
+#family-dialog .family-sharing .sharing-picker-art{width:44px;height:44px;border-radius:12px}
+#family-dialog .family-sharing .sharing-picker-art>.game-art{width:34px;height:34px}
+#family-dialog .family-sharing .sharing-stepper{gap:6px}
+#family-dialog .family-sharing .sharing-stepper button{width:40px;height:40px;min-height:40px;font-size:20px}
+#family-dialog .family-sharing .sharing-stepper output{min-width:30px;font-size:20px}
+#family-dialog .family-sharing .sharing-ask{gap:10px}
+#family-dialog .family-sharing .sharing-ask .primary-button{min-height:44px}
+@media(max-width:380px){#family-dialog .family-sharing .sharing-picker{grid-template-columns:44px minmax(0,1fr);grid-template-areas:"art select" "stepper stepper"}}
+/* Your family this week: the two numbers with their picture beside them. */
+#family-dialog .family-stats-tiles.is-two .family-stats-tile{grid-template-columns:28px minmax(0,1fr);grid-template-areas:"art value" "art label" "note note";justify-items:start;align-items:center;gap:0 10px;padding:8px 12px;text-align:start}
+#family-dialog .family-stats-tiles.is-two .family-stats-tile>.game-art{grid-area:art;width:28px;height:28px}
+#family-dialog .family-stats-tiles.is-two .family-stats-tile strong{grid-area:value}
+#family-dialog .family-stats-tiles.is-two .family-stats-tile>span{grid-area:label}
+#family-dialog .family-stats-tiles.is-two .family-stats-tile small{grid-area:note}
