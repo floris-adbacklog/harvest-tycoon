@@ -316,3 +316,17 @@ export function checkApplePurchase(apple,purchase,{product,player}){
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {state:apple.revocationDate!=null?'revoked':'purchased',test:apple.environment==='Sandbox',transaction:apple.transactionId,original:apple.originalTransactionId??apple.transactionId};
 }
+// Checkout recovery (23 Oct 2026, the owner: options 1, 2, 4 and 5). The farmer's latest website (Stripe) purchase that was started but
+// not paid: pending or expired, created in the last UNFINISHED_HOURS, and nothing credited (in any store) since it was started. The
+// catalogue of diamond-checkout carries it (unfinished), so the game's reminder card (src/checkout-reminder-ui.js) works on every device;
+// supabase/checkout-reminder.sql picks the same rows for the one reminder email. rows: this farmer's purchases of the last day, in any
+// order. Answers {id, pack, createdAt, offerId, passId, diamonds} or null. A test checkout (livemode false) is never one.
+export const UNFINISHED_HOURS=24;
+export function unfinishedCheckout(rows,now=Date.now()){
+ const since=now-UNFINISHED_HOURS*3600000,at=r=>Date.parse(r?.created_at);
+ const recent=(Array.isArray(rows)?rows:[]).filter(r=>Number.isFinite(at(r))&&at(r)>=since&&at(r)<=now+60000).sort((a,b)=>at(b)-at(a));
+ const open=recent.find(r=>(r.store??'stripe')==='stripe'&&['pending','expired'].includes(r.status)&&r.livemode!==false);
+ if(!open)return null;
+ if(recent.some(r=>['credited','test_paid'].includes(r.status)&&at(r)>=at(open)))return null;
+ return {id:open.id,pack:open.pack,createdAt:at(open),offerId:open.offer_id??null,passId:open.pass_id??null,diamonds:open.diamonds??0};
+}
