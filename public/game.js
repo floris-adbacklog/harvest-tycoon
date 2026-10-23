@@ -1305,9 +1305,9 @@ function updateHint(){
 // The numbers in the header that a sweep moves field by field (Oct 2026): coins, level and XP, and what the Market button counts.
 // updateUI shows them too, with everything else.
 // Coins that come in count up (23 Oct 2026, the owner: "Het geld moet bij binnenkomen dynamisch stijgen"): from what the pill shows to the
-// new amount in 0.7 s, slowing down at the end. Spending, the first draw and reduced motion show the new amount at once. The pill is sized
+// new amount in 1.2 s (0.7 s at first; the owner the same day: "doe de animatie iets langzamer van coins"), slowing down at the end. Spending, the first draw and reduced motion show the new amount at once. The pill is sized
 // for the new amount first (fitText), so its size never jumps while the number runs; a second gain on the way runs on from where it is.
-const COIN_COUNT_MS=700;
+const COIN_COUNT_MS=1200,XP_FILL_MS=700;
 let coinGoal=null,coinNow=null,coinRun=0;
 const coinText=n=>n.toLocaleString('en-US',mobileLayout.matches?{notation:'compact',maximumFractionDigits:1}:{});
 function showCoins(goal){
@@ -1327,7 +1327,7 @@ function showCoins(goal){
  el.textContent=coinText(from);coinRun=requestAnimationFrame(countCoins);
 }
 // XP that comes in fills the bar (23 Oct 2026, the owner: "Animeer wel de XP balk als je XP farmed"): the bar, its number and the phone's
-// ring run from what they show to the new amount in the coins' 0.7 s. A new level, the first draw and reduced motion show it at once.
+// ring run from what they show to the new amount in 0.7 s. A new level, the first draw and reduced motion show it at once.
 // The number keeps the new amount's width while it runs (tabular-nums on #xp-text), so the level card never moves.
 let xpShown=null,xpRun=0;
 function drawXp(current,target){$('xp-text').textContent=`${current} / ${target} XP`;$('xp-bar').max=target;$('xp-bar').value=current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(current/Math.max(1,target)*100))));}
@@ -1339,7 +1339,7 @@ function showXp(level,current,target){
  if(from==null||current<=from||reducedMotion)return;
  text.style.minWidth=`${text.getBoundingClientRect().width}px`;xpShown.now=from;
  const start=performance.now();
- const fillXp=at=>{const k=Math.max(0,Math.min(1,(at-start)/COIN_COUNT_MS));xpShown.now=k<1?Math.round(from+(current-from)*(1-(1-k)**3)):current;drawXp(xpShown.now,target);xpRun=k<1?requestAnimationFrame(fillXp):0;if(!xpRun)text.style.minWidth='';};
+ const fillXp=at=>{const k=Math.max(0,Math.min(1,(at-start)/XP_FILL_MS));xpShown.now=k<1?Math.round(from+(current-from)*(1-(1-k)**3)):current;drawXp(xpShown.now,target);xpRun=k<1?requestAnimationFrame(fillXp):0;if(!xpRun)text.style.minWidth='';};
  drawXp(from,target);xpRun=requestAnimationFrame(fillXp);
 }
 function hudNumbers(){
@@ -1371,7 +1371,8 @@ function updateUI(){
  // village the square's own pin still lights for a villager, the Village tool is the one lit and My farm travels back.
  // 12 Oct 2026 (a player's feedback): the More menu offers the other world in both, The Village on the farm and My farm in the village.
  const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageBrief(state)?.ready||villageLandmark(state)?.ready?1:0):0;
- $('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
+ // My farm only beside the Village (23 Oct 2026, the owner: "haal my farm button weg tenzij je het dorp hebt"): it is the way back from it.
+ $('farm-button').hidden=!worldTwo;$('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
  $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;$('farm-menu-entry').hidden=!villageWorld;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  trackTotals(lvl);

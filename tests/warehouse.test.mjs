@@ -205,9 +205,9 @@ test('the coins open the Market',()=>{
 });
 
 // 23 Oct 2026 (the owner: "Het geld moet bij binnenkomen dynamisch stijgen"): coins that come in count up to the new amount.
-test('coins that come in count up in 0.7 s; spending, the first draw and reduced motion show the amount at once',()=>{
+test('coins that come in count up in 1.2 s; spending, the first draw and reduced motion show the amount at once',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
- assert.match(game,/const COIN_COUNT_MS=700;/);assert.match(game,/const k=Math\.max\(0,Math\.min\(1,\(at-start\)\/COIN_COUNT_MS\)\);/,'never below where it was');
+ assert.match(game,/const COIN_COUNT_MS=1200,XP_FILL_MS=700;/);assert.match(game,/const k=Math\.max\(0,Math\.min\(1,\(at-start\)\/COIN_COUNT_MS\)\);/,'never below where it was');
  assert.match(game,/if\(from==null\|\|goal<=from\|\|reducedMotion\)\{coinNow=goal;return;\}/);
  assert.match(game,/coinNow=k<1\?Math\.round\(from\+\(goal-from\)\*\(1-\(1-k\)\*\*3\)\):goal;/,'slowing down at the end, landing exactly');
  assert.match(game,/if\(goal===coinGoal\)\{if\(!coinRun&&el\.textContent!==coinText\(goal\)\)/,'the same amount again never starts it over');
@@ -218,12 +218,21 @@ test('coins that come in count up in 0.7 s; spending, the first draw and reduced
 });
 
 // 23 Oct 2026 (the owner: "Animeer wel de XP balk als je XP farmed"): XP that comes in fills the bar the same way.
-test('XP that comes in fills the bar in the coins\' 0.7 s; a new level, the first draw and reduced motion show it at once',()=>{
+test('XP that comes in fills the bar in 0.7 s; a new level, the first draw and reduced motion show it at once',()=>{
  const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
  assert.match(game,/\$\('level'\)\.textContent=lvl;showXp\(lvl,lp\.current,lp\.target\);/);
  assert.match(game,/function drawXp\(current,target\)\{\$\('xp-text'\)\.textContent=`\$\{current\} \/ \$\{target\} XP`;\$\('xp-bar'\)\.max=target;\$\('xp-bar'\)\.value=current;/);
  assert.match(game,/const same=xpShown&&xpShown\.level===level&&xpShown\.target===target;\n if\(same&&xpShown\.goal===current\)return;/,'the same amount again never starts it over');
  assert.match(game,/if\(from==null\|\|current<=from\|\|reducedMotion\)return;/,'a new level (from is null), the first draw and reduced motion: at once');
- assert.match(game,/const k=Math\.max\(0,Math\.min\(1,\(at-start\)\/COIN_COUNT_MS\)\);xpShown\.now=k<1\?Math\.round\(from\+\(current-from\)\*\(1-\(1-k\)\*\*3\)\):current;/);
+ assert.match(game,/const k=Math\.max\(0,Math\.min\(1,\(at-start\)\/XP_FILL_MS\)\);xpShown\.now=k<1\?Math\.round\(from\+\(current-from\)\*\(1-\(1-k\)\*\*3\)\):current;/);
  assert.match(readFileSync(new URL('../public/hud.css',import.meta.url),'utf8'),/#coins,#xp-text\{font-variant-numeric:tabular-nums\}/);
+});
+
+// 23 Oct 2026 (the owner: "haal my farm button weg tenzij je het dorp hebt"): My farm is the way back from the Village, so it shows only
+// beside it; the phone's bar below then has one column fewer instead of an empty one.
+test('My farm shows only for a farmer who has the Village',()=>{
+ const html=readFileSync(new URL('../public/farm.html',import.meta.url),'utf8'),game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8'),phone=readFileSync(new URL('../public/mobile.css',import.meta.url),'utf8');
+ assert.match(html,/<button class="side-tool active" id="farm-button" aria-label="Return to the farm" hidden>/,'hidden from the start, never a flash');
+ assert.match(game,/\$\('farm-button'\)\.hidden=!worldTwo;\$\('village-button'\)\.hidden=!worldTwo;/);
+ assert.match(phone,/\.side-tools\{[^}]*grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax\(0,1fr\);/,'as many columns as buttons');
 });
