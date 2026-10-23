@@ -73,7 +73,7 @@ test('keepFolds: closing the window forgets, so its fold-outs start closed next 
 });
 
 test('keepFolds: a fold the player closes stays closed when another tab of the window is written without it (the Estate, Today)',()=>{
- // The Estate: Projects goes through keepFolds, Stall, Chores, Mastery, Master and Bonuses write estate-content themselves; Today's
+ // The Estate: Projects (and Chores and Medals since 23 Oct 2026) go through keepFolds, Stall, Master and Bonuses write it themselves; Today's
  // Challenges the same for today-content. Each open and close is noted when the player makes it, not only when keepFolds draws.
  const {el,dialog}=win(),projects=()=>keepFolds(el,page(['road','The road ahead'])),stall=()=>{el.innerHTML='<section class="stall-hero">…</section>';};
  projects();el.tap('road',true);projects();assert.equal(el.fold('road').open,true,'a farm update keeps it open');

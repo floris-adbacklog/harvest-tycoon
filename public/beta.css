@@ -97,3 +97,60 @@
  .chore-card>.chore-act{grid-column:auto;min-width:96px;align-self:center}
  .chore-act>button{padding-inline:10px;font-size:14px}
 }
+/* The Medals tab (23 Oct 2026, as the chores window): a medal ready to collect on top in a card with a green edge and its button beside
+   it, on a phone too; the crops on their way as compact rows (the four medals small, a bar to the next one, what it pays at the end);
+   the crops with no harvests yet folded away as rows. */
+.medals-total{margin-bottom:14px;padding:12px 16px;border:1px solid #ddd2c7;background:#fffdf4}
+.medals-total strong{font-weight:700;color:#5c4a2e}
+.mastery-list{gap:10px}
+.mastery-list .mastery-card{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 16px;border:1px solid #ddd2c7;border-radius:18px;background:#fffdf4}
+.mastery-list .mastery-card.is-ready{border-color:#8cc06a;box-shadow:0 3px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset}
+.mastery-list .mastery-card>.mastery-picture{width:64px;height:64px;object-fit:contain}
+.mastery-list .mastery-card h3{margin:0;font:700 17px/1.25 'Outfit',sans-serif;color:#4a3a24}
+.mastery-main{min-width:0}
+.mastery-list .mastery-medals{display:flex;flex:none;gap:3px;margin:0}
+.mastery-list .mastery-medal>.game-art{width:18px;height:18px}
+.mastery-list .mastery-medal.is-ready>.game-art{filter:none;opacity:1;border-radius:999px;box-shadow:0 0 0 2px #8cc06a}
+.mastery-list .mastery-rewards{margin:8px 0 0}
+.mastery-list .mastery-rewards>span{white-space:nowrap}
+.mastery-list .mastery-rewards>.mastery-won{background:#e6efdc;color:#42632e}
+.mastery-list .mastery-card>button{margin:0;min-width:110px;font-size:15px;white-space:nowrap}
+.mastery-rows{display:grid;gap:8px}
+.mastery-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 14px;border:1px solid #ddd2c7;border-radius:16px;background:#fbf8ef}
+.mastery-row>.mastery-picture{width:44px;height:44px;object-fit:contain}
+.mastery-name{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.mastery-name>h3,.mastery-name strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;color:#4a3a24}
+.mastery-row .mastery-medals{margin:0;flex:none}
+.mastery-row .mastery-medal>.game-art{width:16px;height:16px}
+.mastery-row progress{display:block;width:100%;height:8px;margin:6px 0 3px;appearance:none;border:0;border-radius:999px;background:#ece3d2;overflow:hidden}
+.mastery-row progress::-webkit-progress-bar{background:#ece3d2;border-radius:999px}
+.mastery-row progress::-webkit-progress-value{background:linear-gradient(90deg,#d9a53c,#e8b94e);border-radius:999px}
+.mastery-row progress::-moz-progress-bar{background:#d9a53c;border-radius:999px}
+.mastery-row small{display:block;color:#8a7a5c;font-size:12px;font-weight:400;font-variant-numeric:tabular-nums}
+.mastery-row.is-done .tag-info{margin-top:5px}
+.mastery-pay{display:grid;justify-items:center;gap:2px;min-width:84px}
+.mastery-pay>b{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;background:#f3ead5;color:#6b4f0f;font-size:13px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mastery-pay>b>.game-art{width:18px;height:18px}
+.mastery-pay>small{color:#9a8c72;font-size:12px;font-weight:700;white-space:nowrap}
+.mastery-unlocks{margin-top:14px}
+.mastery-later-list{display:grid;gap:8px;padding-top:10px}
+.mastery-later{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 12px;border:1px dashed #dccfbd;border-radius:16px;background:#f8f3e8}
+.mastery-later-art{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:#efe6d6}
+.mastery-later-art>.mastery-picture{width:36px;height:36px;object-fit:contain}
+.mastery-later.is-locked .mastery-picture{filter:grayscale(.6);opacity:.8}
+.mastery-later strong{display:block;font-size:14.5px;color:#5c4a2e}
+.mastery-later small{display:block;color:#9a8c72;font-size:12.5px}
+.mastery-later>.unlock-lock{width:18px;height:18px;opacity:.6}
+@media(max-width:720px){
+ .medals-total{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}
+ .mastery-list .mastery-card{grid-template-columns:48px minmax(0,1fr) auto;gap:10px;padding:12px}
+ .mastery-list .mastery-card>.mastery-picture{width:48px;height:48px;align-self:start}
+ .mastery-list .mastery-card h3{font-size:15.5px}
+ .mastery-list .mastery-rewards{gap:5px}
+ .mastery-list .mastery-rewards>span{padding:3px 8px 3px 5px;font-size:12px}
+ .mastery-list .mastery-rewards .game-art{width:17px;height:17px}
+ .mastery-list .mastery-card>button{min-width:92px;margin:0;flex:none;padding-inline:10px;font-size:14px}
+ .mastery-row{grid-template-columns:40px minmax(0,1fr) auto;gap:10px;padding:9px 10px}
+ .mastery-row>.mastery-picture{width:40px;height:40px}
+ .mastery-pay{min-width:70px}
+}
