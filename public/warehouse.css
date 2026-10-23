@@ -51,6 +51,6 @@
 #market-barn .warehouse-chip .game-art{width:20px;height:20px}
 #market-barn .warehouse-chip.is-near{border-color:#ecd08a;background:#fff1c4;color:#6b4712}
 #market-barn .warehouse-chip.is-full{border-color:#e7b3a6;background:#fbe6e0;color:#a1442f}
-/* The coins open the Warehouse (23 Oct 2026, the owner): the coin pill is a button, as its shadow always said. */
+/* The coin pill is a button, as its shadow always said (23 Oct 2026, the owner): it opens the Market (public/game.js). */
 button.coin-counter{position:relative;text-align:start}
 button.coin-counter:hover{background:#fff8ec}

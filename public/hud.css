@@ -180,4 +180,4 @@
 }
 /* The coins' digits all as wide (23 Oct 2026): a font shorthand on the pill's number set them back to Outfit's own widths, so a number that
    counts up (public/game.js showCoins) made the pill and the whole top bar shake. */
-#coins{font-variant-numeric:tabular-nums}
+#coins,#xp-text{font-variant-numeric:tabular-nums}

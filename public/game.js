@@ -1326,10 +1326,26 @@ function showCoins(goal){
  const countCoins=at=>{const k=Math.max(0,Math.min(1,(at-start)/COIN_COUNT_MS));coinNow=k<1?Math.round(from+(goal-from)*(1-(1-k)**3)):goal;el.textContent=coinText(coinNow);coinRun=k<1?requestAnimationFrame(countCoins):0;if(!coinRun)el.style.minWidth='';};
  el.textContent=coinText(from);coinRun=requestAnimationFrame(countCoins);
 }
+// XP that comes in fills the bar (23 Oct 2026, the owner: "Animeer wel de XP balk als je XP farmed"): the bar, its number and the phone's
+// ring run from what they show to the new amount in the coins' 0.7 s. A new level, the first draw and reduced motion show it at once.
+// The number keeps the new amount's width while it runs (tabular-nums on #xp-text), so the level card never moves.
+let xpShown=null,xpRun=0;
+function drawXp(current,target){$('xp-text').textContent=`${current} / ${target} XP`;$('xp-bar').max=target;$('xp-bar').value=current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(current/Math.max(1,target)*100))));}
+function showXp(level,current,target){
+ const same=xpShown&&xpShown.level===level&&xpShown.target===target;
+ if(same&&xpShown.goal===current)return;
+ const from=same?xpShown.now:null,text=$('xp-text');cancelAnimationFrame(xpRun);xpRun=0;text.style.minWidth='';
+ xpShown={level,target,goal:current,now:current};drawXp(current,target);
+ if(from==null||current<=from||reducedMotion)return;
+ text.style.minWidth=`${text.getBoundingClientRect().width}px`;xpShown.now=from;
+ const start=performance.now();
+ const fillXp=at=>{const k=Math.max(0,Math.min(1,(at-start)/COIN_COUNT_MS));xpShown.now=k<1?Math.round(from+(current-from)*(1-(1-k)**3)):current;drawXp(xpShown.now,target);xpRun=k<1?requestAnimationFrame(fillXp):0;if(!xpRun)text.style.minWidth='';};
+ drawXp(from,target);xpRun=requestAnimationFrame(fillXp);
+}
 function hudNumbers(){
  showCoins(state.coins);$('coins').parentElement.title=`${state.coins.toLocaleString('en-US')} coins`;
  const lp=levelProgress(state),lvl=lp.level;
- $('level').textContent=lvl;$('xp-text').textContent=`${lp.current} / ${lp.target} XP`;$('xp-bar').max=lp.target;$('xp-bar').value=lp.current;$('journal-button').style.setProperty('--xp',String(Math.min(100,Math.round(lp.current/Math.max(1,lp.target)*100))));
+ $('level').textContent=lvl;showXp(lvl,lp.current,lp.target);
  // What the Market button counts: the goods its market buys (village goods in the village, the rest on the farm).
  const count=Object.entries(state.inventory).reduce((a,[k,n])=>a+(villageGood(k)===villageWorld?n:0),0);
  // From the first harvest to the first sale it shows what the basket is worth today instead (11 Oct 2026, Part A A11: the count was about
@@ -1980,8 +1996,8 @@ function bindUI(){
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
- // The coins open the Warehouse (23 Oct 2026, the owner): their pill looked like a button and now is one.
- $('coin-button')?.addEventListener('click',()=>warehouse?.open());
+ // The coins open the Market, where coins are made (23 Oct 2026, the owner): their pill looked like a button and now is one.
+ $('coin-button')?.addEventListener('click',()=>openDialog('market-dialog'));
  $('help-button').addEventListener('click',()=>{renderWiki(state);openDialog('help-dialog');});
  // Feedback & bugs: the mailbox (public/feedback-ui.js), beside How to play and in the More menu.
  const feedback=createFeedback({level:()=>levelProgress(state).level});

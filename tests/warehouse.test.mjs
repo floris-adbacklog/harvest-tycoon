@@ -192,13 +192,14 @@ test('differential: the old rules on new saves keep the Warehouse and play on; t
  assert.deepEqual(n.warehouse,{level:1});delete n.warehouse;assert.deepEqual(n.mastery.kept,{});delete n.mastery.kept;assert.deepEqual(n,o);
 });
 
-// 23 Oct 2026 (the owner): the coin pill looked like a button but was none. It is one now and opens the Warehouse; the line for how full
-// it is that came with it went again the same day ("de groene balk moet weg": the Market button's badge says it from 90%).
-test('the coins open the Warehouse',()=>{
+// 23 Oct 2026 (the owner): the coin pill looked like a button but was none. It is one now; it opened the Warehouse first, the Market since
+// the same day ("Doe als je op coins klikt naar market ipv pakhuis"), where coins are made. The line for how full the Warehouse is that came
+// with it went again too ("de groene balk moet weg": the Market button's badge says it from 90%).
+test('the coins open the Market',()=>{
  const html=readFileSync(new URL('../public/farm.html',import.meta.url),'utf8'),game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/warehouse.css',import.meta.url),'utf8');
  assert.match(html,/<button type="button" id="coin-button" class="coin-counter" title="Coins" aria-haspopup="dialog"><span class="coin-icon"><i data-lucide="coins"><\/i><\/span><strong id="coins">180<\/strong><span class="resource-label">coins<\/span><\/button>/);
  assert.doesNotMatch(html,/<div class="coin-counter"|coin-warehouse/,'one coin pill, no fill line');
- assert.match(game,/\$\('coin-button'\)\?\.addEventListener\('click',\(\)=>warehouse\?\.open\(\)\);/);
+ assert.match(game,/\$\('coin-button'\)\?\.addEventListener\('click',\(\)=>openDialog\('market-dialog'\)\);/);
  assert.doesNotMatch(game+css,/coin-warehouse/);
  assert.match(css,/button\.coin-counter:hover\{background:#fff8ec\}/);
 });
@@ -212,6 +213,17 @@ test('coins that come in count up in 0.7 s; spending, the first draw and reduced
  assert.match(game,/if\(goal===coinGoal\)\{if\(!coinRun&&el\.textContent!==coinText\(goal\)\)/,'the same amount again never starts it over');
  assert.match(game,/const from=coinNow;coinGoal=goal;cancelAnimationFrame\(coinRun\);/,'a second gain on the way runs on from where the number is');
  // No shaking top bar: digits all as wide, and the number keeps the new amount's width while it runs.
- assert.match(readFileSync(new URL('../public/hud.css',import.meta.url),'utf8'),/#coins\{font-variant-numeric:tabular-nums\}/);
+ assert.match(readFileSync(new URL('../public/hud.css',import.meta.url),'utf8'),/#coins,#xp-text\{font-variant-numeric:tabular-nums\}/);
  assert.match(game,/el\.style\.minWidth=`\$\{el\.getBoundingClientRect\(\)\.width\}px`;/);assert.match(game,/if\(!coinRun\)el\.style\.minWidth='';/);
+});
+
+// 23 Oct 2026 (the owner: "Animeer wel de XP balk als je XP farmed"): XP that comes in fills the bar the same way.
+test('XP that comes in fills the bar in the coins\' 0.7 s; a new level, the first draw and reduced motion show it at once',()=>{
+ const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.match(game,/\$\('level'\)\.textContent=lvl;showXp\(lvl,lp\.current,lp\.target\);/);
+ assert.match(game,/function drawXp\(current,target\)\{\$\('xp-text'\)\.textContent=`\$\{current\} \/ \$\{target\} XP`;\$\('xp-bar'\)\.max=target;\$\('xp-bar'\)\.value=current;/);
+ assert.match(game,/const same=xpShown&&xpShown\.level===level&&xpShown\.target===target;\n if\(same&&xpShown\.goal===current\)return;/,'the same amount again never starts it over');
+ assert.match(game,/if\(from==null\|\|current<=from\|\|reducedMotion\)return;/,'a new level (from is null), the first draw and reduced motion: at once');
+ assert.match(game,/const k=Math\.max\(0,Math\.min\(1,\(at-start\)\/COIN_COUNT_MS\)\);xpShown\.now=k<1\?Math\.round\(from\+\(current-from\)\*\(1-\(1-k\)\*\*3\)\):current;/);
+ assert.match(readFileSync(new URL('../public/hud.css',import.meta.url),'utf8'),/#coins,#xp-text\{font-variant-numeric:tabular-nums\}/);
 });
