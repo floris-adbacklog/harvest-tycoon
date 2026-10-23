@@ -25,7 +25,7 @@ import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SOR
 import {purchaseState,purchaseCounts,PURCHASE_LABELS} from './admin-purchases.js';
 import {createNewsMail} from './admin-news-mail.js';
 import {createReloadCard} from './admin-reload.js';
-import {ADMIN_TABS,tabsFor,firstTab,partsFor,QUICK_ACTIONS,overviewTiles,searchPlayers,euro as euros} from './admin-overview.js';
+import {ADMIN_TABS,tabsFor,firstTab,partsFor,QUICK_ACTIONS,overviewTiles,searchPlayers,euro as euros,earnedByDay,hourBars} from './admin-overview.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=n=>Number(n??0).toLocaleString('en-US');
@@ -77,6 +77,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<button type="button" class="admin-tile is-money" data-tile="revenue-today" data-go="money">'+art('coins')+'<strong id="admin-kpi-revenue-today">–</strong><span>Earned today</span><small id="admin-kpi-paid-today">Paid since 00:00 UTC</small></button>'
   +'<button type="button" class="admin-tile is-money" data-tile="revenue-week" data-go="money">'+art('diamonds')+'<strong id="admin-kpi-revenue-week">–</strong><span>Earned in 7 days</span><small id="admin-kpi-paid-week">Today and the 6 days before</small></button>'
   +'</div><p class="admin-hint">Earned counts paid checkouts of real farmers (test payments left out), before the store or Stripe takes its share.</p></section>'
+  // Growth charts (23 Oct 2026, Gerard): earned per day with its 7-day average, farmers active per week, and how busy each hour is.
+  +'<section class="admin-card admin-charts" id="admin-charts"><h3>'+art('xp')+'Growth</h3>'
+  +'<div class="admin-chart" id="admin-chart-earned"></div><div class="admin-chart" id="admin-chart-weeks"></div><div class="admin-chart" id="admin-chart-hours"></div></section>'
   +'<section class="admin-card admin-quick"><h3>'+art('boost')+'Quick actions</h3><div class="admin-quick-actions">'
   +'<button type="button" class="secondary-button" data-quick="news">'+art('bell')+'<span>News and pop-up</span></button>'
   +'<button type="button" class="secondary-button" data-quick="gift">'+art('gift')+'<span>Gift to everyone</span></button>'
@@ -203,6 +206,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(!tabsFor(role).includes(name))name=firstTab(role);
   dialog.querySelectorAll('[data-admin-tab]').forEach(tab=>{const on=tab.dataset.adminTab===name;tab.classList.toggle('active',on);tab.setAttribute('aria-selected',String(on));});
   dialog.querySelectorAll('[data-admin-panel]').forEach(panel=>panel.hidden=panel.dataset.adminPanel!==name);
+  // The charts are drawn at the card's width, which a hidden tab does not have: again once the Overview shows.
+  if(name==='overview')try{renderCharts();}catch{}
   closeSearch();
  }
  dialog.querySelectorAll('[data-admin-tab]').forEach(tab=>tab.onclick=()=>showTab(tab.dataset.adminTab));
@@ -250,8 +255,40 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // Overview (the admin only): the tiles from what the other parts loaded (src/admin-overview.js overviewTiles), drawn again whenever one
  // of them comes in; a part that did not load shows "–". Moderators have no Overview, so nothing here is drawn or asked for for them.
  const overview={};
+ // A bar chart as an SVG: bars (value, label under some, title on hover), an optional line over them (the 7-day average) and one bar
+ // marked (today, this hour). Plain shapes in the dashboard's colours; it scales with the card.
+ // Drawn at the card's own width (never stretched), so the labels keep their size on a phone too.
+ function barChart({bars,line=null,mark=-1,format=v=>number(v),every=1,width=640}){
+  const W=Math.max(280,Math.round(width)),H=190,top=16,bottom=26,left=6,right=6,max=Math.max(1,...bars.map(b=>b.value??0),...(line??[]).map(v=>v??0)),n=bars.length,slot=(W-left-right)/n,bw=Math.max(2,slot*.72);
+  const y=v=>top+(H-top-bottom)*(1-(v??0)/max);
+  const rects=bars.map((b,i)=>{const x=left+i*slot+(slot-bw)/2,h=b.value==null?0:H-bottom-y(b.value);return `<rect x="${x.toFixed(1)}" y="${(H-bottom-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(b.value?1:0,h).toFixed(1)}" rx="3" class="${i===mark?'is-mark':''}${b.value==null?' is-empty':''}"><title>${esc(b.title??`${b.label}: ${format(b.value??0)}`)}</title></rect>`;}).join('');
+  const labels=bars.map((b,i)=>i===n-1||i%every===0&&n-1-i>=Math.max(1,every*.6)?`<text x="${(left+i*slot+slot/2).toFixed(1)}" y="${H-8}" text-anchor="middle">${esc(b.label)}</text>`:'').join('');
+  const path=line?`<polyline points="${line.map((v,i)=>`${(left+i*slot+slot/2).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" class="admin-chart-line"/>`:'';
+  return `<svg viewBox="0 0 ${W} ${H}" class="admin-chart-svg" role="img" width="${W}" height="${H}"><line x1="${left}" x2="${W-right}" y1="${H-bottom}" y2="${H-bottom}" class="admin-chart-base"/>${rects}${path}<text x="${W-right}" y="11" text-anchor="end" class="admin-chart-max">${esc(format(max))}</text>${labels}</svg>`;
+ }
+ const shortDay=day=>{const [y,m,d]=day.split('-').map(Number);return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'});};
+ function renderCharts(){
+  if(role!=='admin')return;
+  const earnedBox=dialog.querySelector('#admin-chart-earned'),weeksBox=dialog.querySelector('#admin-chart-weeks'),hoursBox=dialog.querySelector('#admin-chart-hours');
+  if(!earnedBox)return;
+  if(overview.purchases){
+   const days=earnedByDay(overview.purchases),last=days.at(-1),total=days.reduce((s,d)=>s+d.cents,0);
+   earnedBox.innerHTML=`<div class="admin-chart-head"><strong>Earned per day</strong><span>${euros(last.cents)} today, 7-day average ${euros(last.avg7)}, ${euros(total)} in 30 days</span></div>${barChart({bars:days.map(d=>({label:shortDay(d.day),value:d.cents,title:`${shortDay(d.day)}: ${euros(d.cents)} (7-day average ${euros(d.avg7)})`})),line:days.map(d=>d.avg7),mark:days.length-1,format:v=>euros(v),every:Math.ceil(5*640/Math.max(280,earnedBox.clientWidth||640)),width:earnedBox.clientWidth||640})}<p class="admin-hint">Bars: each UTC day. Line: the average of the 7 days up to that day.</p>`;
+  }
+  const g=overview.growth;
+  if(!g){weeksBox.innerHTML=hoursBox.innerHTML='';return;}
+  const since=g.since?`Counted every 15 minutes since ${fmtDate(g.since)} UTC.`:'Counting starts within 15 minutes.';
+  const weeks=(g.weeks??[]).slice(-12);
+  weeksBox.innerHTML=`<div class="admin-chart-head"><strong>Active players per week</strong><span>${weeks.length?`${number(weeks.at(-1).active)} this week`:'No weeks yet'}</span></div>${weeks.length?barChart({bars:weeks.map(w=>({label:shortDay(w.week),value:w.active,title:`Week of ${shortDay(w.week)}: ${number(w.active)} farmers${w.complete?'':' so far'}`})),mark:weeks.length-1,width:weeksBox.clientWidth||640}):''}<p class="admin-hint">Farmers who played at least once in the week (Monday to Sunday, UTC). ${since}</p>`;
+  const hours=hourBars(g.hours),now=new Date().getUTCHours(),filled=hours.filter(h=>h.samples).length;
+  hoursBox.innerHTML=`<div class="admin-chart-head"><strong>How busy each hour is</strong><span>Average online, last 4 weeks</span></div>${barChart({bars:hours.map(h=>({label:String(h.hour).padStart(2,'0'),value:h.avg,title:h.avg==null?`${String(h.hour).padStart(2,'0')}:00 UTC: no count yet`:`${String(h.hour).padStart(2,'0')}:00 UTC: ${h.avg} online on average`})),mark:now,format:v=>String(Math.round(v)),every:(hoursBox.clientWidth||640)<480?4:2,width:hoursBox.clientWidth||640})}<p class="admin-hint">Hours in UTC (Amsterdam is UTC+2 in summer, UTC+1 in winter); the current hour is marked. ${filled<24?`${filled} of 24 hours counted so far. `:''}${since}</p>`;
+ }
+ // Drawn again when the card's width changes (the window opening, a phone turned, the tab shown), one frame later.
+ let chartsWidth=0,chartsFrame=0;
+ try{new ResizeObserver(entries=>{const w=Math.round(entries[0]?.contentRect?.width??0);if(!w||w===chartsWidth)return;chartsWidth=w;cancelAnimationFrame(chartsFrame);chartsFrame=requestAnimationFrame(()=>renderCharts());}).observe(dialog.querySelector('#admin-charts'));}catch{}
  function renderOverview(){
   if(role!=='admin')return;
+  renderCharts();
   const t=overviewTiles(overview),put=(id,value)=>{const el=dialog.querySelector(`#admin-kpi-${id}`);if(el)el.textContent=value;};
   put('online',t.online==null?'–':number(t.online));put('new',t.new==null?'–':number(t.new));put('day1',t.day1==null?'—':`${t.day1}%`);
   put('reports',t.reports==null?'–':number(t.reports));put('feedback',t.feedback==null?'–':number(t.feedback));
@@ -336,6 +373,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
   if(retention)renderRetention(retention);
   if(online)overview.online=online;if(retention)overview.retention=retention;renderOverview();
+  // The growth charts' counts (the admin only; one small query, supabase/growth-samples.sql).
+  if(role==='admin'&&bridge.chat?.growthCharts)void bridge.chat.growthCharts().then(g=>{overview.growth=g;renderCharts();}).catch(()=>{});
   if(invites)renderInvites(invites);
   const missing=PARTS.filter((_,i)=>!got[i]).map(([,name])=>name);
   status.textContent=missing.length?`${missing.join(', ')} could not be loaded. Please try again.`:`Updated ${clock(new Date().toISOString())} (UTC)`;

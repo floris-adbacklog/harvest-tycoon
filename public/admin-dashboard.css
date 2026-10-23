@@ -156,3 +156,18 @@
 #admin-dashboard-dialog .admin-player-tools>select{flex:0 0 auto;width:auto;max-width:45%}
 /* The special offer's amounts and choices side by side where they fit. */
 #admin-dashboard-dialog #admin-offer-form .admin-popup-fields{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+/* Growth charts (23 Oct 2026, Gerard): bars in the game's green, the 7-day average as a gold line, today or this hour marked. */
+#admin-dashboard-dialog .admin-charts{display:grid;gap:18px}
+#admin-dashboard-dialog .admin-chart{display:grid;gap:6px;min-width:0}
+#admin-dashboard-dialog .admin-chart:empty{display:none}
+#admin-dashboard-dialog .admin-chart-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
+#admin-dashboard-dialog .admin-chart-head strong{font-size:15px;color:#4d3a1f}
+#admin-dashboard-dialog .admin-chart-head span{font-size:13px;color:#7a6a50}
+#admin-dashboard-dialog .admin-chart-svg{display:block;max-width:100%;height:auto;border-radius:12px;background:#fffdf4;border:1px solid #e7dccb;overflow:visible}
+#admin-dashboard-dialog .admin-chart-svg rect{fill:#9cc97c}
+#admin-dashboard-dialog .admin-chart-svg rect.is-mark{fill:#4f9a3a}
+#admin-dashboard-dialog .admin-chart-svg rect.is-empty{fill:#efe6d6}
+#admin-dashboard-dialog .admin-chart-svg .admin-chart-line{fill:none;stroke:#d39b2a;stroke-width:2.5;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+#admin-dashboard-dialog .admin-chart-svg .admin-chart-base{stroke:#d8ccb8;stroke-width:1;vector-effect:non-scaling-stroke}
+#admin-dashboard-dialog .admin-chart-svg text{font-size:12px;fill:#8a7a5c}
+#admin-dashboard-dialog .admin-chart-svg .admin-chart-max{font-weight:700;fill:#a08e6c}

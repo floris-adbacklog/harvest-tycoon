@@ -73,3 +73,24 @@ export function searchPlayers(players,query,limit=8){
  return (players??[]).filter(p=>p?.username&&p.username.toLowerCase().includes(q))
   .sort((a,b)=>(a.username.toLowerCase().startsWith(q)?0:1)-(b.username.toLowerCase().startsWith(q)?0:1)||(time(b.lastActiveAt)??0)-(time(a.lastActiveAt)??0)).slice(0,limit);
 }
+
+// Growth charts (23 Oct 2026, Gerard, the second admin: "meer van grafieken dan tabellen"): what was earned per UTC day for the last
+// 30 days with the average of the 7 days up to each day, from the purchases the dashboard already loads (no new server call; the
+// last 500 checkouts, which covers far more than 30 days now). days: oldest first, cents per day and avg7 (cents, 7-day mean).
+export function earnedByDay(purchases,{days=30,now=Date.now()}={}){
+ const today=zoneMidnight(now),first=today-(days+5)*DAY,byDay=new Map();
+ for(const p of purchases??[]){
+  if(p?.status!=='credited'||p.live===false)continue;
+  const at=time(p.creditedAt)??time(p.createdAt);if(at==null||at<first)continue;
+  const key=zoneDay(at);byDay.set(key,(byDay.get(key)??0)+(Number(p.amountCents)||0));
+ }
+ const all=[];for(let i=days+5;i>=0;i--){const day=zoneDay(today-i*DAY+DAY/2);all.push({day,cents:byDay.get(day)??0});}
+ return all.map((d,i)=>({...d,avg7:Math.round(all.slice(Math.max(0,i-6),i+1).reduce((s,x)=>s+x.cents,0)/Math.min(7,i+1))})).slice(-days);
+}
+// The players' charts come from admin_growth_charts (supabase/growth-samples.sql): every 15 minutes one count of the farmers active in
+// the last 30 minutes, the last day and the last 7 days. hours: 24 UTC hours, the average online in each over the last 4 weeks (null
+// before a sample); weeks: the farmers active in each week (the 7-day count at its last sample), oldest first.
+export function hourBars(hours){
+ const by=new Map((hours??[]).map(h=>[Number(h.hour),h]));
+ return Array.from({length:24},(_,hour)=>{const h=by.get(hour);return {hour,avg:h?Math.round(Number(h.avg)*10)/10:null,samples:h?Number(h.samples)||0:0};});
+}

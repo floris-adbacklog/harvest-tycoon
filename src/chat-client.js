@@ -166,6 +166,8 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // Special offers (supabase/special-offer.sql): posting, the list and stopping are for the admin only.
   postOffer:({diamonds=0,coins=0,vipDays=0,audience='all',minLevel=14,hours=48})=>rpc('offer_post',{p_diamonds:diamonds,p_coins:coins,p_vip_days:vipDays,p_audience:audience,p_min_level:minLevel,p_hours:hours}),
   offerList:()=>rpc('offer_list'),
+  // The Admin dashboard's growth charts (23 Oct 2026, supabase/growth-samples.sql): the admin only.
+  growthCharts:()=>rpc('admin_growth_charts'),
   stopOffer:id=>rpc('offer_stop',{p_id:id}),
   setLevels:(global,dm)=>rpc('chat_set_levels',{p_global:global,p_dm:dm}),
   // News and offers by email (13 Oct 2026, supabase/news-mail.sql), the admin only: how many it reaches and the last ones, straight from
