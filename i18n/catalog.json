@@ -3220,7 +3220,7 @@
 "Missing ingredients: {0}.":"public/farm-state.js",
 "Missing model: {0}":"public/game.js",
 "Missing request identifier.":"supabase/estate-wave3.sql",
-"Missing: {0}.":"public/economy-ui.js",
+"Missing: {0}.":"public/farm-state.js",
 "Mix barley feed":"public/farm-state.js",
 "Mix corn feed":"public/farm-state.js",
 "Mix natural fertilizer":"public/farm-state.js",

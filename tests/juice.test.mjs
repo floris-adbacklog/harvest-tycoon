@@ -51,7 +51,7 @@ test('production: slot tiles on top and compact recipe cards, Collect only when 
  assert.match(ui,/\$\{isReady\?`<button data-collect-job="\$\{job\.id\}" class="primary-button job-collect">Collect<\/button>`:''\}/,'no disabled button while a batch is running');
  assert.match(ui,/<div class="job-tile is-free" aria-hidden="true">[^']*<span class="job-state">Free<\/span><\/div>'\.repeat\(free\)/,'a free slot is an empty tile');
  assert.match(ui,/time\.textContent=now>=job\.readyAt\?'Ready':`\$\{seconds\(job\.readyAt-now\)\} left`;/);
- assert.match(ui,/a\.missing\.length\?`Missing: \$\{a\.missing\.map\(m=>`\$\{number\(m\.need-m\.have\)\} \$\{m\.name\}`\)\.join\(', '\)\}\.`/,'a recipe you cannot start says what is missing');
+ assert.match(ui,/a\.missing\.length\?'':a\.poor\?/,'a missing ingredient shows only in its red badge, no second "Missing:" line (23 Oct 2026, the owner)');
  assert.match(css,/#building-dialog #building-content \.recipe-card\{display:grid;grid-template-columns:52px minmax\(0,1fr\) auto;/,'Start beside the card');
  assert.match(css,/#building-dialog #building-content \.job-tile\.is-ready\{border-color:#8cc06a;/,'a ready slot has the green edge');
 });
