@@ -6,6 +6,8 @@ import {readFileSync} from 'node:fs';
 import {createFarm,applyFarmAction as act,xpForLevel,NO_EVENT_ACTIONS} from '../game/farm-state.js';
 import {LAYOUT_YARDS,FIXED_YARDS,LAND,WATER,DECOR,landOpen,landAt,clearCost,obstacleKind,LAYOUT_GRID} from '../game/farm-map.js';
 import {ANCHORS,pondBounds} from '../public/farm-layout.js';
+import {misfit,LAYOUT_SLACK} from '../public/layout-edit.js';
+import {INSTANT_ACTIONS} from '../public/farm-client.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,9,24,12);
 const farmAt=level=>{const s=createFarm(now);s.xp=xpForLevel(level);s.coins=100000;return s;};
@@ -41,6 +43,7 @@ test('moving: from the start, on open land on the grid, never in the pond; the f
 });
 
 test('clearing: a tree, bush or rock on open land for coins and a little XP, once; further out costs more',()=>{
+ assert.equal(obstacleKind('stone_fence_001'),null,'a stone wall is no rock');assert.equal(obstacleKind('stone_002'),'rock');
  assert.equal(obstacleKind('tree_004'),'tree');assert.equal(obstacleKind('fir_tree_001'),'tree');assert.equal(obstacleKind('bush_001'),'bush');assert.equal(obstacleKind('stone_002'),'rock');assert.equal(obstacleKind('grass_001'),null);
  assert.deepEqual(clearCost('o:tree_001:100:-50'),{kind:'tree',land:'middle',coins:120,xp:4});
  assert.ok(clearCost('o:tree_001:550:0').coins>clearCost('o:tree_001:100:0').coins,'the east costs more than the middle');
@@ -74,10 +77,30 @@ test('a farm that never moved anything has no layout; a broken one is cleaned; o
  assert.equal(read('public/farm-map.js'),read('game/farm-map.js'));assert.equal(read('supabase/functions/farm-api/farm-map.js'),read('game/farm-map.js'));
 });
 
-test('R turns what you hold on a keyboard, as the Rotate button does; not while typing or with Ctrl, Cmd or Alt',()=>{
+test('R turns what you hold on a keyboard, as the Rotate button does, and Esc ends moving; not while typing or with Ctrl, Cmd or Alt',()=>{
  const edit=read('public/layout-edit.js');
- assert.match(edit,/doc\.addEventListener\('keydown',event=>\{\n  if\(!on\|\|!held\|\|event\.repeat\|\|event\.ctrlKey\|\|event\.metaKey\|\|event\.altKey\|\|event\.key\?\.toLowerCase\(\)!=='r'\)return;/);
- assert.match(edit,/closest\?\.\('input,textarea,select,\[contenteditable="true"\]'\)\)return;\n  event\.preventDefault\(\);turn\(\);/);
+ assert.match(edit,/if\(!on\|\|event\.repeat\|\|event\.ctrlKey\|\|event\.metaKey\|\|event\.altKey\)return;/);
+ assert.match(edit,/if\(event\.key==='Escape'\)\{event\.preventDefault\(\);stop\(\);return;\}\n  if\(!held\|\|event\.key\?\.toLowerCase\(\)!=='r'\)return;\n  event\.preventDefault\(\);turn\(\);/);
  assert.match(read('public/farm.html'),/data-layout="rotate" aria-label="Rotate" title="Rotate \(R\)" aria-keyshortcuts="R"/);
+});
+
+test('what fits: open land, out of the pond and off the roads, clear of the rest; a tree, bush or rock in it says so',()=>{
+ const rules={level:1,others:[[-30,-20,20,30]],roads:[[-50,50,-6.7,-3.8]],blockers:[{x:0,z:-20,kind:'tree'}]};
+ assert.equal(misfit([-2,2,-30,-26],rules),null);
+ assert.equal(misfit([-50,-46,0,4],rules),'land','the west opens at 25');assert.equal(misfit([-50,-46,0,4],{...rules,level:25}),null);
+ assert.equal(misfit([20,24,12,16],rules),'water');assert.equal(misfit([-2,2,-6,-2],rules),'road');
+ assert.equal(misfit([-21,-17,22,26],rules),'taken');assert.equal(misfit([-20.5,-17,22,26],rules),null,`fences may touch: more than ${LAYOUT_SLACK} over is a clash`);
+ assert.equal(misfit([-2,2,-22,-18],rules),'tree');
+});
+
+test('the screen: layout actions show at once; Move things can be switched off in Graphics (on unless this device said off); the share picture shows the whole farm',()=>{
+ for(const type of ['layout_move','layout_clear','layout_buy','layout_place','layout_store'])assert.ok(INSTANT_ACTIONS.has(type),type);
+ const game=read('public/game.js'),html=read('public/farm.html');
+ assert.match(html,/<label class="notify-row" for="move-things"><span><strong>Move things<\/strong>/);
+ assert.match(game,/function movingOn\(\)\{try\{return localStorage\.getItem\(MOVE_KEY\)!=='off';\}catch\{return true;\}\}/);
+ assert.match(game,/for\(const id of \['layout-button','layout-menu-entry'\]\)\$\(id\)\.hidden=!on;if\(!on\)layoutEditor\?\.stop\(\);/);
+ assert.match(game,/const whole=wholeFarmFrame\(width\/height\),photo=camera\.clone\(\);Object\.assign\(photo,whole\?\?photoFrame\(camera,width\/height\)\);/);
+ assert.match(game,/\.\.\.Array\.from\(decorViews\.values\(\),v=>v\.obj\)\]\)\{/,'the trees you placed count for the whole farm');
+ assert.match(read('public/scenery.js'),/im\.userData\.scenery=name;im\.userData\.spots=list\.map\(\(\[x,z\]\)=>\[x,z\]\);/,'an instanced tree is known by its spot');
 });
 

@@ -149,7 +149,7 @@ test('what the screen shows at once is what the server pays (farm-client.js inst
    assert.deepEqual(shown.trial.pond,server.pond);G.applyFarmAction(s,action,t);
   }
  }
- assert.match(read('public/farm-client.js'),/'stall_collect','pass_claim','fish'\]\)\);/);
+ assert.match(read('public/farm-client.js'),/'stall_collect','pass_claim','fish'[\],]/);
 });
 
 test('a saved pond: never made by loading, cleaned when garbled without losing its count or book',()=>{

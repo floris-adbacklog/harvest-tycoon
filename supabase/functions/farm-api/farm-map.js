@@ -81,7 +81,7 @@ const obstacleId=id=>typeof id==='string'&&OBSTACLE_ID.test(id);
 export function obstacleKind(model){
  if(/^(fir_)?tree_/.test(model))return 'tree';
  if(/^(bush|hedge|plant)_/.test(model))return 'bush';
- if(/^(stone|rock|stump|log|boulder)_/.test(model))return 'rock';
+ if(/^(stone|rock|stump|log|boulder)_\d/.test(model))return 'rock';   // not a stone fence
  return null;
 }
 // What clearing an obstacle costs, from its id (its kind and its land).

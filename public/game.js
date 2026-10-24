@@ -40,7 +40,7 @@ import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
-import { LAYOUT_YARDS, LAYOUT_GRID } from './farm-map.js';
+import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind } from './farm-map.js';
 import { createLayoutEditor } from './layout-edit.js';
 import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
@@ -423,7 +423,7 @@ async function addScenery(){
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
   const [farmerSpots]=await Promise.all([walking,loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4)]);
   if(farmerSpots)placeBench(farmerSpots.FARM_BENCH);
-  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff}));clearPropsFromMountains();hideUnderLayout();renderer.shadowMap.needsUpdate=true;shootMinimap();
+  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff}));clearPropsFromMountains();obstacleMap=null;hideUnderLayout();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
  void addAnimals();
 }
@@ -1083,52 +1083,151 @@ function placeField(i,[x,z]){
 }
 // The box a yard or a field covers on the ground, [minX, maxX, minZ, maxZ].
 function footprint(id){
+ const placed=decorViews.get(id)??layoutGhosts.get(id);if(placed)return decorBox(placed.kind,placed.obj.position.x,placed.obj.position.z);
  const field=/^field:(\d+)$/.exec(id);
  if(field){const v=plots[Number(field[1])];return v?[v.x-1.2,v.x+1.2,v.z-1.2,v.z+1.2]:null;}
  const box=new THREE.Box3(),part=new THREE.Box3();
  for(const o of yardRoots(id)){if(o.isBoxHelper||o.type==='BoxHelper')continue;part.setFromObject(o);if(!part.isEmpty())box.union(part);}
  return box.isEmpty()?null:[box.min.x,box.max.x,box.min.z,box.max.z];
 }
+// ---- Obstacles (milestone 2): the loose trees, bushes and rocks standing on the land (game/farm-map.js LAND), each by its id
+// o:<model>:<x×10>:<z×10> (an instanced copy by its own spot). They are in the way of what you move or place; you clear one for coins
+// (layout_clear) and it is gone for good. Small things (tufts, flowers, a crate) are no obstacle: they vanish under what you place.
+let obstacleMap=null;
+const obstacleRef=new WeakMap(),ZERO=new THREE.Matrix4().makeScale(0,0,0);
+const obstacleId=(model,x,z)=>`o:${model}:${Math.round(x*10)}:${Math.round(z*10)}`;
+function obstacles(){
+ if(obstacleMap)return obstacleMap;
+ obstacleMap=new Map();
+ const add=(model,x,z,ref)=>{
+  if(!obstacleKind(model??'')||!landAt(x,z)||inWater(x,z))return null;
+  const id=obstacleId(model,x,z);let o=obstacleMap.get(id);if(!o)obstacleMap.set(id,o={id,kind:obstacleKind(model),model,x,z,refs:[]});o.refs.push(ref);return id;
+ };
+ const visit=o=>{
+  if(o.userData.yard||o.userData.plot!==undefined||o.userData.decor)return;
+  if(o.isInstancedMesh){if(o.userData.spots)o.userData.spots.forEach(([x,z],i)=>add(o.userData.scenery,x,z,{im:o,i}));return;}
+  const model=o.userData.model??o.userData.scenery;
+  // One the scenery hides (it clipped a building) is no obstacle; one you cleared is hidden too, and stays known.
+  if(!o.visible&&!clearedIds().has(obstacleId(model,o.position.x,o.position.z)))return;
+  const id=add(model,o.position.x,o.position.z,{obj:o});if(id)obstacleRef.set(o,id);
+ };
+ for(const o of scene.children){if(o.isGroup&&(o.name==='Scenery'||o.userData.polish))o.children.forEach(visit);else visit(o);}
+ return obstacleMap;
+}
+const clearedIds=()=>new Set(state.layout?.cleared??[]);
+function hideCleared(){
+ const gone=clearedIds();if(!gone.size)return;
+ for(const [id,o] of obstacles())if(gone.has(id))for(const r of o.refs){if(r.obj)r.obj.visible=false;else{r.im.setMatrixAt(r.i,ZERO);r.im.instanceMatrix.needsUpdate=true;}}
+}
+// The obstacle a ray hit (an instanced copy by its spot), or null.
+function obstacleOf(hit){
+ const o=hit.object;
+ if(o.isInstancedMesh){if(!o.userData.spots||hit.instanceId==null)return null;const [x,z]=o.userData.spots[hit.instanceId];const id=obstacleId(o.userData.scenery,x,z);return obstacles().has(id)?id:null;}
+ for(let p=o;p&&p!==scene;p=p.parent){const id=obstacleRef.get(p);if(id)return id;}
+ return null;
+}
+const standingObstacles=()=>{const gone=clearedIds();return [...obstacles().values()].filter(o=>!gone.has(o.id)).map(({id,kind,x,z})=>({id,kind,x,z}));};
+
+// ---- Trees and path tiles you placed (milestone 3: layout_buy, layout_place, layout_store), drawn from state.layout.added.
+const DECOR_LOOK=Object.freeze({
+ path:{model:'road_001',width:2,depth:2,height:.13,y:-.035,half:1},
+ oak:{model:'tree_004',height:5.2,half:.8},pine:{model:'fir_tree_001',height:4.8,half:.8},
+ birch:{model:'tree_008',height:3.4,half:.7},shrub:{model:'bush_001',width:2.2,half:.9}
+});
+const decorViews=new Map();
+function makeDecor(kind,x,z,id){
+ const look=DECOR_LOOK[kind],before=currentZone();zone('fields',{keep:true});
+ const o=cloneModel(look.model,x,z,{width:look.width,depth:look.depth,height:look.height,y:look.y??0,rotation:kind==='path'?0:(x*.7+z*.3)%6.28});
+ zone(before,{keep:true});o.userData.decor=id;o.userData.decorKind=kind;return o;
+}
+const decorBox=(kind,x,z)=>{const r=DECOR_LOOK[kind].half;return [x-r,x+r,z-r,z+r];};
+function syncDecor(){
+ const want=new Map((state.layout?.added??[]).map(d=>[d.id,d]));
+ for(const [id,v] of decorViews)if(want.get(id)?.kind!==v.kind){scene.remove(v.obj);decorViews.delete(id);}
+ for(const [id,d] of want){let v=decorViews.get(id);if(!v){v={obj:makeDecor(d.kind,d.x,d.z,id),kind:d.kind};decorViews.set(id,v);}v.obj.position.set(d.x,v.obj.position.y,d.z);v.obj.updateMatrixWorld(true);}
+}
+
+// Loose scenery under something that moved or that you placed is hidden (an obstacle never: it is in the way instead), and what you
+// cleared stays gone.
 const layoutHidden=new Set(),instancesHidden=new Map();
 function hideUnderLayout(extra=[]){
  for(const o of layoutHidden)o.visible=true;layoutHidden.clear();
  for(const [im,list] of instancesHidden){for(const [i,m] of list)im.setMatrixAt(i,m);im.instanceMatrix.needsUpdate=true;}instancesHidden.clear();
- const moved=[...new Set([...Object.keys(state.layout?.at??{}),...extra])].map(footprint).filter(Boolean);if(!moved.length)return;
- const under=(x,z,m=0)=>moved.some(([a,b,c,d])=>x>a-m&&x<b+m&&z>c-m&&z<d+m);
- const box=new THREE.Box3(),c=new THREE.Vector3(),m=new THREE.Matrix4(),zero=new THREE.Matrix4().makeScale(0,0,0),p=new THREE.Vector3();
- const loose=o=>!o.userData.yard&&o.userData.plot===undefined&&!o.isLight&&!o.isCamera&&o.name!=='Farm ground'&&o.name!=='Crop meadow'&&!/^(road|ground)_/.test(o.userData.model??'');
- const check=o=>{
-  if(o.isInstancedMesh){const list=[];for(let i=0;i<o.count;i++){o.getMatrixAt(i,m);p.setFromMatrixPosition(m);if(under(p.x,p.z)){list.push([i,m.clone()]);o.setMatrixAt(i,zero);}}if(list.length){o.instanceMatrix.needsUpdate=true;instancesHidden.set(o,list);}return;}
-  if(!o.visible)return;box.setFromObject(o);if(box.isEmpty())return;box.getCenter(c);
-  if(under(c.x,c.z,.3)){o.visible=false;layoutHidden.add(o);}
- };
- for(const o of scene.children){if(!loose(o))continue;if(o.isGroup&&(o.name==='Scenery'||o.userData.polish))o.children.forEach(k=>{if(!k.userData.yard)check(k);});else check(o);}
+ const covered=[...new Set([...Object.keys(state.layout?.at??{}),...extra])].map(footprint).filter(Boolean)
+  .concat([...decorViews.values()].map(v=>decorBox(v.kind,v.obj.position.x,v.obj.position.z)));
+ if(covered.length){
+  const under=(x,z,m=0)=>covered.some(([a,b,c,d])=>x>a-m&&x<b+m&&z>c-m&&z<d+m);
+  const box=new THREE.Box3(),c=new THREE.Vector3(),m=new THREE.Matrix4(),p=new THREE.Vector3();
+  const loose=o=>!o.userData.yard&&!o.userData.decor&&o.userData.plot===undefined&&!o.isLight&&!o.isCamera&&o.name!=='Farm ground'&&o.name!=='Crop meadow'&&!/^(road|ground)_/.test(o.userData.model??'');
+  const check=o=>{
+   if(o.isInstancedMesh){
+    if(obstacleKind(o.userData.scenery??''))return;
+    const list=[];for(let i=0;i<o.count;i++){o.getMatrixAt(i,m);p.setFromMatrixPosition(m);if(under(p.x,p.z)){list.push([i,m.clone()]);o.setMatrixAt(i,ZERO);}}
+    if(list.length){o.instanceMatrix.needsUpdate=true;instancesHidden.set(o,list);}return;
+   }
+   if(!o.visible||obstacleRef.has(o))return;box.setFromObject(o);if(box.isEmpty())return;box.getCenter(c);
+   if(under(c.x,c.z,.3)){o.visible=false;layoutHidden.add(o);}
+  };
+  obstacles();
+  for(const o of scene.children){if(!loose(o))continue;if(o.isGroup&&(o.name==='Scenery'||o.userData.polish))o.children.forEach(k=>{if(!k.userData.yard&&!k.userData.decor)check(k);});else check(o);}
+ }
+ hideCleared();
 }
 function applyLayout(){
  if(villageWorld||!ready&&!plots.length)return;
  for(const id of LAYOUT_YARDS)placeYard(id,state.layout?.at?.[id]??anchorAt(id));
  state.plots.forEach((_,i)=>placeField(i,fieldSpot(i)));
- hideUnderLayout();
- if(renderer)renderer.shadowMap.needsUpdate=true;
+ syncDecor();hideUnderLayout();
+ if(renderer){renderer.shadowMap.needsUpdate=true;measureFarm();}
+}
+// The land that is not open yet, while you move things (milestone 2): greyed, with the level it opens at.
+let landViews=null;
+function showLand(on){
+ if(!landViews){
+  if(!on)return;
+  landViews=LAND.map(piece=>{
+   const [a,b,c,d]=piece.box,mesh=new THREE.Mesh(new THREE.PlaneGeometry(b-a,d-c),new THREE.MeshBasicMaterial({color:0x7d7769,transparent:true,opacity:.3,depthWrite:false}));
+   mesh.rotation.x=-Math.PI/2;mesh.position.set((a+b)/2,.09,(c+d)/2);mesh.renderOrder=2;mesh.visible=false;scene.add(mesh);
+   const label=document.createElement('span');label.className='land-label';label.hidden=true;$('building-labels').append(label);
+   return {piece,mesh,label};
+  });
+ }
+ const level=levelProgress(state).level;
+ for(const v of landViews){const locked=on&&level<v.piece.level;v.mesh.visible=locked;v.label.hidden=!locked;v.label.textContent=`Opens at level ${v.piece.level}`;v.locked=locked;}
+}
+function positionLandLabels(width,height){
+ if(!landViews||!layoutEditor?.active())return;
+ for(const v of landViews){
+  if(!v.locked)continue;const [a,b,c,d]=v.piece.box,p=new THREE.Vector3((a+b)/2,.5,(c+d)/2).project(camera),x=(p.x*.5+.5)*width,y=(-p.y*.5+.5)*height;
+  v.label.style.left=`${x}px`;v.label.style.top=`${y}px`;v.label.hidden=Math.abs(p.x)>.94||Math.abs(p.y)>.9;
+ }
 }
 // The Move button (layout-edit.js): what is under the pointer, the ground under it, and the spot on the ground, green or red.
 let layoutEditor=null,layoutMarker=null,layoutBase=null;
 function aimAt(event){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);}
+const layoutGhosts=new Map();
 function layoutPick(event){
  aimAt(event);
+ // A tree or tile you placed comes first when the tap is inside its box (a thin trunk is easy to miss, and a field lies under it).
+ const ground=raycaster.ray.intersectPlane(groundPlane,new THREE.Vector3());
+ if(ground)for(const [id,v] of [...layoutGhosts,...decorViews]){const [a,b,c,d]=decorBox(v.kind,v.obj.position.x,v.obj.position.z);if(ground.x>a&&ground.x<b&&ground.z>c&&ground.z<d)return id;}
  for(const hit of raycaster.intersectObjects(scene.children,true)){
-  for(let o=hit.object;o&&o!==scene;o=o.parent){if(o.userData.yard)return o.userData.yard;if(o.userData.plot!==undefined)return `field:${o.userData.plot}`;}
+  if(!hit.object.visible)continue;
+  const obstacle=obstacleOf(hit);if(obstacle)return obstacle;
+  for(let o=hit.object;o&&o!==scene;o=o.parent){if(o.userData.decor)return o.userData.decor;if(o.userData.yard)return o.userData.yard;if(o.userData.plot!==undefined)return `field:${o.userData.plot}`;}
  }
- return null;
+ // A tap on the soil between a field's plants takes the field.
+ const field=ground?plots.findIndex(v=>Math.abs(ground.x-v.x)<1.2&&Math.abs(ground.z-v.z)<1.2):-1;
+ return field>=0?`field:${field}`:null;
 }
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 function layoutGround(event){aimAt(event);const at=raycaster.ray.intersectPlane(groundPlane,new THREE.Vector3());return at?[at.x,at.z]:null;}
-const layoutSpot=id=>{const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return [...yardSpot(id),yardTurn.get(id)??0];};
-function layoutPreview(id,at){const field=/^field:(\d+)$/.exec(id);if(field)placeField(Number(field[1]),at);else placeYard(id,at);hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;}
+const layoutSpot=id=>{const placed=decorViews.get(id)??layoutGhosts.get(id);if(placed)return [placed.obj.position.x,placed.obj.position.z];const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return [...yardSpot(id),yardTurn.get(id)??0];};
+function layoutPreview(id,at){const placed=decorViews.get(id)??layoutGhosts.get(id),field=/^field:(\d+)$/.exec(id);if(placed){placed.obj.position.x=at[0];placed.obj.position.z=at[1];placed.obj.updateMatrixWorld(true);}else if(field)placeField(Number(field[1]),at);else placeYard(id,at);hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;}
 // The held thing's box follows it from where it was picked up; everything else is measured once, when something is picked up.
 function layoutFootprint(id){
  if(layoutBase?.id!==id){
-  const others=[...LAYOUT_YARDS,'farmhouse'].filter(k=>k!==id).map(footprint).concat(plots.map((_,i)=>`field:${i}`).filter(k=>k!==id).map(footprint)).filter(Boolean);
+  const others=[...LAYOUT_YARDS,'farmhouse',...plots.map((_,i)=>`field:${i}`),...decorViews.keys()].filter(k=>k!==id).map(footprint).filter(Boolean);
   layoutBase={id,box:footprint(id),spot:layoutSpot(id),others};
  }
  const [x,z]=layoutSpot(id),dx=x-layoutBase.spot[0],dz=z-layoutBase.spot[1],b=layoutBase.box;
@@ -1148,12 +1247,32 @@ function layoutRotate(id,[x,z,turn=0]){
  placeYard(id,at);layoutBase=null;hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;
  return at;
 }
+// Build: a new tree or tile where the middle of the view meets the ground, picked up as new:<kind> until it is bought or placed.
+function layoutSpawn(kind){
+ const rect=renderer.domElement.getBoundingClientRect(),at=layoutGround({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height*.45});if(!at)return null;
+ const id=`new:${kind}`,spot=at.map(v=>Math.round(v/LAYOUT_GRID)*LAYOUT_GRID);
+ layoutDiscard(id);layoutGhosts.set(id,{obj:makeDecor(kind,spot[0],spot[1],id),kind});
+ return {id,at:spot};
+}
+function layoutDiscard(id){const ghost=layoutGhosts.get(id);if(!ghost)return;scene.remove(ghost.obj);layoutGhosts.delete(id);hideUnderLayout();}
+function layoutSave(id,[x,z,turn],{fresh,kind}={}){
+ const action=fresh?{type:(state.layout?.stored?.[kind]??0)>0?'layout_place':'layout_buy',kind,x,z}:{type:'layout_move',id,x,z,...(turn?{turn}:{})};
+ return runAction(action).finally(()=>{layoutBase=null;});
+}
+// Moving things is on unless this device switched it off (Settings › Graphics, bindGraphicsSetting).
+const MOVE_KEY='harvest-tycoon:move-things';
+function movingOn(){try{return localStorage.getItem(MOVE_KEY)!=='off';}catch{return true;}}
+function showMoving(){const on=Boolean(layoutEditor)&&movingOn();for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=!on;if(!on)layoutEditor?.stop();}
 function createLayoutTools(){
- layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
-  footprint:layoutFootprint,others:id=>{layoutFootprint(id);return layoutBase.others;},roads:()=>roadRects().map(r=>[r.minX,r.maxX,r.minZ,r.maxZ]),mark:layoutMark,
-  rotate:layoutRotate,save:(id,[x,z,turn])=>runAction({type:'layout_move',id,x,z,...(turn?{turn}:{})}).finally(()=>{layoutBase=null;}),notify:toast,
-  onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;if(!on){shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
+ layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,coins:()=>state.coins,stored:()=>state.layout?.stored??{},
+  pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
+  footprint:layoutFootprint,others:id=>{layoutFootprint(id);return layoutBase.others;},roads:()=>roadRects().map(r=>[r.minX,r.maxX,r.minZ,r.maxZ]),
+  blockers:standingObstacles,mark:layoutMark,rotate:layoutRotate,spawn:layoutSpawn,discard:layoutDiscard,save:layoutSave,
+  store:id=>runAction({type:'layout_store',id}).finally(()=>{layoutBase=null;}),clear:id=>runAction({type:'layout_clear',id}).finally(()=>{layoutBase=null;}),
+  notify:toast,refresh:icons,
+  onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;showLand(on);if(on)obstacles();else{shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
  $('layout-button').addEventListener('click',()=>layoutEditor.active()?layoutEditor.stop():layoutEditor.start());
+ showMoving();
 }
 // A building is busy while one of its batches is still being made (the Windmill's sails turn).
 const buildingBusy=key=>productionJobs(state.buildings[key]).some(j=>j.readyAt>farmNow());
@@ -1789,7 +1908,7 @@ function focusFields(){if(villageWorld){viewMode='fields';zoom=1;pan=0;panDepth=
 function measureFarm(){
  // Use each actual building and field box, retaining the useful heights.
  const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
- for(const object of [...Array.from(buildingViews.values(),v=>v.object),...Array.from(utilityViews.values(),v=>v.object),...plots.map(v=>v.soil),...Array.from(farmLife?.views.values()??[],v=>v.object)]){
+ for(const object of [...Array.from(buildingViews.values(),v=>v.object),...Array.from(utilityViews.values(),v=>v.object),...plots.map(v=>v.soil),...Array.from(farmLife?.views.values()??[],v=>v.object),...Array.from(decorViews.values(),v=>v.obj)]){
   const box=new THREE.Box3().setFromObject(object);
   for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y+1])for(const z of [box.min.z,box.max.z]){
    const sx=(x-z)/Math.SQRT2,sy=-(x+z)*40/Math.sqrt(8384)+y*72/Math.sqrt(8384);
@@ -2036,15 +2155,25 @@ function shootMinimap(){
  renderer.setScissorTest(false);renderer.setViewport(0,0,viewportWidth,viewportHeight);renderer.render(scene,camera);
  lastMapShot=performance.now();minimap.draw();
 }
-// Share my farm (Oct 2026, public/farm-share.js): the farm as the farmer sees it, centred on the farm (without the side tools' shift)
-// and in the picture's shape. Rendered at the picture's size into the screen buffer and copied out in the same go (the buffer is not
+// Share my farm (Oct 2026, public/farm-share.js): the whole farm (24 Oct 2026, the owner: "share your farm toont heel je farm"): every
+// building, field and tree you placed, wherever you moved them (measureFarm), with a little room round it, in the picture's shape. Rendered at the picture's size into the screen buffer and copied out in the same go (the buffer is not
 // kept after a frame, and a render target would skip the tone mapping and colours), then the screen size and the farm are back before
 // the browser paints. A bit larger than needed and scaled down, so the edges are smooth on phones too (they draw without antialias).
 // Not in the village, and not once the 3D view was lost.
+// The frustum round the whole farm, from the camera where it stands (overviewBounds are in the fixed view's own right and up axes).
+function wholeFarmFrame(aspect){
+ const b=overviewBounds;if(!b||!Number.isFinite(b.minX))return null;
+ const p=camera.position,cx=(p.x-p.z)/Math.SQRT2,cy=-(p.x+p.z)*40/Math.sqrt(8384)+p.y*72/Math.sqrt(8384);
+ const mx=(b.minX+b.maxX)/2-cx,my=(b.minY+b.maxY)/2-cy;
+ let w=(b.maxX-b.minX)*1.06,h=(b.maxY-b.minY)*1.06;if(w/h>aspect)h=w/aspect;else w=h*aspect;
+ return {left:mx-w/2,right:mx+w/2,top:my+h/2,bottom:my-h/2};
+}
 function shootFarmPhoto(width,height){
  if(!ready||!renderer||!camera||villageWorld||renderer.getContext().isContextLost())return null;
  const max=renderer.capabilities.maxTextureSize,scale=Math.min(mobileLayout.matches?1.5:1.25,max/width,max/height);
- const photo=camera.clone();Object.assign(photo,photoFrame(camera,width/height));photo.updateProjectionMatrix();
+ const whole=wholeFarmFrame(width/height),photo=camera.clone();Object.assign(photo,whole??photoFrame(camera,width/height));
+ // The front of the whole farm comes nearer the camera than the play view ever does: nothing there is cut off.
+ if(whole)photo.near=Math.min(photo.near,-400);photo.updateProjectionMatrix();
  const was=hovered;highlight(-1);
  // Your farmer stands in it, facing you (21 Oct 2026, the owner: "Doe alles behalve 9", item 7; farm-farmer.js photo), on a spot the
  // photo shows; everything goes back as it was right after.
@@ -2094,6 +2223,7 @@ function positionBuildingLabels(){
  if(windmillRotor)setLocked(windmillRotor,!buildingEligible(state,'windmill'));
  const width=world.clientWidth,height=world.clientHeight;
  farmLife?.position(camera,width,height,farmNow());pond?.position(camera,width,height);pets?.position(camera,width,height);
+ positionLandLabels(width,height);
  paintTractor();
  for(const [key,v] of utilityViews){
   // The after-90 places (seed lab, visitors, valley projects) are hidden, models and pins, until the farm reaches level 90.
@@ -2144,13 +2274,16 @@ function clearRail(){
 // After every answer from the server (farm-client.js onChange). The village has no fields and never loads the farm's models: createPlots
 // there threw "Missing model: ground_004", so each reply in the village (a request, a build, a batch) ended in that error.
 // A move saved on this device or on another one goes to the screen too (your own farm layout, applyLayout).
-function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();if(layoutKey!==(layoutKey=JSON.stringify(state.layout?.at??{})))applyLayout();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
+function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();if(layoutKey!==(layoutKey=JSON.stringify(state.layout??{})))applyLayout();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
 // Settings › Graphics (21 Oct 2026, public/graphics-mode.js): Simple graphics on or off, saved on this device, and the farm opens again
 // with it as Try again does (on a portal its page opens the farm again). Its text says it also switches on by itself after trouble.
 function bindGraphicsSetting(){
  // Left-handed fishing (23 Oct 2026, a player): the fish bar stands left of the reel button, or right of it when this is on (public/pond-ui.js).
  const hand=$('pond-bar-right');
  if(hand){try{hand.checked=localStorage.getItem('harvest-tycoon:pond-bar')==='right';}catch{}hand.onchange=()=>{try{localStorage.setItem('harvest-tycoon:pond-bar',hand.checked?'right':'left');}catch{}};}
+ // Move things (24 Oct 2026, the owner: "Zet in Graphics verplaatsen aan/uit, standaard aan"): the Move button and its entry in More.
+ const move=$('move-things');
+ if(move){move.checked=movingOn();move.onchange=()=>{try{localStorage.setItem(MOVE_KEY,move.checked?'on':'off');}catch{}showMoving();};}
  const box=$('graphics-simple');if(!box)return;
  box.checked=graphicsSimple;
  box.onchange=()=>{chooseGraphics(gfxStore,box.checked);$('graphics-status').textContent='Opening your farm again…';
@@ -2432,7 +2565,7 @@ async function init(){
   // now fails the start (src/game-cloud.js): the page opens once more by itself, a second time it shows Try again.
   if(missingModels*2>modelNames.length)throw Object.assign(new Error('missing-models'),{reopen:true});
   markRun(gfxStore,{step:'scene',percent:Number($('load-progress')?.value)||0});
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy(),asBefore:place=>asBefore(place,{dairy:false})});clipNow();applyLayout();layoutKey=JSON.stringify(state.layout?.at??{});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy(),asBefore:place=>asBefore(place,{dairy:false})});clipNow();applyLayout();layoutKey=JSON.stringify(state.layout??{});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
   // spot, and a held first field is not tipped over by an earlier drag.

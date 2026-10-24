@@ -86,6 +86,8 @@ export function buildScenery({scene,models,mobile=false,clear=null,keepOff=[]}){
    if(!mesh.isMesh)return;
    const im=new THREE.InstancedMesh(mesh.geometry,mesh.material,list.length),m=new THREE.Matrix4(),q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0);
    list.forEach(([x,z,height,rotation,y=0],i)=>{const s=height/entry.size.y;m.compose(new THREE.Vector3(x,y-.05,z),q.setFromAxisAngle(up,rotation),new THREE.Vector3(s,s,s)).multiply(mesh.matrixWorld);im.setMatrixAt(i,m);});
+   // Which model and where each copy stands (your own farm layout, game.js: a tree or a bush on the land you can clear).
+   im.userData.scenery=name;im.userData.spots=list.map(([x,z])=>[x,z]);
    im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.castShadow=shadow;im.receiveShadow=true;group.add(im);
   });
  }
