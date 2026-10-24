@@ -41,7 +41,7 @@ test('while the farm waits, a press only moves it: no field is worked and nothin
 });
 
 test('the game asks farm-input whether it waits; no sheet takes the farm away while saving',()=>{
- assert.match(read('public/game.js'),/bindFarmInput\(\{canvas,surface:\$\('game'\),isReady:\(\)=>ready&&!visitView,busy:\(\)=>document\.body\.classList\.contains\('farm-waiting'\),/);
+ assert.match(read('public/game.js'),/bindFarmInput\(\{canvas,surface:\$\('game'\),isReady:\(\)=>ready,busy:\(\)=>visitView\|\|document\.body\.classList\.contains\('farm-waiting'\),/);
  assert.match(read('public/farm-client.js'),/try\{const data=await send\(action,false,true\);/,'only the actions that wait for the server');
  assert.doesNotMatch(read('public/styles.css'),/\.farm-(?:saving|waiting) #world/);
 });

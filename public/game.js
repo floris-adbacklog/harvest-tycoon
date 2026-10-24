@@ -2735,7 +2735,7 @@ async function init(){
   const canvas=renderer.domElement;
   // Moving things is for your own farm (layout-edit.js), not the village or a farm an admin looks at.
   if(!villageWorld&&!adminView)createLayoutTools();else for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=true;
-  bindFarmInput({canvas,surface:$('game'),isReady:()=>ready&&!visitView,busy:()=>document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
+  bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,busy:()=>visitView||document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
    open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
