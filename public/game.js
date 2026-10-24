@@ -568,7 +568,8 @@ function greyed(material){
  let grey=greyedMaterials.get(material);
  if(!grey){
   grey=material.clone();
-  grey.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.299,.587,.114))),.92)*.9+.05;');};
+  // Lighter and flatter since 24 Oct 2026 (the owner: "Maak locked building nog meer onopvallend"): a pale grey that sinks into the farm.
+  grey.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.299,.587,.114))),.95)*.55+.36;');};
   grey.customProgramCacheKey=()=>'greyed';greyedMaterials.set(material,grey);
  }
  return grey;

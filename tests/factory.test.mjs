@@ -229,9 +229,10 @@ test('what is still to come is shown from the first minute, greyed out with a lo
  assert.match(game,/for\(const decor of factoryDecor\)setLocked\(decor,!buildingEligible\(state,'factory'\)\);/);
  assert.match(game,/if\(windmillRotor\)setLocked\(windmillRotor,!buildingEligible\(state,'windmill'\)\);/);
  // calm: a small grey lock, no name
- assert.match(css,/\.building-label\.locked,\.utility-label\.locked\{filter:grayscale\(1\);opacity:\.7\}/);
- assert.match(css,/\.building-label\.locked\{padding:3px;width:32px;/);assert.match(css,/\.building-label\.locked>span:nth-child\(2\)\{display:none\}/);
- assert.match(css,/\.utility-label\.locked\{width:30px;height:30px;/);
+ // Fainter and smaller since 24 Oct 2026 (the owner: "Maak locked building nog meer onopvallend"; 70% and 32 px before).
+ assert.match(css,/\.building-label\.locked,\.utility-label\.locked\{filter:grayscale\(1\);opacity:\.42\}/);
+ assert.match(css,/\.building-label\.locked\{padding:2px;width:24px;/);assert.match(css,/\.building-label\.locked>span:nth-child\(2\)\{display:none\}/);
+ assert.match(css,/\.utility-label\.locked\{width:24px;height:24px;/);
 });
 test('a building that is not built yet shows one status line, what it makes, and Build only when it can be built',()=>{
  const ui=read('public/economy-ui.js');
