@@ -1125,10 +1125,14 @@ function hideCleared(){
 // The obstacle a ray hit (an instanced copy by its spot), or null.
 function obstacleOf(hit){
  const o=hit.object;
- if(o.isInstancedMesh){if(!o.userData.spots||hit.instanceId==null)return null;const [x,z]=o.userData.spots[hit.instanceId];const id=obstacleId(o.userData.scenery,x,z);return obstacles().has(id)?id:null;}
+ // A copy hidden by a zero scale (cleared, or under something you placed) can still catch the ray: it is not there.
+ if(o.isInstancedMesh){if(!o.userData.spots||hit.instanceId==null)return null;const [x,z]=o.userData.spots[hit.instanceId];const id=obstacleId(o.userData.scenery,x,z);return obstacles().has(id)&&!clearedIds().has(id)?id:null;}
  for(let p=o;p&&p!==scene;p=p.parent){const id=obstacleRef.get(p);if(id)return id;}
  return null;
 }
+// Whether an instanced copy is hidden (scaled to nothing).
+const copyMatrix=new THREE.Matrix4();
+function hiddenCopy(im,i){im.getMatrixAt(i,copyMatrix);const e=copyMatrix.elements;return Math.abs(e[0])+Math.abs(e[5])+Math.abs(e[10])<1e-6;}
 const standingObstacles=()=>{const gone=clearedIds();return [...obstacles().values()].filter(o=>!gone.has(o.id)).map(({id,kind,x,z})=>({id,kind,x,z}));};
 
 // ---- Paths (24 Oct 2026, the owner: "kan je draggen om een road te tekenen", then "1+2"): flat tiles in the road's own colour (the
@@ -1299,7 +1303,8 @@ function layoutPick(event){
  const ground=raycaster.ray.intersectPlane(groundPlane,new THREE.Vector3());
  if(ground)for(const [id,v] of [...layoutGhosts,...decorViews]){const [a,b,c,d]=decorBox(v.kind,v.obj.position.x,v.obj.position.z);if(ground.x>a&&ground.x<b&&ground.z>c&&ground.z<d)return id;}
  for(const hit of raycaster.intersectObjects(scene.children,true)){
-  if(!hit.object.visible)continue;
+  if(!hit.object.visible||!Number.isFinite(hit.distance))continue;
+  if(hit.object.isInstancedMesh&&hit.instanceId!=null&&hiddenCopy(hit.object,hit.instanceId))continue;
   const obstacle=obstacleOf(hit);if(obstacle)return obstacle;
   for(let o=hit.object;o&&o!==scene;o=o.parent){if(o.userData.decor)return o.userData.decor;if(o.userData.yard)return o.userData.yard;if(o.userData.plot!==undefined)return `field:${o.userData.plot}`;}
  }
