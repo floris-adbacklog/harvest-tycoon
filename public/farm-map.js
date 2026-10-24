@@ -63,9 +63,10 @@ export function normalizeLayout(state){
  const added=(Array.isArray(l.added)?l.added:[]).filter(d=>d&&typeof d.id==='string'&&/^d\d+$/.test(d.id)&&Object.hasOwn(DECOR,d.kind)&&Number.isFinite(d.x)&&Number.isFinite(d.z)).map(d=>({id:d.id,kind:d.kind,x:d.x,z:d.z})).slice(0,MAX_ADDED);
  const stored=Object.fromEntries(Object.keys(DECOR).filter(k=>Number.isSafeInteger(l.stored?.[k])&&l.stored[k]>0).map(k=>[k,l.stored[k]]));
  const n=Number.isSafeInteger(l.n)&&l.n>=0?l.n:added.reduce((m,d)=>Math.max(m,Number(d.id.slice(1))+1),0);
- state.layout={v:1,at,cleared,added,stored,n};
+ const roads=[...new Set((Array.isArray(l.roads)?l.roads:[]).filter(id=>typeof id==='string'&&/^r:\d:\d{1,3}$/.test(id)))];
+ state.layout={v:1,at,cleared,added,stored,n,roads};
 }
-const emptyLayout=()=>({v:1,at:{},cleared:[],added:[],stored:{},n:0});
+const emptyLayout=()=>({v:1,at:{},cleared:[],added:[],stored:{},n:0,roads:[]});
 const validTurn=turn=>Number.isInteger(turn)&&turn>=0&&turn<=3;
 function layoutOf(state){state.layout??=emptyLayout();return state.layout;}
 // A thing that can move: a yard, a field (by its id) or a tree or path tile you placed.
@@ -137,4 +138,50 @@ export function storeDecor(state,id){
  const layout=layoutOf(state),i=layout.added.findIndex(d=>d.id===id);if(i<0)throw new Error('Choose a tree or a path tile you placed.');
  const [d]=layout.added.splice(i,1);layout.stored[d.kind]=(layout.stored[d.kind]??0)+1;
  return {stored:id,kind:d.kind};
+}
+
+// Roads you draw and take away (24 Oct 2026, the owner: "kan je draggen om een road te tekenen"; then "1+2"). A drag lays path tiles on
+// a 2-step grid (PATH_GRID), from your store first and then for coins. A drag in Erase takes them away again, into your store. The
+// valley's five roads, the ones that were there before you, are cut into pieces of about 2 (OLD_ROADS, farm-layout.js roadRects without
+// the road out of the valley, which runs on past the land): a piece taken away is a path tile in your store, so moving a road costs
+// nothing (layout.roads: the pieces taken away).
+export const PATH_GRID=2;
+export const OLD_ROADS=Object.freeze([[-32.5,44.2,-6.65,-3.75],[-9.25,-6.35,-22.1,34.996],[-9.253,25.607,32.6,35],[-28.35,-26.25,-17.55,35.75],[-28.6,26,-31.39,-29.19]].map(Object.freeze));
+export function roadPieces(){
+ const out=[];
+ OLD_ROADS.forEach(([a,b,c,d],road)=>{
+  const along=b-a>d-c,length=along?b-a:d-c,n=Math.max(1,Math.round(length/PATH_GRID)),step=length/n;
+  for(let k=0;k<n;k++){const box=along?[a+k*step,a+(k+1)*step,c,d]:[a,b,c+k*step,c+(k+1)*step];out.push({id:`r:${road}:${k}`,road,box,x:(box[0]+box[1])/2,z:(box[2]+box[3])/2});}
+ });
+ return out;
+}
+const PIECES=new Map(roadPieces().map(p=>[p.id,p]));
+const MAX_STROKE=200;
+// One drag: path tiles laid at [x, z] (add) and tiles or old road pieces taken away (remove: a path tile's dN or a piece's r:<road>:<k>).
+export function editPaths(state,{add=[],remove=[]}={},level){
+ if(!Array.isArray(add)||!Array.isArray(remove)||!add.length&&!remove.length||add.length>MAX_STROKE||remove.length>MAX_STROKE*2)throw new Error('Draw or take away a path.');
+ const layout=layoutOf(state),gone=new Set(layout.roads),paths=new Map(layout.added.filter(d=>d.kind==='path').map(d=>[d.id,d]));
+ const removing=new Set(remove);if(removing.size!==remove.length)throw new Error('Take each piece away once.');
+ for(const id of remove){
+  if(paths.has(id))continue;
+  const piece=PIECES.get(id);if(!piece||gone.has(id))throw new Error('Take away a path that is there.');
+  if(!landOpen(level,piece.x,piece.z))throw new Error(`This land opens at level ${landAt(piece.x,piece.z)?.level??'?'}.`);
+ }
+ const taken=new Set([...paths.values()].filter(d=>!removing.has(d.id)).map(d=>`${d.x},${d.z}`)),cells=[];
+ for(const spot of add){
+  const [x,z]=Array.isArray(spot)?spot:[];
+  if(!Number.isFinite(x)||!Number.isFinite(z)||x%PATH_GRID!==0||z%PATH_GRID!==0)throw new Error('Draw the path on the grid.');
+  checkSpot(level,x,z);const key=`${x},${z}`;if(taken.has(key))throw new Error('There is a path there already.');
+  taken.add(key);cells.push([x,z]);
+ }
+ const store=(layout.stored.path??0)+remove.length,coins=Math.max(0,cells.length-store)*DECOR.path.coins;
+ if(state.coins<coins)throw new Error(`You need ${coins} coins.`);
+ if(layout.added.length-[...removing].filter(id=>paths.has(id)).length+cells.length>MAX_ADDED)throw new Error('Your farm is full of trees and paths.');
+ // Taken away first: each one a tile in the store, which the new ones use before any coins.
+ layout.added=layout.added.filter(d=>!removing.has(d.id));
+ layout.roads=[...layout.roads,...remove.filter(id=>PIECES.has(id))];
+ for(const [x,z] of cells){layout.added.push({id:`d${layout.n}`,kind:'path',x,z});layout.n+=1;}
+ const left=store-Math.min(store,cells.length);if(left)layout.stored.path=left;else delete layout.stored.path;
+ state.coins-=coins;
+ return {added:cells.length,removed:remove.length,coins};
 }

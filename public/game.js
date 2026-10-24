@@ -40,7 +40,7 @@ import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
-import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind } from './farm-map.js';
+import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind, OLD_ROADS, PATH_GRID, roadPieces } from './farm-map.js';
 import { createLayoutEditor } from './layout-edit.js';
 import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
@@ -1131,6 +1131,50 @@ function obstacleOf(hit){
 }
 const standingObstacles=()=>{const gone=clearedIds();return [...obstacles().values()].filter(o=>!gone.has(o.id)).map(({id,kind,x,z})=>({id,kind,x,z}));};
 
+// ---- Paths (24 Oct 2026, the owner: "kan je draggen om een road te tekenen", then "1+2"): flat tiles in the road's own colour (the
+// road model's own material, every corner on the one spot of its texture at the middle of the road's top), so tiles side by side make
+// one path; the road model as a 2 by 2 tile was a cushion with gaps. An old road is drawn as its pieces once one of them is taken away.
+let tileKit=null;
+function tileKitOf(){
+ if(tileKit)return tileKit;
+ let mesh=null;models.get('road_001')?.object.traverse(n=>{if(!mesh&&n.isMesh)mesh=n;});if(!mesh)return null;
+ const pos=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;let top=-Infinity;for(let i=0;i<pos.count;i++)top=Math.max(top,pos.getY(i));
+ mesh.geometry.computeBoundingBox();const mid=mesh.geometry.boundingBox.getCenter(new THREE.Vector3());let best=0,dist=Infinity;
+ for(let i=0;i<pos.count;i++){if(pos.getY(i)<top-1e-4)continue;const d=Math.hypot(pos.getX(i)-mid.x,pos.getZ(i)-mid.z);if(d<dist){dist=d;best=i;}}
+ const geometry=new THREE.BoxGeometry(1,1,1),u=uv?uv.getX(best):0,v=uv?uv.getY(best):0,corners=geometry.attributes.uv;for(let i=0;i<corners.count;i++)corners.setXY(i,u,v);
+ return tileKit={geometry,material:roadMaterial(Array.isArray(mesh.material)?mesh.material[0]:mesh.material)};
+}
+function makeTile(x,z,width,depth,height=.13,y=-.035){
+ const kit=tileKitOf(),m=new THREE.Mesh(kit.geometry,kit.material);m.scale.set(width,height,depth);m.position.set(x,y+height/2,z);m.receiveShadow=true;scene.add(m);return m;
+}
+// The valley's old roads (game/farm-map.js OLD_ROADS) as decorate and farm-life.js drew them, found by where they stand.
+let roadViews=null;const roadsAway=new Set();
+function oldRoads(){
+ if(roadViews)return roadViews;
+ roadViews=OLD_ROADS.map((box,i)=>{
+  const cx=(box[0]+box[1])/2,cz=(box[2]+box[3])/2;let obj=null;
+  scene.traverse(o=>{if(!obj&&(o.userData.model??o.userData.scenery)==='road_001'&&!o.userData.decor&&Math.abs(o.position.x-cx)<.6&&Math.abs(o.position.z-cz)<.6)obj=o;});
+  return {i,obj,pieces:[]};
+ });
+ return roadViews;
+}
+// What is taken away: saved (state.layout.roads) and, while you erase, not saved yet (roadsAway).
+function syncRoads(){
+ const gone=new Set([...(state.layout?.roads??[]),...roadsAway]),pieces=roadPieces();
+ for(const v of oldRoads()){
+  for(const m of v.pieces)scene.remove(m);v.pieces=[];
+  const mine=pieces.filter(p=>p.road===v.i),cut=mine.some(p=>gone.has(p.id));
+  if(v.obj)v.obj.visible=!cut;if(!cut)continue;
+  const {height,y}=ROADS[v.i];
+  for(const p of mine)if(!gone.has(p.id)){const [a,b,c,d]=p.box,m=makeTile(p.x,p.z,b-a,d-c,height,y);m.userData.roadPiece=p.id;v.pieces.push(m);}
+ }
+}
+// The roads' boxes for what fits: an old road whole, or the pieces left of it; the road out of the valley as it is.
+function roadBoxes(){
+ const gone=new Set([...(state.layout?.roads??[]),...roadsAway]),pieces=roadPieces(),boxes=[];
+ OLD_ROADS.forEach((box,i)=>{const mine=pieces.filter(p=>p.road===i);if(mine.some(p=>gone.has(p.id)))boxes.push(...mine.filter(p=>!gone.has(p.id)).map(p=>p.box));else boxes.push(box);});
+ return boxes.concat(roadRects().slice(OLD_ROADS.length).map(r=>[r.minX,r.maxX,r.minZ,r.maxZ]));
+}
 // ---- Trees and path tiles you placed (milestone 3: layout_buy, layout_place, layout_store), drawn from state.layout.added.
 const DECOR_LOOK=Object.freeze({
  path:{model:'road_001',width:2,depth:2,height:.13,y:-.035,half:1},
@@ -1139,6 +1183,7 @@ const DECOR_LOOK=Object.freeze({
 });
 const decorViews=new Map();
 function makeDecor(kind,x,z,id){
+ if(kind==='path'){const tile=makeTile(x,z,2,2);tile.userData.decor=id;tile.userData.decorKind=kind;return tile;}
  const look=DECOR_LOOK[kind],before=currentZone();zone('fields',{keep:true});
  const o=cloneModel(look.model,x,z,{width:look.width,depth:look.depth,height:look.height,y:look.y??0,rotation:kind==='path'?0:(x*.7+z*.3)%6.28});
  zone(before,{keep:true});o.userData.decor=id;o.userData.decorKind=kind;return o;
@@ -1161,7 +1206,7 @@ function hideUnderLayout(extra=[]){
  if(covered.length){
   const under=(x,z,m=0)=>covered.some(([a,b,c,d])=>x>a-m&&x<b+m&&z>c-m&&z<d+m);
   const box=new THREE.Box3(),c=new THREE.Vector3(),m=new THREE.Matrix4(),p=new THREE.Vector3();
-  const loose=o=>!o.userData.yard&&!o.userData.decor&&o.userData.plot===undefined&&!o.isLight&&!o.isCamera&&o.name!=='Farm ground'&&o.name!=='Crop meadow'&&!/^(road|ground)_/.test(o.userData.model??'');
+  const loose=o=>!o.userData.yard&&!o.userData.decor&&o.userData.plot===undefined&&!o.isLight&&!o.isCamera&&o.name!=='Farm ground'&&o.name!=='Crop meadow'&&!/^(road|ground)_/.test(o.userData.model??o.userData.scenery??'')&&o.userData.roadPiece===undefined;
   const check=o=>{
    if(o.isInstancedMesh){
     if(obstacleKind(o.userData.scenery??''))return;
@@ -1180,7 +1225,7 @@ function applyLayout(){
  if(villageWorld||!ready&&!plots.length)return;
  for(const id of LAYOUT_YARDS)placeYard(id,state.layout?.at?.[id]??anchorAt(id));
  state.plots.forEach((_,i)=>placeField(i,fieldSpot(i)));
- syncDecor();hideUnderLayout();
+ syncDecor();syncRoads();hideUnderLayout();
  if(renderer){renderer.shadowMap.needsUpdate=true;measureFarm();}
 }
 // The land that is not open yet, while you move things (milestone 2): greyed, with the level it opens at.
@@ -1196,7 +1241,7 @@ function showLand(on){
   });
  }
  const level=levelProgress(state).level;
- for(const v of landViews){const locked=on&&level<v.piece.level;v.mesh.visible=locked;v.label.hidden=!locked;v.label.textContent=`Opens at level ${v.piece.level}`;v.locked=locked;}
+ for(const v of landViews){const locked=on&&level<v.piece.level;v.mesh.visible=locked;v.label.hidden=!locked;if(locked&&v.shown!==v.piece.level){v.shown=v.piece.level;v.label.innerHTML=`${art('land-locked')}<span></span>`;v.label.querySelector('span').textContent=`Opens at level ${v.piece.level}`;}v.locked=locked;}
 }
 function positionLandLabels(width,height){
  if(!landViews||!layoutEditor?.active())return;
@@ -1250,6 +1295,23 @@ function layoutRotate(id,[x,z,turn=0]){
  placeYard(id,at);layoutBase=null;hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;
  return at;
 }
+// Drawing a path (layout-edit.js brush): what stands in the way (everything but the tiles this drag takes away), the tile or old road
+// piece under a spot, and the drag on the screen: its new tiles, and what it takes away hidden until it is saved.
+function pathOthers(skip=new Set()){
+ return [...LAYOUT_YARDS,'farmhouse',...plots.map((_,i)=>`field:${i}`),...[...decorViews.keys()].filter(id=>!skip.has(id))].map(footprint).filter(Boolean);
+}
+function layoutPathAt([x,z]){
+ for(const [id,v] of decorViews)if(v.kind==='path'&&v.obj.visible&&Math.abs(v.obj.position.x-x)<1&&Math.abs(v.obj.position.z-z)<1)return id;
+ const gone=new Set([...(state.layout?.roads??[]),...roadsAway]);
+ return roadPieces().find(p=>!gone.has(p.id)&&x>p.box[0]&&x<p.box[1]&&z>p.box[2]&&z<p.box[3])?.id??null;
+}
+let brushTiles=[],brushHidden=[];
+function layoutBrush({add,remove}){
+ for(const m of brushTiles)scene.remove(m);brushTiles=add.map(([x,z])=>makeTile(x,z,2,2));
+ for(const o of brushHidden)o.visible=true;brushHidden=[];roadsAway.clear();
+ for(const id of remove){const d=decorViews.get(id);if(d){d.obj.visible=false;brushHidden.push(d.obj);}else roadsAway.add(id);}
+ syncRoads();renderer.shadowMap.needsUpdate=true;
+}
 // Build: a new tree or tile where the middle of the view meets the ground, picked up as new:<kind> until it is bought or placed.
 function layoutSpawn(kind){
  const rect=renderer.domElement.getBoundingClientRect(),at=layoutGround({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height*.45});if(!at)return null;
@@ -1302,7 +1364,8 @@ function showMoving(){const on=Boolean(layoutEditor)&&movingOn();for(const id of
 function createLayoutTools(){
  layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,coins:()=>state.coins,stored:()=>state.layout?.stored??{},
   pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
-  footprint:layoutFootprint,others:id=>{layoutFootprint(id);return layoutBase.others;},roads:()=>roadRects().map(r=>[r.minX,r.maxX,r.minZ,r.maxZ]),
+  footprint:layoutFootprint,others:(id,skip)=>{if(skip)return pathOthers(skip);layoutFootprint(id);return layoutBase.others;},roads:roadBoxes,
+  pathAt:layoutPathAt,brush:layoutBrush,savePaths:edit=>runAction({type:'layout_paths',...edit}).finally(()=>{layoutBase=null;}),
   blockers:standingObstacles,mark:layoutMark,rotate:layoutRotate,spawn:layoutSpawn,discard:layoutDiscard,save:layoutSave,
   store:id=>runAction({type:'layout_store',id}).finally(()=>{layoutBase=null;}),clear:id=>runAction({type:'layout_clear',id}).finally(()=>{layoutBase=null;}),
   notify:toast,refresh:icons,
@@ -2653,7 +2716,8 @@ async function init(){
    }
   });
   markRun(gfxStore,{step:'frame',percent:99});
-  ready=true;showVisitBar();if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
+  showVisitBar();
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
   markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full

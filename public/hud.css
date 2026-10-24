@@ -208,18 +208,19 @@ html.farm-editing :is(.activity-label,.pond-label,.utility-label,.building-label
 .layout-actions{display:flex;flex:none;gap:8px}
 .layout-actions button{min-height:44px;padding:0 16px;font-size:15px}
 .layout-actions button[hidden]{display:none}
-.layout-actions .layout-icon{display:inline-flex;align-items:center;gap:6px}.layout-actions .layout-icon svg{width:18px;height:18px}
-.layout-actions [data-layout="build"][aria-pressed="true"]{background:var(--btn-second-hover)}
+.layout-actions .layout-icon{display:inline-flex;align-items:center;gap:6px}.layout-actions .layout-icon svg{width:18px;height:18px}.layout-actions .layout-icon .game-art{width:26px;height:26px;margin-block:-4px}
+.layout-actions :is([data-layout="build"],[data-layout="erase"])[aria-pressed="true"]{background:var(--btn-second-hover)}
 /* Build: what you can place, a row of chunky tiles above the hint (milestone 3). */
 .layout-bar:has(.layout-shop:not([hidden])){flex-wrap:wrap}
 .layout-shop{display:flex;flex-basis:100%;gap:8px;overflow-x:auto;padding-bottom:2px}
 .layout-shop[hidden]{display:none}
 .layout-shop button{flex:1 0 auto;display:grid;justify-items:center;gap:2px;min-width:84px;padding:8px 10px;border:2px solid var(--btn-second-line);border-radius:14px;background:var(--btn-second);box-shadow:0 2px 0 var(--btn-second-edge);color:var(--btn-second-text);font:700 13px/1.2 'Outfit',sans-serif;cursor:pointer}
 .layout-shop button:active{transform:translateY(2px);box-shadow:none}
-.layout-shop button>svg{width:24px;height:24px;color:#4f8a3c}
+.layout-shop button>svg{width:24px;height:24px;color:#4f8a3c}.layout-shop button>.game-art{width:30px;height:30px;margin-block:-3px}
 .layout-shop b{display:inline-flex;align-items:center;gap:3px;font-size:13px;color:#7a5410}.layout-shop b svg{width:14px;height:14px}
 /* The land that opens later, while you move things (milestone 2): a quiet tag in the middle of each greyed piece. */
-.land-label{position:absolute;transform:translate(-50%,-50%);padding:5px 10px;border-radius:999px;background:#fffaf0e6;border:1px solid #d9c7a4;color:#5b4520;font:700 13px/1 'Outfit',sans-serif;white-space:nowrap;pointer-events:none}
+.land-label .game-art{width:26px;height:26px;margin:-6px 0}
+.land-label{position:absolute;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#fffaf0e6;border:1px solid #d9c7a4;color:#5b4520;font:700 13px/1 'Outfit',sans-serif;white-space:nowrap;pointer-events:none}
 .land-label[hidden]{display:none}
 /* A phone: the hint on its own line above the buttons. */
 @media(max-width:560px){.layout-bar{flex-wrap:wrap;padding:10px 12px}.layout-hint{flex-basis:100%}.layout-actions{width:100%}.layout-actions button{flex:1;padding:0 10px}}

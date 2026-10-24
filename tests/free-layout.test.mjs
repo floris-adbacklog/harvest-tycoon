@@ -72,7 +72,7 @@ test('a farm that never moved anything has no layout; a broken one is cleaned; o
  const s=farmAt(1);act(s,{type:'field',id:0,action:'harvest'},now);assert.equal(s.layout,undefined);
  s.layout={at:{bakery:[1,2],mill:[3,4,2],coop:[3,4,7],farmhouse:[0,0],'field:999':[1,1],nope:[1,1],dairy:['x',1]},cleared:['o:tree_001:1:1','bad',3],added:[{id:'d4',kind:'oak',x:1,z:2},{id:'x',kind:'oak',x:1,z:2}],stored:{oak:2,castle:1}};
  act(s,{type:'field',id:1,action:'harvest'},now);
- assert.deepEqual(s.layout,{v:1,at:{bakery:[1,2],mill:[3,4,2],coop:[3,4]},cleared:['o:tree_001:1:1'],added:[{id:'d4',kind:'oak',x:1,z:2}],stored:{oak:2},n:5});
+ assert.deepEqual(s.layout,{v:1,at:{bakery:[1,2],mill:[3,4,2],coop:[3,4]},cleared:['o:tree_001:1:1'],added:[{id:'d4',kind:'oak',x:1,z:2}],stored:{oak:2},n:5,roads:[]});
  assert.match(read('scripts/sync-game.mjs'),/game\/farm-map\.js/);
  assert.equal(read('public/farm-map.js'),read('game/farm-map.js'));assert.equal(read('supabase/functions/farm-api/farm-map.js'),read('game/farm-map.js'));
 });

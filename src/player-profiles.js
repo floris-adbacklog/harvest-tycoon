@@ -227,7 +227,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  // (the game opens it over your own: public/game.js harvestVisit). Not from the village, an admin's view or a farm you are visiting.
  function showVisit(player){
   const box=content.querySelector('[data-farmer-visit]'),visit=window.harvestVisit;if(!box||typeof visit!=='function')return;
-  box.hidden=false;box.innerHTML=`<button type="button" class="secondary-button farmer-visit-button">${art('farm')}Visit farm</button>`;
+  box.hidden=false;box.innerHTML=`<button type="button" class="secondary-button farmer-visit-button">${art('visit-farm')}Visit farm</button>`;
   box.querySelector('button').onclick=()=>{dialog.close();visit(player.playerId,player.username);};
  }
  function showInvite(player){

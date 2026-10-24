@@ -92,6 +92,9 @@ const PLACE_RENDERS=['valleymarket','ranch','estateworkshop','tradedepot','grand
 const webpPictures=new Set(['live-events','family-sharing','farmhand','coin-cart','double-harvest','double-xp','double-coins','invite-friends','vip','honey','rank-gold','family-bee','family-barn','rank-bronze','family-weekly-order','family-oak','rank-silver','family-members','familyhall','lock','family-tournament','family-management','berries','berrytart','berrypreserves','chore-harvestfair','pickledbeans','apples','applepie','applejuice','harvesthamper','berrycheesecake','stew','orchardsalad','orchardjuice','family-horseshoe','applecompote','chore-sorting','chore-irrigation','collect-all','activity-greenhouse','activity-apiary','instant-harvest','chore-troughs',...MIDGAME_ITEM_ART,...VALLEY_ITEM_ART,'valleymarket',...ESTATE_ITEM_ART,'estateworkshop','tradedepot','grandfair',...LARGE_PICTURES,...PLACE_RENDERS,'truffles','truffleomelette','chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block','graphics',...PACK_ART,'log']);
 // The Family Chest in its four tiers, and open (27 Sep 2026, painted, WebP).
 for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver','family-chest-gold','family-chest-open']){pictures[key]=key;webpPictures.add(key);}
+// Your own farm layout (24 Oct 2026, painted for the owner): Move things, Rotate, Clear, Store, drawing and erasing a path, the land that
+// opens later and Visit farm.
+for(const key of ['layout-move','layout-rotate','layout-clear','layout-store','path-draw','path-erase','land-locked','visit-farm']){pictures[key]=key;webpPictures.add(key);}
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 for(const key of VILLAGE_ART)webpPictures.add(key);
 webpPictures.add('feedback');
