@@ -2467,7 +2467,7 @@ function bindUI(){
  document.addEventListener('visibilitychange',()=>productionSounds.reset(state.buildings,farmNow()));
  $('zoom-in').addEventListener('click',()=>villageWorld?zoomFarm(1.25):stepFarm(1));$('zoom-out').addEventListener('click',()=>villageWorld?zoomFarm(1/1.25):stepFarm(-1));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
- liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh(),onClaimed:reward=>{if(reward?.coins>0||reward?.diamonds>0)farmerCheers();}});
+ liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh(),onClaimed:reward=>{farmAudio.play('eventwin');if(reward?.coins>0||reward?.diamonds>0)farmerCheers();}});
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
  // that has not been paid yet. After the code, a farm reload pays the diamonds (the gift pop-up) and both disappear.
  emailCheckUI=createEmailCheck({bridge:window.parent.harvestBridge,email:()=>emailAccount.email,canChange:()=>emailAccount.canChange===true,onDone:()=>client.refresh(),

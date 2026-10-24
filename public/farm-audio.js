@@ -88,6 +88,8 @@ export const SOUND_CUES=Object.freeze({
  improve:{notes:[392,523.25,698.46],step:.13,duration:.4,volume:.09},
  tractor:{notes:[98,123.47,146.83],step:.085,duration:.16,volume:.06,type:'triangle'},
  levelup:{notes:[523.25,659.25,783.99,1046.5,1318.51,1046.5],step:.14,duration:.52,volume:.12},
+ // An event won or finished (24 Oct 2026, sound-kit.js eventwin), as plain notes until its sound is ready.
+ eventwin:{notes:[392,523.25,659.25,783.99,1046.5],step:.09,duration:.5,volume:.12},
  bell:{notes:[392,329.63,261.63],step:.3,duration:.6,volume:.07},
  // The Fishing pond (11 Oct 2026, pond-ui.js plays them itself): the cast, a nibble, the bite, a fish landed and one that slipped off.
  cast:{notes:[520,330],step:.06,duration:.18,volume:.05,type:'triangle',glide:.7},

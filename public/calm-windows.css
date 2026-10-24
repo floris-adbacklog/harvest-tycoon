@@ -47,6 +47,9 @@
 #task-list .quest-rewards,#family-dialog :is(.family-chips,.family-chest-head>.family-chest-gives),#estate-content .stall-gains{column-gap:12px}
 #buildings-dialog .building-level-chip{padding:0;background:none;color:#8a7a5c}
 #buildings-dialog .building-status:not(.ready){padding:0;background:none}
+/* "Ready to work" in green too (24 Oct 2026, the owner: "de tekst klaar om te gebruiken groen maken zodat het meteen duidelijk is dat
+   hij ready is"), as plain text: only what is ready to collect keeps the green card. */
+#buildings-dialog .building-status.idle{color:#3f6b2c;font-weight:700}
 #family-dialog .family-meta-chip,#family-dialog .family-meta-chip.is-level{padding:0;border:0;background:none}
 #family-dialog .family-meta-chip.is-level{color:#7a5410}
 .tag-info{padding:0;border:0;background:none}

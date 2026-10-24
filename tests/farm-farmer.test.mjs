@@ -258,7 +258,7 @@ test('your farmer celebrates a level-up or an event won: two happy hops and a li
  assert.match(walker,/function celebrate\(\)\{\n  if\(me\.away\|\|me\.hopping>0\|\|!\(performance\.now\(\)-\(me\.steppedAt\?\?-Infinity\)<MOVED_RECENTLY\)\)return null;/,'not in the picture, on the bench or mid-hop: nothing');
  // Both level-up paths (a farm action and a sweep) and an event's reward collected (coins or diamonds).
  assert.equal(game.match(/if\(change\.leveled\)track\('level_up',\{level:change\.level\}\);if\(change\.leveled\)farmerCheers\(\);/g).length,2);
- assert.match(game,/onClaimed:reward=>\{if\(reward\?\.coins>0\|\|reward\?\.diamonds>0\)farmerCheers\(\);\}/);
+ assert.match(game,/onClaimed:reward=>\{farmAudio\.play\('eventwin'\);if\(reward\?\.coins>0\|\|reward\?\.diamonds>0\)farmerCheers\(\);\}/,'with its own little fanfare (24 Oct 2026)');
  assert.match(events,/notify\?\.\(r\.reward\.message\);onClaimed\?\.\(r\.reward\);/);
  // The card first: a beat, then they wait while a window is in front (a minute at most).
  assert.match(game,/const CHEER_BEAT=900,CHEER_WAIT=60000;/);
