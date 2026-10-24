@@ -39,6 +39,9 @@
     (the owner: cleaner; public/small-window.js computerWindow). */
  .plot-label.is-grouped:not(:focus-visible){opacity:0}
  .plot-timer-count{font-style:normal;color:#7c7164}
+ /* The Windmill's and the Bakery's Grain → Flour → Fresh baking row stands together in the middle, as on a phone, not spread over the
+    whole window (24 Oct 2026, the owner). */
+ .milling-chain{justify-content:center;column-gap:28px}
 }
 /* The logo, small in the bottom-left corner, on screens tall enough that it never meets the side tools. */
 @media(min-width:901px) and (min-height:760px){
