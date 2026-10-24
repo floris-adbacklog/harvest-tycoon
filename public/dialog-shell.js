@@ -37,6 +37,8 @@ const BADGE_WIKI=Object.freeze({silo:['helpers','sec-silo-research'],stall:['hel
 export function wikiFor(dialog){
  try{
   if(dialog.id==='building-dialog'&&dialog.querySelector('.farmhouse-panel'))return ['crops','sec-more-fields'];
+  // A village place's window and Buildings in the village (24 Oct 2026, the owner: they opened the farm's buildings): the village places.
+  if((dialog.id==='building-dialog'||dialog.id==='buildings-dialog')&&dialog.dataset?.place==='village')return ['village','sec-village-places'];
   const badge=dialog.querySelector('.dialog-heading .dialog-badge')?.getAttribute?.('data-art');
   return BADGE_WIKI[badge]??WINDOW_WIKI[dialog.id]??null;
  }catch{return null;}

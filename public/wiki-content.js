@@ -108,7 +108,7 @@ const SECTION_ART={
  'sec-tractor':'tractor','sec-farm-chores':'chores','sec-a-helping-hand':'helping-hand','sec-fishing-pond':'fishingpond','sec-fish-book-page-2':'fish-goldencarp',
  'sec-your-second-world':'village-badge','sec-golden-briefs':'letter','sec-landmarks':'landmark-windpump','sec-villagers-requests':'supply-cart','sec-market-week':'villagemarket',
  'sec-the-miller-s-order':'villager-miller','sec-village-lake':'villagelake','sec-village-lake-page-2':'fish-salmon','sec-diamonds-in-the-village':'diamonds',
- 'sec-past-level-10':'mastertools','sec-builder-s-crates':'builderscrate','sec-made-on-the-farm':'packedlunch','sec-village-quests':'quests',
+ 'sec-village-places':'mine','sec-past-level-10':'mastertools','sec-builder-s-crates':'builderscrate','sec-made-on-the-farm':'packedlunch','sec-village-quests':'quests',
  'sec-something-to-grow-towards':'estate','sec-estate-chapters':'log','sec-estate-workshop-improvements':'estateworkshop','sec-after-level-90':'master','sec-heirlooms':'seedlab',
  'sec-valley-projects':'valleyprojects',
  'sec-earning-diamonds':'diamonds','sec-finish-now':'instant-harvest','sec-coins-for-diamonds':'coin-cart','sec-boosts':'boost','sec-vip':'vip','sec-buying-diamonds':'pack-chest',
@@ -669,7 +669,9 @@ const BODIES={
    +`<p>The ${BOOSTS.farmhand.name} from Power-ups adds a slot in the village places too.</p>`)
   +section('Past level 10',`<p>Master tools from the Smithy take a farm production building past level ${MAX_BUILDING_LEVEL}, one level at a time, up to ${TOP_BUILDING_LEVEL}. Every level past ${MAX_BUILDING_LEVEL} gives each batch a ${Math.round(DOUBLE_BATCH_PER_LEVEL*100)}% chance to come out double, decided when it starts. The Factory and the village's own places stop at level ${MAX_BUILDING_LEVEL}.</p>`+dual(table(['Building level','Opens','Costs','Double batches'],steps),stepCards))
   +section('Builder’s crates',`<p>${h.lvl(RECIPE_LEVELS.builderscrate)} Pack them at the ${BUILDINGS.lumbercamp.name}: ${RECIPES.builderscrate.input.plank} planks, ${RECIPES.builderscrate.input.rooftile} roof tiles and ${RECIPES.builderscrate.input.ironbar} iron bars make one. Each builder’s crate takes ${number(BUILDER_CRATE_COINS)} coins off a farm building upgrade, up to half the price. On the upgrade card of a farm building below level ${MAX_BUILDING_LEVEL}, Use crates pays with as many as it can take, after the Buildings discount. They do not work on the Factory, the steps past level ${MAX_BUILDING_LEVEL} or the village’s own places. An upgrade to level ${MAX_BUILDING_LEVEL} costs ${number(crateTop)} coins: ${crateMax} crates take ${number(crateMax*BUILDER_CRATE_COINS)} off it.</p>`)
-  +blocks
+  // The village places under their own heading (24 Oct 2026, the owner: the ⓘ of a village place showed the farm's buildings only): a
+  // village place's window and Buildings in the village open How to play here (dialog-shell.js).
+  +section('Village places',`<p>What each village place makes, from what, and how long it takes. Tap a place to see all it makes.</p>`+blocks)
   +section('Made on the farm',`<p>The farm makes these for and from the village. The Factory can make them in bulk too.</p>`+dual(table(['Makes','Where','Needs','Time','Opens'],farmRows),farmCards))
   +section('Village quests',`<p>In Your quests, switch to Village. Each quest opens at its level and pays coins and XP once.</p>`+dual(table(['Quest','Goal','Opens','Reward'],questRows),questCards));
  },

@@ -5836,6 +5836,7 @@
 "What do you like, and what could be better?":"public/feedback-ui.js",
 "What each building makes, from what, and how long it takes.":"public/wiki-content.js",
 "What each chest gives you":"public/family-ui.js",
+"What each village place makes, from what, and how long it takes. Tap a place to see all it makes.":"public/wiki-content.js",
 "What happened, and what did you do just before?":"public/feedback-ui.js",
 "What is it about?":"public/feedback-ui.js",
 "What it does":"public/wiki-content.js",

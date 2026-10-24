@@ -2,6 +2,7 @@
 // facts instead of pills, a window's rules behind its ⓘ, the free slots as one tile, a recipe's time and profit first; and confetti when
 // a building opens for you or is bought ("Doe confetti als je een nieuw gebouw opent en koopt").
 import test from 'node:test';
+import {wikiArticle} from '../public/wiki-content.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {hintsButton,wikiFor,WINDOW_WIKI} from '../public/dialog-shell.js';
@@ -48,6 +49,13 @@ test('the ⓘ beside Close opens the window\'s page in How to play, and its way 
  asked.options.from.go();assert.equal(shown,1,'the way back opens the window again');assert.equal(closed.length,1);
  assert.equal(hintsButton(dialog,doc,win),button,'once');
  assert.deepEqual(wikiFor({id:'building-dialog',querySelector:sel=>sel==='.farmhouse-panel'?{}:null}),['crops','sec-more-fields'],'the Farmhouse: more fields');
+ // A village place and Buildings in the village (24 Oct 2026): the village places, not the farm's buildings.
+ for(const id of ['building-dialog','buildings-dialog']){
+  assert.deepEqual(wikiFor({id,dataset:{place:'village'},querySelector:()=>null}),['village','sec-village-places'],id);
+  assert.deepEqual(wikiFor({id,dataset:{place:'farm'},querySelector:()=>null}),['buildings','sec-how-buildings-work'],id);
+ }
+ const village=wikiArticle('village',{level:150}).html;
+ assert.match(village,/id="sec-village-places"[\s\S]*id="building-mine"[\s\S]*id="sec-made-on-the-farm"/,'the places under their own heading');
  assert.equal(hintsButton({id:'more-dialog',querySelector:sel=>sel==='.dialog-heading .close-dialog'?close:null},doc,win),null,'no page, no ⓘ');
  assert.equal(hintsButton(dialog,doc,{}),null,'no How to play (the farm not ready): none');
  assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor='',options=\{\}\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor,options\);\};/);

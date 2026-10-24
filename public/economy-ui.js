@@ -157,6 +157,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  const leveled=key=>isBuilt(key)&&BUILDINGS[key].type!=='pier';
  const catalogStatus=(key,s)=>leveled(key)?`<span class="building-chips" data-building-status="${key}">${buildingChips(s)}</span>`:`<span class="building-status ${s.kind}" data-building-status="${key}">${s.kind==='locked'?art('lock','unlock-lock'):''}${s.text}</span>`;
  function renderCatalog(){
+  $('buildings-dialog').dataset.place=village?'village':'farm';   // its ⓘ (dialog-shell.js)
   const buildingLevel=key=>guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1;
   // Buildings with finished batches come first, so collecting is one tap away; the rest in the order they unlock. Those missing goods
   // for every recipe go last, above the folded locked ones (19 Oct 2026, the owner: "zet missing goods ook onderaan, in de buildings lijst").
@@ -191,7 +192,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   // tagline went: the name and the recipes say it.
   const built=key==='farmhouse'||buildingUnlocked(state,key)&&b.type!=='pier';
   $('building-badge').innerHTML=`<img src="${pictureFile(key)}" alt="">${built?`<b class="lv-badge">Lv. ${bs.level}</b>`:''}`;
-  $('building-title').textContent=b.name;
+  $('building-title').textContent=b.name;$('building-dialog').dataset.place=worldTwoBuilding(key)?'village':'farm';   // its ⓘ (dialog-shell.js)
   $('building-sub').textContent=!built?(b.type==='pier'?'Not built yet · For the town boat':'Not built yet'):key==='farmhouse'?'Your homestead':worldTwoBuilding(key)?'Village production':'Farm production';
   let content='';
   // Shared by both the pre-purchase preview and the working recipe list below: the Factory repeats every other
