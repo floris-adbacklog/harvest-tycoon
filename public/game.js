@@ -2491,8 +2491,9 @@ function bindUI(){
  setEmailCheck(initialEmailCheck);
  familyUI=createFamilyUI({state,runAction,notify:toast,isReady:()=>ready});
  // The Halloween Pass (Oct 2026, public/pass-ui.js): its button sits next to Farm family's; it opens only when tapped.
- passUI=createPassUI({state,runAction,notify:toast,onChange:updateUI});
- seasonUI=createSeasonUI({state,runAction,notify:toast,onChange:updateUI});
+ // A tier collected in a pass plays a soft little sound (24 Oct 2026, sound-kit.js tierclaim).
+ passUI=createPassUI({state,runAction,notify:toast,onChange:updateUI,onClaimed:()=>farmAudio.play('tierclaim')});
+ seasonUI=createSeasonUI({state,runAction,notify:toast,onChange:updateUI,onClaimed:()=>farmAudio.play('tierclaim')});
  lookSettings=createLookSettings(document.getElementById('look-settings'),{state,runAction,clock:farmNow});
  // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
  window.harvestStock=key=>Number(state.inventory?.[key])||0;

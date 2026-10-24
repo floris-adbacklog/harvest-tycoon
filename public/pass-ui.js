@@ -75,7 +75,7 @@ export function passHint(state,now){
  return passWaiting(state,now)?'A reward is waiting':`Tier ${passTier(state)} of ${tiers.length}`;
 }
 
-export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>window.parent?.harvestBridge,doc=document,clock=farmNow}){
+export function createPassUI({state,runAction,notify,onChange=()=>{},onClaimed=()=>{},bridge=()=>window.parent?.harvestBridge,doc=document,clock=farmNow}){
  const $=id=>doc.getElementById(id);
  const button=$('pass-button'),dot=$('pass-dot'),dialog=$('pass-dialog'),content=$('pass-content'),hint=$('pass-menu-hint');
  let catalog=null,pending=false,claiming='',requestId='',drawn='',feedback='';
@@ -113,7 +113,7 @@ export function createPassUI({state,runAction,notify,onChange=()=>{},bridge=()=>
  async function claim(track,tier){
   if(claiming)return;claiming=`${track}:${tier}`;draw();
   try{
-   const r=await runAction({type:'pass_claim',track,tier});
+   const r=await runAction({type:'pass_claim',track,tier});onClaimed(r);
    notify(`${SEASON_PASS.name} · tier ${tier}: ${rewardParts(r??{}).map(p=>p.label).join(' · ')}`);
    onChange();
   }catch(error){notify(error.message);}

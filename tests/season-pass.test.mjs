@@ -247,7 +247,7 @@ test('screens: a button and a More tile from level 10, a window that opens only 
  assert.match(read('public/mobile-ui.js'),/&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;/);
  assert.equal((ui.match(/showModal\(\)/g)??[]).length,1,'one way in');assert.match(ui,/function open\(\)\{\n  if\(!passVisible\(state,now\(\)\)\)return;/);
  assert.match(ui,/button\.onclick=open;/);assert.doesNotMatch(ui,/autoOpen|setTimeout\(open|localStorage|sessionStorage/,'never by itself, nothing kept on the device');
- assert.match(game,/passUI=createPassUI\(\{state,runAction,notify:toast,onChange:updateUI\}\);/);assert.match(game,/familyUI\?\.refresh\(\);passUI\?\.refresh\(\);/);
+ assert.match(game,/passUI=createPassUI\(\{state,runAction,notify:toast,onChange:updateUI,onClaimed:\(\)=>farmAudio\.play\('tierclaim'\)\}\);/);assert.match(game,/familyUI\?\.refresh\(\);passUI\?\.refresh\(\);/);
  assert.equal(passVisible(farm(9,SEASON_PASS.startsAt-D),SEASON_PASS.startsAt-D),false);
  assert.equal(passVisible(farm(10,SEASON_PASS.startsAt-D),SEASON_PASS.startsAt-D),true,'the preview from level 10');
  assert.equal(passRule(),'Every daily gift gives 2 lanterns, every daily challenge and delivery 1. Every 2 lanterns open the next tier.');

@@ -102,7 +102,7 @@ export function seasonHint(view){if(!view)return '';if(view.phase==='soon')retur
 // What the farmer wears on their card now: the last save here, else the profile the farm opened with.
 export const worn=()=>{const look=window.harvestLook??window.harvestInitialFarm?.profile?.look;return look&&typeof look==='object'?look:{};};
 
-export function createSeasonUI({state,runAction,notify,onChange=()=>{},bridge=()=>window.parent?.harvestBridge,doc=document,clock=farmNow}){
+export function createSeasonUI({state,runAction,notify,onChange=()=>{},onClaimed=()=>{},bridge=()=>window.parent?.harvestBridge,doc=document,clock=farmNow}){
  const $=id=>doc.getElementById(id);
  const button=$('season-button'),dot=$('season-dot'),dialog=$('season-dialog'),content=$('season-content'),hint=$('season-menu-hint');
  if(!button||!dialog||!content)return {open(){},refresh(){}};
@@ -258,7 +258,7 @@ export function createSeasonUI({state,runAction,notify,onChange=()=>{},bridge=()
  // id: the last season's, from its strip (claimSeasonTier takes the season named); none: the season shown.
  async function claim(track,tier,id){
   if(busy)return;busy=`${track}:${tier}`;draw();
-  try{const r=await runAction({type:'season_claim',track,tier,...(id?{season:id}:{})});notify(`Season Pass, tier ${tier}: ${seasonRewardParts(r??{}).map(p=>p.label).join(' · ')}`);onChange();}
+  try{const r=await runAction({type:'season_claim',track,tier,...(id?{season:id}:{})});onClaimed(r);notify(`Season Pass, tier ${tier}: ${seasonRewardParts(r??{}).map(p=>p.label).join(' · ')}`);onChange();}
   catch(error){notify(error.message);}
   finally{busy='';refresh();if(dialog.open)draw();}
  }
