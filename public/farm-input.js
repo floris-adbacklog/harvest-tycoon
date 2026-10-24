@@ -24,14 +24,17 @@ export const SWIPE_HOLD_MS=350;
 export const FARM_PINS='#plot-labels,#building-labels,.plot-label,.building-label,.utility-label,.activity-label,.pond-label';
 // busy() (24 Oct 2026): while the game waits for the server's answer to an action that cannot show at once, a press only moves the farm
 // (no field is worked, nothing opens); dragging and zooming never wait.
-export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},busy=()=>false,holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
+// edit (24 Oct 2026, your own farm layout, layout-edit.js): while active(), a press on something that moves picks it up (grab returns
+// true) and the drag moves it (drag, drop on release); a press anywhere else moves the farm. No field is worked and nothing opens.
+export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},busy=()=>false,edit=null,holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
  const pointers=new Map();
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
  const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
  function release(event,cancelled=false){
   const point=pointers.get(event.pointerId);if(!point)return;
   pointers.delete(event.pointerId);cancelLater(point.hold);
-  if(point.sweep?.started)sweep.end(point.sweep.action,point.sweep.ids);
+  if(point.editing)edit.drop(event);
+  else if(point.sweep?.started)sweep.end(point.sweep.action,point.sweep.ids);
   else if(!cancelled&&!point.moved&&!point.multi&&!point.panOnly){
    const target=pick(event);
    if(target&&target.type===point.target?.type&&target.id===point.target.id){
@@ -43,9 +46,11 @@ export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sw
   if(!pointers.size)settle();
  }
  function down(event){
-  const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2)||Boolean(busy());
+  const editing=Boolean(edit?.active());
+  const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2)||Boolean(busy())||editing;
   if(event.button!==0&&!panOnly||!isReady())return;
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
+  if(editing&&event.button===0&&!pointers.size&&edit.grab(event)){pointers.set(event.pointerId,{x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,target:null,panOnly:true,editing:true,moved:false,multi:false,threshold:0,sweep:null});return;}
   const target=panOnly?null:pick(event);
   const action=target?.type==='plot'&&sweep?sweep.action(target):null;
   const early=action!=='harvest'&&!panOnly&&event.pointerType==='mouse'&&Boolean(sweep?.early?.());
@@ -68,6 +73,7 @@ export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sw
  canvas.addEventListener('pointermove',event=>{
   const point=pointers.get(event.pointerId);if(!point)return;
   event.preventDefault();
+  if(point.editing){point.x=event.clientX;point.y=event.clientY;edit.drag(event);return;}
   const previous={x:point.x,y:point.y};
   const pair=[...pointers.values()].filter(p=>p!==point)[0];
   const before=pair?distance(point,pair):0,oldCenter=pair?midpoint(point,pair):null;

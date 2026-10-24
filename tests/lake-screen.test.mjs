@@ -8,7 +8,7 @@ import {LAKE_LOADING_TIP} from '../public/loading-screen.js';
 import {createReel} from '../public/pond-reel.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{return null;}};
 // The village lake's screens (12 Oct 2026, plan D, steps 3, 4, 6 and 7): the pond's screen for another water (pond-ui.js, pond-scene.js,
 // pond.css), fished from the rowboat in the middle of the village lake. The lake ships closed (LAKE_OPEN false): these tests open it in a

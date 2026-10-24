@@ -175,7 +175,7 @@
    buildings' names on the farm for step 5, Today for step 6, the helping hand for step 7, Care for step 8; Quests, Events, the Estate,
    the passes and offers, the family, the chat, the map, locked places, other farmers' names and the pond once the guide is done (More
    still opens all of them). What comes glows for a moment (.calm-new). */
-html.calm-start :is(#more-dot,#tasks-button,#events-button,#estate-button,#invite-button,#boosts-button,#email-button,#pass-button,#season-button,#family-button,#chat-button,#feedback-button,#offer-button,#offer-chip,#starter-pack-chip,#starter-pack-button,#rail-stack,.minimap,.building-label.locked,.utility-label.locked,.farmer-name,.pond-label,.pond-shortcut){display:none!important}
+html.calm-start :is(#more-dot,#layout-button,#tasks-button,#events-button,#estate-button,#invite-button,#boosts-button,#email-button,#pass-button,#season-button,#family-button,#chat-button,#feedback-button,#offer-button,#offer-chip,#starter-pack-chip,#starter-pack-button,#rail-stack,.minimap,.building-label.locked,.utility-label.locked,.farmer-name,.pond-label,.pond-shortcut){display:none!important}
 html.calm-start[data-guide-step="0"] #market-button{display:none!important}
 html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"]) .tool[data-tool="water"]{display:none!important}
 html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"]) :is(#buildings-button,.building-label){display:none!important}

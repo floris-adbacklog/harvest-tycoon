@@ -199,7 +199,7 @@ test('every new text is in the catalog and in all 14 other languages, without a 
 // 'fertilize'; the live rules (main eef95f62) refuse it cleanly ("Choose a tractor task."), so a new site on the old farm-api would show a
 // refused job: hence farm-api first. The old rules play on with a farm the new rules worked on, and the new rules on an old save.
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<26,stdio:['ignore','pipe','ignore']});}catch{return null;}};
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 test('old rules on new saves and new rules on old saves (main eef95f62): no new key, the old rules refuse the job cleanly',async t=>{
  const old=show('eef95f62','game/farm-state.js');if(!old){t.skip('no git history here');return;}
  const O=await import(asModule(old));

@@ -6,7 +6,7 @@ import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 // The village lake (12 Oct 2026, plan D): World II's fishing, the pond's rules with the lake's own casts, fish, book and coins. It ships
 // closed first (LAKE_OPEN false): these tests play the rules with the lake open, from the same source with only the switch turned (G),
 // and check the closed build (C) as it ships.

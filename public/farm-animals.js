@@ -233,5 +233,15 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
  })();
  // Where each one stands on the screen, -1 to 1 across and up the farm's view (as the camera saw it last), and what it is doing.
  const where=()=>seenBy?herd.map(a=>{const p=a.obj.position.clone();p.y+=a.length*.25;p.project(seenBy);return {model:a.obj.userData.model??a.obj.userData.scenery,state:a.state,x:p.x,y:p.y,world:[a.obj.position.x,a.obj.position.z],home:a.home};}):[];
- const result={herd,animate,ready,where,camera:()=>seenBy,stop:()=>{stopped=true;}};ANIMAL_HERDS.add(result);return result;
+ // Your own farm layout (24 Oct 2026, game.js): a yard that moved (its pieces, these animals' still models among them, moved already)
+ // takes its animals' home, pen and walk along.
+ const move=([x,z],dx,dz)=>[x+dx,z+dz];
+ function shift(match,dx,dz){
+  for(const a of herd){
+   if(!match(a.obj))continue;
+   a.home=move(a.home,dx,dz);if(Array.isArray(a.target))a.target=move(a.target,dx,dz);
+   if(a.pen)a.pen={box:[a.pen.box[0]+dx,a.pen.box[1]+dx,a.pen.box[2]+dz,a.pen.box[3]+dz],keepOut:a.pen.keepOut.map(([x0,x1,z0,z1])=>[x0+dx,x1+dx,z0+dz,z1+dz])};
+  }
+ }
+ const result={herd,animate,ready,where,shift,camera:()=>seenBy,stop:()=>{stopped=true;}};ANIMAL_HERDS.add(result);return result;
 }

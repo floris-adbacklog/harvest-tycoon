@@ -9,7 +9,7 @@ import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {soundForAction} from '../public/farm-audio.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{return null;}};
 
 // The farm's pets (20 Oct 2026, the owner: "doe wel iets leuks"): Rex the dog and Mimi the cat by the Farmhouse, Fawn the deer in the

@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import * as G from '../game/farm-state.js';
 import {FARMER_PASS_PARTS,FARMER_OFFER,FARMER_PARTS,DEFAULT_FARMER,farmerOwned,farmerPassParts,farmerOf,validFarmerConfig,wearPart,rewardOpen} from '../game/farmer-parts.js';
 const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,file)=>{try{return execFileSync('git',['show',`${sha}:${file}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<26,stdio:['ignore','pipe','ignore']});}catch{return null;}};
 
 // A Season Pass can give parts for your own farmer (21 Oct 2026, the owner: "Doe alles behalve 9; Kerstoutfit bewaren voor Kerst Pass",

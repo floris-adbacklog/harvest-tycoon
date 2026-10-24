@@ -75,12 +75,15 @@ export const roadRects=()=>ROADS.map(road=>{const {width,depth}=roadSize(road),c
 export const onRoad=(minX,maxX,minZ,maxZ,margin=0)=>roadRects().some(r=>maxX>r.minX+margin&&minX<r.maxX-margin&&maxZ>r.minZ+margin&&minZ<r.maxZ-margin);
 
 // 'fields' leaves things where they are (the default), null spreads loose scenery, 'exact' only scales, a yard name moves with that yard.
-let current='fields';
-export function zone(id){
+// The yard a piece belongs to (24 Oct 2026, your own farm layout: game.js moves a yard's pieces together) is the last yard named;
+// keep:true switches the zone for a moment without changing it (a yard's fence is placed in world spots, fenceLine).
+let current='fields',owner=null;
+export function zone(id,{keep=false}={}){
  if(id!==null&&id!=='fields'&&id!=='exact'&&!Object.hasOwn(ANCHORS,id))throw new Error(`Unknown yard: ${id}`);
- current=id;return id;
+ current=id;if(!keep)owner=Object.hasOwn(ANCHORS,id??'')?id:null;return id;
 }
 export const currentZone=()=>current;
+export const currentYard=()=>owner;
 export const wide=length=>length*SPREAD;
 export const anchorAt=id=>{const [x,z]=HOMES[id]??ANCHORS[id];return [x*SPREAD,z*SPREAD];};
 // Yards that reach further than the clearance around their middle: how far they run from their anchor (world units: west, east,

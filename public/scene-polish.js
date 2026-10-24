@@ -228,6 +228,8 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
   const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3()),c=box.getCenter(new THREE.Vector3());
   const w=THREE.MathUtils.clamp(size.x+2.2,4.6,10),d=THREE.MathUtils.clamp(size.z+2.2,4.6,10);
   const yard=new THREE.Mesh(new THREE.PlaneGeometry(w,d),yardMaterial);yard.rotation.x=-Math.PI/2;yard.position.set(c.x,.011,c.z);yard.receiveShadow=true;yard.renderOrder=-1;group.add(yard);
+  // It moves with its building's yard (your own farm layout, game.js applyLayout).
+  if(o.userData.yard)yard.userData.yard=o.userData.yard;
  }
 
  // 4. Furrowed soil on every field. Fields can be added later, so this is re-synced while running.
@@ -236,6 +238,8 @@ export function createScenePolish({scene,cloneModel,getPlots,reducedMotion=false
  function syncFurrows(){
   const plots=getPlots();
   while(furrows.length>plots.length){const m=furrows.pop();group.remove(m);}
+  // A field that moved (your own farm layout) takes its furrows along.
+  furrows.forEach((m,i)=>m.position.set(plots[i].x,.226,plots[i].z));
   for(let i=furrows.length;i<plots.length;i++){
    const m=new THREE.Mesh(furrowGeometry,furrowMaterial);m.rotation.x=-Math.PI/2;m.position.set(plots[i].x,.226,plots[i].z);m.receiveShadow=true;m.renderOrder=1;group.add(m);furrows.push(m);
   }

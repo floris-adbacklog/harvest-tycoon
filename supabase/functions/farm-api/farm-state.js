@@ -1,6 +1,7 @@
 // Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
 // copied beside each farm-state.js by scripts/sync-game.mjs).
 import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS,farmerPassParts} from './farmer-parts.js';
+import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor} from './farm-map.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -2903,7 +2904,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3897,7 +3898,8 @@ export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
 // challenge and no Family Chest: a cast moves no stat a farm event or the chest counts (earned, coins spent, harvests, batches...).
 // A pat of a pet (20 Oct 2026) neither: its coins, crops, planks and XP are a small find, never a goal's progress.
 // Dressing your own farmer (21 Oct 2026, farmer_wear) counts for nothing at all: no coins, no XP, no stat.
-export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','pet_pat','farmer_wear']));
+// Moving things on your farm, and storing or placing a stored tree or tile (24 Oct 2026, game/farm-map.js), count for nothing either.
+export const NO_EVENT_ACTIONS=Object.freeze(new Set(['tractor_care','tractor_shift','fish','pet_pat','farmer_wear','layout_move','layout_store','layout_place']));
 // Full care: water and extra care for every growing crop at once, also outside their moments (water is meant for the start, care
 // opens at CARE_AT of the growing time), so each ripens much sooner (a crop planted before one crop a harvest still gets its old 3 crops
 // and double XP). Per growing crop that still misses
@@ -4648,6 +4650,12 @@ function dispatchFarmAction(state,action,now,random){
   case 'pet_pat':return patPet(state,action.pet,now,random);
   // Your own farmer's clothes (21 Oct 2026): no feature gate, every farm has its farmer.
   case 'farmer_wear':return wearFarmer(state,action.farmer);
+  // Your own farm layout (24 Oct 2026, game/farm-map.js): moving, clearing land, buying and storing trees and path tiles.
+  case 'layout_move':return moveThing(state,action.id,action.x,action.z,levelOf(state));
+  case 'layout_clear':return clearObstacle(state,action.id,levelOf(state));
+  case 'layout_buy':return placeDecor(state,action.kind,action.x,action.z,levelOf(state));
+  case 'layout_place':return placeDecor(state,action.kind,action.x,action.z,levelOf(state),{fromStore:true});
+  case 'layout_store':return storeDecor(state,action.id);
   default:throw new Error('Unknown farm action.');
  }
 }

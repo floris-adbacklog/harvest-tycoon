@@ -104,8 +104,8 @@ test('diamond work is no event action, and its seeds are no "Spend coins" for ch
  // The Fishing pond's fish (11 Oct 2026, the owner's answer: fishing counts for no event or Family Chest) is the third.
  // And the village lake's (12 Oct 2026, lake_fish), for the same reason.
  // The village lake's fish counts for the village events since 20 Oct 2026 (world-two-leagues), so it is no longer in the list.
- // Dressing your own farmer (21 Oct 2026, farmer_wear) counts for nothing either.
- assert.deepEqual([...NO_EVENT_ACTIONS].sort(),['farmer_wear','fish','pet_pat','tractor_care','tractor_shift']);
+ // Dressing your own farmer (21 Oct 2026, farmer_wear) counts for nothing either, nor moving things on your farm (24 Oct 2026).
+ assert.deepEqual([...NO_EVENT_ACTIONS].sort(),['farmer_wear','fish','layout_move','layout_place','layout_store','pet_pat','tractor_care','tractor_shift']);
  assert.match(read('supabase/functions/farm-api/index.ts'),/eventAction:NO_EVENT_ACTIONS\.has\(body\.action\.type\)\?null:body\.action\.type/);
  const s=farm(),spent=s.stats.coins_spent??0;shift(s);
  assert.equal(s.stats.coins_spent??0,spent);

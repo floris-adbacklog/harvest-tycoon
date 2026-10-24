@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,NO_EVENT_ACTIONS} from '../game/farm-state.js';
 import {FARMER_PARTS,FARMER_REWARDS,FARMER_GOALS,FARMER_OFFER,FARMER_FREE,FARMER_SLOTS,DEFAULT_FARMER,farmerOwned,farmerOf,rewardOpen,rewardProgress,farmerOffered,creatorParts,farmerPart,validFarmerConfig} from '../game/farmer-parts.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<26,stdio:['ignore','pipe','ignore']});}catch{return null;}};
 
 // Your own farmer (21 Oct 2026, the owner: "Doe alle 3"): the painted avatars stay everyone's picture; the 3D farmer is your own character,

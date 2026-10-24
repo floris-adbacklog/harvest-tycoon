@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CROPS, ITEMS, BUILDINGS, RECIPES, MAX_PLOTS, progress, farmSummary, seedCost, levelProgress, levelTitle, formatDuration, harvestQuantity, harvestYield, productionJobs, unlockEntries, fieldTapAction, canWater, waterUntil, normalizeFarm } from './farm-state.js';
 import { createReminderNudge,harvestAction } from './reminder-nudge.js';
-import { zone, place, wide, currentZone, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds, asBeforeLayout } from './farm-layout.js';
+import { zone, place, wide, currentZone, currentYard, SPREAD, ANCHORS, anchorAt, placeIn, ROADS, roadSize, roadRects, fenceSegments, pondBounds, asBeforeLayout } from './farm-layout.js';
 import { createMinimap } from './minimap.js';
 import { scatterProps, seeded } from './farm-props.js';
 import { createEconomyUI,marketWorth } from './economy-ui.js?v=familyhall-model-2';
@@ -40,6 +40,8 @@ import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
+import { LAYOUT_YARDS } from './farm-map.js';
+import { createLayoutEditor } from './layout-edit.js';
 import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
@@ -421,7 +423,7 @@ async function addScenery(){
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
   const [farmerSpots]=await Promise.all([walking,loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4)]);
   if(farmerSpots)placeBench(farmerSpots.FARM_BENCH);
-  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff}));clearPropsFromMountains();renderer.shadowMap.needsUpdate=true;shootMinimap();
+  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff}));clearPropsFromMountains();hideUnderLayout();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
  void addAnimals();
 }
@@ -580,7 +582,10 @@ function cloneModel(name,x,z,{width,height,depth,scale=1,rotation=0,y=0,paint}={
  if(name==='road_001')obj.traverse(n=>{if(n.isMesh)n.material=Array.isArray(n.material)?n.material.map(roadMaterial):roadMaterial(n.material);});
  if(width!=null&&depth!=null)obj.scale.set(width/d.x,(height??d.y)/d.y,depth/d.z);
  else {const s=height!=null?height/d.y:width!=null?width/Math.max(d.x,d.z):scale;obj.scale.setScalar(s);}
- const [px,pz]=place(x,z);obj.position.set(px,y,pz);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);return obj;
+ const [px,pz]=place(x,z);obj.position.set(px,y,pz);obj.rotation.y=rotation;obj.userData.model=name;scene.add(obj);
+ // The yard it belongs to moves it with the rest of that yard (your own farm layout, applyLayout).
+ const yard=currentYard();if(yard)obj.userData.yard=yard;
+ return obj;
 }
 // Buildings and helpers that are still to come are shown from the first minute: greyed out, with a lock on their label, so a farmer
 // sees what there is to grow towards. Each material gets one desaturated twin; a locked object swaps to it and back when it unlocks.
@@ -601,17 +606,17 @@ function setLocked(object,locked){
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
- mesh.rotation.x=-Math.PI/2;{const [px,pz]=place(x,z);mesh.position.set(px,y,pz);}mesh.receiveShadow=true;scene.add(mesh);return mesh;
+ mesh.rotation.x=-Math.PI/2;{const [px,pz]=place(x,z);mesh.position.set(px,y,pz);}mesh.receiveShadow=true;scene.add(mesh);{const yard=currentYard();if(yard)mesh.userData.yard=yard;}return mesh;
 }
 function fenceLine(x,z,n,axis='x',size=2.2,style='fence_001',tintColor){
  const before=currentZone(),spots=fenceSegments(x,z,n,axis,size),pieces=[];
- zone('fields');
+ zone('fields',{keep:true});
  for(const [cx,cz] of spots){
   const seg=cloneModel(style,cx,cz,{width:size,rotation:axis==='z'?Math.PI/2:0});
   if(tintColor)tint(seg,tintColor);
   pieces.push(seg);
  }
- zone(before);
+ zone(before,{keep:true});
  return pieces;
 }
 function groundPatch(name,x,z,width,depth,color){
@@ -648,6 +653,11 @@ function tint(obj,color){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clo
 // Additive glow: the only way to make an already-dark, texture-mapped prop read lighter.
 function lighten(obj,color,intensity=.3){obj.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.emissive=new THREE.Color(color);n.material.emissiveIntensity=intensity;}});return obj;}
 function decorate(){
+ // Everything a yard adds to the farm, groups too (the Windmill's turning sails), belongs to that yard (your own farm layout, applyLayout).
+ scene.add=function(...objects){const yard=currentYard();if(yard)for(const o of objects)if(o.type!=='BoxHelper')o.userData.yard??=yard;return THREE.Scene.prototype.add.apply(this,objects);};
+ try{decorateFarm();}finally{delete scene.add;}
+}
+function decorateFarm(){
  // Layout zones (public/farm-layout.js): each yard moves as one piece, the fields stay where they are.
  zone('fields');
  // Fresh grass green, wide enough that its edge is never in view: it runs on into the haze however far you pan or zoom out.
@@ -1023,7 +1033,7 @@ function createPlots(){
   for(const object of [v.hit,v.ring]){object.geometry.dispose();object.material.dispose();}
  }
  for(let i=plots.length;i<state.plots.length;i++){
-  const x=-2.15+(i%4)*3.15,z=.25+Math.floor(i/4)*3.2;
+  const [x,z]=fieldSpot(i);
   const soil=cloneModel('ground_004',x,z,{width:2.38,depth:2.38,height:.20,y:.02});
   soil.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.setHex(0xc4b39a);n.userData.plot=i;}});
   const hit=new THREE.Mesh(new THREE.BoxGeometry(2.4,.25,2.4),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.set(x,.23,z);hit.userData.plot=i;scene.add(hit);
@@ -1032,6 +1042,100 @@ function createPlots(){
   const cropGroup=new THREE.Group();cropGroup.userData.plot=i;scene.add(cropGroup);
   plots.push({x,z,soil,hit,ring,label,cropGroup,visualCrop:undefined,lastReady:false});
  }
+}
+// ---- Your own farm layout (24 Oct 2026, the owner: "Doe optie 2"; the rules in game/farm-map.js) ----
+// The farm is built as it stands by default (decorate, the scenery: untouched), then every yard and field that was moved goes to its
+// spot: a yard's pieces (userData.yard, from the zone they were made in) move together, with their tap boxes, pins, pens and animals.
+// Loose scenery under something that moved is hidden (a tuft or a flower one by one).
+const yardShift=new Map();let layoutKey='{}';
+const fieldHome=i=>[-2.15+(i%4)*3.15,.25+Math.floor(i/4)*3.2];
+const fieldSpot=i=>state.layout?.at?.[`field:${i}`]??fieldHome(i);
+// A yard's pieces that move: the ones on the farm itself (or in a top group: the scenery's, the polish's dirt yards), not a piece inside
+// another (a building's parts, the sails in their rotor), which goes with it.
+function yardRoots(id){
+ const out=[];
+ scene.traverse(o=>{if(o.userData.yard!==id)return;const p=o.parent;if(p===scene||p?.parent===scene&&!p.userData.yard)out.push(o);});
+ return out;
+}
+const yardSpot=id=>{const [x,z]=anchorAt(id),[dx,dz]=yardShift.get(id)??[0,0];return [x+dx,z+dz];};
+function shiftYard(id,dx,dz){
+ if(!dx&&!dz)return;
+ for(const o of yardRoots(id)){o.position.x+=dx;o.position.z+=dz;o.updateMatrixWorld(true);}
+ for(const views of [buildingViews,utilityViews,farmLife?.views])for(const v of views?.values?.()??[])if(v.object?.userData.yard===id){v.x+=dx;v.z+=dz;v.outline?.update();}
+ herd?.shift?.(o=>o.userData.yard===id,dx,dz);
+ const [sx,sz]=yardShift.get(id)??[0,0];yardShift.set(id,[sx+dx,sz+dz]);
+}
+function placeYard(id,[x,z]){const [cx,cz]=yardSpot(id);shiftYard(id,x-cx,z-cz);}
+function placeField(i,[x,z]){
+ const v=plots[i];if(!v)return;const dx=x-v.x,dz=z-v.z;if(!dx&&!dz)return;
+ v.x=x;v.z=z;for(const o of [v.soil,v.hit,v.ring,v.cropGroup]){o.position.x+=dx;o.position.z+=dz;o.updateMatrixWorld(true);}
+ scenePolish?.sync?.();
+}
+// The box a yard or a field covers on the ground, [minX, maxX, minZ, maxZ].
+function footprint(id){
+ const field=/^field:(\d+)$/.exec(id);
+ if(field){const v=plots[Number(field[1])];return v?[v.x-1.2,v.x+1.2,v.z-1.2,v.z+1.2]:null;}
+ const box=new THREE.Box3(),part=new THREE.Box3();
+ for(const o of yardRoots(id)){if(o.isBoxHelper||o.type==='BoxHelper')continue;part.setFromObject(o);if(!part.isEmpty())box.union(part);}
+ return box.isEmpty()?null:[box.min.x,box.max.x,box.min.z,box.max.z];
+}
+const layoutHidden=new Set(),instancesHidden=new Map();
+function hideUnderLayout(extra=[]){
+ for(const o of layoutHidden)o.visible=true;layoutHidden.clear();
+ for(const [im,list] of instancesHidden){for(const [i,m] of list)im.setMatrixAt(i,m);im.instanceMatrix.needsUpdate=true;}instancesHidden.clear();
+ const moved=[...new Set([...Object.keys(state.layout?.at??{}),...extra])].map(footprint).filter(Boolean);if(!moved.length)return;
+ const under=(x,z,m=0)=>moved.some(([a,b,c,d])=>x>a-m&&x<b+m&&z>c-m&&z<d+m);
+ const box=new THREE.Box3(),c=new THREE.Vector3(),m=new THREE.Matrix4(),zero=new THREE.Matrix4().makeScale(0,0,0),p=new THREE.Vector3();
+ const loose=o=>!o.userData.yard&&o.userData.plot===undefined&&!o.isLight&&!o.isCamera&&o.name!=='Farm ground'&&o.name!=='Crop meadow'&&!/^(road|ground)_/.test(o.userData.model??'');
+ const check=o=>{
+  if(o.isInstancedMesh){const list=[];for(let i=0;i<o.count;i++){o.getMatrixAt(i,m);p.setFromMatrixPosition(m);if(under(p.x,p.z)){list.push([i,m.clone()]);o.setMatrixAt(i,zero);}}if(list.length){o.instanceMatrix.needsUpdate=true;instancesHidden.set(o,list);}return;}
+  if(!o.visible)return;box.setFromObject(o);if(box.isEmpty())return;box.getCenter(c);
+  if(under(c.x,c.z,.3)){o.visible=false;layoutHidden.add(o);}
+ };
+ for(const o of scene.children){if(!loose(o))continue;if(o.isGroup&&(o.name==='Scenery'||o.userData.polish))o.children.forEach(k=>{if(!k.userData.yard)check(k);});else check(o);}
+}
+function applyLayout(){
+ if(villageWorld||!ready&&!plots.length)return;
+ for(const id of LAYOUT_YARDS)placeYard(id,state.layout?.at?.[id]??anchorAt(id));
+ state.plots.forEach((_,i)=>placeField(i,fieldSpot(i)));
+ hideUnderLayout();
+ if(renderer)renderer.shadowMap.needsUpdate=true;
+}
+// The Move button (layout-edit.js): what is under the pointer, the ground under it, and the spot on the ground, green or red.
+let layoutEditor=null,layoutMarker=null,layoutBase=null;
+function aimAt(event){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);}
+function layoutPick(event){
+ aimAt(event);
+ for(const hit of raycaster.intersectObjects(scene.children,true)){
+  for(let o=hit.object;o&&o!==scene;o=o.parent){if(o.userData.yard)return o.userData.yard;if(o.userData.plot!==undefined)return `field:${o.userData.plot}`;}
+ }
+ return null;
+}
+const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+function layoutGround(event){aimAt(event);const at=raycaster.ray.intersectPlane(groundPlane,new THREE.Vector3());return at?[at.x,at.z]:null;}
+const layoutSpot=id=>{const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return yardSpot(id);};
+function layoutPreview(id,at){const field=/^field:(\d+)$/.exec(id);if(field)placeField(Number(field[1]),at);else placeYard(id,at);hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;}
+// The held thing's box follows it from where it was picked up; everything else is measured once, when something is picked up.
+function layoutFootprint(id){
+ if(layoutBase?.id!==id){
+  const others=[...LAYOUT_YARDS,'farmhouse'].filter(k=>k!==id).map(footprint).concat(plots.map((_,i)=>`field:${i}`).filter(k=>k!==id).map(footprint)).filter(Boolean);
+  layoutBase={id,box:footprint(id),spot:layoutSpot(id),others};
+ }
+ const [x,z]=layoutSpot(id),dx=x-layoutBase.spot[0],dz=z-layoutBase.spot[1],b=layoutBase.box;
+ return b&&[b[0]+dx,b[1]+dx,b[2]+dz,b[3]+dz];
+}
+function layoutMark(box,ok){
+ if(!layoutMarker){layoutMarker=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({transparent:true,opacity:.42,depthWrite:false}));layoutMarker.rotation.x=-Math.PI/2;layoutMarker.renderOrder=3;scene.add(layoutMarker);}
+ layoutMarker.visible=Boolean(box);if(!box)return;
+ layoutMarker.scale.set(box[1]-box[0],box[3]-box[2],1);layoutMarker.position.set((box[0]+box[1])/2,.06,(box[2]+box[3])/2);
+ layoutMarker.material.color.setHex(ok?0x58b865:0xe0624c);
+}
+function createLayoutTools(){
+ layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
+  footprint:layoutFootprint,others:id=>{layoutFootprint(id);return layoutBase.others;},roads:()=>roadRects().map(r=>[r.minX,r.maxX,r.minZ,r.maxZ]),mark:layoutMark,
+  save:(id,[x,z])=>runAction({type:'layout_move',id,x,z}).finally(()=>{layoutBase=null;}),notify:toast,
+  onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;if(!on){shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
+ $('layout-button').addEventListener('click',()=>layoutEditor.active()?layoutEditor.stop():layoutEditor.start());
 }
 // A building is busy while one of its batches is still being made (the Windmill's sails turn).
 const buildingBusy=key=>productionJobs(state.buildings[key]).some(j=>j.readyAt>farmNow());
@@ -1751,7 +1855,7 @@ function addBuilding(key,x,z,options){
  const bounds=new THREE.Box3().setFromObject(object),height=bounds.max.y;
  const size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
  const hit=new THREE.Mesh(new THREE.BoxGeometry(size.x+.4,size.y+.3,size.z+.4),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
- hit.position.copy(center);hit.userData.building=key;scene.add(hit);hit.updateMatrixWorld(true);
+ hit.position.copy(center);hit.userData.building=key;if(object.userData.yard)hit.userData.yard=object.userData.yard;scene.add(hit);hit.updateMatrixWorld(true);
  const outline=new THREE.BoxHelper(object,0xffdc76);outline.material.transparent=true;outline.material.opacity=.75;outline.visible=false;scene.add(outline);
  const label=document.createElement('button');label.className='building-label';label.dataset.building=key;label.setAttribute('aria-label',`Open ${BUILDINGS[key].name}`);
  label.innerHTML=`<span class="building-pin">${art(key==='familyhall'?'familyhall-model':key)}</span><span><strong>${BUILDINGS[key].name}</strong><small class="building-status" data-building-status="${key}">${key==='farmhouse'?'Expand your fields':'Ready to work'}</small></span>`;
@@ -2021,7 +2125,8 @@ function clearRail(){
 }
 // After every answer from the server (farm-client.js onChange). The village has no fields and never loads the farm's models: createPlots
 // there threw "Missing model: ground_004", so each reply in the village (a request, a build, a batch) ended in that error.
-function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
+// A move saved on this device or on another one goes to the screen too (your own farm layout, applyLayout).
+function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();if(layoutKey!==(layoutKey=JSON.stringify(state.layout?.at??{})))applyLayout();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
 // Settings › Graphics (21 Oct 2026, public/graphics-mode.js): Simple graphics on or off, saved on this device, and the farm opens again
 // with it as Try again does (on a portal its page opens the farm again). Its text says it also switches on by itself after trouble.
 function bindGraphicsSetting(){
@@ -2309,7 +2414,7 @@ async function init(){
   // now fails the start (src/game-cloud.js): the page opens once more by itself, a second time it shows Try again.
   if(missingModels*2>modelNames.length)throw Object.assign(new Error('missing-models'),{reopen:true});
   markRun(gfxStore,{step:'scene',percent:Number($('load-progress')?.value)||0});
-  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy(),asBefore:place=>asBefore(place,{dairy:false})});clipNow();atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
+  decorate();createPlots();plots.forEach((v,i)=>v.cropGroup.userData.plot=i);plots.forEach((_,i)=>drawCrop(i));scenePolish=createScenePolish({scene,cloneModel,getPlots:()=>plots,reducedMotion,mobile:mobileLayout.matches,anisotropy:renderer.capabilities.getMaxAnisotropy(),asBefore:place=>asBefore(place,{dairy:false})});clipNow();applyLayout();layoutKey=JSON.stringify(state.layout?.at??{});atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches});clearPropsFromMountains();measureFarm();resize();icons();
   }
   // Every press starts its own way (Oct 2026): a finger that holds a field after the mouse was used gets no sickle at the old mouse
   // spot, and a held first field is not tipped over by an earlier drag.
@@ -2337,7 +2442,9 @@ async function init(){
   });
   renderer.domElement.addEventListener('pointerleave',()=>{highlight(-1);$('tooltip').hidden=true;});
   const canvas=renderer.domElement;
-  bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,busy:()=>document.body.classList.contains('farm-waiting'),pick:pointerTarget,
+  // Moving things is for your own farm (layout-edit.js), not the village or a farm an admin looks at.
+  if(!villageWorld&&!adminView)createLayoutTools();else for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=true;
+  bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,busy:()=>document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
    open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);

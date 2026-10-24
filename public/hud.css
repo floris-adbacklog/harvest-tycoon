@@ -194,3 +194,19 @@
 /* The coins' digits all as wide (23 Oct 2026): a font shorthand on the pill's number set them back to Outfit's own widths, so a number that
    counts up (public/game.js showCoins) made the pill and the whole top bar shake. */
 #coins,#xp-text{font-variant-numeric:tabular-nums}
+
+/* Your own farm layout (24 Oct 2026, the owner: "Doe optie 2"; layout-edit.js): while you move things the farm is a board. The tools,
+   the guide, the goal and the side buttons step aside, and the bar takes the bottom: what to do, then Cancel and Place here. The pins
+   let taps through to the farm, so a tap on a building picks it up instead of opening it. The calm start keeps the Move button for
+   later (beginner.css); More has it from the start. */
+html.farm-editing :is(.side-tools,.bottom-hud,#event-rail,#beginner-mobile,#next-goal-mobile,.beginner-card,#next-goal-card,#active-boosts,.touch-instructions,.minimap){display:none!important}
+html.farm-editing :is(.activity-label,.pond-label,.utility-label,.building-label,.plot-label){pointer-events:none;opacity:.5}
+.layout-bar{position:absolute;inset-inline:0;bottom:calc(14px + var(--safe-bottom,0px));z-index:8;display:flex;align-items:center;gap:12px;width:min(600px,calc(100% - 24px));margin-inline:auto;padding:10px 12px 10px 16px;border:2px solid var(--btn-second-line);border-radius:18px;background:#fffaf0;box-shadow:0 3px 0 var(--btn-second-edge)}
+.layout-bar[hidden]{display:none}
+.layout-hint{flex:1;min-width:0;margin:0;font:600 15px/1.3 'Outfit',sans-serif;color:#5b4520}
+.layout-hint.is-wrong{color:#a3473a}
+.layout-actions{display:flex;flex:none;gap:8px}
+.layout-actions button{min-height:44px;padding:0 16px;font-size:15px}
+.layout-actions button[hidden]{display:none}
+#layout-button[aria-pressed="true"]{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text)}
+

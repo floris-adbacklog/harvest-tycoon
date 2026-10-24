@@ -8,7 +8,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The 3D fish's looks (pond-scene.js needs three.js, so its table is read from the file).
 const FISH_LOOK=new Function(`return ${read('public/pond-scene.js').match(/export const FISH_LOOK=Object\.freeze\((\{[\s\S]*?\})\);/)[1]};`)();
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
-const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`)).toString('base64');
+const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 // Page two of the Fishing pond (11 Oct 2026, the owner's call): from level 20, 8 more fish swim in the same pond and fill a second
 // page of the fish book; all 16 kinds pay 50 diamonds once (25 + 50 = 75 in all). Below level 20 nothing changes. The rules are played
 // with the pond open, whatever the switch says (as in fishing.test.mjs).

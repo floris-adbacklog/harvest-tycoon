@@ -14,6 +14,8 @@ copyFileSync(new URL('../game/farmer-parts.js',import.meta.url),new URL('../publ
 copyFileSync(new URL('../game/farmer-parts.js',import.meta.url),new URL('../supabase/functions/farm-api/farmer-parts.js',import.meta.url));
 
 copyFileSync(new URL('../game/farm-state.js',import.meta.url),new URL('../supabase/functions/farm-api/farm-state.js',import.meta.url));
+// Your own farm layout's rules (24 Oct 2026): farm-state.js imports them beside itself, on the site and in farm-api.
+for(const to of ['../public/farm-map.js','../supabase/functions/farm-api/farm-map.js'])copyFileSync(new URL('../game/farm-map.js',import.meta.url),new URL(to,import.meta.url));
 
 copyFileSync(new URL('../src/presence.js',import.meta.url),new URL('../supabase/functions/farm-api/presence.js',import.meta.url));
 
