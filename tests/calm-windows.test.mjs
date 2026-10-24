@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {hintsButton,hintTexts,HINT_LINES} from '../public/dialog-shell.js';
+import {hintsButton,wikiFor,WINDOW_WIKI} from '../public/dialog-shell.js';
 import {confettiBurst,confettiFrom,CONFETTI_COLOURS} from '../public/confetti.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const css=read('public/calm-windows.css');
@@ -21,44 +21,36 @@ test('the calm sheet comes after every window\'s own sheet and the shell, before
  assert.match(css,/#buildings-dialog \.building-status:not\(\.ready\)\{padding:0;background:none\}/);
 });
 
-test('a window\'s rules wait behind its ⓘ: hidden where they stand, the same lines as the ⓘ\'s card, each one still in the game',()=>{
+test('a window\'s rule lines are left out, each one still in the game; a building\'s window keeps its own',()=>{
  const list=css.match(/dialog :is\((\.seed-yield-line,[^)]*)\)/)[1].replace(/\s+/g,'');
- assert.equal(list,HINT_LINES,'the sheet hides what the card shows');
  const sources=['public/farm.html','public/economy-ui.js','public/retention-ui.js','public/warehouse-ui.js','public/growth-ui.js','public/boosts-ui.js','public/season-ui.js','public/pass-ui.js','public/family-ui.js'].map(read).join('\n');
  for(const name of list.match(/\.[\w-]+/g))assert.ok(sources.includes(name.slice(1)),`still made by the game: ${name}`);
  assert.match(css,/#seed-dialog>p\{display:none!important\}/,'beats a window\'s own id rule');
- // A building's window keeps its lines in view (23 Oct 2026, the owner: "dezelfde layout en informatie").
- assert.doesNotMatch(list,/milling|production-capacity|recipe-section/);
+ assert.doesNotMatch(list,/milling|production-capacity|recipe-section|shop-earn/,'a building\'s lines and Boosts\' Earn daily button stay in view');
 });
 
-// 24 Oct 2026 (the owner: "wat doet dit i'tje hier? ik klik erop maar er gebeurt niks"): the ⓘ opens a card under the heading with the
-// window's lines, and only shows while there is one to show (not one in a tab that is not open).
-test('the ⓘ beside Close: a card with the window\'s rules under its heading, a second press closes it; there only while there is a rule',()=>{
- const el=(extra={})=>{const kids=[],attrs={};return {kids,attrs,hidden:false,textContent:'',setAttribute:(k,v)=>{attrs[k]=v;},getAttribute:k=>attrs[k],append:(...n)=>kids.push(...n),...extra};};
- const line=(text,inHidden=false)=>({textContent:text,closest:sel=>sel==='[hidden]'?(inHidden?{}:null):null});
- let lines=[line('Coins grow  with your level.'),line('Customers pay more.',true),line('Coins grow with your level.')];
- const made=[];let panel=null,kept=null,scrolled=null;
- const head={after:p=>{panel=p;made.push('panel');}};
- const close={parentElement:{querySelector:()=>kept},before:b=>{kept=b;made.push('button');}};
- const dialog={id:'today-dialog',scrollTo:o=>{scrolled=o;},querySelectorAll:sel=>sel===HINT_LINES?lines:[],
-  querySelector:sel=>sel==='.dialog-heading .close-dialog'?close:sel===':scope>.dialog-top,:scope>.dialog-heading'?head:sel==='.hints-panel'?panel:sel==='.hints-button'?kept:null};
- const doc={createElement:tag=>{const e=el({tag});e.addEventListener=(t,f)=>{e['on'+t]=f;};e.remove=()=>{if(panel===e)panel=null;};return e;}};
- assert.deepEqual(hintTexts(dialog),['Coins grow with your level.'],'its own words once, not a line in a closed tab');
- const button=hintsButton(dialog,doc,null);
- assert.equal(button.className,'hints-button');assert.equal(button.textContent,'i');assert.equal(button.attrs['aria-label'],'How it works');assert.equal(button.hidden,false);
- button.onclick();
- assert.ok(panel,'a card');assert.equal(panel.className,'hints-panel');assert.equal(panel.attrs.translate,'no','already in the farmer\'s language');
- assert.deepEqual(panel.kids.map(p=>p.textContent),['Coins grow with your level.']);assert.equal(button.attrs['aria-pressed'],'true');assert.deepEqual(scrolled,{top:0});
- // A second press closes it; opening the window again starts closed.
- panel.remove=()=>{panel=null;};button.onclick();assert.equal(panel,null);assert.equal(button.attrs['aria-pressed'],'false');
- button.onclick();panel.remove=()=>{panel=null;};assert.ok(panel);hintsButton(dialog,doc,null);assert.equal(panel,null,'closed on opening');
- assert.equal(made.filter(m=>m==='button').length,1,'one ⓘ');
- // With no rule to show (all in closed tabs) the ⓘ hides.
- lines=[line('Customers pay more.',true)];hintsButton(dialog,doc,null);assert.equal(button.hidden,true);
- assert.equal(hintsButton({querySelector:()=>null},doc),null,'a window without a Close in its heading has none');
- const shell=read('public/dialog-shell.js');
- assert.match(shell,/if\(!dialog\.open\)\{dialog\.removeAttribute\('data-scrolled'\);try\{hintWatch\.get\(dialog\)\?\.disconnect\(\);hintWatch\.delete\(dialog\);closeHints\(dialog\);\}catch\{\}return;\}\n try\{hintsButton\(dialog\);\}catch\{\}/,'on every opening; the watch ends on closing');
- assert.match(css,/\.dialog-heading \.hints-button\[hidden\]\{display:none\}/);
+// 24 Oct 2026 (the owner: "wat doet dit i'tje hier?", then "stuur die i gewoon naar wiki links want dit is heel verwarrend"): the ⓘ opens
+// the window's page in How to play, with the way back to the window.
+test('the ⓘ beside Close opens the window\'s page in How to play, and its way back opens the window again',()=>{
+ const topics=new Set(['getting-started','crops','buildings','market','quests','daily','family','events','helpers','village','estate','diamonds','chat','account']);
+ for(const [id,[topic,section]] of Object.entries(WINDOW_WIKI)){assert.ok(topics.has(topic),id);assert.match(section,/^sec-[a-z0-9-]+$/,id);}
+ const farm=read('public/farm.html');for(const id of Object.keys(WINDOW_WIKI).filter(id=>id!=='events-dialog'))assert.match(farm,new RegExp(`<dialog id="${id}"`),id);
+ let kept=null,asked=null,shown=0;const closed=[];
+ const close={parentElement:{querySelector:()=>kept},before:b=>{kept=b;}};
+ const badge={getAttribute:()=>'silo'};
+ const dialog={id:'utility-dialog',showModal:()=>{shown++;},querySelector:sel=>sel==='.dialog-heading .close-dialog'?close:sel==='.dialog-titles h2'?{textContent:' Silo research '}:sel==='.dialog-heading .dialog-badge'?badge:null};
+ const doc={createElement:()=>{const attrs={};return {attrs,setAttribute:(k,v)=>{attrs[k]=v;},addEventListener:(t,f)=>{attrs['on'+t]=f;}};},querySelectorAll:()=>[{close:()=>closed.push(1)}]};
+ const win={harvestWiki:(topic,section,options)=>{asked={topic,section,options};}};
+ const button=hintsButton(dialog,doc,win);
+ assert.equal(button.className,'hints-button');assert.equal(button.textContent,'i');assert.equal(button.attrs['aria-label'],'How it works');
+ button.attrs.onclick();
+ assert.deepEqual([asked.topic,asked.section,asked.options.from.label],['helpers','sec-silo-research','Silo research'],'the Silo by its picture, back by its title');
+ asked.options.from.go();assert.equal(shown,1,'the way back opens the window again');assert.equal(closed.length,1);
+ assert.equal(hintsButton(dialog,doc,win),button,'once');
+ assert.deepEqual(wikiFor({id:'building-dialog',querySelector:sel=>sel==='.farmhouse-panel'?{}:null}),['crops','sec-more-fields'],'the Farmhouse: more fields');
+ assert.equal(hintsButton({id:'more-dialog',querySelector:sel=>sel==='.dialog-heading .close-dialog'?close:null},doc,win),null,'no page, no ⓘ');
+ assert.equal(hintsButton(dialog,doc,{}),null,'no How to play (the farm not ready): none');
+ assert.match(read('public/game.js'),/window\.harvestWiki=\(id,anchor='',options=\{\}\)=>\{openDialog\('help-dialog'\);renderWiki\(state,id,anchor,options\);\};/);
  assert.ok('How it works' in JSON.parse(read('i18n/catalog.json')),'translated already');
 });
 

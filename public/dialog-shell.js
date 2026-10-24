@@ -18,51 +18,48 @@ function measure(dialog){
  if(h>0)dialog.style.setProperty('--head-h',`${h}px`);
 }
 const sizes=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{for(const e of entries){const d=e.target.closest?.('dialog');if(d)measure(d);}}):null;
-// The ⓘ beside Close (23 Oct 2026, the owner: the windows too busy): a window's rules (how it works) are hidden where they stand
-// (public/calm-windows.css, the same list) and wait behind it. A press opens a small card under the heading with them, a second press
-// closes it, and each time the window opens it starts closed (24 Oct 2026, the owner: "wat doet dit i'tje hier? ik klik erop maar er
-// gebeurt niks": it showed the lines where they stood, which could be in another tab or far down the window). It shows only while the
-// window has such a line to show, one in a tab that is not open does not count. Its name is the words the game already has ("How it
-// works"), so the page translates it; the card holds the lines' own words, already in the farmer's language.
-export const HINT_LINES='.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.season-rule,.pass-rule,.tractor-rule,.family-footnote';
-// A line's words with a space between its parts (a title and its sentence), as they read on screen.
-const words=line=>{const parts=[];const walk=node=>{for(const child of node.childNodes??[]){if(child.nodeType===3)parts.push(child.data);else walk(child);}};walk(line);return (parts.length?parts.join(' '):line.textContent??'').replace(/\s+/g,' ').trim();};
-export function hintTexts(dialog){
- const lines=[...dialog.querySelectorAll(HINT_LINES)];
- if(dialog.id==='seed-dialog')lines.unshift(...dialog.querySelectorAll(':scope>p'));
- const seen=new Set();
- return lines.filter(line=>!line.closest('[hidden]')&&!line.closest('.hints-panel')).map(words).filter(text=>text&&!seen.has(text)&&seen.add(text));
+// The ⓘ beside Close opens this window's page in How to play (24 Oct 2026, the owner: "stuur die i gewoon naar wiki links want dit is
+// heel verwarrend"; it showed the window's hidden rule lines first). The page and the spot on it per window, the window's own picture
+// choosing for the windows that show more than one place (the tractor or the Silo, the stall or the chores, the Farmhouse among the
+// buildings). How to play's jump bar has "‹ <the window's title>" to come back to the window as it was, as the chat's wiki chips do
+// (game.js harvestWiki, wiki-ui.js renderWiki's from). A window with no page here has no ⓘ. Its name is the words the game already has
+// ("How it works"), so the page translates it.
+export const WINDOW_WIKI=Object.freeze({
+ 'today-dialog':['daily','sec-a-gift-every-day'],'market-dialog':['market','sec-selling'],'warehouse-dialog':['market','sec-warehouse'],
+ 'buildings-dialog':['buildings','sec-how-buildings-work'],'building-dialog':['buildings','sec-how-buildings-work'],
+ 'tasks-dialog':['quests','sec-quests'],'journal-dialog':['quests','sec-level-rewards'],'seed-dialog':['crops','sec-planting'],
+ 'boost-dialog':['diamonds','sec-boosts'],'events-dialog':['events','sec-how-it-works'],'season-dialog':['daily','sec-season-pass'],
+ 'pass-dialog':['daily','sec-halloween-pass'],'family-dialog':['family','sec-together-is-better'],'utility-dialog':['helpers','sec-tractor'],
+ 'estate-dialog':['estate','sec-estate-chapters'],'activities-hub-dialog':['helpers','sec-a-helping-hand'],'activities-dialog':['helpers','sec-a-helping-hand'],
+ 'valley-dialog':['estate','sec-valley-projects'],'village-square-dialog':['village','sec-your-second-world'],'boat-dialog':['village','sec-your-second-world'],
+ 'sound-dialog':['account','sec-settings'],'look-dialog':['account','sec-my-farmer']});
+const BADGE_WIKI=Object.freeze({silo:['helpers','sec-silo-research'],stall:['helpers','sec-farm-stall'],chores:['helpers','sec-farm-chores']});
+export function wikiFor(dialog){
+ try{
+  if(dialog.id==='building-dialog'&&dialog.querySelector('.farmhouse-panel'))return ['crops','sec-more-fields'];
+  const badge=dialog.querySelector('.dialog-heading .dialog-badge')?.getAttribute?.('data-art');
+  return BADGE_WIKI[badge]??WINDOW_WIKI[dialog.id]??null;
+ }catch{return null;}
 }
-const hintWatch=new WeakMap();
-function closeHints(dialog){dialog?.querySelector?.('.hints-panel')?.remove();dialog?.querySelector?.('.hints-button')?.setAttribute('aria-pressed','false');}
-export function hintsButton(dialog,doc=dialog?.ownerDocument??globalThis.document,Observer=globalThis.MutationObserver){
+export function hintsButton(dialog,doc=dialog?.ownerDocument??globalThis.document,win=doc?.defaultView??globalThis.window){
  const close=dialog?.querySelector?.('.dialog-heading .close-dialog');
- if(!close)return null;
+ if(!close||!WINDOW_WIKI[dialog.id]||typeof win?.harvestWiki!=='function')return null;
  let button=close.parentElement.querySelector(':scope>.hints-button');
  if(!button){
   button=doc.createElement('button');button.type='button';button.className='hints-button';button.textContent='i';
   button.setAttribute('aria-label','How it works');
   button.addEventListener('click',()=>{
-   if(dialog.querySelector('.hints-panel')){closeHints(dialog);return;}
-   const texts=hintTexts(dialog);if(!texts.length)return;
-   const panel=doc.createElement('div');panel.className='hints-panel';panel.setAttribute('translate','no');
-   for(const text of texts){const line=doc.createElement('p');line.textContent=text;panel.append(line);}
-   const head=dialog.querySelector(':scope>.dialog-top,:scope>.dialog-heading')??close.parentElement;
-   head.after(panel);button.setAttribute('aria-pressed','true');
-   try{dialog.scrollTo?.({top:0});}catch{}
+   const page=wikiFor(dialog);if(!page)return;
+   const title=(dialog.querySelector('.dialog-titles h2')?.textContent||'').trim()||'Back';
+   win.harvestWiki(page[0],page[1],{from:{label:title,go:()=>{doc.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();}}});
   });
   close.before(button);
  }
- closeHints(dialog);
- const show=()=>{const none=!hintTexts(dialog).length;if(button.hidden!==none)button.hidden=none;};
- show();
- // While the window is open its content changes (a tab, a new batch): the ⓘ follows; the watch ends when it closes (watch below).
- if(typeof Observer==='function'&&!hintWatch.has(dialog)){const w=new Observer(show);w.observe(dialog,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});hintWatch.set(dialog,w);}
  return button;
 }
 function watch(dialog){
  if(!dialog?.matches?.(SHELL))return;
- if(!dialog.open){dialog.removeAttribute('data-scrolled');try{hintWatch.get(dialog)?.disconnect();hintWatch.delete(dialog);closeHints(dialog);}catch{}return;}
+ if(!dialog.open){dialog.removeAttribute('data-scrolled');return;}
  try{hintsButton(dialog);}catch{}
  measure(dialog);
  const head=dialog.querySelector(':scope>.dialog-top,:scope>.dialog-heading');
