@@ -73,3 +73,11 @@ test('a farm that never moved anything has no layout; a broken one is cleaned; o
  assert.match(read('scripts/sync-game.mjs'),/game\/farm-map\.js/);
  assert.equal(read('public/farm-map.js'),read('game/farm-map.js'));assert.equal(read('supabase/functions/farm-api/farm-map.js'),read('game/farm-map.js'));
 });
+
+test('R turns what you hold on a keyboard, as the Rotate button does; not while typing or with Ctrl, Cmd or Alt',()=>{
+ const edit=read('public/layout-edit.js');
+ assert.match(edit,/doc\.addEventListener\('keydown',event=>\{\n  if\(!on\|\|!held\|\|event\.repeat\|\|event\.ctrlKey\|\|event\.metaKey\|\|event\.altKey\|\|event\.key\?\.toLowerCase\(\)!=='r'\)return;/);
+ assert.match(edit,/closest\?\.\('input,textarea,select,\[contenteditable="true"\]'\)\)return;\n  event\.preventDefault\(\);turn\(\);/);
+ assert.match(read('public/farm.html'),/data-layout="rotate" aria-label="Rotate" title="Rotate \(R\)" aria-keyshortcuts="R"/);
+});
+

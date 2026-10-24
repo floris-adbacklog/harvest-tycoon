@@ -78,5 +78,12 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
  function drop(){if(held)held.start=null;}
  function turn(){if(!held||held.id.startsWith('field:'))return;held.at=rotate(held.id,held.at);held.base=held.at;check();show();}
  $('done').addEventListener('click',stop);$('cancel').addEventListener('click',cancel);$('place').addEventListener('click',place);$('rotate').addEventListener('click',turn);
+ // On a keyboard R turns what you hold, as the Rotate button does (24 Oct 2026, the owner: "Doe ook R rotate met toetsenbord"); not
+ // while typing, and not with Ctrl, Cmd or Alt (the browser's own shortcuts).
+ doc.addEventListener('keydown',event=>{
+  if(!on||!held||event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.key?.toLowerCase()!=='r')return;
+  if(event.target?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
+  event.preventDefault();turn();
+ });
  return {active:()=>on,held:()=>held?.id??null,start,stop,cancel,place,grab,drag,drop,turn};
 }
