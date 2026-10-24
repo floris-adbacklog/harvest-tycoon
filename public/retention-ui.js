@@ -250,9 +250,13 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   $('utility-title').textContent='Fertilize';setDialogBadge($('utility-dialog'),'tractor');
   const row=p=>{const on=fertPick.has(p.id),left=p.readyAt-now;
    return `<label class="fert-row${on?' is-on':''}${!on&&full?' is-off':''}"><input type="checkbox" data-fert="${p.id}" ${on?'checked':''} ${!on&&full?'disabled':''} aria-label="Field ${p.id+1}, ${CROPS[p.crop].name}"><span class="fert-art">${art(p.crop)}</span><span class="fert-name"><strong>${CROPS[p.crop].name}</strong><small>Field ${p.id+1}</small></span><span class="fert-time"><strong>${formatDuration(Math.floor(left*FERTILIZER_CUT))} sooner</strong><small>${formatDuration(left)} left</small></span><span class="fert-check" aria-hidden="true"></span></label>`;};
+  // The fields that cannot take it now stay in the list, greyed, with why (24 Oct 2026, the owner: "niet alle velden tonen bij
+  // fertilizer in tractor, zoals de cider apples"): ripe ones are harvested, not fertilized, and each crop takes it once per cycle.
+  const others=state.plots.filter(p=>CROPS[p?.crop]&&!fields.includes(p)).sort((a,b)=>a.id-b.id);
+  const otherRow=p=>`<div class="fert-row is-done"><span class="fert-art">${art(p.crop)}</span><span class="fert-name"><strong>${CROPS[p.crop].name}</strong><small>Field ${p.id+1}</small></span><span class="fert-time"><small>${p.readyAt<=now?'Ready to harvest':'Already fertilized'}</small></span></div>`;
   const go=!n?'Choose fields':n===1?'Fertilize 1 field':`Fertilize ${n} fields`;
   $('utility-content').innerHTML=`<div class="fert-page"><div class="fert-head">${art('fertilizer')}<p><strong>${have===1?'1 natural fertilizer':`${have} natural fertilizer`}</strong><small>1 a field, 35% off its time left</small></p>${fields.length>1?`<button type="button" class="small-button" data-fert-${n?'clear':'all'}>${n?'Clear':`Pick ${Math.min(have,fields.length)}`}</button>`:''}</div>`
-   +(fields.length?`<div class="fert-list">${fields.map(row).join('')}</div>`:`<p class="fert-empty">No growing crops need fertilizer.</p>`)
+   +(fields.length||others.length?`<div class="fert-list">${fields.map(row).join('')}${others.map(otherRow).join('')}</div>`:`<p class="fert-empty">No growing crops need fertilizer.</p>`)
    +`<div class="fert-foot"><button type="button" class="secondary-button" data-fert-back>Back</button><button type="button" class="primary-button" data-fert-go ${!n||state.coins<q.total?'disabled':''}>${go}${n?`<span class="fert-cost">${art('coins')}${q.total}</span>`:''}</button></div>`
    +(n&&state.coins<q.total?`<p class="fert-short">You need ${q.total} coins for tractor fuel.</p>`:'')+`</div>`;
   document.querySelectorAll('[data-fert]').forEach(box=>box.onchange=()=>{const id=Number(box.dataset.fert);box.checked?fertPick.add(id):fertPick.delete(id);renderFertilize();document.querySelector(`[data-fert="${id}"]`)?.focus({preventScroll:true});});

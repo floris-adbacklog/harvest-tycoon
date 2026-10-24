@@ -1768,6 +1768,7 @@ html[data-portal] .feedback-copy{display:none!important}
 .fert-row input{position:absolute;opacity:0;pointer-events:none}
 .fert-row.is-on{background:#eef5e4}
 .fert-row.is-off{opacity:.5;cursor:default}
+.fert-row.is-done{opacity:.55;cursor:default}
 .fert-row:focus-within{outline:2px solid #3f8a4a;outline-offset:-2px}
 .fert-art>.game-art{display:block;width:32px;height:32px;object-fit:contain}
 .fert-name{flex:1;display:grid;min-width:0}

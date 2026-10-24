@@ -408,6 +408,7 @@
 "Almost full":"public/wiki-content.js",
 "Already bought":"src/offer-ui.js",
 "Already completed.":"supabase/ (database messages)",
+"Already fertilized":"public/retention-ui.js",
 "Already have a farm on harvesttycoon.com? Play that farm in Discord instead of this one.":"public/discord-link-ui.js",
 "Already have an account?":"public/play.html",
 "Already in a family":"public/family-invitations-ui.js",

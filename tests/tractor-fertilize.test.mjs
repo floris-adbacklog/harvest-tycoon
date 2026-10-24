@@ -252,4 +252,6 @@ test('the tractor window: Fertilize opens its own page with the tile’s pick, a
  assert.match(ui,/\$\{!on&&full\?'disabled':''\}/,'no more ticks than fertilizer');
  assert.match(ui,/data-fert-back/);assert.ok(!ui.includes('Use your fertilizer?'),'the page asks, no popup on top');
  assert.match(read('public/retention.css'),/\.fert-row\.is-on \.fert-check\{/);
+ // The fields that cannot take it now, greyed with why (the owner: cider apples seemed missing).
+ assert.match(ui,/const others=state\.plots\.filter\(p=>CROPS\[p\?\.crop\]&&!fields\.includes\(p\)\)/);assert.match(ui,/p\.readyAt<=now\?'Ready to harvest':'Already fertilized'/);
 });
