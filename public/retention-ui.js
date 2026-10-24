@@ -264,13 +264,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   icons();
  }
  // Fertilize (21 Oct 2026, the owner: players kept asking how to fertilize; farm-state.js fertilizeQuote): one wide tile under the four
- // jobs, with what it does in one line and then how many fields and how much natural fertilizer. Short of fertilizer it says it does as
- // many as there is fertilizer for, the longest waits first. Off with the reason: nothing growing without fertilizer, or none in storage.
+ // jobs. Since 24 Oct 2026 a tap opens the page where you pick the fields (renderFertilize), so the tile says that, and how many fields
+ // can take it and how much fertilizer you have, with an arrow instead of a price: players read "Uses 18 natural fertilizer" as a tap
+ // that spends it all and did not tap. Off with the reason: nothing growing without fertilizer, or none in storage.
  function fertilizeTile(q){
-  const reason=!q.fields?'No growing crops without fertilizer':!q.count?'Make natural fertilizer at the Windmill first.':'';
-  const uses=q.count===q.fields?(q.count===1?'1 field · Uses 1 natural fertilizer':`${q.count} fields · Uses ${q.count} natural fertilizer`)
-   :`${q.count} of ${q.fields} fields · Uses your ${q.count} natural fertilizer, longest waits first`;
-  return `<button class="tractor-tile is-wide" data-tractor="fertilize" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art('fertilizer')}</span><span class="tractor-tile-text"><strong>Fertilize</strong><small>35% off the time left on growing crops, once each</small><small class="tractor-tile-count${reason?' is-reason':''}">${reason||uses}</small></span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}</button>`;
+  const have=Math.max(0,Math.floor(state.inventory?.fertilizer??0));
+  const reason=!q.fields?'No growing crops without fertilizer':!have?'Make natural fertilizer at the Windmill first.':'';
+  const line=q.fields===1?`1 field can take it, you have ${have}`:`${q.fields} fields can take it, you have ${have}`;
+  return `<button class="tractor-tile is-wide is-choose" data-tractor="fertilize" ${!q.count?'disabled':''}><span class="tractor-tile-art">${art('fertilizer')}</span><span class="tractor-tile-text"><strong>Fertilize</strong><small>Choose the fields: 35% off their time left</small><small class="tractor-tile-count${reason?' is-reason':''}">${reason||line}</small></span>${q.count?`<span class="tractor-choose">Choose<i data-lucide="chevron-right" data-line-icon></i></span>`:''}</button>`;
  }
  // The tractor's diamond work: Full care and the night shift as two cards side by side, each with its own picture and its
  // price as a diamond button, and the one rule that they count nowhere, with the way to the wiki (which has the price rule).

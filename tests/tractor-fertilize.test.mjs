@@ -149,8 +149,9 @@ test('the game wires it: the tractor tile, the tip in updateUI, the Windmill lin
  const ui=read('public/retention-ui.js'),game=read('public/game.js'),eco=read('public/economy-ui.js'),toast=read('public/toast-ui.js');
  assert.match(ui,/\['plant','water','tend','harvest','fertilize'\]\.map\(mode=>\[mode,tractorQuote\(state,mode,crop,farmNow\(\)\)\]\)/);
  assert.match(ui,/\$\{fertilizeTile\(quotes\.fertilize\)\}<\/div>/);
- assert.match(ui,/const reason=!q\.fields\?'No growing crops without fertilizer':!q\.count\?'Make natural fertilizer at the Windmill first\.':'';/);
- assert.match(ui,/of \$\{q\.fields\} fields · Uses your \$\{q\.count\} natural fertilizer, longest waits first/);
+ assert.match(ui,/const reason=!q\.fields\?'No growing crops without fertilizer':!have\?'Make natural fertilizer at the Windmill first\.':'';/);
+ assert.match(ui,/`\$\{q\.fields\} fields can take it, you have \$\{have\}`/,'the tile says how many can take it, and opens the pick page (24 Oct 2026)');
+ assert.match(ui,/<span class="tractor-choose">Choose<i data-lucide="chevron-right" data-line-icon><\/i><\/span>/);
  assert.match(ui,/\$\{state\.inventory\?\.fertilizer\?\?0\}/,'a new fertilizer count redraws the tractor');
  assert.match(game,/import \{ createFertilizerTip \} from '\.\/fertilizer-tip\.js';/);
  assert.match(game,/const fertilizerTip=createFertilizerTip\(\{state,show:toast,quiet:\(\)=>adminView\|\|villageWorld\|\|!beginnerProgress\(state\)\.every\(q=>q\.done\)\|\|Boolean\(document\.querySelector\('dialog\[open\]'\)\)\}\);/,'not under an open window');
@@ -181,7 +182,7 @@ test('every new text is in the catalog and in all 14 other languages, without a 
  // The toasts too: a translated toast keeps its middle dots (no undot), so these are whole words.
  const toasts=['The tractor fertilized 1 field with 1 fertilizer for {0} coins! +{1} XP.','The tractor fertilized {0} fields with {1} fertilizer for {2} coins! +{3} XP.'];
  texts.push(...toasts);
- const mine=['Fertilize','35% off the time left on growing crops, once each','No growing crops without fertilizer','{0} fields · Uses {1} natural fertilizer','1 field · Uses 1 natural fertilizer','{0} of {1} fields · Uses your {2} natural fertilizer, longest waits first','No growing crops need fertilizer.',...texts];
+ const mine=['Fertilize','Choose the fields: 35% off their time left','No growing crops without fertilizer','{0} fields can take it, you have {1}','1 field can take it, you have {0}','No growing crops need fertilizer.',...texts];
  for(const t of mine)assert.ok(all[t],t);
  for(const t of texts)assert.doesNotMatch(t,/·/);
  for(const {code} of LANGUAGES.filter(l=>l.code!=='en')){
