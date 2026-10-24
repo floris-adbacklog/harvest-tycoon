@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {createFarm,xpForLevel,applyFarmAction,normalizeFarm,tractorQuote,fertilizeQuote,fieldFuel,CROPS,QUESTS,DAILY_POOLS,FEATURE_LEVELS,NO_EVENT_ACTIONS,FERTILIZER_CUT,TRACTOR_FUEL_BASE,questFeatureOpen,buildingCost} from '../game/farm-state.js';
+import {createFarm,xpForLevel,applyFarmAction,normalizeFarm,tractorQuote,fertilizeQuote,fertilizeChoices,fieldFuel,CROPS,QUESTS,DAILY_POOLS,FEATURE_LEVELS,NO_EVENT_ACTIONS,FERTILIZER_CUT,TRACTOR_FUEL_BASE,questFeatureOpen,buildingCost} from '../game/farm-state.js';
 import {EVENT_STATS} from '../supabase/functions/farm-api/event-service.js';
 import {createFertilizerTip,fertilizerTipDue,fertilizerTipText,FERTILIZER_TIP_KEY,FERTILIZER_TIP_TEXT,FERTILIZER_TIP_DELAY_MS,FERTILIZER_TIP_SHOW_MS} from '../public/fertilizer-tip.js';
 import {wikiArticle} from '../public/wiki-content.js';
@@ -166,11 +166,11 @@ test('the wiki: a Natural fertilizer section (make it, the tractor, the Glasshou
  assert.match(site,/id="sec-natural-fertilizer"/);
  assert.match(site,/Natural fertilizer takes 35% off the time a growing crop still needs\. Each crop takes it once per growing cycle/);
  assert.ok(!site.includes('By hand at the Windmill')&&!site.includes('Give a field a head start'),'no hand fertilizing (24 Oct 2026)');
- for(const part of ['Make it','With the tractor','longest wait first','Glasshouse','Village Fields','grows crates of vegetables or sunflowers'])assert.ok(site.includes(part),part);
+ for(const part of ['Make it','With the tractor','you pick the growing crops','longest waits picked','Glasshouse','Village Fields','grows crates of vegetables or sunflowers'])assert.ok(site.includes(part),part);
  assert.match(site,/At the Windmill, 2 grain meal and 2 cabbage make 3 natural fertilizer in 30 min\. A helping hand at the Animal paddock gives some too\./);
  const young=wikiArticle('crops',{level:20}).html;assert.ok(!young.includes('In the village, the Village Fields'),'World II stays out below level 100 in the game');
  const helpers=wikiArticle('helpers').html;
- assert.match(helpers,/<strong>Fertilize<\/strong><p>Natural fertilizer on every growing crop that has none yet, 1 a field: 35% off its time left\. With less fertilizer than fields, the longest waits go first\./);
+ assert.match(helpers,/<strong>Fertilize<\/strong><p>Natural fertilizer on the growing crops you pick, 1 a field: 35% off its time left\. It opens with the longest waits picked\./);
  assert.match(helpers,/data-wiki-anchor="sec-natural-fertilizer"/);
 });
 
@@ -222,4 +222,33 @@ test('old rules on new saves and new rules on old saves (main eef95f62): no new 
  const legacy=farm();growing(legacy,0,'cabbage');const back=normalizeFarm(O.normalizeFarm(structuredClone(legacy),now),now);
  assert.equal(job(back,fertilizeQuote(back,now).total).count,1);
  const oldUi=show('eef95f62','public/retention-ui.js');if(oldUi)assert.doesNotMatch(oldUi,/'fertilize'/,'the live page never sends it');
+});
+
+// 24 Oct 2026, the owner: "Laat bij tractor kiezen welk veld je wilt fertilizen, zoals het was bij de Windmill, maar dan cleanere ux".
+test('you pick the fields: only those, at most as many as there is fertilizer for, and an older page still gets the longest waits',()=>{
+ const s=farm({fertilizer:2});growing(s,0,'sunflower');growing(s,1,'pumpkin');growing(s,2,'wheat');ripe(s,3,'corn');growing(s,4,'cabbage');s.plots[4].fertilized=true;
+ assert.deepEqual(fertilizeChoices(s,now).map(p=>p.id).sort(),[0,1,2],'growing, not ripe, not fertilized yet');
+ const q=fertilizeQuote(s,now,[2]);
+ assert.deepEqual([q.count,q.ids,q.fertilizer,q.fields,q.fuel],[1,[2],1,3,TRACTOR_FUEL_BASE+fieldFuel('wheat')]);
+ assert.deepEqual(fertilizeQuote(s,now,[3,4,2]).ids,[2],'a ripe or fertilized field does not count');
+ assert.throws(()=>fertilizeQuote(s,now,[0,1,2]),/You have 2 natural fertilizer\./);
+ assert.throws(()=>fertilizeQuote(s,now,'all'),/Choose the fields to fertilize\./);
+ const left=s.plots[2].readyAt-now,coins=s.coins;
+ const r=applyFarmAction(s,{type:'tractor',mode:'fertilize',crop:'wheat',ids:[2],expectedCost:q.total},now);
+ assert.deepEqual([r.count,r.fertilizer,coins-s.coins,s.inventory.fertilizer],[1,1,q.total,1]);
+ assert.equal(s.plots[2].fertilized,true);assert.equal(s.plots[2].readyAt-now,left-Math.floor(left*FERTILIZER_CUT));
+ assert.equal(s.plots[0].fertilized,false);assert.equal(s.plots[1].fertilized,false);
+ assert.throws(()=>applyFarmAction(s,{type:'tractor',mode:'fertilize',crop:'wheat',ids:[]},now),/Choose the fields to fertilize\./);
+ const old=farm({fertilizer:1});growing(old,0,'wheat');growing(old,1,'pumpkin');
+ assert.deepEqual(job(old).count,1);assert.equal(old.plots[1].fertilized,true,'no ids: the longest wait, as before');
+});
+
+test('the tractor window: Fertilize opens its own page with the tile’s pick, a tick a field, Back, and the picked ids sent',()=>{
+ const ui=read('public/retention-ui.js');
+ assert.match(ui,/const fertilize=\(\)=>\{fertPick=new Set\(quotes\.fertilize\.ids\);renderUtility\(\);\};/);
+ assert.match(ui,/if\(utility==='tractor'&&fertPick\)\{renderFertilize\(\);return;\}/);
+ assert.match(ui,/act\(\{type:'tractor',mode:'fertilize',crop:getCrop\(\),ids,expectedCost:q\.total\},done\)/);
+ assert.match(ui,/\$\{!on&&full\?'disabled':''\}/,'no more ticks than fertilizer');
+ assert.match(ui,/data-fert-back/);assert.ok(!ui.includes('Use your fertilizer?'),'the page asks, no popup on top');
+ assert.match(read('public/retention.css'),/\.fert-row\.is-on \.fert-check\{/);
 });

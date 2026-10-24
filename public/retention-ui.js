@@ -1,10 +1,9 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt,dailyWait} from './quests-ui.js';
-import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
-import {confirmAction} from './confirm-dialog.js';
 import {lanternChip} from './pass-ui.js';
 import {leafChip} from './season-ui.js';
 import {APP_PUSH_BLOCKED} from './android.js';
@@ -14,7 +13,7 @@ import {plantAsk,askTile,ASK_MS} from './tractor-ask.js';
 const $=id=>document.getElementById(id);
 const icons=refreshArt;
 export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemList,celebrate=()=>{}}){
- let tab='challenges',lastWaits='',journalTab='crops',utility='tractor',lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false,askTimer=0;
+ let tab='challenges',lastWaits='',journalTab='crops',utility='tractor',fertPick=null,lastDay=utcDay(farmNow()),lastFieldStatus='',lastCoinBoost=false,lastXPBoost=false,askTimer=0;
  const ask=plantAsk();
  const open=id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();};
  // Rewards as the same little chips everywhere: coins, diamonds, XP.
@@ -115,6 +114,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  function openToday(selected='challenges',{at=null}={}){tab=selected==='orders'&&!featureUnlocked(state,'cart')?'challenges':selected;renderToday();open('today-dialog');
   const claim=at==null?null:document.querySelector(`#today-content [data-daily="${Number(at)}"]`);if(claim){claim.closest('.daily-card')?.scrollIntoView?.({block:'center'});claim.focus({preventScroll:true});}}
  function renderUtility(){
+  if(utility==='tractor'&&fertPick){renderFertilize();return;}
   if(utility==='tractor'){
    $('utility-title').textContent='Tractor';setDialogBadge($('utility-dialog'),'tractor');
    lastFieldStatus=fieldStatus();
@@ -132,13 +132,10 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    // The Fertilize job's toast in whole words, no middle dot: a translated toast is not undotted (21 Oct 2026).
    const done=r=>r.mode==='fertilize'?(r.count===1?`The tractor fertilized 1 field with 1 fertilizer for ${r.cost} coins! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer for ${r.cost} coins! +${r.xp} XP.`):`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`;
    const work=mode=>act({type:'tractor',mode,crop:getCrop(),expectedCost:quotes[mode].total},done).then(r=>{if(!r)renderUtility();});
-   // Fertilize asks first (24 Oct 2026, the owner: "Doe bij bemesten een popup: weet je het zeker? Je gebruikt je natural fertilizer"):
-   // how much of your natural fertilizer it uses, on how many fields, and the fuel.
-   const fertilize=async()=>{
-    const q=quotes.fertilize;
-    const ok=await confirmAction({title:'Use your fertilizer?',description:q.count===1?`The tractor uses 1 natural fertilizer on 1 growing field, for ${q.total} coins of fuel.`:`The tractor uses ${q.fertilizer} natural fertilizer on ${q.count} growing fields, for ${q.total} coins of fuel.`,confirmLabel:'Fertilize',picture:'fertilizer'});
-    if(ok)work('fertilize');
-   };
+   // Fertilize opens its own page (24 Oct 2026, the owner: "Laat bij tractor kiezen welk veld je wilt fertilizen, zoals het was bij de
+   // Windmill, maar dan cleanere ux"): the farmer picks the fields, and its button says what it uses, so it asks before it spends (the
+   // owner's "weet je het zeker?" of the same day; the confirm popup it replaces). It opens with the tile's own pick, the longest waits.
+   const fertilize=()=>{fertPick=new Set(quotes.fertilize.ids);renderUtility();};
    document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>b.dataset.tractor==='plant'?askPlant():b.dataset.tractor==='fertilize'?fertilize():work(b.dataset.tractor));
    const go=document.querySelector('[data-tractor-go]');
    if(go)go.onclick=()=>{if(!ask.answers(Date.now()))return;ask.stop();work('plant');};
@@ -178,7 +175,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   $('utility-dialog').close();const seeds=$('seed-dialog');seeds.dataset.from='tractor';$('selected-crop-button')?.click();
   seeds.addEventListener('close',()=>{delete seeds.dataset.from;if(document.querySelector('dialog[open]'))return;openUtility('tractor');if(asking)askPlant();},{once:true});
  }
- function openUtility(key){if(!featureUnlocked(state,key)){notify(featureUnlockHint(key));return;}if(key==='cart'){openToday('orders');return;}utility=key;renderUtility();open('utility-dialog');}
+ function openUtility(key){if(!featureUnlocked(state,key)){notify(featureUnlockHint(key));return;}if(key==='cart'){openToday('orders');return;}utility=key;fertPick=null;renderUtility();open('utility-dialog');}
  function renderJournal(){
   const {level,current,target}=levelProgress(state),reward=levelReward(level+1),stats=state.stats,number=n=>Number(n).toLocaleString('en-US');
   // Lifetime totals: every crop picked and every good collected. The Glasshouse grows crops, not goods, so its crates count
@@ -240,6 +237,31 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   if(taken>=q.fields)return 'All your fields stay full until after the shift, so the tractor has nothing to plant. The price counts every field.';
   if(taken)return `${taken} of your ${q.fields} fields stay full until after the shift, so the tractor can't plant there. The price counts every field.`;
   return q.low?`${name} brings in about ${Math.round(q.forecast.value).toLocaleString('en-US')} coins in this shift, less than the lowest price (1 diamond a field). A crop that sells for more is a better deal.`:'';
+ }
+ // The Fertilize page: one row a growing field without fertilizer (its crop, the field, how much sooner it is ready and the time left),
+ // a tick to pick it, at most as many as there is fertilizer for. One green button fertilizes the picked fields for the fuel on it;
+ // Back returns to the tractor. A field that ripens or is fertilized meanwhile drops out of the pick.
+ function renderFertilize(){
+  lastFieldStatus=fieldStatus();
+  const now=farmNow(),fields=fertilizeChoices(state,now),have=Math.max(0,Math.floor(state.inventory?.fertilizer??0));
+  for(const id of [...fertPick])if(!fields.some(p=>p.id===id))fertPick.delete(id);
+  for(const id of [...fertPick].slice(have))fertPick.delete(id);
+  const q=tractorQuote(state,'fertilize','corn',now,[...fertPick]),full=fertPick.size>=have,n=fertPick.size;
+  $('utility-title').textContent='Fertilize';setDialogBadge($('utility-dialog'),'tractor');
+  const row=p=>{const on=fertPick.has(p.id),left=p.readyAt-now;
+   return `<label class="fert-row${on?' is-on':''}${!on&&full?' is-off':''}"><input type="checkbox" data-fert="${p.id}" ${on?'checked':''} ${!on&&full?'disabled':''} aria-label="Field ${p.id+1}, ${CROPS[p.crop].name}"><span class="fert-art">${art(p.crop)}</span><span class="fert-name"><strong>${CROPS[p.crop].name}</strong><small>Field ${p.id+1}</small></span><span class="fert-time"><strong>${formatDuration(Math.floor(left*FERTILIZER_CUT))} sooner</strong><small>${formatDuration(left)} left</small></span><span class="fert-check" aria-hidden="true"></span></label>`;};
+  const go=!n?'Choose fields':n===1?'Fertilize 1 field':`Fertilize ${n} fields`;
+  $('utility-content').innerHTML=`<div class="fert-page"><div class="fert-head">${art('fertilizer')}<p><strong>${have===1?'1 natural fertilizer':`${have} natural fertilizer`}</strong><small>1 a field, 35% off its time left</small></p>${fields.length>1?`<button type="button" class="small-button" data-fert-${n?'clear':'all'}>${n?'Clear':`Pick ${Math.min(have,fields.length)}`}</button>`:''}</div>`
+   +(fields.length?`<div class="fert-list">${fields.map(row).join('')}</div>`:`<p class="fert-empty">No growing crops need fertilizer.</p>`)
+   +`<div class="fert-foot"><button type="button" class="secondary-button" data-fert-back>Back</button><button type="button" class="primary-button" data-fert-go ${!n||state.coins<q.total?'disabled':''}>${go}${n?`<span class="fert-cost">${art('coins')}${q.total}</span>`:''}</button></div>`
+   +(n&&state.coins<q.total?`<p class="fert-short">You need ${q.total} coins for tractor fuel.</p>`:'')+`</div>`;
+  document.querySelectorAll('[data-fert]').forEach(box=>box.onchange=()=>{const id=Number(box.dataset.fert);box.checked?fertPick.add(id):fertPick.delete(id);renderFertilize();document.querySelector(`[data-fert="${id}"]`)?.focus({preventScroll:true});});
+  const all=document.querySelector('[data-fert-all]');if(all)all.onclick=()=>{fertPick=new Set(fields.slice(0,have).map(p=>p.id));renderFertilize();};
+  const clear=document.querySelector('[data-fert-clear]');if(clear)clear.onclick=()=>{fertPick.clear();renderFertilize();};
+  document.querySelector('[data-fert-back]').onclick=()=>{fertPick=null;renderUtility();};
+  const done=r=>r.count===1?`The tractor fertilized 1 field with 1 fertilizer for ${r.cost} coins! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer for ${r.cost} coins! +${r.xp} XP.`;
+  document.querySelector('[data-fert-go]').onclick=()=>{const ids=[...fertPick];act({type:'tractor',mode:'fertilize',crop:getCrop(),ids,expectedCost:q.total},done).then(r=>{if(r)fertPick=null;renderUtility();});};
+  icons();
  }
  // Fertilize (21 Oct 2026, the owner: players kept asking how to fertilize; farm-state.js fertilizeQuote): one wide tile under the four
  // jobs, with what it does in one line and then how many fields and how much natural fertilizer. Short of fertilizer it says it does as

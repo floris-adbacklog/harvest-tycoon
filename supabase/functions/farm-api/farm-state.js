@@ -3849,10 +3849,10 @@ export function claimLevelRewards(state){const reward=grantLevelRewards(state);i
 // of a long crop's profit (sunflower 19 a field). The night shift and Full care are paid in diamonds and burn no fuel.
 export const TRACTOR_FUEL_BASE=12,TRACTOR_FUEL_PER_FIELD=2,TRACTOR_FUEL_SHARE=.05;
 export const fieldFuel=crop=>Object.hasOwn(CROPS,crop??'')?Math.max(TRACTOR_FUEL_PER_FIELD,Math.round(reducedMarketPrice(CROPS[crop].sell)*TRACTOR_FUEL_SHARE)):TRACTOR_FUEL_PER_FIELD;
-export function tractorQuote(state,mode,crop='corn',now=Date.now()){
+export function tractorQuote(state,mode,crop='corn',now=Date.now(),ids){
  // tend (4 Oct 2026): extra care for every crop whose care moment has come, as by hand.
  // fertilize (21 Oct 2026): natural fertilizer on every growing crop that has none yet this cycle, the longest wait first (see below).
- if(mode==='fertilize')return fertilizeQuote(state,now);
+ if(mode==='fertilize')return fertilizeQuote(state,now,ids);
  const eligible=state.plots.filter(p=>mode==='plant'?!p.crop:mode==='water'?canWater(p,now):mode==='tend'?fieldTapAction(p,now,'tend')==='tend':p.crop&&p.readyAt<=now);
  const count=mode==='plant'?Math.min(eligible.length,Math.max(0,Math.floor((state.coins-TRACTOR_FUEL_BASE)/(seedCost(state,crop)+fieldFuel(crop))))):eligible.length;
  const worked=eligible.slice(0,count);
@@ -3865,22 +3865,34 @@ export function tractorQuote(state,mode,crop='corn',now=Date.now()){
 // none yet. With less fertilizer in storage than such fields it does as many as there is fertilizer for, the longest time left first
 // (the most time saved). Fuel as Water: TRACTOR_FUEL_BASE a job + each field's crop fuel (fieldFuel). No diamonds. fields: every field it
 // could do; count: the ones it will do; fertilizer: what it uses (= count).
-export function fertilizeQuote(state,now=Date.now()){
- const eligible=state.plots.filter(p=>p.crop&&p.readyAt>now&&!p.fertilized).sort((a,b)=>(b.readyAt-a.readyAt)||(a.id-b.id));
- const count=Math.min(eligible.length,Math.max(0,Math.floor(state.inventory?.fertilizer??0))),worked=eligible.slice(0,count);
+// ids (24 Oct 2026, the owner: "Laat bij tractor kiezen welk veld je wilt fertilizen"): the fields the farmer picked. Only those that can
+// still take fertilizer count; more picked than there is fertilizer for is refused (the window never lets that happen). Without ids
+// (the tile's own line, and an older page) it picks the longest waits first, as before.
+export const fertilizeChoices=(state,now=Date.now())=>state.plots.filter(p=>p.crop&&p.readyAt>now&&!p.fertilized).sort((a,b)=>(b.readyAt-a.readyAt)||(a.id-b.id));
+export function fertilizeQuote(state,now=Date.now(),ids){
+ const eligible=fertilizeChoices(state,now),have=Math.max(0,Math.floor(state.inventory?.fertilizer??0));
+ if(ids!==undefined){
+  if(!Array.isArray(ids)||ids.length>state.plots.length||!ids.every(Number.isInteger))throw new Error('Choose the fields to fertilize.');
+  const picked=new Set(ids),chosen=eligible.filter(p=>picked.has(p.id));
+  if(chosen.length>have)throw new Error(have===1?'You have 1 natural fertilizer.':`You have ${have} natural fertilizer.`);
+  const fuel=chosen.length?TRACTOR_FUEL_BASE+chosen.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
+  return {count:chosen.length,fuel,seeds:0,total:fuel,ids:chosen.map(p=>p.id),fields:eligible.length,fertilizer:chosen.length};
+ }
+ const count=Math.min(eligible.length,have),worked=eligible.slice(0,count);
  const fuel=count?TRACTOR_FUEL_BASE+worked.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
  return {count,fuel,seeds:0,total:fuel,ids:worked.map(p=>p.id),fields:eligible.length,fertilizer:count};
 }
 // expectedCost (17 Oct 2026): the price the tile showed. Never more is charged; a farm that changed in between asks to look again. An
 // older page sends none and pays the rules' price.
-export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost){
+// ids: the fields picked for Fertilize (fertilizeQuote); the other jobs ignore them.
+export function useTractor(state,mode,crop='corn',now=Date.now(),expectedCost,ids){
  if(!['plant','water','harvest','tend','fertilize'].includes(mode))throw new Error('Choose a tractor task.');if(!Object.hasOwn(CROPS,crop))throw new Error('Choose a crop.');
  if(mode==='plant'&&!cropUnlocked(state,crop))throw new Error(cropUnlockHint(state,crop));
  // The Warehouse (22 Oct 2026): the Harvest job waits while it is full (once it runs it harvests every ripe field, also over the line).
  if(mode==='harvest')assertWarehouseRoom(state);
- const quote=tractorQuote(state,mode,crop,now);
+ const quote=tractorQuote(state,mode,crop,now,mode==='fertilize'?ids:undefined);
  if(expectedCost!==undefined&&(!Number.isSafeInteger(expectedCost)||quote.total>expectedCost))throw new Error('The price has changed. Review the current price.');
- if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':mode==='fertilize'?(quote.fields?'Make natural fertilizer at the Windmill first.':'No growing crops need fertilizer.'):'No crops are ready to harvest.');
+ if(!quote.count)throw new Error(mode==='plant'?'No empty fields you can afford to plant, including fuel.':mode==='water'?'No growing crops need water.':mode==='tend'?'No crops are ready for extra care yet.':mode==='fertilize'?(quote.fields?(ids!==undefined&&state.inventory?.fertilizer>=1?'Choose the fields to fertilize.':'Make natural fertilizer at the Windmill first.'):'No growing crops need fertilizer.'):'No crops are ready to harvest.');
  if(state.coins<quote.total)throw new Error(`You need ${quote.fuel} coins for tractor fuel. Working by hand is free.`);
  state.coins-=quote.fuel;
  if(mode==='fertilize'){
@@ -4619,7 +4631,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'season_look':return wearFarmLook(state,action.slot,action.id??null);
   case 'delivery':return deliverOrder(state,action.id,action.day,now,action.revision);
   case 'level_rewards':return claimLevelRewards(state);
-  case 'tractor':return useTractor(state,action.mode,action.crop,now,action.expectedCost);
+  case 'tractor':return useTractor(state,action.mode,action.crop,now,action.expectedCost,action.ids);
   case 'tractor_care':return fullCare(state,action.expectedCost,now);
   case 'tractor_shift':return startNightShift(state,action.crop,action.expectedCost,now);
   case 'silo_upgrade':return upgradeSilo(state);

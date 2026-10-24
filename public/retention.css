@@ -1756,3 +1756,28 @@ html[data-portal] .feedback-copy{display:none!important}
  #leaderboard-dialog .leaderboard-farmer{gap:8px}
  #leaderboard-dialog .leaderboard-table td.leaderboard-score{padding-inline:6px 12px}
 }
+/* The tractor's Fertilize page (24 Oct 2026): what you have on top, one row a growing field with a tick, the green button below. */
+.fert-page{display:grid;gap:10px}
+.fert-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border:2px solid #ecdcae;border-radius:16px;background:#fff8e4}
+.fert-head>.game-art{flex:none;width:36px;height:36px;object-fit:contain}
+.fert-head p{flex:1;display:grid;margin:0;min-width:0}
+.fert-head small,.fert-name small,.fert-time small{color:#8a7756;font-weight:400}
+.fert-list{display:grid;max-height:min(52vh,420px);overflow:auto;border:2px solid #e6ddd1;border-radius:16px;background:#fbf8f3}
+.fert-row{position:relative;display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #ece3d6;cursor:pointer}
+.fert-row:first-child{border-top:0}
+.fert-row input{position:absolute;opacity:0;pointer-events:none}
+.fert-row.is-on{background:#eef5e4}
+.fert-row.is-off{opacity:.5;cursor:default}
+.fert-row:focus-within{outline:2px solid #3f8a4a;outline-offset:-2px}
+.fert-art>.game-art{display:block;width:32px;height:32px;object-fit:contain}
+.fert-name{flex:1;display:grid;min-width:0}
+.fert-time{display:grid;text-align:end}
+.fert-time strong{color:#3f6b2c}
+.fert-check{flex:none;display:grid;place-items:center;width:24px;height:24px;border:2px solid #cdbb85;border-radius:8px;background:#fff}
+.fert-row.is-on .fert-check{border-color:#316c3a;background:#3f8a4a}
+.fert-row.is-on .fert-check::after{content:'';width:6px;height:11px;border:solid #fff;border-width:0 3px 3px 0;transform:translateY(-1px) rotate(45deg)}
+.fert-foot{display:flex;gap:8px}
+.fert-foot .primary-button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:10px}
+.fert-cost{display:inline-flex;align-items:center;gap:3px}
+.fert-cost>.game-art{width:18px;height:18px}
+.fert-empty,.fert-short{margin:0;text-align:center;color:#8a7756}
