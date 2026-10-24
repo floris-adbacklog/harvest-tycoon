@@ -6,7 +6,7 @@ bushes and rocks on it that you clear. World 2 (the village) stays as it is.
 
 The owner's rules:
 - Moving is allowed from the start (level 1).
-- Clearing a tree, bush or rock costs coins and gives a little XP.
+- Clearing a tree, bush or rock costs coins (no XP, the owner 24 Oct 2026).
 - Land opens by level by itself.
 - Trees and path tiles can be bought for coins, and stored again.
 - Not live until the owner says so ("Zet nog niks live"): branch free-layout, lab harness only.

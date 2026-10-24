@@ -45,7 +45,7 @@ const HINT={
  drawPlants:'Drag over the grass to plant them.',
  erase:'Drag over a path or a road to take it away.'
 };
-const OFFER={tree:(coins,xp)=>`Clear this tree for ${coins} coins (+${xp} XP)?`,bush:(coins,xp)=>`Clear this bush for ${coins} coins (+${xp} XP)?`,rock:(coins,xp)=>`Clear this rock for ${coins} coins (+${xp} XP)?`};
+const OFFER={tree:coins=>`Clear this tree for ${coins} coins?`,bush:coins=>`Clear this bush for ${coins} coins?`,rock:coins=>`Clear this rock for ${coins} coins?`};
 // The picture on each Build tile: a painted one where there is one (data-game-art), else a line icon.
 const ICON=Object.freeze(Object.fromEntries(Object.keys(DECOR).map(kind=>[kind,`art:decor-${kind}`])));
 const icon=name=>name.startsWith('art:')?`<i data-game-art="${name.slice(4)}"></i>`:`<i data-lucide="${name}"></i>`;
@@ -75,7 +75,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
    $('place').disabled=!adds&&!removes||cost>coins();$('place').textContent=cost?`Buy for ${cost}`:'Save';
   }else if(offer){
    const piece=landAt(offer.x,offer.z),open=landOpen(level(),offer.x,offer.z),short=coins()<offer.cost.coins;
-   hint=!open?`This land opens at level ${piece?.level??'?'}.`:short?`You need ${offer.cost.coins} coins to clear it.`:OFFER[offer.cost.kind](offer.cost.coins,offer.cost.xp);
+   hint=!open?`This land opens at level ${piece?.level??'?'}.`:short?`You need ${offer.cost.coins} coins to clear it.`:OFFER[offer.cost.kind](offer.cost.coins);
    wrong=!open||short;visible.add('keep');if(open)visible.add('clear');$('clear').disabled=short;
   }else if(held){
    const why=held.why,cost=held.fresh?price(held.kind):0,short=cost>coins();

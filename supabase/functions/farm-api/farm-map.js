@@ -31,8 +31,9 @@ export const LAND=Object.freeze([
 ].map(piece=>Object.freeze({...piece,box:Object.freeze(piece.box)})));
 // The water: the pond's box with its bank (farm-layout.js pondBounds()).
 export const WATER=Object.freeze([Object.freeze([16.88,34.48,9.36,20.56])]);
-// What clearing costs: coins and XP by kind, times the land's own factor (further out costs more).
-export const OBSTACLES=Object.freeze({tree:Object.freeze({coins:120,xp:4}),bush:Object.freeze({coins:40,xp:2}),rock:Object.freeze({coins:160,xp:5})});
+// What clearing costs: coins by kind, times the land's own factor (further out costs more).
+// No XP (24 Oct 2026, the owner: "Dingen clearen moet geld kosten, geen XP opleveren").
+export const OBSTACLES=Object.freeze({tree:Object.freeze({coins:120}),bush:Object.freeze({coins:40}),rock:Object.freeze({coins:160})});
 const LAND_FACTOR=Object.freeze({middle:1,north:1.5,west:2,south:2.5,east:4,westedge:5,westsouth:5,eastedge:7,eastsouth:7});
 // What you can buy and place: path tiles and trees (the model each one shows is chosen on the screen).
 // draw: laid with a drag on the 2-step grid (24 Oct 2026, the owner: "Doe 1,2,3": fences, more to place, flowers and grass to draw).
@@ -100,7 +101,7 @@ export function clearCost(id){
  const m=OBSTACLE_ID.exec(id??'');if(!m)return null;
  const kind=obstacleKind(m[1]),piece=landAt(Number(m[2])/10,Number(m[3])/10);if(!kind||!piece)return null;
  const factor=LAND_FACTOR[piece.id]??1;
- return {kind,land:piece.id,coins:Math.round(OBSTACLES[kind].coins*factor/10)*10,xp:Math.round(OBSTACLES[kind].xp*Math.sqrt(factor))};
+ return {kind,land:piece.id,coins:Math.round(OBSTACLES[kind].coins*factor/10)*10};
 }
 function checkSpot(level,x,z){
  if(!onGrid(x)||!onGrid(z))throw new Error('Choose a spot on the farm.');
@@ -127,10 +128,10 @@ export function clearObstacle(state,id,level){
  if(!landOpen(level,x,z))throw new Error(`This land opens at level ${landAt(x,z).level}.`);
  const layout=layoutOf(state);if(layout.cleared.includes(id))throw new Error('That is cleared already.');
  if(state.coins<cost.coins)throw new Error(`You need ${cost.coins} coins.`);
- state.coins-=cost.coins;state.xp+=cost.xp;
+ state.coins-=cost.coins;
  layout.cleared=[...layout.cleared,id].slice(-MAX_CLEARED);
  state.stats.cleared=(state.stats.cleared??0)+1;
- return {cleared:id,kind:cost.kind,coins:cost.coins,xp:cost.xp};
+ return {cleared:id,kind:cost.kind,coins:cost.coins};
 }
 // Buying a tree or a path tile and placing it, or placing one you stored.
 export function placeDecor(state,kind,x,z,level,{fromStore=false}={}){

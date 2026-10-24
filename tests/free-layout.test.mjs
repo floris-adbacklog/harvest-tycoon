@@ -42,15 +42,15 @@ test('moving: from the start, on open land on the grid, never in the pond; the f
  assert.equal(LAYOUT_GRID,.5);
 });
 
-test('clearing: a tree, bush or rock on open land for coins and a little XP, once; further out costs more',()=>{
+test('clearing: a tree, bush or rock on open land for coins (no XP), once; further out costs more',()=>{
  assert.equal(obstacleKind('stone_fence_001'),null,'a stone wall is no rock');assert.equal(obstacleKind('stone_002'),'rock');
  assert.equal(obstacleKind('tree_004'),'tree');assert.equal(obstacleKind('fir_tree_001'),'tree');assert.equal(obstacleKind('bush_001'),'bush');assert.equal(obstacleKind('stone_002'),'rock');assert.equal(obstacleKind('grass_001'),null);
- assert.deepEqual(clearCost('o:tree_001:100:-50'),{kind:'tree',land:'middle',coins:120,xp:4});
+ assert.deepEqual(clearCost('o:tree_001:100:-50'),{kind:'tree',land:'middle',coins:120});
  assert.ok(clearCost('o:tree_001:550:0').coins>clearCost('o:tree_001:100:0').coins,'the east costs more than the middle');
  assert.equal(clearCost('o:grass_001:0:0'),null);assert.equal(clearCost('nope'),null);
  const s=farmAt(5),coins=s.coins,xp=s.xp;
- assert.deepEqual(act(s,{type:'layout_clear',id:'o:tree_001:100:-50'},now),{cleared:'o:tree_001:100:-50',kind:'tree',coins:120,xp:4});
- assert.equal(s.coins,coins-120);assert.equal(s.xp,xp+4);assert.deepEqual(s.layout.cleared,['o:tree_001:100:-50']);assert.equal(s.stats.cleared,1);
+ assert.deepEqual(act(s,{type:'layout_clear',id:'o:tree_001:100:-50'},now),{cleared:'o:tree_001:100:-50',kind:'tree',coins:120});
+ assert.equal(s.coins,coins-120);assert.equal(s.xp,xp,'no XP');assert.deepEqual(s.layout.cleared,['o:tree_001:100:-50']);assert.equal(s.stats.cleared,1);
  assert.throws(()=>act(s,{type:'layout_clear',id:'o:tree_001:100:-50'},now),/cleared already/);
  assert.throws(()=>act(s,{type:'layout_clear',id:'o:tree_001:-450:0'},now),/opens at level 25/);
  const poor=farmAt(5);poor.coins=10;assert.throws(()=>act(poor,{type:'layout_clear',id:'o:bush_001:0:0'},now),/You need 40 coins/);
