@@ -5,7 +5,6 @@ import {rookieTimeLeft} from './rookie-ui.js';
 import {art,refreshArt,pictureFile} from './visual-icons.js';
 import {briefCard,squareStatus} from './village-square-ui.js';
 import {boatStatus} from './boat-ui.js';
-import {fieldPicker,bindFieldPicker} from './field-picker.js';
 import {confirmAction} from './confirm-dialog.js';
 import {flyHarvest,bump} from './harvest-fly.js';
 import {keepFolds} from './keep-folds.js';
@@ -47,7 +46,7 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
  const sellQuantities={};
  // Market rows whose amount slider is open on a phone (mobile-windows.css); a computer always shows it.
  const openSaleRows=new Set();
- const batchCounts={},fertilizerFields=new Set();
+ const batchCounts={};
  function itemArt(key){return art(key,'product-art');}
  function show(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();icons();}
  // What a batch costs: the ingredients, and for a recipe with a coin price the coins (the Glasshouse).
@@ -186,7 +185,6 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   if(!currentBuilding)return;
   // A Pier built from its own window (its brief) opens the town boat instead; mutate's toast still shows.
   if(BUILDINGS[currentBuilding].type==='pier'&&buildingUnlocked(state,currentBuilding)){currentBuilding=null;$('building-dialog').close();onBoat?.();return;}
-  const picker=$('fertilizer-field-picker'),pickerOpen=picker?.open,pickerScroll=picker?.querySelector('.field-picker-options')?.scrollTop??0;
   const key=currentBuilding,b=BUILDINGS[key],bs=state.buildings[key],buildCost=buildingCost(state,key);
   let crateOffer=0;   // the builder's crates the upgrade card shows, sent with Use crates
   // The heading (18 Oct 2026, the window shell): the building's picture with its level, its name, and what kind of building it is. Its
@@ -311,11 +309,8 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
    }
    // From level 128 the Lumber Camp packs builder's crates (Oct 2026): its window says what they are for.
    if(key==='lumbercamp'&&recipeUnlocked(state,'builderscrate'))content+=`<p class="milling-note crate-note">${CRATE_RULE}</p>`;
-   // The tractor's Fertilize job (21 Oct 2026) named here too, once the tractor is open: the same work on every growing field at once.
-   if(key==='windmill'){
-    const eligible=state.plots.filter(p=>p.crop&&p.readyAt>farmNow()&&!p.fertilized);
-    content+=`<section class="fertilizer-panel"><div>${art('fertilizer')}<h3>Give a field a head start</h3></div><p>Use 1 natural fertilizer to remove 35% of a crop’s remaining growing time. Once per growing cycle; watering and extra care still work.${featureUnlocked(state,'tractor')?' <span>Or let the tractor do it: its Fertilize job does every growing field at once.</span>':''}</p>${fieldPicker({id:'fertilizer-field-picker',plots:eligible,selected:[...fertilizerFields].filter(id=>eligible.some(p=>p.id===id)),multiple:true,now:farmNow(),available:state.inventory.fertilizer})}<div class="fertilizer-action"><span id="fertilizer-cost">${state.inventory.fertilizer} fertilizer in storage · 0 required</span><button id="fertilize-field" class="small-button" disabled>Fertilize selected fields</button></div></section>`;
-   }
+   // The Windmill makes natural fertilizer; fields get it from the tractor's Fertilize job (24 Oct 2026, the owner: "Haal natuurlijke mest
+   // uit Windmolen, gaat nu via tractor"): its hand fertilizing (a field picker and a button) is gone.
    const cost=upgradeCost(state,key),estate=upgradeRequirements(state,key),next=bs.level+1;
    const estateLevelOk=!estate||levelOf(state)>=estate.level,estateSupplies=!estate||Object.entries(estate.materials).every(([item,n])=>(state.inventory[item]??0)>=n);
    // Past level 10 (World II's master tools) every level also gives a batch a chance to come out double.
@@ -370,17 +365,6 @@ export function createEconomyUI({state,onChange,onCrop,onExpand,notify,runAction
   $('upgrade-building')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'upgrade',building:key});return `${b.name} upgraded to level ${r.level}.`;}));
   // Use crates sends as many crates as the card showed; the rules refuse a count that is no longer right.
   $('upgrade-building-crates')?.addEventListener('click',()=>{const crates=crateOffer;mutate(async()=>{const r=await runAction({type:'upgrade',building:key,crates});return `${b.name} upgraded to level ${r.level} with ${number(r.crates)} builder’s ${r.crates===1?'crate':'crates'}.`;});});
-  const updateFertilizer=ids=>{
-   fertilizerFields.clear();ids.forEach(id=>fertilizerFields.add(id));
-   const count=ids.length,missing=Math.max(0,count-state.inventory.fertilizer);
-   $('fertilizer-cost').textContent=`${state.inventory.fertilizer} in storage · ${count} required${missing?` · Need ${missing} more`:''}`;
-   $('fertilizer-cost').classList.toggle('shortfall',missing>0);
-   $('fertilize-field').disabled=mutating||!count||missing>0;
-   $('fertilize-field').textContent=count?`Fertilize ${count} ${count===1?'field':'fields'}`:'Select fields to fertilize';
-  };
-  const selectedFields=$('fertilizer-field-picker')?bindFieldPicker($('fertilizer-field-picker'),{multiple:true,available:state.inventory.fertilizer,onChange:updateFertilizer}):()=>[];
-  if($('fertilizer-field-picker')){updateFertilizer(selectedFields());$('fertilizer-field-picker').open=!!pickerOpen;$('fertilizer-field-picker').querySelector('.field-picker-options').scrollTop=pickerScroll;}
-  $('fertilize-field')?.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'fertilize',ids:selectedFields()});onExpand();return `${r.count} fields fertilized! Used ${r.cost} fertilizer · +${r.xp} XP.`;}));
   $('building-content').querySelectorAll('[data-recipe]').forEach(btn=>btn.addEventListener('click',()=>mutate(async()=>{const r=await runAction({type:'produce',recipe:btn.dataset.recipe,count:batchCounts[btn.dataset.recipe]??1});return `${r.count} ${r.count===1?'batch':'batches'} of ${recipeFor(state,r.recipe).name} started.`;})));
   function updateBatch(output){
    const id=output.dataset.batchCount,count=batchCounts[id],r=recipeFor(state,id),card=output.closest('.recipe-card'),max=Number(output.dataset.max);

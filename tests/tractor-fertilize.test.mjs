@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createFarm,xpForLevel,applyFarmAction,normalizeFarm,tractorQuote,fertilizeQuote,fieldFuel,CROPS,QUESTS,DAILY_POOLS,FEATURE_LEVELS,NO_EVENT_ACTIONS,FERTILIZER_CUT,TRACTOR_FUEL_BASE,questFeatureOpen,buildingCost} from '../game/farm-state.js';
 import {EVENT_STATS} from '../supabase/functions/farm-api/event-service.js';
-import {createFertilizerTip,fertilizerTipDue,fertilizerTipText,FERTILIZER_TIP_KEY,FERTILIZER_TIP_TEXTS,FERTILIZER_TIP_DELAY_MS,FERTILIZER_TIP_SHOW_MS} from '../public/fertilizer-tip.js';
+import {createFertilizerTip,fertilizerTipDue,fertilizerTipText,FERTILIZER_TIP_KEY,FERTILIZER_TIP_TEXT,FERTILIZER_TIP_DELAY_MS,FERTILIZER_TIP_SHOW_MS} from '../public/fertilizer-tip.js';
 import {wikiArticle} from '../public/wiki-content.js';
 import {LANGUAGES} from '../public/languages.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
@@ -112,8 +112,8 @@ test('it counts as fertilizing by hand: the same farm afterwards, quests, challe
  assert.ok(EVENT_STATS.includes('fertilized'));assert.equal(NO_EVENT_ACTIONS.has('tractor'),false);
 });
 
-// The tip (option 4): once per device, when the farm first has fertilizer and the Windmill to use it in; it names the tractor's job only
-// once the tractor is open. A toast after a short wait, no popup.
+// The tip (option 4): once per device, when the farm first has fertilizer and the tractor to use it with (24 Oct 2026, the owner: "Haal
+// natuurlijke mest uit Windmolen, gaat nu via tractor": the Windmill's hand fertilizing is gone). A toast after a short wait, no popup.
 const memoryStorage=()=>{const map=new Map();return {map,getItem:k=>map.has(k)?map.get(k):null,setItem:(k,v)=>map.set(k,String(v))};};
 function tipSetup(s,{quiet=()=>false,storage=memoryStorage()}={}){
  const shown=[],timers=[];
@@ -121,30 +121,27 @@ function tipSetup(s,{quiet=()=>false,storage=memoryStorage()}={}){
  const run=()=>{while(timers.length)timers.shift().fn();};
  return {tip,shown,timers,run,storage};
 }
-test('the tip: the first fertilizer with the Windmill open, once on this device, after the action’s own toast',()=>{
- const s=farm({level:12,fertilizer:0});const {tip,shown,timers,run,storage}=tipSetup(s);
+test('the tip: the first fertilizer with the tractor open, once on this device, after the action’s own toast',()=>{
+ const s=farm({level:FEATURE_LEVELS.tractor,fertilizer:0});const {tip,shown,timers,run,storage}=tipSetup(s);
  assert.equal(tip.check(),false,'no fertilizer yet');
  s.inventory.fertilizer=3;
  assert.equal(tip.check(),true);assert.equal(tip.check(),false,'one on its way');
  assert.equal(timers.length,1);assert.equal(timers[0].ms,FERTILIZER_TIP_DELAY_MS);assert.deepEqual(shown,[]);
  run();
- assert.deepEqual(shown,[{text:FERTILIZER_TIP_TEXTS.windmill,options:{duration:FERTILIZER_TIP_SHOW_MS,icon:'fertilizer',tone:'info'}}]);
+ assert.deepEqual(shown,[{text:FERTILIZER_TIP_TEXT,options:{duration:FERTILIZER_TIP_SHOW_MS,icon:'fertilizer',tone:'info'}}]);
  assert.equal(storage.getItem(FERTILIZER_TIP_KEY),'1');
  assert.equal(tip.check(),false);run();assert.equal(shown.length,1,'once');
  const again=tipSetup(s,{storage});assert.equal(again.tip.check(),false,'and not again after a reload on this device');
- assert.equal(FERTILIZER_TIP_TEXTS.windmill,'Use natural fertilizer on growing fields in the Windmill to cut their growing time by 35%.');
+ assert.equal(FERTILIZER_TIP_TEXT,'Use natural fertilizer on growing fields with the tractor’s Fertilize job to cut their growing time by 35%.');
+ assert.equal(fertilizerTipText(s),FERTILIZER_TIP_TEXT);
 });
-test('the tip names the tractor’s Fertilize job from the tractor’s level, waits for the Windmill and keeps quiet when asked',()=>{
- const tractor=farm({level:FEATURE_LEVELS.tractor});assert.equal(fertilizerTipText(tractor),FERTILIZER_TIP_TEXTS.tractor);
- assert.match(FERTILIZER_TIP_TEXTS.tractor,/tractor’s Fertilize job/);
- assert.equal(fertilizerTipText(farm({level:FEATURE_LEVELS.tractor-1})),FERTILIZER_TIP_TEXTS.windmill);
- const noMill=farm({level:12,windmill:false});assert.equal(fertilizerTipDue(noMill),false,'fertilizer from a helping hand, no Windmill yet');
- noMill.buildings.windmill.built=true;assert.equal(fertilizerTipDue(noMill),true);
+test('the tip waits for the tractor and keeps quiet when asked',()=>{
+ const early=farm({level:FEATURE_LEVELS.tractor-1});assert.equal(fertilizerTipDue(early),false,'fertilizer, but no tractor yet');
  let quiet=true;const s=farm({level:20});const {tip,shown,run}=tipSetup(s,{quiet:()=>quiet});
  assert.equal(tip.check(),false);run();assert.deepEqual(shown,[]);
  quiet=false;assert.equal(tip.check(),true);quiet=true;run();assert.deepEqual(shown,[],'quiet again when the wait is over: not now');
- quiet=false;tip.check();run();assert.equal(shown.length,1);assert.equal(shown[0].text,FERTILIZER_TIP_TEXTS.tractor);
- const blocked=tipSetup(farm(),{storage:{getItem(){throw new Error('blocked');},setItem(){throw new Error('blocked');}}});
+ quiet=false;tip.check();run();assert.equal(shown.length,1);assert.equal(shown[0].text,FERTILIZER_TIP_TEXT);
+ const blocked=tipSetup(farm({level:20}),{storage:{getItem(){throw new Error('blocked');},setItem(){throw new Error('blocked');}}});
  blocked.tip.check();blocked.run();assert.equal(blocked.shown.length,1);blocked.tip.check();blocked.run();assert.equal(blocked.shown.length,1,'kept for the page');
 });
 
@@ -159,16 +156,17 @@ test('the game wires it: the tractor tile, the tip in updateUI, the Windmill lin
  assert.match(game,/const fertilizerTip=createFertilizerTip\(\{state,show:toast,quiet:\(\)=>adminView\|\|villageWorld\|\|!beginnerProgress\(state\)\.every\(q=>q\.done\)\|\|Boolean\(document\.querySelector\('dialog\[open\]'\)\)\}\);/,'not under an open window');
  assert.match(game,/document\.addEventListener\('close',e=>\{if\(e\.target instanceof HTMLDialogElement\)fertilizerTip\.check\(\);\},true\);/,'and when it closes');
  assert.match(game,/nudge\?\.check\(\);fertilizerTip\.check\(\);/);
- assert.match(eco,/featureUnlocked\(state,'tractor'\)\?' <span>Or let the tractor do it: its Fertilize job does every growing field at once\.<\/span>':''/);
+ assert.doesNotMatch(eco,/fertilizer-field-picker|fertilize-field|Give a field a head start/,'the Windmill\'s hand fertilizing is gone (24 Oct 2026)');
  assert.match(toast,/icon=options\?\.icon\?\?themed/);
  assert.match(read('public/retention.css'),/\.tractor-tile\.is-wide\{grid-column:1\/-1;/);
 });
 
-test('the wiki: a Natural fertilizer section (make it, by hand, the tractor, the Glasshouse, the Village Fields) and the tractor’s job',()=>{
+test('the wiki: a Natural fertilizer section (make it, the tractor, the Glasshouse, the Village Fields) and the tractor’s job',()=>{
  const site=wikiArticle('crops').html;
  assert.match(site,/id="sec-natural-fertilizer"/);
  assert.match(site,/Natural fertilizer takes 35% off the time a growing crop still needs\. Each crop takes it once per growing cycle/);
- for(const part of ['Make it','By hand at the Windmill','Give a field a head start','With the tractor','longest wait first','Glasshouse','Village Fields','grows crates of vegetables or sunflowers'])assert.ok(site.includes(part),part);
+ assert.ok(!site.includes('By hand at the Windmill')&&!site.includes('Give a field a head start'),'no hand fertilizing (24 Oct 2026)');
+ for(const part of ['Make it','With the tractor','longest wait first','Glasshouse','Village Fields','grows crates of vegetables or sunflowers'])assert.ok(site.includes(part),part);
  assert.match(site,/At the Windmill, 2 grain meal and 2 cabbage make 3 natural fertilizer in 30 min\. A helping hand at the Animal paddock gives some too\./);
  const young=wikiArticle('crops',{level:20}).html;assert.ok(!young.includes('In the village, the Village Fields'),'World II stays out below level 100 in the game');
  const helpers=wikiArticle('helpers').html;
@@ -179,11 +177,11 @@ test('the wiki: a Natural fertilizer section (make it, by hand, the tractor, the
 test('every new text is in the catalog and in all 14 other languages, without a middle dot or a leaked ${',()=>{
  const all=catalog();
  const texts=Object.entries(all).filter(([,file])=>['public/fertilizer-tip.js'].includes(file)).map(([t])=>t);
- assert.deepEqual(texts.sort(),Object.values(FERTILIZER_TIP_TEXTS).sort());
+ assert.deepEqual(texts,[FERTILIZER_TIP_TEXT]);
  // The toasts too: a translated toast keeps its middle dots (no undot), so these are whole words.
  const toasts=['The tractor fertilized 1 field with 1 fertilizer for {0} coins! +{1} XP.','The tractor fertilized {0} fields with {1} fertilizer for {2} coins! +{3} XP.'];
  texts.push(...toasts);
- const mine=['Fertilize','35% off the time left on growing crops, once each','No growing crops without fertilizer','{0} fields · Uses {1} natural fertilizer','1 field · Uses 1 natural fertilizer','{0} of {1} fields · Uses your {2} natural fertilizer, longest waits first','No growing crops need fertilizer.','Or let the tractor do it: its Fertilize job does every growing field at once.',...texts];
+ const mine=['Fertilize','35% off the time left on growing crops, once each','No growing crops without fertilizer','{0} fields · Uses {1} natural fertilizer','1 field · Uses 1 natural fertilizer','{0} of {1} fields · Uses your {2} natural fertilizer, longest waits first','No growing crops need fertilizer.',...texts];
  for(const t of mine)assert.ok(all[t],t);
  for(const t of texts)assert.doesNotMatch(t,/·/);
  for(const {code} of LANGUAGES.filter(l=>l.code!=='en')){

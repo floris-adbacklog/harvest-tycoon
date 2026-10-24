@@ -167,8 +167,8 @@ test('the building window, the seed shop and the Buildings list: their fold-outs
  assert.doesNotMatch(ui,/^ *\$\('(?:crop-catalog|building-catalog|building-content)'\)\.innerHTML=/m,'no list is written past keepFolds');
  assert.deepEqual([...ui.matchAll(/foldLocked\([^\n]*?,'([a-z]+-locked)'\)/g)].map(m=>m[1]),['seeds-locked','buildings-locked','places-locked','recipes-locked'],'every locked fold has its key');assert.equal([...ui.matchAll(/foldLocked\(/g)].length,4);
  assert.match(progression,/export function foldLocked\(container,selector,isLocked,title,fold=''\)\{/);assert.match(progression,/details\.className='future-unlocks';if\(fold\)details\.dataset\.fold=fold;/);
- // The Factory's groups keep their own open set (kept while the game runs), the fertilizer picker its own open state and scroll.
- assert.match(ui,/data-factory-group="\$\{source\}" \$\{openFactoryGroups\.has\(source\)\?'open':''\}>/);assert.match(ui,/\$\('fertilizer-field-picker'\)\.open=!!pickerOpen;/);
+ // The Factory's groups keep their own open set (kept while the game runs). (The Windmill's fertilizer picker is gone, 24 Oct 2026.)
+ assert.match(ui,/data-factory-group="\$\{source\}" \$\{openFactoryGroups\.has\(source\)\?'open':''\}>/);
 });
 
 test('keep-folds.js is preloaded with the other modules',()=>{
