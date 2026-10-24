@@ -40,7 +40,7 @@ import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
-import { LAYOUT_YARDS } from './farm-map.js';
+import { LAYOUT_YARDS, LAYOUT_GRID } from './farm-map.js';
 import { createLayoutEditor } from './layout-edit.js';
 import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
@@ -1047,7 +1047,7 @@ function createPlots(){
 // The farm is built as it stands by default (decorate, the scenery: untouched), then every yard and field that was moved goes to its
 // spot: a yard's pieces (userData.yard, from the zone they were made in) move together, with their tap boxes, pins, pens and animals.
 // Loose scenery under something that moved is hidden (a tuft or a flower one by one).
-const yardShift=new Map();let layoutKey='{}';
+const yardShift=new Map(),yardTurn=new Map();let layoutKey='{}';
 const fieldHome=i=>[-2.15+(i%4)*3.15,.25+Math.floor(i/4)*3.2];
 const fieldSpot=i=>state.layout?.at?.[`field:${i}`]??fieldHome(i);
 // A yard's pieces that move: the ones on the farm itself (or in a top group: the scenery's, the polish's dirt yards), not a piece inside
@@ -1065,7 +1065,17 @@ function shiftYard(id,dx,dz){
  herd?.shift?.(o=>o.userData.yard===id,dx,dz);
  const [sx,sz]=yardShift.get(id)??[0,0];yardShift.set(id,[sx+dx,sz+dz]);
 }
-function placeYard(id,[x,z]){const [cx,cz]=yardSpot(id);shiftYard(id,x-cx,z-cz);}
+// A quarter turn (24 Oct 2026, the owner: "Rotate building maybe?"): the yard turns round its anchor, every piece, pin and animal with it.
+const UP=new THREE.Vector3(0,1,0),QUARTER=-Math.PI/2;
+function turnYard(id,quarters){
+ quarters=((quarters%4)+4)%4;if(!quarters)return;
+ const [px,pz]=yardSpot(id),angle=quarters*QUARTER,c=Math.cos(angle),sn=Math.sin(angle),at=(x,z)=>[px+(x-px)*c+(z-pz)*sn,pz-(x-px)*sn+(z-pz)*c];
+ for(const o of yardRoots(id)){[o.position.x,o.position.z]=at(o.position.x,o.position.z);o.rotateOnWorldAxis(UP,angle);o.updateMatrixWorld(true);}
+ for(const views of [buildingViews,utilityViews,farmLife?.views])for(const v of views?.values?.()??[])if(v.object?.userData.yard===id){[v.x,v.z]=at(v.x,v.z);v.outline?.update();}
+ herd?.turn?.(o=>o.userData.yard===id,[px,pz],angle);
+ yardTurn.set(id,((yardTurn.get(id)??0)+quarters)%4);
+}
+function placeYard(id,[x,z,turn=0]){turnYard(id,turn-(yardTurn.get(id)??0));const [cx,cz]=yardSpot(id);shiftYard(id,x-cx,z-cz);}
 function placeField(i,[x,z]){
  const v=plots[i];if(!v)return;const dx=x-v.x,dz=z-v.z;if(!dx&&!dz)return;
  v.x=x;v.z=z;for(const o of [v.soil,v.hit,v.ring,v.cropGroup]){o.position.x+=dx;o.position.z+=dz;o.updateMatrixWorld(true);}
@@ -1113,7 +1123,7 @@ function layoutPick(event){
 }
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 function layoutGround(event){aimAt(event);const at=raycaster.ray.intersectPlane(groundPlane,new THREE.Vector3());return at?[at.x,at.z]:null;}
-const layoutSpot=id=>{const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return yardSpot(id);};
+const layoutSpot=id=>{const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return [...yardSpot(id),yardTurn.get(id)??0];};
 function layoutPreview(id,at){const field=/^field:(\d+)$/.exec(id);if(field)placeField(Number(field[1]),at);else placeYard(id,at);hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;}
 // The held thing's box follows it from where it was picked up; everything else is measured once, when something is picked up.
 function layoutFootprint(id){
@@ -1125,15 +1135,23 @@ function layoutFootprint(id){
  return b&&[b[0]+dx,b[1]+dx,b[2]+dz,b[3]+dz];
 }
 function layoutMark(box,ok){
- if(!layoutMarker){layoutMarker=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({transparent:true,opacity:.42,depthWrite:false}));layoutMarker.rotation.x=-Math.PI/2;layoutMarker.renderOrder=3;scene.add(layoutMarker);}
+ if(!layoutMarker){layoutMarker=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({transparent:true,opacity:.34,depthWrite:false,depthTest:false}));layoutMarker.rotation.x=-Math.PI/2;layoutMarker.renderOrder=10;scene.add(layoutMarker);}
  layoutMarker.visible=Boolean(box);if(!box)return;
  layoutMarker.scale.set(box[1]-box[0],box[3]-box[2],1);layoutMarker.position.set((box[0]+box[1])/2,.06,(box[2]+box[3])/2);
  layoutMarker.material.color.setHex(ok?0x58b865:0xe0624c);
 }
+// Rotate: a quarter turn that keeps the yard's middle where it was (snapped to the grid), so it turns in place.
+function layoutRotate(id,[x,z,turn=0]){
+ const mid=b=>[(b[0]+b[1])/2,(b[2]+b[3])/2],[x0,z0]=mid(footprint(id));
+ const next=(turn+1)%4;placeYard(id,[x,z,next]);
+ const [x1,z1]=mid(footprint(id)),at=[Math.round((x+x0-x1)/LAYOUT_GRID)*LAYOUT_GRID,Math.round((z+z0-z1)/LAYOUT_GRID)*LAYOUT_GRID,next];
+ placeYard(id,at);layoutBase=null;hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;
+ return at;
+}
 function createLayoutTools(){
  layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
   footprint:layoutFootprint,others:id=>{layoutFootprint(id);return layoutBase.others;},roads:()=>roadRects().map(r=>[r.minX,r.maxX,r.minZ,r.maxZ]),mark:layoutMark,
-  save:(id,[x,z])=>runAction({type:'layout_move',id,x,z}).finally(()=>{layoutBase=null;}),notify:toast,
+  rotate:layoutRotate,save:(id,[x,z,turn])=>runAction({type:'layout_move',id,x,z,...(turn?{turn}:{})}).finally(()=>{layoutBase=null;}),notify:toast,
   onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;if(!on){shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
  $('layout-button').addEventListener('click',()=>layoutEditor.active()?layoutEditor.stop():layoutEditor.start());
 }

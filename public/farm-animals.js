@@ -243,5 +243,16 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
    if(a.pen)a.pen={box:[a.pen.box[0]+dx,a.pen.box[1]+dx,a.pen.box[2]+dz,a.pen.box[3]+dz],keepOut:a.pen.keepOut.map(([x0,x1,z0,z1])=>[x0+dx,x1+dx,z0+dz,z1+dz])};
   }
  }
- const result={herd,animate,ready,where,shift,camera:()=>seenBy,stop:()=>{stopped=true;}};ANIMAL_HERDS.add(result);return result;
+ // A yard turned a quarter (or more) round its anchor [px, pz] (angle about the up axis, as three.js turns): the same for its animals,
+ // their walking line included.
+ function turn(match,[px,pz],angle){
+  const c=Math.cos(angle),sn=Math.sin(angle),at=([x,z])=>[px+(x-px)*c+(z-pz)*sn,pz-(x-px)*sn+(z-pz)*c];
+  const box=([x0,x1,z0,z1])=>{const pts=[[x0,z0],[x1,z0],[x0,z1],[x1,z1]].map(at),xs=pts.map(p=>p[0]),zs=pts.map(p=>p[1]);return [Math.min(...xs),Math.max(...xs),Math.min(...zs),Math.max(...zs)];};
+  for(const a of herd){
+   if(!match(a.obj))continue;
+   a.home=at(a.home);if(Array.isArray(a.target))a.target=at(a.target);a.axes=a.axes.map(t=>t+angle);a.yaw+=angle;
+   if(a.pen)a.pen={box:box(a.pen.box),keepOut:a.pen.keepOut.map(box)};
+  }
+ }
+ const result={herd,animate,ready,where,shift,turn,camera:()=>seenBy,stop:()=>{stopped=true;}};ANIMAL_HERDS.add(result);return result;
 }

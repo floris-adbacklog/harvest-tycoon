@@ -208,5 +208,8 @@ html.farm-editing :is(.activity-label,.pond-label,.utility-label,.building-label
 .layout-actions{display:flex;flex:none;gap:8px}
 .layout-actions button{min-height:44px;padding:0 16px;font-size:15px}
 .layout-actions button[hidden]{display:none}
+.layout-actions .layout-rotate{display:inline-flex;align-items:center;gap:6px}.layout-actions .layout-rotate svg{width:18px;height:18px}
+/* A phone: the hint on its own line above the buttons. */
+@media(max-width:560px){.layout-bar{flex-wrap:wrap;padding:10px 12px}.layout-hint{flex-basis:100%}.layout-actions{width:100%}.layout-actions button{flex:1;padding:0 10px}}
 #layout-button[aria-pressed="true"]{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text)}
 

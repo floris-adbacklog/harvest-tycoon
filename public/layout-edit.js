@@ -2,7 +2,8 @@
 // camera buttons, and in More from the start) turns the farm into a board:
 //  1. Tap a building's yard or a field: it is picked up and its spot shows on the ground, green where it fits and red where it does not.
 //  2. Drag it (it moves in half steps). Dragging the grass still moves the camera.
-//  3. Place here saves it (the farm action layout_move); Cancel puts it back. Done ends it.
+//  3. Rotate turns a building a quarter (24 Oct 2026, the owner: "Rotate building maybe?"); a field is square and does not turn.
+//  4. Place here saves it (the farm action layout_move); Cancel puts it back. Done ends it.
 // What it may not stand on: unopened land, the pond, a road, or anything else on the farm. The farmhouse and the pond stay where they are.
 import {landAt,landOpen,WATER,LAYOUT_GRID,FIXED_YARDS} from './farm-map.js';
 
@@ -30,8 +31,9 @@ const HINT={
 // pick(event): the id of what is under the pointer (a yard's name or field:N) or null. groundAt(event): [x, z] on the ground.
 // spotOf(id) and preview(id, [x, z]): where it stands and moving it on the screen. footprint(id): its box where it stands now.
 // others(id): the boxes of everything else. roads(): the road boxes. mark(box, ok): the spot on the ground (null clears it).
-// save(id, [x, z]): the farm action. level(): the farm's level.
-export function createLayoutEditor({doc=document,root=doc.documentElement,bar,level,pick,groundAt,spotOf,preview,footprint,others,roads,mark,save,notify=()=>{},onToggle=()=>{}}){
+// rotate(id, at): turns it a quarter in place and gives its new spot [x, z, turn]. save(id, [x, z, turn]): the farm action.
+// level(): the farm's level.
+export function createLayoutEditor({doc=document,root=doc.documentElement,bar,level,pick,groundAt,spotOf,preview,footprint,others,roads,mark,rotate,save,notify=()=>{},onToggle=()=>{}}){
  let on=false,held=null;
  const $=id=>bar.querySelector(`[data-layout="${id}"]`);
  function show(){
@@ -39,6 +41,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
   $('hint').textContent=!held?HINT.none:why==='land'?`This land opens at level ${landAt(...held.at)?.level??'?'}.`:why?HINT[why]:HINT.held;
   $('hint').classList.toggle('is-wrong',Boolean(why));
   $('cancel').hidden=!held;$('place').hidden=!held;$('place').disabled=Boolean(why);$('done').hidden=Boolean(held);
+  $('rotate').hidden=!held||held.id.startsWith('field:');
  }
  function check(){
   const box=footprint(held.id);
@@ -51,7 +54,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
  async function place(){
   if(!held||held.why)return;
   const {id,at,from}=held;held=null;mark(null);show();
-  if(at[0]===from[0]&&at[1]===from[1])return;
+  if(at.every((v,i)=>v===from[i]))return;
   try{await save(id,at);}catch(error){preview(id,from);notify(error.message);}
  }
  // A press: on something that moves it is picked up (or taken again) and the drag moves it; anywhere else the camera moves.
@@ -68,11 +71,12 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
  function drag(event){
   if(!held?.start)return;
   const ground=groundAt(event);if(!ground)return;
-  const at=[snap(held.base[0]+ground[0]-held.start[0]),snap(held.base[1]+ground[1]-held.start[1])];
+  const at=[snap(held.base[0]+ground[0]-held.start[0]),snap(held.base[1]+ground[1]-held.start[1]),...held.at.slice(2)];
   if(at[0]===held.at[0]&&at[1]===held.at[1])return;
   preview(held.id,at);held.at=at;check();show();
  }
  function drop(){if(held)held.start=null;}
- $('done').addEventListener('click',stop);$('cancel').addEventListener('click',cancel);$('place').addEventListener('click',place);
- return {active:()=>on,held:()=>held?.id??null,start,stop,cancel,place,grab,drag,drop};
+ function turn(){if(!held||held.id.startsWith('field:'))return;held.at=rotate(held.id,held.at);held.base=held.at;check();show();}
+ $('done').addEventListener('click',stop);$('cancel').addEventListener('click',cancel);$('place').addEventListener('click',place);$('rotate').addEventListener('click',turn);
+ return {active:()=>on,held:()=>held?.id??null,start,stop,cancel,place,grab,drag,drop,turn};
 }

@@ -4651,7 +4651,7 @@ function dispatchFarmAction(state,action,now,random){
   // Your own farmer's clothes (21 Oct 2026): no feature gate, every farm has its farmer.
   case 'farmer_wear':return wearFarmer(state,action.farmer);
   // Your own farm layout (24 Oct 2026, game/farm-map.js): moving, clearing land, buying and storing trees and path tiles.
-  case 'layout_move':return moveThing(state,action.id,action.x,action.z,levelOf(state));
+  case 'layout_move':return moveThing(state,action.id,action.x,action.z,levelOf(state),action.turn);
   case 'layout_clear':return clearObstacle(state,action.id,levelOf(state));
   case 'layout_buy':return placeDecor(state,action.kind,action.x,action.z,levelOf(state));
   case 'layout_place':return placeDecor(state,action.kind,action.x,action.z,levelOf(state),{fromStore:true});

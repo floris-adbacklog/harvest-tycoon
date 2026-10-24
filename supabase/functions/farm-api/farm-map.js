@@ -57,7 +57,8 @@ export function normalizeLayout(state){
  const l=state.layout;if(l===undefined)return;
  if(!l||typeof l!=='object'||Array.isArray(l)){delete state.layout;return;}
  const at={};
- for(const [id,spot] of Object.entries(l.at&&typeof l.at==='object'?l.at:{}))if(movableId(state,id,l)&&Array.isArray(spot)&&spot.length===2&&spot.every(Number.isFinite))at[id]=[spot[0],spot[1]];
+ // A yard's spot can carry its quarter turns (0-3, rotated a quarter at a time round its own anchor; 24 Oct 2026, the owner: "Rotate building maybe?").
+ for(const [id,spot] of Object.entries(l.at&&typeof l.at==='object'?l.at:{}))if(movableId(state,id,l)&&Array.isArray(spot)&&(spot.length===2||spot.length===3)&&spot.slice(0,2).every(Number.isFinite))at[id]=validTurn(spot[2])&&spot[2]?[spot[0],spot[1],spot[2]]:[spot[0],spot[1]];
  const cleared=[...new Set((Array.isArray(l.cleared)?l.cleared:[]).filter(obstacleId))].slice(-MAX_CLEARED);
  const added=(Array.isArray(l.added)?l.added:[]).filter(d=>d&&typeof d.id==='string'&&/^d\d+$/.test(d.id)&&Object.hasOwn(DECOR,d.kind)&&Number.isFinite(d.x)&&Number.isFinite(d.z)).map(d=>({id:d.id,kind:d.kind,x:d.x,z:d.z})).slice(0,MAX_ADDED);
  const stored=Object.fromEntries(Object.keys(DECOR).filter(k=>Number.isSafeInteger(l.stored?.[k])&&l.stored[k]>0).map(k=>[k,l.stored[k]]));
@@ -65,6 +66,7 @@ export function normalizeLayout(state){
  state.layout={v:1,at,cleared,added,stored,n};
 }
 const emptyLayout=()=>({v:1,at:{},cleared:[],added:[],stored:{},n:0});
+const validTurn=turn=>Number.isInteger(turn)&&turn>=0&&turn<=3;
 function layoutOf(state){state.layout??=emptyLayout();return state.layout;}
 // A thing that can move: a yard, a field (by its id) or a tree or path tile you placed.
 function movableId(state,id,layout=state.layout){
@@ -95,15 +97,17 @@ function checkSpot(level,x,z){
  if(!landOpen(level,x,z))throw new Error(`This land opens at level ${landAt(x,z).level}.`);
  if(inWater(x,z))throw new Error('That is in the pond.');
 }
-// Moving a yard, a field or a placed tree or tile to a new spot on open land.
-export function moveThing(state,id,x,z,level){
+// Moving a yard, a field or a placed tree or tile to a new spot on open land; a yard also turned a quarter at a time (turn 0-3).
+export function moveThing(state,id,x,z,level,turn=0){
  if(FIXED_YARDS.includes(id))throw new Error('This stays where it is.');
  if(!movableId(state,id))throw new Error('Choose something to move.');
+ if(turn===undefined||turn===null)turn=0;
+ if(!validTurn(turn)||turn&&!LAYOUT_YARDS.includes(id))throw new Error('Choose how it stands.');
  checkSpot(level,x,z);
  const layout=layoutOf(state);
  const added=layout.added.find(d=>d.id===id);
- if(added){added.x=x;added.z=z;}else layout.at[id]=[x,z];
- return {moved:id,x,z};
+ if(added){added.x=x;added.z=z;}else layout.at[id]=turn?[x,z,turn]:[x,z];
+ return {moved:id,x,z,turn};
 }
 // Clearing a tree, bush or rock on open land: gone for good.
 export function clearObstacle(state,id,level){
