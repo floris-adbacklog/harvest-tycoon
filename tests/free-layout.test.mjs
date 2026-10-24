@@ -158,3 +158,11 @@ test('buying puts it in your store (Your things); you place it from there',()=>{
  const poor=farmAt(5);poor.coins=10;assert.throws(()=>act(poor,{type:'layout_purchase',kind:'bench'},now),/You need 120 coins/);
 });
 
+test('a tree or a thing you place turns a quarter at a time, when you place it and when you move it ("Waarom kan je bomen niet rotaten bij plaatsen")',()=>{
+ const s=farmAt(5);act(s,{type:'layout_purchase',kind:'bench'},now);
+ act(s,{type:'layout_place',kind:'bench',x:4,z:-30,turn:3},now);assert.deepEqual(s.layout.added,[{id:'d0',kind:'bench',x:4,z:-30,turn:3}]);
+ act(s,{type:'layout_move',id:'d0',x:5,z:-30,turn:1},now);assert.deepEqual(s.layout.added[0],{id:'d0',kind:'bench',x:5,z:-30,turn:1});
+ act(s,{type:'layout_move',id:'d0',x:5,z:-30},now);assert.equal(s.layout.added[0].turn,undefined,'no turn, none kept');
+ assert.throws(()=>act(s,{type:'layout_buy',kind:'oak',x:6,z:-30,turn:5},now),/how it stands/);
+});
+

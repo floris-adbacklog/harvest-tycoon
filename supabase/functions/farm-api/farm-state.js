@@ -4669,8 +4669,8 @@ function dispatchFarmAction(state,action,now,random){
   // Your own farm layout (24 Oct 2026, game/farm-map.js): moving, clearing land, buying and storing trees and path tiles.
   case 'layout_move':return moveThing(state,action.id,action.x,action.z,levelOf(state),action.turn);
   case 'layout_clear':return clearObstacle(state,action.id,levelOf(state));
-  case 'layout_buy':return placeDecor(state,action.kind,action.x,action.z,levelOf(state));
-  case 'layout_place':return placeDecor(state,action.kind,action.x,action.z,levelOf(state),{fromStore:true});
+  case 'layout_buy':return placeDecor(state,action.kind,action.x,action.z,levelOf(state),{turn:action.turn??0});
+  case 'layout_place':return placeDecor(state,action.kind,action.x,action.z,levelOf(state),{fromStore:true,turn:action.turn??0});
   case 'layout_store':return storeDecor(state,action.id);
   case 'layout_purchase':return purchaseDecor(state,action.kind,action.count??1);
   case 'layout_draw':return editDrawn(state,{kind:action.kind,add:action.add,remove:action.remove},levelOf(state));

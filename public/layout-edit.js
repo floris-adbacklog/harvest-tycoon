@@ -83,7 +83,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
    hint=why==='land'?`This land opens at level ${landAt(...held.at)?.level??'?'}.`:why?HINT[why]:short?`You need ${cost} coins.`:HINT.held;
    wrong=Boolean(why)||short;
    visible.add('cancel');visible.add('place');
-   if(!held.fresh&&!decorId(held.id)&&!held.id.startsWith('field:'))visible.add('rotate');
+   if(!held.id.startsWith('field:'))visible.add('rotate');
    if(decorId(held.id))visible.add('store');
    $('place').disabled=wrong;
    $('place').textContent=!held.fresh?'Place here':cost?`Buy for ${cost}`:'Place';
@@ -195,7 +195,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
  }
  function startBrush(kind='path'){cancel();offer=null;shop=false;brush={kind,mode:'draw',add:new Map(),remove:new Set(),last:null,lastCell:null};brushKinds.clear();brushRules();show();}
  function endBrush(){if(!brush)return;brush=null;showBrush({add:[],remove:[]});}
- function turn(){if(!held||held.fresh||decorId(held.id)||held.id.startsWith('field:'))return;held.at=rotate(held.id,held.at);held.base=held.at;check();show();}
+ function turn(){if(!held||held.id.startsWith('field:'))return;held.at=rotate(held.id,held.at);held.base=held.at;check();show();}
  // Build: a new tree or tile appears in the middle of the view, picked up, to drag where you want it.
  function choose(kind){
   if(!Object.hasOwn(DECOR,kind))return;
@@ -235,7 +235,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
   const move=e=>{
    if(!moving){if(Math.hypot(e.clientX-from.x,e.clientY-from.y)<8)return;moving=true;inventoryDrag=true;choose(kind);}
    const ground=groundAt(e);if(!ground||!held?.fresh)return;
-   const at=[snap(ground[0]),snap(ground[1])];if(at[0]===held.at[0]&&at[1]===held.at[1])return;
+   const at=[snap(ground[0]),snap(ground[1]),...held.at.slice(2)];if(at[0]===held.at[0]&&at[1]===held.at[1])return;
    preview(held.id,at);held.at=at;check();show();
   };
   const up=()=>{b.removeEventListener('pointermove',move);b.removeEventListener('pointerup',up);b.removeEventListener('pointercancel',up);if(moving){dragged=true;inventoryDrag=false;show();}};

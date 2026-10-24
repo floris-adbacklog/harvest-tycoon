@@ -71,7 +71,7 @@ export function normalizeLayout(state){
  // A yard's spot can carry its quarter turns (0-3, rotated a quarter at a time round its own anchor; 24 Oct 2026, the owner: "Rotate building maybe?").
  for(const [id,spot] of Object.entries(l.at&&typeof l.at==='object'?l.at:{}))if(movableId(state,id,l)&&Array.isArray(spot)&&(spot.length===2||spot.length===3)&&spot.slice(0,2).every(Number.isFinite))at[id]=validTurn(spot[2])&&spot[2]?[spot[0],spot[1],spot[2]]:[spot[0],spot[1]];
  const cleared=[...new Set((Array.isArray(l.cleared)?l.cleared:[]).filter(obstacleId))].slice(-MAX_CLEARED);
- const added=(Array.isArray(l.added)?l.added:[]).filter(d=>d&&typeof d.id==='string'&&/^d\d+$/.test(d.id)&&Object.hasOwn(DECOR,d.kind)&&Number.isFinite(d.x)&&Number.isFinite(d.z)).map(d=>({id:d.id,kind:d.kind,x:d.x,z:d.z,...(d.turn===1?{turn:1}:{})})).slice(0,MAX_ADDED);
+ const added=(Array.isArray(l.added)?l.added:[]).filter(d=>d&&typeof d.id==='string'&&/^d\d+$/.test(d.id)&&Object.hasOwn(DECOR,d.kind)&&Number.isFinite(d.x)&&Number.isFinite(d.z)).map(d=>({id:d.id,kind:d.kind,x:d.x,z:d.z,...(validTurn(d.turn)&&d.turn?{turn:d.turn}:{})})).slice(0,MAX_ADDED);
  const stored=Object.fromEntries(Object.keys(DECOR).filter(k=>Number.isSafeInteger(l.stored?.[k])&&l.stored[k]>0).map(k=>[k,l.stored[k]]));
  const n=Number.isSafeInteger(l.n)&&l.n>=0?l.n:added.reduce((m,d)=>Math.max(m,Number(d.id.slice(1))+1),0);
  const roads=[...new Set((Array.isArray(l.roads)?l.roads:[]).filter(id=>typeof id==='string'&&/^r:\d:\d{1,3}$/.test(id)))];
@@ -114,11 +114,11 @@ export function moveThing(state,id,x,z,level,turn=0){
  if(FIXED_YARDS.includes(id))throw new Error('This stays where it is.');
  if(!movableId(state,id))throw new Error('Choose something to move.');
  if(turn===undefined||turn===null)turn=0;
- if(!validTurn(turn)||turn&&!LAYOUT_YARDS.includes(id))throw new Error('Choose how it stands.');
+ if(!validTurn(turn)||turn&&id.startsWith('field:'))throw new Error('Choose how it stands.');
  checkSpot(level,x,z);
  const layout=layoutOf(state);
  const added=layout.added.find(d=>d.id===id);
- if(added){added.x=x;added.z=z;}else layout.at[id]=turn?[x,z,turn]:[x,z];
+ if(added){added.x=x;added.z=z;if(turn)added.turn=turn;else delete added.turn;}else layout.at[id]=turn?[x,z,turn]:[x,z];
  return {moved:id,x,z,turn};
 }
 // Clearing a tree, bush or rock on open land: gone for good.
@@ -134,14 +134,17 @@ export function clearObstacle(state,id,level){
  return {cleared:id,kind:cost.kind,coins:cost.coins};
 }
 // Buying a tree or a path tile and placing it, or placing one you stored.
-export function placeDecor(state,kind,x,z,level,{fromStore=false}={}){
+// A tree or a thing you place can be turned a quarter at a time (turn 0-3; 24 Oct 2026, the owner: "Waarom kan je bomen niet rotaten bij
+// plaatsen").
+export function placeDecor(state,kind,x,z,level,{fromStore=false,turn=0}={}){
  if(!Object.hasOwn(DECOR,kind))throw new Error('Choose a tree or a path tile.');
+ if(!validTurn(turn??0))throw new Error('Choose how it stands.');
  checkSpot(level,x,z);
  const layout=layoutOf(state);if(layout.added.length>=MAX_ADDED)throw new Error('Your farm is full of trees and paths.');
  let coins=0;
  if(fromStore){if(!(layout.stored[kind]>0))throw new Error('You have none stored.');layout.stored[kind]-=1;if(!layout.stored[kind])delete layout.stored[kind];}
  else{coins=DECOR[kind].coins;if(state.coins<coins)throw new Error(`You need ${coins} coins.`);state.coins-=coins;}
- const id=`d${layout.n}`;layout.n+=1;layout.added.push({id,kind,x,z});
+ const id=`d${layout.n}`;layout.n+=1;layout.added.push({id,kind,x,z,...(turn?{turn}:{})});
  return {placed:id,kind,x,z,coins};
 }
 // Buying (24 Oct 2026, the owner: "Bij kopen zet iets in je storage ipv direct plaatsen"): what you buy goes into your store (Your

@@ -1216,7 +1216,11 @@ function makeDecor(kind,x,z,id,turn=0){
   // A clump: a few small plants round the cell's middle, each its own size and turn (fixed by the spot, so it looks the same each visit).
   o=new THREE.Group();o.position.set(x,0,z);scene.add(o);
   for(let i=0;i<look.clump;i++){const a=i*2.4+x*.37+z*.21,r=.15+(i%4)*.22,p=cloneModel(look.model,0,0,{height:look.height*(.8+(i%3)*.15),rotation:a});scene.remove(p);p.position.set(Math.cos(a)*r,0,Math.sin(a)*r);o.add(p);}
- }else o=cloneModel(look.model,x,z,{width:look.width,depth:look.depth,height:look.height,y:look.y??0,rotation:kind==='fence'?(turn?Math.PI/2:0):(x*.7+z*.3)%6.28});
+ }else{
+  // Trees and bushes stand at a turn of their own (from the spot); what you turn (turn) adds quarter turns to it.
+  const base=['oak','pine','birch','shrub'].includes(kind)?(x*.7+z*.3)%6.28:0;
+  o=cloneModel(look.model,x,z,{width:look.width,depth:look.depth,height:look.height,y:look.y??0,rotation:kind==='fence'?(turn?Math.PI/2:0):base+turn*QUARTER});
+ }
  zone(before,{keep:true});o.userData.decor=id;o.userData.decorKind=kind;return o;
 }
 const decorBox=(kind,x,z)=>{const r=DECOR_LOOK[kind].half;return [x-r,x+r,z-r,z+r];};
@@ -1305,8 +1309,8 @@ function layoutPick(event){
 }
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 function layoutGround(event){aimAt(event);const at=raycaster.ray.intersectPlane(groundPlane,new THREE.Vector3());return at?[at.x,at.z]:null;}
-const layoutSpot=id=>{const placed=decorViews.get(id)??layoutGhosts.get(id);if(placed)return [placed.obj.position.x,placed.obj.position.z];const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return [...yardSpot(id),yardTurn.get(id)??0];};
-function layoutPreview(id,at){const placed=decorViews.get(id)??layoutGhosts.get(id),field=/^field:(\d+)$/.exec(id);if(placed){placed.obj.position.x=at[0];placed.obj.position.z=at[1];placed.obj.updateMatrixWorld(true);}else if(field)placeField(Number(field[1]),at);else placeYard(id,at);hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;}
+const layoutSpot=id=>{const placed=decorViews.get(id)??layoutGhosts.get(id);if(placed)return [placed.obj.position.x,placed.obj.position.z,placed.turn??0];const field=/^field:(\d+)$/.exec(id);if(field){const v=plots[Number(field[1])];return [v.x,v.z];}return [...yardSpot(id),yardTurn.get(id)??0];};
+function layoutPreview(id,at){const placed=decorViews.get(id)??layoutGhosts.get(id),field=/^field:(\d+)$/.exec(id);if(placed){placed.obj.position.x=at[0];placed.obj.position.z=at[1];const turn=at[2]??0,was=placed.turn??0;if(turn!==was&&placed.kind!=='fence'){placed.obj.rotation.y+=(turn-was)*QUARTER;}placed.turn=turn;placed.obj.updateMatrixWorld(true);}else if(field)placeField(Number(field[1]),at);else placeYard(id,at);hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;}
 // The held thing's box follows it from where it was picked up; everything else is measured once, when something is picked up.
 function layoutFootprint(id){
  if(layoutBase?.id!==id){
@@ -1324,6 +1328,8 @@ function layoutMark(box,ok){
 }
 // Rotate: a quarter turn that keeps the yard's middle where it was (snapped to the grid), so it turns in place.
 function layoutRotate(id,[x,z,turn=0]){
+ const placed=decorViews.get(id)??layoutGhosts.get(id);
+ if(placed){const next=(turn+1)%4;placed.obj.rotation.y+=QUARTER;placed.turn=next;placed.obj.updateMatrixWorld(true);renderer.shadowMap.needsUpdate=true;return [x,z,next];}
  const mid=b=>[(b[0]+b[1])/2,(b[2]+b[3])/2],[x0,z0]=mid(footprint(id));
  const next=(turn+1)%4;placeYard(id,[x,z,next]);
  const [x1,z1]=mid(footprint(id)),at=[Math.round((x+x0-x1)/LAYOUT_GRID)*LAYOUT_GRID,Math.round((z+z0-z1)/LAYOUT_GRID)*LAYOUT_GRID,next];
@@ -1356,7 +1362,7 @@ function layoutSpawn(kind){
 }
 function layoutDiscard(id){const ghost=layoutGhosts.get(id);if(!ghost)return;scene.remove(ghost.obj);layoutGhosts.delete(id);hideUnderLayout();}
 function layoutSave(id,[x,z,turn],{fresh,kind}={}){
- const action=fresh?{type:(state.layout?.stored?.[kind]??0)>0?'layout_place':'layout_buy',kind,x,z}:{type:'layout_move',id,x,z,...(turn?{turn}:{})};
+ const action=fresh?{type:(state.layout?.stored?.[kind]??0)>0?'layout_place':'layout_buy',kind,x,z,...(turn?{turn}:{})}:{type:'layout_move',id,x,z,...(turn?{turn}:{})};
  return runAction(action).finally(()=>{layoutBase=null;});
 }
 // ---- Visiting a farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"). Visit farm on a farmer's profile
