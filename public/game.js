@@ -1402,7 +1402,7 @@ function createLayoutTools(){
   footprint:layoutFootprint,others:(id,skip)=>{if(skip)return pathOthers(skip);layoutFootprint(id);return layoutBase.others;},roads:roadBoxes,
   pathAt:layoutPathAt,brush:layoutBrush,savePaths:edit=>runAction({type:'layout_draw',...edit}).finally(()=>{layoutBase=null;}),
   blockers:standingObstacles,mark:layoutMark,rotate:layoutRotate,spawn:layoutSpawn,discard:layoutDiscard,save:layoutSave,
-  store:id=>runAction({type:'layout_store',id}).finally(()=>{layoutBase=null;}),clear:id=>runAction({type:'layout_clear',id}).finally(()=>{layoutBase=null;}),
+  store:id=>runAction({type:'layout_store',id}).finally(()=>{layoutBase=null;}),buy:kind=>runAction({type:'layout_purchase',kind}),clear:id=>runAction({type:'layout_clear',id}).finally(()=>{layoutBase=null;}),
   notify:toast,refresh:icons,
   onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;showLand(on);if(on){obstacles();for(const kind of Object.keys(DECOR_LOOK))decorReady(kind);}else{shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
  $('layout-button').addEventListener('click',()=>layoutEditor.active()?layoutEditor.stop():layoutEditor.start());

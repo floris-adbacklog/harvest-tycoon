@@ -7,7 +7,8 @@
 //  4. Place here saves it (the farm action layout_move); Cancel puts it back. Store puts a tree or tile you placed away. Done (or Esc)
 //     ends it.
 // A tree, bush or rock on the land is in the way: tap it and Clear it for coins (layout_clear, milestone 2). Build (milestone 3) buys a
-// tree or a path tile, or places one you stored, where you drag it.
+// tree or a path tile into your store (Your things, top right; 24 Oct 2026, the owner: "Bij kopen zet iets in je storage ipv direct
+// plaatsen"), and a tap there places one where you drag it.
 // A path is drawn (24 Oct 2026, the owner: "kan je draggen om een road te tekenen", then "1+2"): Path tile in Build turns a drag into
 // path tiles on a 2-step grid, and Erase turns a drag into taking tiles and the old roads' pieces away (into your store). Save keeps the
 // whole drag at once (layout_paths): tiles from your store first, then for coins.
@@ -31,7 +32,7 @@ export function misfit(box,{level,others=[],roads=[],blockers=[],slack=LAYOUT_SL
 }
 const HINT={
  none:'Tap something to move it, or a tree to clear it.',
- shop:'Choose a tree or a path tile to place.',
+ shop:'Tap to buy. What you buy goes to Your things, top right.',
  held:'Drag it where you want it, then tap Place here.',
  water:'Not in the pond.',
  road:'Not on a road.',
@@ -55,10 +56,10 @@ const decorId=id=>/^d\d+$/.test(id);
 // and moving it on the screen. footprint(id): its box where it stands now. others(id): the boxes of everything else. roads(): the
 // road boxes. blockers(): the obstacles still standing. mark(box, ok): the spot on the ground (null clears it).
 // rotate(id, at): turns it a quarter in place and gives its new spot [x, z, turn]. spawn(kind): a new tree or tile in view, {id, at};
-// discard(id) takes it away again. save(id, at, {fresh, kind}), store(id), clear(id): the farm actions. level(), coins(), stored():
+// discard(id) takes it away again. save(id, at, {fresh, kind}), store(id), clear(id), buy(kind): the farm actions. level(), coins(), stored():
 // the farm's level, coins and stored trees and tiles. refresh(): draws new icons. pathAt([x, z]): the path tile or old road piece there.
 // brush({add, remove}): shows a drag's new tiles and what it takes away. savePaths({add, remove}): the farm action layout_paths.
-export function createLayoutEditor({doc=document,root=doc.documentElement,bar,inventory=null,level,coins=()=>0,stored=()=>({}),pick,groundAt,spotOf,preview,footprint,others,roads,blockers=()=>[],mark,rotate,spawn,discard=()=>{},save,store,clear,pathAt=()=>null,brush:showBrush=()=>{},savePaths,notify=()=>{},onToggle=()=>{},refresh=()=>{}}){
+export function createLayoutEditor({doc=document,root=doc.documentElement,bar,inventory=null,level,coins=()=>0,stored=()=>({}),pick,groundAt,spotOf,preview,footprint,others,roads,blockers=()=>[],mark,rotate,spawn,discard=()=>{},save,store,clear,buy,pathAt=()=>null,brush:showBrush=()=>{},savePaths,notify=()=>{},onToggle=()=>{},refresh=()=>{}}){
  let on=false,held=null,offer=null,shop=false,priced=null,brush=null;const brushKinds=new Map();
  const $=id=>bar.querySelector(`[data-layout="${id}"]`);
  const shopRow=$('shop');
@@ -92,8 +93,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
   $('build').setAttribute('aria-pressed',String(shop));shopRow.hidden=!(shop&&!held&&!offer&&!brush);
   showInventory();
   // The prices (or how many you stored) are drawn again only when they change: a drag shows the bar many times a second.
-  const key=JSON.stringify(stored());
-  if(key!==priced){priced=key;for(const kind of Object.keys(DECOR)){const n=stored()[kind]??0;shopRow.querySelector(`[data-price="${kind}"]`).innerHTML=n?`${n} stored`:`<i data-lucide="coins"></i>${DECOR[kind].coins}`;}refresh();}
+  if(!priced){priced=true;for(const kind of Object.keys(DECOR))shopRow.querySelector(`[data-price="${kind}"]`).innerHTML=`<i data-lucide="coins"></i>${DECOR[kind].coins}`;refresh();}
  }
  // Your things (24 Oct 2026, the owner: "Doe ook een inventory in het build scherm rechtsboven met al je spullen"): what you stored,
  // top right while Build is open; a tap places one (for free).
@@ -124,7 +124,8 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
   held=null;mark(null);show();
   if(!fresh&&at.every((v,i)=>v===from[i]))return;
   try{await save(id,at,{fresh,kind});}catch(error){if(!fresh)preview(id,from);notify(error.message);}
-  finally{if(fresh)discard(id);if(on)show();}
+  // Back in Build after placing one from Your things, for the next.
+  finally{if(fresh){discard(id);shop=true;stocked=null;}if(on)show();}
  }
  async function putAway(){
   if(!held||!decorId(held.id))return;
@@ -216,7 +217,13 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
  $('store').addEventListener('click',putAway);$('clear').addEventListener('click',clearIt);$('keep').addEventListener('click',()=>{offer=null;show();});
  $('build').addEventListener('click',()=>{shop=!shop;show();});
  $('erase').addEventListener('click',()=>{if(!brush)return;brush.mode=brush.mode==='erase'?'draw':'erase';brushRules();show();});
- shopRow.addEventListener('click',event=>{const b=event.target.closest?.('[data-kind]');if(b)choose(b.dataset.kind);});
+ // A tap in Build buys one into your store; Your things places it.
+ shopRow.addEventListener('click',async event=>{
+  const b=event.target.closest?.('[data-kind]');if(!b)return;const kind=b.dataset.kind,price=DECOR[kind].coins;
+  if(coins()<price){notify(`You need ${price} coins.`);return;}
+  try{await buy(kind);notify(`${DECOR[kind].name}: in Your things.`);}catch(error){notify(error.message);}
+  stocked=null;show();
+ });
  inventory?.addEventListener('click',event=>{const b=event.target.closest?.('[data-kind]');if(b)choose(b.dataset.kind);});
  // On a keyboard R turns what you hold, as the Rotate button does (24 Oct 2026, the owner: "Doe ook R rotate met toetsenbord"), and Esc
  // ends moving (the owner: "Esc moet ook move sluiten"); what you held goes back. Not while typing, and not with Ctrl, Cmd or Alt.

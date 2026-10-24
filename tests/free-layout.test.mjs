@@ -149,3 +149,12 @@ test('drawing (24 Oct 2026, "1+2", then "Doe 1,2,3"): paths, fences, flowers and
  act(s,{type:'layout_draw',kind:'flowers',add:[[6,24]],remove:['d0']},now);assert.deepEqual(s.layout.stored,{fence:1});
 });
 
+test('buying puts it in your store (Your things); you place it from there',()=>{
+ const s=farmAt(5),coins=s.coins;
+ assert.deepEqual(act(s,{type:'layout_purchase',kind:'oak'},now),{bought:'oak',count:1,coins:DECOR.oak.coins});
+ assert.equal(s.coins,coins-DECOR.oak.coins);assert.deepEqual(s.layout.stored,{oak:1});assert.deepEqual(s.layout.added,[]);
+ act(s,{type:'layout_place',kind:'oak',x:4,z:-30},now);assert.equal(s.coins,coins-DECOR.oak.coins,'placing is free');assert.deepEqual(s.layout.stored,{});
+ assert.throws(()=>act(s,{type:'layout_purchase',kind:'oak',count:0},now),/how many/);
+ const poor=farmAt(5);poor.coins=10;assert.throws(()=>act(poor,{type:'layout_purchase',kind:'bench'},now),/You need 120 coins/);
+});
+

@@ -1,7 +1,7 @@
 // Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
 // copied beside each farm-state.js by scripts/sync-game.mjs).
 import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS,farmerPassParts} from './farmer-parts.js';
-import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn} from './farm-map.js';
+import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor} from './farm-map.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -4672,6 +4672,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'layout_buy':return placeDecor(state,action.kind,action.x,action.z,levelOf(state));
   case 'layout_place':return placeDecor(state,action.kind,action.x,action.z,levelOf(state),{fromStore:true});
   case 'layout_store':return storeDecor(state,action.id);
+  case 'layout_purchase':return purchaseDecor(state,action.kind,action.count??1);
   case 'layout_draw':return editDrawn(state,{kind:action.kind,add:action.add,remove:action.remove},levelOf(state));
   default:throw new Error('Unknown farm action.');
  }

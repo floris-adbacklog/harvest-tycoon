@@ -144,6 +144,16 @@ export function placeDecor(state,kind,x,z,level,{fromStore=false}={}){
  const id=`d${layout.n}`;layout.n+=1;layout.added.push({id,kind,x,z});
  return {placed:id,kind,x,z,coins};
 }
+// Buying (24 Oct 2026, the owner: "Bij kopen zet iets in je storage ipv direct plaatsen"): what you buy goes into your store (Your
+// things), and you place it from there.
+export function purchaseDecor(state,kind,count=1){
+ if(!Object.hasOwn(DECOR,kind))throw new Error('Choose a tree or a path tile.');
+ if(!Number.isSafeInteger(count)||count<1||count>50)throw new Error('Choose how many.');
+ const layout=layoutOf(state),coins=DECOR[kind].coins*count;
+ if(state.coins<coins)throw new Error(`You need ${coins} coins.`);
+ state.coins-=coins;layout.stored={...layout.stored,[kind]:(layout.stored[kind]??0)+count};
+ return {bought:kind,count,coins};
+}
 // Storing a tree or a path tile you placed: it waits to be placed again.
 export function storeDecor(state,id){
  const layout=layoutOf(state),i=layout.added.findIndex(d=>d.id===id);if(i<0)throw new Error('Choose a tree or a path tile you placed.');
