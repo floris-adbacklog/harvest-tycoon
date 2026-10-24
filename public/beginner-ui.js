@@ -35,6 +35,24 @@ export function canPointNow(state,guideTarget,now){
  if(guideTarget==='eggs'){const coop=productionJobs(state.buildings?.coop);return (state.inventory?.eggs??0)>0||!coop.length||coop.some(j=>j.readyAt<=now);}
  return true;
 }
+// A calm start (24 Oct 2026, the owner, after players said a new farm overwhelmed them: "Doe alle 4"). Until the guide is done (or
+// level CALM_UNTIL_LEVEL, on a farm that never finished it), <html> has .calm-start and data-guide-step (the steps done, 0 to 9), and
+// beginner.css shows only what the step needs: each button comes with the step that uses it (CALM_REVEALS: after how many steps), the
+// rest once the guide is done; what comes glows for a moment (.calm-new). onStep(step, before) tells the game (the camera, the spotlight).
+export const CALM_UNTIL_LEVEL=10;
+export const CALM_REVEALS=Object.freeze([[1,'#market-button'],[3,'.tool[data-tool="water"]'],[4,'#buildings-button'],[5,'#today-button'],[7,'.tool[data-tool="tend"]'],[10,'#tasks-button,#events-button,#estate-button']]);
+export const CALM_GLOW_MS=6000;
+// The steps done for a calm start, or null when the farm screen shows everything.
+export function calmStep(state,{village=false}={}){
+ const steps=beginnerProgress(state),done=steps.filter(q=>q.done).length;
+ return !village&&done<steps.length&&levelOf(state)<CALM_UNTIL_LEVEL?done:null;
+}
+// What comes on screen between two calm steps (null: the guide is done, everything is there).
+export function calmRevealed(before,step){
+ if(before===null||before===undefined||before===step)return [];
+ const upTo=step===null?Infinity:step;
+ return CALM_REVEALS.filter(([at])=>at>before&&at<=upTo).map(([,sel])=>sel);
+}
 // The next-goal card's place on this device (folded or open), like the guide card's; never needed, so a browser that keeps nothing simply
 // shows it open.
 const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
@@ -42,9 +60,18 @@ const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
 // Quests at that quest; openToday(id): Today at that daily challenge (Plan F, 13 Oct 2026), where it is claimed.
 // village: the game shows the village (World II), which has its own quests: no farm goal there. phone(): the phone layout (the same query as
 // mobile-ui.js mobileLayout, which this file cannot import: it asks the browser as it loads).
-export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
+export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,onStep=null,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
- let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0,goalDay='';
+ let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0,goalDay='',calm;
+ // The calm start's step on <html>; what came glows for CALM_GLOW_MS (only after a step during play, never as the farm opens).
+ function calmMark(){
+  const step=calmStep(state,{village}),root=document.documentElement;if(step===calm||!root?.classList)return;
+  const before=calm;calm=step;
+  root.classList.toggle('calm-start',step!==null);if(step===null)delete root.dataset.guideStep;else root.dataset.guideStep=String(step);
+  if(before===undefined)return;
+  for(const sel of calmRevealed(before,step))for(const el of document.querySelectorAll(sel)){el.classList.remove('calm-new');void el.offsetWidth;el.classList.add('calm-new');setTimeout(()=>el.classList.remove('calm-new'),CALM_GLOW_MS);}
+  onStep?.(step,before);
+ }
  function banner(steps,current,done){
   const text=`Step ${Math.min(done+1,steps.length)} of 10 · ${current?.ready?'Ready to complete':liveStep(state,current?.id,farmNow())??DO_NOW[current?.id]??current?.title??'Guide complete'}`;
   // Only when the English line changed: the page translates it in place, so its text is not compared.
@@ -60,6 +87,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   document.querySelector('.beginner-card').hidden=finished;
   document.querySelectorAll('[data-menu-action="all-quests-mobile"]').forEach(el=>el.hidden=finished);
   if(finished&&dialog.open)dialog.close();
+  calmMark();
   $('game').classList.toggle('beginner-active',!complete);$('beginner-mobile').hidden=complete;$('beginner-mobile').classList.toggle('is-ready',!!current?.ready);
   banner(steps,current,done);
   // After every finished step the guide shows the way to the next one by itself, once (A12; since 6 Oct 2026 for step 2 only, when 62% of

@@ -108,7 +108,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
  // Never by itself in the admin view (3 Oct 2026, src/admin-view.js): nothing is bought there; the dashboard's Preview still opens it.
  function autoOpen(){
   if(!running()||seen()||waiting||doc.documentElement?.hasAttribute?.('data-admin-view'))return;
-  let fished=0;const quiet=()=>{if(doc.body?.classList?.contains?.('fishing'))fished=Date.now();return !doc.querySelector('dialog[open]')&&Date.now()-fished>=AFTER_FISHING;};
+  let fished=0;const quiet=()=>{if(doc.body?.classList?.contains?.('fishing'))fished=Date.now();return !doc.querySelector('dialog[open]')&&Date.now()-fished>=AFTER_FISHING&&!doc.documentElement?.classList?.contains?.('calm-start');};   // not in a calm start (24 Oct 2026)
   if(quiet()){open();return;}
   waiting=win.setInterval(()=>{if(disposed||!running()){win.clearInterval(waiting);waiting=0;return;}if(quiet()){win.clearInterval(waiting);waiting=0;open();}},2000);
  }

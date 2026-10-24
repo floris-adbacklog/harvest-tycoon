@@ -31,7 +31,7 @@ test('the server: only the admin posts, lists and stops; a pop-up always ends; e
 test('the game shows it once, when nothing else is open, never in a farmer\'s first half hour, and not behind the Starter Pack',()=>{
  const ui=read('src/popup-ui.js'),cloud=read('src/game-cloud.js');
  assert.match(ui,/if\(!client\?\.popups\|\|rookieLeft\(state,now\(\)\)>0\)return;/);
- assert.match(ui,/const quiet=\(\)=>!doc\.querySelector\('dialog\[open\]'\);/);
+ assert.match(ui,/const quiet=\(\)=>!doc\.querySelector\('dialog\[open\]'\)&&!doc\.documentElement\?\.classList\?\.contains\?\.\('calm-start'\);/);
  assert.match(ui,/client\.popupSeen\(popup\.id\)\.catch\(\(\)=>\{\}\);/);
  assert.match(ui,/if\(target\.startsWith\('https:\/\/'\)\)\{win\.open\(target,'_blank','noopener,noreferrer'\);return;\}/);
  assert.match(ui,/install:\(\)=>win\.harvestWiki\?\.\('getting-started','sec-play-it-as-an-app'\)/);

@@ -24,9 +24,11 @@ export function markWaiting(doc=globalThis.document){
  }catch{}
 }
 // The rail's buttons that show (in the rail's order): the offer's tile while it runs, the others while they wait and the page shows them.
+// A calm start (beginner-ui.js, beginner.css) shows only Today in the rail, from its step: no one button for the rest.
 export function railShown(doc=globalThis.document){
  try{
-  return RAIL_IDS.map(id=>doc.getElementById(id)).filter(b=>b&&!b.hidden&&(b.id==='offer-button'||b.classList.contains('is-waiting')));
+  const calm=Boolean(doc.documentElement?.classList?.contains('calm-start'));
+  return RAIL_IDS.map(id=>doc.getElementById(id)).filter(b=>b&&!b.hidden&&(b.id==='offer-button'||b.classList.contains('is-waiting'))&&(!calm||b.id==='today-button'));
  }catch{return [];}
 }
 const picture=button=>button.querySelector('img,.game-art,svg')?.cloneNode(true)??null;
@@ -99,6 +101,8 @@ function place(){
 export function startEventRail(){
  place();markWaiting();stackRail();
  try{mobileLayout.addEventListener('change',()=>{place();stackRail();});}catch{}
+ // The calm start beginning or ending (<html>'s class) changes what the rail may show.
+ try{if(typeof MutationObserver==='function')new MutationObserver(()=>stackRail()).observe(document.documentElement,{attributes:true,attributeFilter:['class']});}catch{}
  try{
   if(typeof MutationObserver==='function'){
    // The offer's tile is made by the cloud script, after the farm page: it is placed as soon as it is there.

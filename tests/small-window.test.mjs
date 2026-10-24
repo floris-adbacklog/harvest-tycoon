@@ -330,7 +330,7 @@ test('the Full screen button sits with the camera buttons, hidden until it may s
  assert.match(html,/id="zoom-fit" aria-label="Show the whole farm" title="Show the whole farm"><i data-lucide="scan"><\/i><\/button><button class="icon-button" id="fullscreen-button" type="button" aria-label="Full screen" title="Full screen" hidden><i data-lucide="expand"><\/i><\/button><\/div>/,'its own button, not Show the whole farm');
  assert.ok(read('public/lucide-icons.js').includes('"Expand":'),'its icon is in the game\'s set');
  assert.match(HUD,/\n#fullscreen-button\[hidden\]\{display:none\}\n/,'hidden beats the camera buttons\' grid, at every size');
- assert.match(read('public/game.js'),/\n  createFullScreenOffer\(\{button:\$\('fullscreen-button'\),show:text=>toast\(text\),storage:\(\(\)=>\{try\{return localStorage;\}catch\{return null;\}\}\)\(\),quiet:\(\)=>modalOpen\(\)\}\);\n/);
+ assert.match(read('public/game.js'),/\n  createFullScreenOffer\(\{button:\$\('fullscreen-button'\),show:text=>toast\(text\),storage:\(\(\)=>\{try\{return localStorage;\}catch\{return null;\}\}\)\(\),quiet:\(\)=>modalOpen\(\)\|\|calmStep\(state\)!==null\}\);\n/);
  assert.ok(read('public/privacy.html').includes(`<code>${FULL_SCREEN_TIP_KEY}</code>`),'the device key is in the privacy policy\'s storage table');
 });
 

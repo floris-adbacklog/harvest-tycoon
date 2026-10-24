@@ -135,6 +135,6 @@ test('the offer does not open by itself on the water or in the seconds after it 
  assert.ok(AFTER_FISHING>=5000&&AFTER_FISHING<=15000,'a few seconds, not minutes');
  const src=read('src/offer-ui.js');
  // The 2-second check counts the fishing screen (the pond and the lake set body.fishing) as busy, and waits AFTER_FISHING after it.
- assert.match(src,/let fished=0;const quiet=\(\)=>\{if\(doc\.body\?\.classList\?\.contains\?\.\('fishing'\)\)fished=Date\.now\(\);return !doc\.querySelector\('dialog\[open\]'\)&&Date\.now\(\)-fished>=AFTER_FISHING;\};/);
+ assert.match(src,/let fished=0;const quiet=\(\)=>\{if\(doc\.body\?\.classList\?\.contains\?\.\('fishing'\)\)fished=Date\.now\(\);return !doc\.querySelector\('dialog\[open\]'\)&&Date\.now\(\)-fished>=AFTER_FISHING&&!doc\.documentElement\?\.classList\?\.contains\?\.\('calm-start'\);\};/);
  assert.match(read('public/pond-ui.js'),/document\.body\.classList\.add\('fishing'\)/);
 });

@@ -71,7 +71,8 @@ export function createPopupUI({client,chat,state,doc=document,win=window,now=()=
   if(!client?.popups||rookieLeft(state,now())>0)return;
   let list;try{list=await client.popups();}catch{return;}
   const popup=(list??[]).find(p=>fitsDevice(p.audience,device()));if(!popup)return;
-  const quiet=()=>!doc.querySelector('dialog[open]');
+  // Nor during a calm start (24 Oct 2026, the owner: no pop-ups before the Beginner guide is done; public/beginner-ui.js marks <html>).
+  const quiet=()=>!doc.querySelector('dialog[open]')&&!doc.documentElement?.classList?.contains?.('calm-start');
   if(quiet()){show(popup);return;}
   const timer=win.setInterval(()=>{if(quiet()){win.clearInterval(timer);show(popup);}},2000);
  }

@@ -168,3 +168,33 @@
 .next-goal-card #next-goal-button{display:flex;width:100%;min-height:40px;margin:12px 0 0;justify-content:center;font-size:13px}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#next-goal-mobile-copy{font-size:12px;line-height:1.4;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start}}
 .goal-line .touch-instructions{display:none}
+
+/* ---- A calm start (24 Oct 2026, the owner, after players said a new farm overwhelmed them: "Doe alle 4"; beginner-ui.js) ----
+   Until the guide is done (or level 10), html.calm-start[data-guide-step] (the steps done) and the farm screen shows only what the step
+   needs: the coins, level and diamonds, the tools, the step and More. Market comes for step 2, Water for step 4, Buildings and the
+   buildings' names on the farm for step 5, Today for step 6, the helping hand for step 7, Care for step 8; Quests, Events, the Estate,
+   the passes and offers, the family, the chat, the map, locked places, other farmers' names and the pond once the guide is done (More
+   still opens all of them). What comes glows for a moment (.calm-new). */
+html.calm-start :is(#more-dot,#tasks-button,#events-button,#estate-button,#invite-button,#boosts-button,#email-button,#pass-button,#season-button,#family-button,#chat-button,#feedback-button,#offer-button,#offer-chip,#starter-pack-chip,#starter-pack-button,#rail-stack,.minimap,.building-label.locked,.utility-label.locked,.farmer-name,.pond-label,.pond-shortcut){display:none!important}
+html.calm-start[data-guide-step="0"] #market-button{display:none!important}
+html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"]) .tool[data-tool="water"]{display:none!important}
+html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"]) :is(#buildings-button,.building-label){display:none!important}
+html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"],[data-guide-step="4"]) #today-button{display:none!important}
+html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"],[data-guide-step="4"],[data-guide-step="5"]) .activity-label{display:none!important}
+html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"],[data-guide-step="4"],[data-guide-step="5"],[data-guide-step="6"]) .tool[data-tool="tend"]{display:none!important}
+/* With tools left out the tools share the row (it was four fixed columns, leaving a gap). */
+html.calm-start .tool-dock .tools,html.calm-start .tool-dock>.tools{grid-template-columns:none!important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+/* A button that just came: a soft gold glow, three times. */
+@keyframes calm-new{0%,100%{box-shadow:0 0 0 0 #f2b54400}50%{box-shadow:0 0 0 6px #f2b54466}}
+.calm-new:not(.side-tool),.side-tool.calm-new>span{animation:calm-new 1.2s ease-in-out 3}
+@media(prefers-reduced-motion:reduce){.calm-new:not(.side-tool),.side-tool.calm-new>span{animation:none}}
+
+/* ---- The first steps' spotlight (public/spotlight.js, game.js spotTarget) ----
+   Over the farm and its names (z-index 2), under the bars, the step line and the guide's pointer (from 6): the farm dims, the place to
+   tap stays clear inside a soft gold edge. Every tap goes through. */
+.spotlight{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.spotlight.is-all{background:#241c0c4d}
+.spotlight-hole{position:absolute;border-radius:24px;box-shadow:0 0 0 200vmax #241c0c4d,inset 0 0 0 3px #ffe08199;transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
+.spotlight[hidden],.spotlight-hole[hidden],.spotlight-skip[hidden]{display:none}
+.spotlight-skip{position:absolute;z-index:7;top:calc(var(--mobile-top,96px) + 62px);left:50%;translate:-50% 0;min-height:34px;padding:6px 14px;border:1px solid #e6ddd1;border-radius:999px;background:#fffdf5e6;color:#5b4520;font:700 13px/1 'DM Sans',sans-serif;cursor:pointer}
+@media(prefers-reduced-motion:reduce){.spotlight-hole{transition:none}}

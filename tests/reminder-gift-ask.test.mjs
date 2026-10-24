@@ -114,7 +114,7 @@ test('the privacy policy says when the question comes',()=>{
 test('the card and the guide\'s pointer never stand together: the card waits for the pointer, the guide\'s own pointer waits for the card',async()=>{
  let pointer=true;const h=harness({canShow:()=>!pointer});h.nudge.gifted();await h.look();h.later(20000);await h.look();assert.equal(h.shown(),false,'not while the pointer stands');
  pointer=false;h.later(500);await h.look();h.later(1600);await h.look();assert.equal(h.shown(),true,'1.5 s after the pointer is gone');h.cleanup();
- assert.match(read('public/game.js'),/canShow:\(\)=>ready&&\$\('loading'\)\.hidden&&!document\.querySelector\('dialog\[open\]'\)&&!coach\.active\}\);/);
+ assert.match(read('public/game.js'),/canShow:\(\)=>ready&&\$\('loading'\)\.hidden&&!document\.querySelector\('dialog\[open\]'\)&&!coach\.active&&calmStep\(state\)===null\}\);/);
  assert.match(read('public/beginner-ui.js'),/function quiet\(\)\{return !document\.querySelector\('dialog\[open\]'\)&&!document\.querySelector\('\.reminder-nudge'\)&&idle\(\);\}/);
  assert.match(read('public/reminder-nudge.js'),/card\.className='reminder-nudge'/,'the class the guide looks for');
 });

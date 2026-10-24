@@ -31,7 +31,8 @@ export function createCheckoutReminder(bridge,{doc=document,win=window,storage=w
  // The purchase this page came back from (?purchase=… from Stripe): its own window answers, so no reminder for it.
  try{const back=bridge.paymentReturn?.()?.id;if(typeof back==='string'&&back)mark(back);}catch{}
  let first=true,timer=0,disposed=false,dialog=null;
- const quiet=()=>!doc.querySelector('dialog[open]')&&!doc.body?.classList?.contains?.('fishing')&&!doc.documentElement?.hasAttribute?.('data-admin-view');
+ // Not in a calm start either (24 Oct 2026, the owner: no pop-ups before the Beginner guide is done).
+ const quiet=()=>!doc.querySelector('dialog[open]')&&!doc.body?.classList?.contains?.('fishing')&&!doc.documentElement?.hasAttribute?.('data-admin-view')&&!doc.documentElement?.classList?.contains?.('calm-start');
  function open(found){
   mark(found.id);
   dialog=doc.createElement('dialog');dialog.className='game-dialog is-card is-s pay-choice checkout-reminder';dialog.setAttribute('aria-labelledby','checkout-reminder-title');

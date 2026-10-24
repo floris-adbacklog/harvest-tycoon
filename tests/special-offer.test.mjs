@@ -92,7 +92,7 @@ test('the offer window: its cards, once per device, a sound, and the Diamond sho
  assert.deepEqual(offerParts({diamonds:5000,coins:0,vipDays:0}).map(p=>p.key),['diamonds']);
  const ui=read('src/offer-ui.js');
  assert.match(ui,/const running=\(\)=>Boolean\(offer\)&&!offer\.bought&&left\(\)>0&&fitsDevice\(offer\.audience,device\(\)\);/);
- assert.match(ui,/if\(!running\(\)\|\|seen\(\)\|\|waiting\|\|doc\.documentElement\?\.hasAttribute\?\.\('data-admin-view'\)\)return;\n  let fished=0;const quiet=\(\)=>\{if\(doc\.body\?\.classList\?\.contains\?\.\('fishing'\)\)fished=Date\.now\(\);return !doc\.querySelector\('dialog\[open\]'\)&&Date\.now\(\)-fished>=AFTER_FISHING;\};/);
+ assert.match(ui,/if\(!running\(\)\|\|seen\(\)\|\|waiting\|\|doc\.documentElement\?\.hasAttribute\?\.\('data-admin-view'\)\)return;\n  let fished=0;const quiet=\(\)=>\{if\(doc\.body\?\.classList\?\.contains\?\.\('fishing'\)\)fished=Date\.now\(\);return !doc\.querySelector\('dialog\[open\]'\)&&Date\.now\(\)-fished>=AFTER_FISHING&&!doc\.documentElement\?\.classList\?\.contains\?\.\('calm-start'\);\};/);
  assert.match(ui,/win\.harvestSound\?\.\('offer'\);/);
  assert.match(ui,/deals\.prepend\(b\);/,'first on the shop\'s Diamonds tab, above the pass and the packs');
  assert.match(ui,/await bridge\.checkout\('offer',requestId,offer\.id\);/);

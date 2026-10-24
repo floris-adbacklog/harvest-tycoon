@@ -123,7 +123,7 @@ test('Welcome Back offers one button that goes straight to what is waiting',()=>
  assert.equal(welcomeAction({crops:0,batches:2,stall:10}),'Collect your batches');
  assert.equal(welcomeAction({crops:0,batches:0,stall:10}),'Visit the farm stall');
  assert.equal(welcomeAction({crops:0,batches:0,stall:0}),'Let’s get farming');
- assert.match(read('public/game.js'),/if\(state\.stats\.harvested>0&&\(!initialWelcome\|\|initialChapterReward\?\.diamonds\)\)toast\(`Welcome back!/,'no second "Welcome back" toast under the card');
+ assert.match(read('public/game.js'),/if\(state\.stats\.harvested>0&&calmStep\(state\)===null&&\(!initialWelcome\|\|initialChapterReward\?\.diamonds\)\)toast\(`Welcome back!/,'no second "Welcome back" toast under the card');
 });
 test('the chore card shows its bonus chance in the bonus chip and a mastery bar towards the next chore, and a plain result looks different from a find',()=>{
  const growth=read('public/growth-ui.js');

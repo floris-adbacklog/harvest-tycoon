@@ -39,7 +39,8 @@ import { art,refreshArt } from './visual-icons.js';
 import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
-import { createBeginnerUI } from './beginner-ui.js';
+import { createBeginnerUI, calmStep } from './beginner-ui.js';
+import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
 import { createFarmLife,LIFE_MODELS } from './farm-life.js';
 import { createScenePolish, hideClippedScenery } from './scene-polish.js';
@@ -143,7 +144,10 @@ const swept=new Set();   // the fields of a swipe in progress keep their ring un
 // On a phone a new farmer starts on their fields, where the Beginner guide's steps happen; the whole farm after the guide. On a
 // computer too until the first harvest (6 Oct 2026: from the whole valley the ripe corn was some 25 px, and 37% of new farmers on a
 // computer never touched anything, against none on a phone).
-const startView=()=>villageWorld?'home':mobileLayout.matches&&!beginnerProgress(state).every(q=>q.done)||!(state.stats.harvested>0)?'fields':'home';
+// A calm start (24 Oct 2026, the owner: "Doe alle 4"; beginner-ui.js) opens on the fields until the guide's first four steps are done, on
+// every device, and the farm opens out for step 5, when the buildings come (beginner onStep below). It was the fields on a phone until
+// the guide was done, and on a computer until the first harvest.
+const startView=()=>villageWorld?'home':(calmStep(state)??10)<4||!(state.stats.harvested>0)?'fields':'home';
 let viewportWidth=0,viewportHeight=0,viewportRatio=0,viewMode=startView();
 // The farm's one zoom axis (18 Oct 2026, the owner: "het moet gewoon een stand zijn in de views"): zoomAt is where its camera is on it,
 // 0 the fields (Focus on your crop fields), 1 the heart of the farm (Center the farm) and 2 the whole farm (Show the whole farm), down to
@@ -161,6 +165,21 @@ let familyFlag=null;
 const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 // The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
 const coach=createCoach();
+// The first steps' spotlight (public/spotlight.js): during a calm start's first four steps the farm dims except the place to tap. Made
+// once the farm is on screen (bindUI); spotTarget says where, every frame (frame).
+let spot=null;
+function spotTarget(){
+ const step=calmStep(state,{village:villageWorld});
+ if(step===null||step>3||!ready||document.querySelector('dialog[open]'))return null;
+ const current=beginnerProgress(state).find(q=>q.current);if(!current)return null;
+ if(current.id==='sell')return {all:true};
+ const now=farmNow(),watering=current.id==='water'&&state.plots.some(p=>canWater(p,now));
+ const pick=current.id==='harvest'?p=>p.crop&&p.readyAt<=now:watering?p=>canWater(p,now):current.id==='plant'||current.id==='water'?p=>!p.crop:null;
+ if(!pick)return null;
+ let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+ state.plots.forEach((p,i)=>{if(!pick(p)||!plots[i])return;for(const [dx,dz] of [[-1.2,-1.2],[1.2,-1.2],[-1.2,1.2],[1.2,1.2]]){const s=toScreen(plots[i].x+dx,.1,plots[i].z+dz);left=Math.min(left,s.x);top=Math.min(top,s.y);right=Math.max(right,s.x);bottom=Math.max(bottom,s.y);}});
+ return left<right?{rect:{left,top,right,bottom}}:null;
+}
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
 guardWheel();
 let warehouse=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
@@ -207,6 +226,8 @@ const earnedToWear=()=>farmerOwned(state,farmerFarm()).filter(id=>id!==FAMILY_SH
 let farmerKnown=new Set(earnedToWear());
 function farmerNews(){
  const now=earnedToWear(),known=farmerKnown;farmerKnown=new Set(now);
+ // Not in a calm start (24 Oct 2026, the owner: no pop-ups before the guide is done): what was earned meanwhile is said after it.
+ if(calmStep(state)!==null){farmerKnown=known;return;}
  if(known&&!adminView&&now.some(id=>!known.has(id)))toast('Something new to wear in My farmer.');
 }
 // The profile opens once the hop is over (the owner, 21 Oct 2026: "wacht met profiel open als die klaar is met springen"): the farmer back
@@ -253,7 +274,7 @@ let sessionTracked=false;
 // The reminder question's steps go to the farmer's log too (13 Oct 2026, farm-client.js note). It comes after a harvest, or right after
 // the farm's first daily gift (13 Oct 2026, item 4; runAction's checkin, from Today or Welcome back). Never while the guide's pointer
 // stands (review fix: step 7's "Tap Buildings." came with it, under the card), and the guide's own pointer waits for the card (beginner-ui.js quiet).
-const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')&&!coach.active});
+const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,notify:message=>toast(message),track,log:client.note,emailUnconfirmed:()=>emailAccount.needed,confirmEmail:()=>emailCheckUI?.open(),canShow:()=>ready&&$('loading').hidden&&!document.querySelector('dialog[open]')&&!coach.active&&calmStep(state)===null});
 // A crop medal the action earned (a tap harvest, the tractor) gets its toast at the bottom (medal-notice.js, Oct 2026).
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
@@ -2014,6 +2035,7 @@ function bindGraphicsSetting(){
 }
 function bindUI(){
  bindGraphicsSetting();
+ if(!villageWorld&&!adminView)spot=createSpotlight();
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  document.querySelectorAll('[data-crop]').forEach(b=>b.addEventListener('click',()=>setCrop(b.dataset.crop)));
  $('market-button').addEventListener('click',()=>openDialog('market-dialog'));
@@ -2095,7 +2117,8 @@ function bindUI(){
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
  // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
- beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'&&goal.kind!=='daily'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
+ // A calm start's step 5 (the buildings come): the farm opens out from the fields (startView).
+ beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onStep:(step,before)=>{if(before!==null&&before<4&&(step===null||step>=4)&&ready&&!villageWorld)resetView();},onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'&&goal.kind!=='daily'}),action:goalAction(goal)});},guide:showWay,idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  const inviteUI=createInviteUI({notify:toast});
  // Share my farm (Oct 2026): on the level-up card and on your own profile (src/player-profiles.js, through window.harvestShareFarm).
  // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
@@ -2127,6 +2150,7 @@ function frame(now){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
+ if(spot){const target=spotTarget();if(target)spot.show(target.rect??null,{all:Boolean(target.all)});else spot.hide();}
 }
 function registerAgentTools(){
  if(!document.modelContext?.registerTool)return;
@@ -2335,12 +2359,12 @@ async function init(){
    }
   });
   markRun(gfxStore,{step:'frame',percent:99});
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
   markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
-  createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()});
+  createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});
   // The Fishing pond (11 Oct 2026): farm only (never in the village), never on the admin's showcase farm.
   if(POND_OPEN&&!villageWorld&&!adminView)void import('./pond-ui.js').then(({createPond})=>{pond=createPond({state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:focusFields});positionBuildingLabels();}).catch(error=>console.error('Fishing pond failed',error?.message));
   // The village lake (12 Oct 2026, plan D): the pond's screen for the lake, at the rowboat (village-scene.js VILLAGE_FISHING_SPOT; that

@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
-test('on a phone a new farmer starts zoomed in on their fields until the Beginner guide is done',()=>{
+// 24 Oct 2026 (a calm start, the owner: "Doe alle 4"): on every device the fields until the guide's first four steps are done, then the
+// farm opens out for step 5 (it was the fields on a phone until the whole guide was done).
+test('a new farmer starts zoomed in on their fields until the guide\'s first four steps are done, then the farm opens out',()=>{
  const game=read('public/game.js');
- assert.match(game,/const startView=\(\)=>villageWorld\?'home':mobileLayout\.matches&&!beginnerProgress\(state\)\.every\(q=>q\.done\)\|\|!\(state\.stats\.harvested>0\)\?'fields':'home';/);
+ assert.match(game,/const startView=\(\)=>villageWorld\?'home':\(calmStep\(state\)\?\?10\)<4\|\|!\(state\.stats\.harvested>0\)\?'fields':'home';/);
+ assert.match(game,/onStep:\(step,before\)=>\{if\(before!==null&&before<4&&\(step===null\|\|step>=4\)&&ready&&!villageWorld\)resetView\(\);\}/,'step 5 opens the farm out');
  assert.match(game,/viewMode=startView\(\);/,'the first view');
  assert.match(game,/function resetView\(\)\{viewMode=startView\(\);/,'and "My farm" goes back to it');
 });
