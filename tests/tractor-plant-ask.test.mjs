@@ -35,7 +35,7 @@ test('the tractor window: Plant shows its crop and asks; Water, Extra care and H
  assert.match(ui,/\['plant',crop,`Plant \$\{CROPS\[crop\]\.name\}`\],\['water','water','Water'\],\['tend','care','Extra care'\],\['harvest','harvest','Harvest'\]/,'option 4: the crop as the tile\'s picture and name');
  assert.match(ui,/if\(mode==='plant'&&asking\)return askTile\(crop,CROPS\[crop\]\.name,q\);/);
  assert.match(ui,/const asking=ask\.open\(Date\.now\(\)\)&&quotes\.plant\.count>0&&state\.coins>=quotes\.plant\.total;if\(!asking\)ask\.stop\(\);/,'a question with nothing to plant goes');
- assert.match(ui,/b\.onclick=\(\)=>b\.dataset\.tractor==='plant'\?askPlant\(\):work\(b\.dataset\.tractor\)/);
+ assert.match(ui,/b\.onclick=\(\)=>b\.dataset\.tractor==='plant'\?askPlant\(\):b\.dataset\.tractor==='fertilize'\?fertilize\(\):work\(b\.dataset\.tractor\)/);
  assert.match(ui,/if\(go\)go\.onclick=\(\)=>\{if\(!ask\.answers\(Date\.now\(\)\)\)return;ask\.stop\(\);work\('plant'\);\};/);
  // Since 17 Oct 2026 (fuel follows the crop, tractor-fuel.test.mjs) the price on the tile goes along: never more is charged.
  assert.match(ui,/const work=mode=>act\(\{type:'tractor',mode,crop:getCrop\(\),expectedCost:quotes\[mode\]\.total\}/);

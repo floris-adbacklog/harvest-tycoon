@@ -4,6 +4,7 @@ import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
+import {confirmAction} from './confirm-dialog.js';
 import {lanternChip} from './pass-ui.js';
 import {leafChip} from './season-ui.js';
 import {APP_PUSH_BLOCKED} from './android.js';
@@ -131,7 +132,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    // The Fertilize job's toast in whole words, no middle dot: a translated toast is not undotted (21 Oct 2026).
    const done=r=>r.mode==='fertilize'?(r.count===1?`The tractor fertilized 1 field with 1 fertilizer for ${r.cost} coins! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer for ${r.cost} coins! +${r.xp} XP.`):`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`;
    const work=mode=>act({type:'tractor',mode,crop:getCrop(),expectedCost:quotes[mode].total},done).then(r=>{if(!r)renderUtility();});
-   document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>b.dataset.tractor==='plant'?askPlant():work(b.dataset.tractor));
+   // Fertilize asks first (24 Oct 2026, the owner: "Doe bij bemesten een popup: weet je het zeker? Je gebruikt je natural fertilizer"):
+   // how much of your natural fertilizer it uses, on how many fields, and the fuel.
+   const fertilize=async()=>{
+    const q=quotes.fertilize;
+    const ok=await confirmAction({title:'Use your fertilizer?',description:q.count===1?`The tractor uses 1 natural fertilizer on 1 growing field, for ${q.total} coins of fuel.`:`The tractor uses ${q.fertilizer} natural fertilizer on ${q.count} growing fields, for ${q.total} coins of fuel.`,confirmLabel:'Fertilize',picture:'fertilizer'});
+    if(ok)work('fertilize');
+   };
+   document.querySelectorAll('[data-tractor]').forEach(b=>b.onclick=()=>b.dataset.tractor==='plant'?askPlant():b.dataset.tractor==='fertilize'?fertilize():work(b.dataset.tractor));
    const go=document.querySelector('[data-tractor-go]');
    if(go)go.onclick=()=>{if(!ask.answers(Date.now()))return;ask.stop();work('plant');};
    const other=document.querySelector('[data-tractor-other]');if(other)other.onclick=()=>toSeeds(true);
