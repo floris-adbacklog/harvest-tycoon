@@ -55,7 +55,7 @@ test('a pet never takes a tap from anything else, and a tap on one is a hop and 
  assert.match(css,/@media \(prefers-reduced-motion:reduce\)\{\.pet-heart\{animation:pet-heart-still/);
  // Cheap: one mixer each, moved in the frame only when the farm is drawn (never with the tab hidden, under a window or with reduced motion).
  assert.match(game,/const t=clock\.getElapsedTime\(\);farmLife\?\.animate\(t,dt,farmNow\(\)\);pets\?\.animate\(dt\);/);
- assert.match(game,/function frame\(now\)\{\n requestAnimationFrame\(frame\);if\(!ready\|\|document\.hidden\)return;/);
+ assert.match(game,/function frame\(now\)\{\n requestAnimationFrame\(frame\);if\(!ready\|\|document\.hidden\|\|visitLayer\)return;/);
  assert.equal((pets.match(/new THREE\.AnimationMixer\(/g)??[]).length,1);
 });
 

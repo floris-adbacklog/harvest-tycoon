@@ -51,7 +51,10 @@ export function sweepTotal(action,results,short=false){
 export const ADMIN_LOCKED='This is your admin account, so playing is locked here. Play on your own farmer account.';
 export const adminView=()=>Boolean(globalThis.document?.documentElement?.hasAttribute?.('data-admin-view'));
 export const NOTE_WAIT_MS=15000;
-const adminLocked=()=>Object.assign(new Error(ADMIN_LOCKED),{code:'ACTION_REJECTED'});
+// Visiting someone else's farm (24 Oct 2026, game.js harvestVisit) is marked as an admin view too, with its own words.
+export const VISIT_LOCKED='You are visiting this farm. Go back to your own farm to play.';
+const lockedText=()=>globalThis.document?.documentElement?.hasAttribute?.('data-visit-view')?VISIT_LOCKED:ADMIN_LOCKED;
+const adminLocked=()=>Object.assign(new Error(lockedText()),{code:'ACTION_REJECTED'});
 export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapterReward,onGift,onEmailCheck,onError}){
  const bridge=window.parent.harvestBridge;
  if(!bridge)throw new Error('Sign in to open your farm.');
@@ -141,7 +144,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   const handle={reason:'',
    add(id){
     if(!open||entry.action.ids.includes(id))return null;
-    if(adminView()){handle.reason||=ADMIN_LOCKED;return null;}
+    if(adminView()){handle.reason||=lockedText();return null;}
     let instant;
     try{instant=instantResult(state,{type:'fields',action,ids:[id],crop},farmNow());}
     catch(error){if(action==='plant'&&!state.plots?.[id]?.crop)try{short||=state.coins<seedCost(state,crop);}catch{}handle.reason||=error.message;

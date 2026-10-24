@@ -54,7 +54,7 @@ export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false
  // colour (as in the chat), a badge beside the name and a title under it; the badges of every season collected in their own row.
  const bg=lookBackground(player.look),color=lookColor(player.look),dates=`${since(player.memberSince)}${lastOnline(player.lastOnline,player.online)}`;
  return `<div class="farmer-identity${bg?' has-look-bg':''}"${bg?` style="--look-bg:url('${bg}')"`:''}><div class="farmer-avatar" aria-hidden="true">${framed(player.look,`<img class="farmer-avatar-img" src="${playerAvatar(player.avatarId).src}" alt="" width="384" height="384" decoding="async" draggable="false">`)}</div><div class="farmer-identity-copy"><h3><span class="farmer-profile-name"${color?` style="color:${esc(color)}"`:''}>${ownWords(player.username)}</span>${vipBadge(player.vipExpiresAt,now)}${lookBadge(player.look)}</h3>${lookTitle(player.look)}<div class="farmer-identity-meta"><span class="farmer-level">${art('xp')}Level ${fmt(player.level)}</span>${presence(player.online)}${familyCard(family,emblem)}${self?vipBadge(player.vipExpiresAt,now,true):''}</div>${dates?`<div class="farmer-dates">${dates}</div>`:''}</div></div>
- <div class="farmer-actions">${self?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div></div>':''}<div class="farmer-chat" data-farmer-chat hidden></div><div class="farmer-invite" data-farmer-invite hidden></div></div>
+ <div class="farmer-actions">${self?'<div class="farmer-own-actions"><div class="farmer-mine" data-my-farmer hidden></div><div class="farmer-share" data-farmer-share hidden></div></div>':''}<div class="farmer-chat" data-farmer-chat hidden></div><div class="farmer-invite" data-farmer-invite hidden></div>${self?'':'<div class="farmer-visit" data-farmer-visit hidden></div>'}</div>
  ${renderStatPages(player,now,statPage,{village})}
  <details class="farmer-badges farmer-fold" data-fold="medals"><summary><h3 class="farmer-section-title">Medals</h3><span class="farmer-fold-count">${badges.length} / ${Object.keys(CROPS).length*MASTERY_TIERS.length} medals</span>${foldChevron}</summary><div class="farmer-fold-body">${mastered.length?`<div class="farmer-badge-grid">${mastered.map(masteryCard).join('')}</div>${mastered.length<Object.keys(CROPS).length?`<p class="farmer-badge-more">${Object.keys(CROPS).length-mastered.length} more crops to master</p>`:''}`:'<p class="farmer-empty">Every harvest is a step towards a first medal.</p>'}</div></details>${seasonRow(player.seasons)}`;
 }
@@ -223,6 +223,13 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  }
  // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether
  // that is possible and sends the invitation; the reason shows on the button when it is not).
+ // Visit farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"): someone else's farm as it stands, to look at
+ // (the game opens it over your own: public/game.js harvestVisit). Not from the village, an admin's view or a farm you are visiting.
+ function showVisit(player){
+  const box=content.querySelector('[data-farmer-visit]'),visit=window.harvestVisit;if(!box||typeof visit!=='function')return;
+  box.hidden=false;box.innerHTML=`<button type="button" class="secondary-button farmer-visit-button">${art('farm')}Visit farm</button>`;
+  box.querySelector('button').onclick=()=>{dialog.close();visit(player.playerId,player.username);};
+ }
  function showInvite(player){
   const box=content.querySelector('[data-farmer-invite]'),family=window.harvestFamilyInvite,offer=box&&family?.offer?.(player);
   if(!offer)return;
@@ -280,7 +287,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
   clockOffset=Number.isFinite(data.serverNow)?data.serverNow-Date.now():0;keepFolds(content,renderPlayerProfile(data.playerProfile,Date.now()+clockOffset,{statPage,self:id===bridge.playerId,village:Boolean(village?.())}));refreshVipBadges(dialog,Date.now()+clockOffset);
   // The stat pages keep the page you were on when the profile refreshes (every 30 seconds).
   bindStatPages(content,{page:statPage,onPage:page=>{statPage=page;},onBoard:key=>showBoard?.(key)});
-  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showMyFarmer(id);showShare(id);
+  profileUsername=data.playerProfile.username;showInvite(data.playerProfile);showVisit(data.playerProfile);showMyFarmer(id);showShare(id);
   content.querySelector('[data-family-profile]')?.addEventListener('click',event=>window.harvestFamilyProfile?.open(event.currentTarget.dataset.familyProfile));
   chatExtras?.(data.playerProfile,content,{isCurrent:()=>!disposed&&selected===id&&dialog.open});
  }

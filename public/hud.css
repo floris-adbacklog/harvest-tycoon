@@ -225,3 +225,15 @@ html.farm-editing :is(.activity-label,.pond-label,.utility-label,.building-label
 @media(max-width:560px){.layout-bar{flex-wrap:wrap;padding:10px 12px}.layout-hint{flex-basis:100%}.layout-actions{width:100%}.layout-actions button{flex:1;padding:0 10px}}
 #layout-button[aria-pressed="true"]{background:var(--btn-main);border-color:var(--btn-main-line);color:var(--btn-main-text)}
 
+/* Visiting a farm (24 Oct 2026, game.js openVisit): the farm you visit lies over your own, which stops drawing meanwhile. On it only
+   the farm, the camera buttons and the bar on top show: whose farm it is, its level and Back to my farm. Its pins open nothing. */
+#visit-layer{position:fixed;inset:0;z-index:2147482000;background:#cfe3a8}
+#visit-layer iframe{display:block;width:100%;height:100%;border:0}
+html[data-visit-view] :is(.topbar,.side-tools,.bottom-hud,#event-rail,.minimap,#save-status,#active-boosts,#layout-button,#beginner-mobile,#next-goal-mobile,.beginner-card,#next-goal-card,.touch-instructions,#toast){display:none!important}
+html[data-visit-view] :is(.building-label,.utility-label,.activity-label,.pond-label,.plot-label){pointer-events:none}
+.visit-bar{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));inset-inline:0;z-index:8;display:flex;align-items:center;gap:12px;width:min(560px,calc(100% - 24px));margin-inline:auto;padding:10px 12px 10px 16px;border:2px solid var(--btn-second-line);border-radius:18px;background:#fffaf0;box-shadow:0 3px 0 var(--btn-second-edge)}
+.visit-bar p{flex:1;min-width:0;margin:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font:600 15px/1.3 'Outfit',sans-serif;color:#5b4520}
+.visit-bar strong{font-size:17px;color:#3f2d14;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.visit-level{color:#7a5410}
+.visit-bar button{flex:none;min-height:44px;padding:0 16px;font-size:15px}
+

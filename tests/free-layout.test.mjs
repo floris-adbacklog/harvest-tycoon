@@ -104,3 +104,32 @@ test('the screen: layout actions show at once; Move things can be switched off i
  assert.match(read('public/scenery.js'),/im\.userData\.scenery=name;im\.userData\.spots=list\.map\(\(\[x,z\]\)=>\[x,z\]\);/,'an instanced tree is known by its spot');
 });
 
+
+// Visiting a farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten na dit").
+test('a visit shows the farm as it stands (its own layout too), never its coins, diamonds, stock, invite or first-look notes',async()=>{
+ const {visitView,VISIT_KEYS}=await import('../game/farm-state.js');
+ const s=farmAt(40);s.diamonds=77;s.inventory.wheat=55;s.invite={code:'AB12',by:'x',at:now};s.inviteRewards=['p1'];s.onboarding.firstLook={readyAt:now,frame:'960x540'};
+ act(s,{type:'layout_move',id:'bakery',x:-20,z:10.5,turn:1},now);s.family={familyId:'f1',unclaimedCount:3,name:'Sunny Acres',emblem:'2',level:4,secret:'x'};
+ const v=visitView(s,now);
+ assert.deepEqual(v.layout.at,{bakery:[-20,10.5,1]});assert.deepEqual(v.plots,s.plots);assert.deepEqual(v.buildings,s.buildings);assert.equal(v.xp,s.xp);
+ assert.equal(v.coins,0);assert.equal(v.diamonds,0);assert.equal(v.inventory.wheat,createFarm(now).inventory.wheat??0,'a fresh farm\'s stock, not theirs');
+ assert.equal(v.invite,undefined);assert.deepEqual(v.inviteRewards,[]);assert.equal(v.onboarding.firstLook,undefined);
+ assert.deepEqual(v.family,{familyId:'f1',unclaimedCount:0,name:'Sunny Acres',emblem:'2',level:4});
+ for(const key of ['coins','diamonds','inventory','invite','inviteRewards','donations','emailBonus','login','starterOffer','passPremium'])assert.ok(!VISIT_KEYS.includes(key),key);
+});
+
+test('a visit: farm-api farm_visit, Visit farm on someone else\'s profile, the page marked and locked, and the way back',()=>{
+ const api=read('supabase/functions/farm-api/index.ts'),service=read('supabase/functions/farm-api/player-profile-service.js');
+ assert.match(api,/'player_profile','farm_visit',/);assert.match(api,/if\(body\.operation==='farm_visit'\)\{const visit=await handleFarmVisit\(\{admin,body,player:user\.id\}\);/);
+ assert.match(service,/const state=visitView\(farm\.state,now\);/);assert.match(service,/select\('state'\)\.eq\('player_id',body\.playerId\)/);
+ const profiles=read('src/player-profiles.js');
+ assert.match(profiles,/\$\{self\?'':'<div class="farmer-visit" data-farmer-visit hidden><\/div>'\}/,'only on someone else\'s profile');
+ assert.match(profiles,/box\.querySelector\('button'\)\.onclick=\(\)=>\{dialog\.close\(\);visit\(player\.playerId,player\.username\);\};/);
+ const cloud=read('src/game-cloud.js');assert.match(cloud,/if\(visit\)\{markAdminView\(document\);document\.documentElement\.dataset\.visitView='';\}/);
+ assert.match(read('public/farm-client.js'),/export const VISIT_LOCKED='You are visiting this farm\. Go back to your own farm to play\.';/);
+ const game=read('public/game.js');
+ assert.match(game,/request:body=>body\?\.operation==='action'\?locked\(\):body\?\.operation==='load'\?/,'their farm loads, every action is refused');
+ assert.match(game,/requestAnimationFrame\(frame\);if\(!ready\|\|document\.hidden\|\|visitLayer\)return;/,'your own farm rests meanwhile');
+ assert.match(game,/if\(!villageWorld&&!adminView\)\{window\.harvestVisit=playerId=>void openVisit\(playerId\);window\.harvestCloseVisit=closeVisit;\}/);
+ assert.match(game,/const visitInfo=window\.harvestInitialFarm\.visit\?\?null;/,'read before the page lets go of the first farm');
+});

@@ -51,3 +51,29 @@ The owner's rules:
 2. Land pieces by level (locked land shown) and obstacles to clear for coins.
 3. Buying trees and path tiles, and storing them.
 4. Polish: the farmer and pets walk around what moved, the camera, the wiki, translations, tests, RELEASE.md.
+
+## Status (24 Oct 2026)
+
+Done on this branch, tested in the lab (localhost:4883, LAB_REPO=this worktree):
+- Milestone 1: moving yards and fields. Also Rotate (R on a keyboard), and Esc ends moving.
+- Milestone 2: locked land greyed while you move things; trees and bushes are obstacles you clear for coins.
+- Milestone 3: Build (path tile, oak, pine, young tree, bush), Store, and placing a stored one for free.
+- Settings › Graphics › Move things (on unless this device switched it off).
+- Share my farm shows the whole farm.
+- Visiting a farm: Visit farm on someone else's profile, which uses farm-api farm_visit (game/farm-state.js visitView). Their farm
+  opens over yours, to look at only; Back to my farm.
+
+Still to do before release:
+- Translations of the new texts (node scripts/i18n.mjs next <code>; the i18n completeness test fails until then).
+- The farmer and the pets walk their own loops and may cross something you moved.
+- The fence round the crops stays when a field leaves it.
+- Wiki page (How to play) for moving, clearing and building; News when it goes live.
+
+## Release order
+
+1. Site first: the new save key `layout` (an old farm-api keeps unknown keys).
+2. Wait about 40 minutes (old open pages).
+3. farm-api, deployed by the owner: the layout_* actions and farm_visit.
+
+Until farm-api is out, Move things shows, but saving a move is refused by the server (Unknown farm action) and the farm goes back.
+So either deploy farm-api right after the wait, or keep the button off until then.

@@ -1,6 +1,6 @@
 import {playerAvatar} from './player-avatars.js';
 import {isRecentlyActive} from './presence.js';
-import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem,wornLook,seasonBadges} from './farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem,wornLook,seasonBadges,visitView,levelOf} from './farm-state.js';
 
 const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key));   // the farm's goods, not World II's
 // The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
@@ -50,4 +50,15 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
   village_goods:Object.entries(row.goods_made??{}).filter(([k])=>worldTwoItem(k)).reduce((n,[,v])=>n+number(v),0)},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges,
   // The Season Pass (Oct 2026): every season badge this farmer collected, the "Seasons" row.
   seasons:seasonBadges(mastery?.looks)}});
+}
+
+// Visiting a farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"): another farmer's farm as it stands, to
+// look at (farm-state.js visitView: never its coins, diamonds, stock, purchases or invite), with their name, picture and level.
+export async function handleFarmVisit({admin,body,player,now=Date.now()}){
+ const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:player},serverNow:now}});
+ if(typeof body.playerId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.playerId))return respond({error:'Choose a valid farmer.'},400);
+ const [farm,row]=await Promise.all([read(admin.from('player_farms').select('state').eq('player_id',body.playerId).maybeSingle()),read(admin.from('player_stats').select('username,avatar_id').eq('player_id',body.playerId).maybeSingle())]);
+ if(!farm?.state||!row)return respond({error:'This farm could not be found.',code:'PLAYER_NOT_FOUND'},404);
+ const state=visitView(farm.state,now);
+ return respond({visit:{playerId:body.playerId,username:row.username,avatarId:playerAvatar(row.avatar_id).id,level:levelOf(state)},state});
 }

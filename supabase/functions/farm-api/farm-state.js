@@ -4525,6 +4525,22 @@ function normalizeFarmer(state){
  if(!f||typeof f!=='object'||Array.isArray(f)||!validFarmerConfig(cleanFarmer(f)).ok){delete state.farmer;return;}
  state.farmer=cleanFarmer(f);
 }
+// Visiting a farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"): what another farmer gets to see, read-only.
+// The farm as it stands (its fields and crops, buildings, its own layout, farmer, pets and looks) on a fresh farm's defaults: never its
+// coins, diamonds, stock, purchases, invite, sign-in days or first-look notes. farm-api's farm_visit sends it.
+export const VISIT_KEYS=Object.freeze(['version','xp','xpOffset','xpCurve','progression','plots','buildings','layout','activities','stall','ranch','giant',
+ 'pond','lake','farmer','pets','lookFarm','looks','season','warehouse','valley','valleyProjects','estate','depot','fair','visitors','master','lab','mastery',
+ 'stats','siloLevel','village','improvements','discovered','vipExpiresAt']);
+export function visitView(source,now=Date.now()){
+ const view=createFarm(now);
+ for(const key of VISIT_KEYS)if(source?.[key]!==undefined)view[key]=structuredClone(source[key]);
+ // The guide as far as it got (a guide that is not done keeps the screen calm), without the first look's notes.
+ if(source?.onboarding){view.onboarding=structuredClone(source.onboarding);delete view.onboarding.firstLook;}
+ // Its family's name and emblem fly on the Family Hall; nothing else of the family.
+ const f=source?.family;view.family={familyId:f?.familyId??null,unclaimedCount:0,...(f?.familyId&&f.name?{name:f.name,emblem:f.emblem,level:f.level}:{})};
+ normalizeFarm(view,now);view.coins=0;view.diamonds=0;
+ return view;
+}
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
  const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);

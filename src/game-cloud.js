@@ -65,6 +65,10 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // marked (and its stylesheet asked for) before it shows, so coins, diamonds and the tools never flash. Never on CrazyGames.
   const adminView=!portal&&window.harvestInitialFarm.adminView===true;
   if(adminView)markAdminView(document);
+  // Visiting someone else's farm (24 Oct 2026, public/game.js harvestVisit opens this page over your own): to look at only, so it is
+  // marked as an admin view (nothing to play, no pop-ups) and as a visit (only the farm and the way back show).
+  const visit=!portal&&Boolean(window.harvestInitialFarm.visit);
+  if(visit){markAdminView(document);document.documentElement.dataset.visitView='';}
   document.body.hidden=false;
   const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
   // The game's own code is asked for now, before this page's own parts below (18 Oct 2026, the 12% report, option 2: one of them that

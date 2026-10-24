@@ -111,6 +111,7 @@ const initialChapterReward=window.harvestInitialFarm.chapterReward;
 const initialLevelReward=window.harvestInitialFarm.levelReward;
 const initialGift=window.harvestInitialFarm.gift;
 const initialInvite=window.harvestInitialFarm.invite;
+const visitInfo=window.harvestInitialFarm.visit??null;   // whose farm this is, on a visit (showVisitBar)
 const initialWelcome=window.harvestInitialFarm.welcome;
 const initialEmailCheck=window.harvestInitialFarm.emailCheck;
 // The admin view (3 Oct 2026, src/admin-view.js): an admin account's showcase farm, marked on the page by src/game-cloud.js before the
@@ -122,6 +123,8 @@ window.harvestAvatarId=window.harvestInitialFarm.profile?.avatar_id??'default';
 const initialUsername=typeof window.harvestInitialFarm.profile?.username==='string'?window.harvestInitialFarm.profile.username:'';
 const adminView=document.documentElement.hasAttribute('data-admin-view');
 window.harvestInitialFarm = null;
+// A farm you visit (24 Oct 2026, harvestVisit below): marked as an admin view too (nothing to play), and only to look at.
+const visitView=document.documentElement.hasAttribute('data-visit-view');
 let selectedTool='plant', selectedCrop='wheat', ready=false;
 // The tractor and the night shift plant with coins, never with a season crop's seed packets: they keep the last ordinary crop chosen.
 let tractorCrop='wheat';
@@ -1259,6 +1262,39 @@ function layoutSave(id,[x,z,turn],{fresh,kind}={}){
  const action=fresh?{type:(state.layout?.stored?.[kind]??0)>0?'layout_place':'layout_buy',kind,x,z}:{type:'layout_move',id,x,z,...(turn?{turn}:{})};
  return runAction(action).finally(()=>{layoutBase=null;});
 }
+// ---- Visiting a farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"). Visit farm on a farmer's profile
+// (src/player-profiles.js) asks farm-api for their farm as it stands (farm_visit: never their coins, diamonds or stock) and opens this same
+// page over your own, with a bridge of its own: it loads their farm, refuses every action and lends the chat and the boards from yours.
+// Your farm stops drawing meanwhile; Back to my farm takes the visit away. Not from the village, an admin's view or a visit.
+let visitLayer=null;
+async function openVisit(playerId){
+ if(visitLayer||villageWorld||adminView)return;
+ const real=window.parent.harvestBridge;let data;
+ try{data=await real.request({operation:'farm_visit',playerId});}catch(error){toast(error?.message||'That farm could not be opened.');return;}
+ if(!data?.state)return;
+ const profile={player_id:playerId,username:data.visit.username,avatar_id:data.visit.avatarId,level:data.visit.level,currency:0};
+ const initial={state:data.state,profile,serverNow:data.serverNow,visit:data.visit,welcome:null,emailCheck:{needed:false,email:'',canChange:false}};
+ const locked=()=>Promise.reject(Object.assign(new Error('You are visiting this farm. Go back to your own farm to play.'),{code:'ACTION_REJECTED'}));
+ window.harvestBridge=Object.assign(Object.create(real),{
+  playerId:real.playerId,serverNow:data.serverNow,serverAt:Date.now(),pending:false,presence:null,notifications:null,signIn:null,
+  takeInitial:()=>structuredClone(initial),trackGame(){},trackCommerce(){},trackShare(){},
+  request:body=>body?.operation==='action'?locked():body?.operation==='load'?Promise.resolve({state:structuredClone(data.state),profile,serverNow:Date.now()}):real.request(body)
+ });
+ visitLayer=document.createElement('div');visitLayer.id='visit-layer';
+ const frame=document.createElement('iframe');frame.title=`${data.visit.username}'s farm`;frame.src=`${location.pathname}?visit=1`;visitLayer.append(frame);
+ document.body.append(visitLayer);document.documentElement.classList.add('visiting');
+}
+function closeVisit(){if(!visitLayer)return;visitLayer.remove();visitLayer=null;delete window.harvestBridge;document.documentElement.classList.remove('visiting');renderer.shadowMap.needsUpdate=true;}
+if(!villageWorld&&!adminView){window.harvestVisit=playerId=>void openVisit(playerId);window.harvestCloseVisit=closeVisit;}
+// On the farm you visit: whose farm it is, its level, and the way back.
+function showVisitBar(){
+ const visit=visitInfo;if(!visitView||!visit)return;
+ const bar=document.createElement('div');bar.className='visit-bar';bar.setAttribute('role','group');
+ bar.innerHTML=`<p><strong></strong><span class="visit-level"></span></p><button type="button" class="primary-button">Back to my farm</button>`;
+ bar.querySelector('strong').textContent=`${visit.username}'s farm`;bar.querySelector('.visit-level').textContent=`Level ${visit.level}`;
+ bar.querySelector('button').onclick=()=>{try{window.parent.harvestCloseVisit?.();}catch{}};
+ $('game').append(bar);
+}
 // Moving things is on unless this device switched it off (Settings › Graphics, bindGraphicsSetting).
 const MOVE_KEY='harvest-tycoon:move-things';
 function movingOn(){try{return localStorage.getItem(MOVE_KEY)!=='off';}catch{return true;}}
@@ -2389,7 +2425,7 @@ function bindUI(){
  new ResizeObserver(resize).observe(world);const sideTools=document.querySelector('.side-tools');if(sideTools)new ResizeObserver(resize).observe(sideTools);const guideCard=document.querySelector('.beginner-card');if(guideCard)new ResizeObserver(resize).observe(guideCard);const goalCard=$('next-goal-card');if(goalCard)new ResizeObserver(resize).observe(goalCard);icons();
 }
 function frame(now){
- requestAnimationFrame(frame);if(!ready||document.hidden)return;
+ requestAnimationFrame(frame);if(!ready||document.hidden||visitLayer)return;
  // A glide of the farm's camera (glideFarm, wheelFarm) takes its step here, just before the farm is drawn, and while one runs the farm is
  // drawn at every display frame (18 Oct 2026): the picture and the names over it move together.
  const gliding=Boolean(glide);if(gliding)glide.step(now);
@@ -2595,7 +2631,7 @@ async function init(){
   const canvas=renderer.domElement;
   // Moving things is for your own farm (layout-edit.js), not the village or a farm an admin looks at.
   if(!villageWorld&&!adminView)createLayoutTools();else for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=true;
-  bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,busy:()=>document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
+  bindFarmInput({canvas,surface:$('game'),isReady:()=>ready&&!visitView,busy:()=>document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
    open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
@@ -2617,7 +2653,7 @@ async function init(){
    }
   });
   markRun(gfxStore,{step:'frame',percent:99});
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
+  ready=true;showVisitBar();if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
   markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full

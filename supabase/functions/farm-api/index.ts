@@ -3,7 +3,7 @@ import {handleSocial} from './social-service.js';
 import {welcomeSummary} from './welcome-service.js';
 import {savePlayerAvatar} from './avatar-service.js';
 import {saveLook} from './look-service.js';
-import {handlePlayerDirectory} from './player-profile-service.js';
+import {handlePlayerDirectory,handleFarmVisit} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare,handleFamilyCards} from './family-service.js';
 import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
@@ -72,7 +72,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
   // beside the farm (cached, never fails), so a load waits no longer for it.
   const reloadAt=body.operation==='load'?readReloadAfter(admin):null;
@@ -87,6 +87,8 @@ Deno.serve(async(req)=>{
   if(body.operation==='player_search'||body.operation==='player_profile'){
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
   }
+  // Visiting another farmer's farm (24 Oct 2026), to look at only.
+  if(body.operation==='farm_visit'){const visit=await handleFarmVisit({admin,body,player:user.id});return reply(visit.data,visit.status);}
   if(body.operation==='admin_grant'){
    const granted=await handleAdminGrant({admin,body,user});
    if(granted.status===200&&granted.data?.granted)later(writeLog(admin,String(body.playerId),adminGrantLog(granted.data.granted),user.id));
