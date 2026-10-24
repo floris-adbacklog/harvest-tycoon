@@ -255,10 +255,38 @@ html[data-visit-view] :is(.building-label,.utility-label,.activity-label,.pond-l
 .ship-bin-copy{display:grid;min-width:0}
 .ship-bin-copy small{color:#7a6b4b;font-weight:400}
 .ship-bin-copy .ship-bin-paid{color:#3f6b2c;font-weight:700}
-.ship-bin-items{margin:0 0 10px}
-.ship-bin-row{display:flex;align-items:center;gap:10px;padding:6px 4px;border-top:1px solid #eee5d8}
+.ship-bin-items{margin:-4px 0 10px;padding:0 12px;border:2px solid #ecdcae;border-top:0;border-radius:0 0 16px 16px;background:#fffdf4}
+.ship-bin:has(+.ship-bin-items){margin-bottom:0;border-radius:16px 16px 0 0}
+.ship-bin-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid #eee5d8}
+.ship-bin-row:first-child{border-top:0}
 .ship-bin-row>span{flex:1;display:grid;min-width:0}
 .ship-bin-row small{color:#7a6b4b;font-weight:400}
 #market-items .market-bin-button{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:36px;padding:4px 6px;border:0;background:none;color:#6d6048;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
 #market-items .market-bin-button>.game-art{width:18px;height:18px;object-fit:contain}
 .market-bin-button:disabled{opacity:.5;cursor:default}
+/* The neighbours (24 Oct 2026, public/neighbours.js): a row a neighbour, their face, hearts, today's gift and their letters. */
+#neighbours-dialog .neighbours-lead{margin:0 2px 10px;font-size:13px;color:#7a6b4b}
+#neighbours-dialog .neighbour{display:grid;grid-template-columns:64px minmax(0,1fr);gap:4px 12px;align-items:center;margin:0 0 10px;padding:10px 12px;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4}
+#neighbours-dialog .neighbour.is-locked{opacity:.6}
+#neighbours-dialog .neighbour.is-locked .neighbour-face{filter:grayscale(1)}
+#neighbours-dialog .neighbour-face{width:64px;height:64px;border-radius:50%;background:#f3ead8;object-fit:cover}
+#neighbours-dialog .neighbour-copy{display:grid;min-width:0}
+#neighbours-dialog .neighbour-copy small{color:#7a6b4b;font-weight:400}
+#neighbours-dialog .neighbour-hearts{display:flex;gap:3px;margin:3px 0}
+#neighbours-dialog .neighbour-heart>.game-art{width:18px;height:18px;object-fit:contain;filter:grayscale(1);opacity:.35}
+#neighbours-dialog .neighbour-heart.is-full>.game-art{filter:none;opacity:1}
+#neighbours-dialog .neighbour-gifts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+#neighbours-dialog .neighbour-gift{display:inline-flex;align-items:center;gap:6px}
+#neighbours-dialog .neighbour-gift>.game-art{width:22px;height:22px;object-fit:contain}
+#neighbours-dialog .neighbour-letters{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+#neighbours-dialog .neighbour-letter-link{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid #e6ddd1;border-radius:999px;background:#fbf8f3;color:#5b4520;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+#neighbours-dialog .neighbour-letter-link.is-open{border-color:#cdbb85;background:#fff6dc}
+#neighbours-dialog .neighbour-letter-link>.game-art{width:16px;height:16px;object-fit:contain}
+#neighbours-dialog .neighbour-letter{grid-column:1/-1;margin:6px 0 0;padding:12px 14px;border:2px solid #ecdcae;border-radius:14px;background:#fff8e4}
+#neighbours-dialog .neighbour-letter h3{margin:0 0 6px;font-size:15px}
+#neighbours-dialog .neighbour-letter p{margin:0;font-size:14px;line-height:1.5;color:#4d3f27}
+/* The bin's items keep a small picture: the Market's cards size .product-art for their own grid (24 Oct 2026, the owner: a huge corn). */
+#market-items .ship-bin-items{grid-column:1/-1}
+#market-items .ship-bin-row .product-art,#market-items .ship-bin-row>.game-art{flex:none;width:36px!important;height:36px!important;max-width:36px;object-fit:contain;grid-area:auto}
+#market-items .ship-bin{grid-column:1/-1}
+#neighbours-dialog .neighbour-sign{margin:8px 0 0;text-align:end;font:700 14px/1.2 "Outfit",sans-serif;color:#7a5410}

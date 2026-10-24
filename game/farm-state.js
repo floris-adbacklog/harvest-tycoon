@@ -1,7 +1,7 @@
 // Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
 // copied beside each farm-state.js by scripts/sync-game.mjs).
 import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS,farmerPassParts} from './farmer-parts.js';
-import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor} from './farm-map.js';
+import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor,giftDecor} from './farm-map.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -1000,9 +1000,10 @@ export const LAKE_OPEN=true,LAKE_LEVEL=WORLD_TWO_LEVEL;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
 export const SHIP_BIN_LEVEL=7;   // the shipping bin (below, at the Warehouse)
-export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),shipbin:SHIP_BIN_LEVEL,challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:5,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
+export const NEIGHBOURS_LEVEL=8;   // the neighbours (below, after the shipping bin)
+export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),shipbin:SHIP_BIN_LEVEL,neighbours:NEIGHBOURS_LEVEL,challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:5,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
-export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),shipbin:'Shipping bin',challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
+export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),shipbin:'Shipping bin',neighbours:'Neighbours',challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
 export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
@@ -1024,7 +1025,7 @@ export function featureUnlocked(state,key){if(key==='family')return familyUnlock
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
-const FEATURE_ART={fishing:'fishingpond',shipbin:'shipping-bin',challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
+const FEATURE_ART={fishing:'fishingpond',shipbin:'shipping-bin',neighbours:'friendship-heart',challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
 // World II's unlocks (its places, and the farm's recipes for it) only show from level 100: below it nothing of the village does. Its places
 // are their own kind (Oct 2026): built from a golden brief at the market square, one at a time, never from Buildings.
 const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state);
@@ -4074,6 +4075,51 @@ export function payShipBin(state,now=Date.now()){
  state.shipPaid={day:today,coins:bin.coins,count};delete state.shipBin;
  return state.shipPaid;
 }
+// The neighbours (24 Oct 2026, the owner: "Doe 1&2" and "zorg dat je met 2 ook storytelling meeneemt"; the plan he approved: "Deze
+// opzet is goed"). Four people of the valley, each with their own story told in five letters (public/neighbours.js). Bring one of
+// their two favourites once a UTC day and their friendship grows; at NEIGHBOUR_HEARTS gifts in all a new heart opens, with a letter and
+// its reward (coins by the farm's level, diamonds at hearts 2, 4 and 5, and at heart 5 a decoration for your farm in Your things). Each
+// opens at the level of their first favourite you can make (Hank with sunflowers). A gift counts nowhere but its own stats.
+// Saved as state.neighbours = {key: {gifts, day}}: the gifts given and the UTC day of the last one.
+export const NEIGHBOURS=Object.freeze({
+ rosie:Object.freeze({name:'Rosie',role:'The baker',likes:Object.freeze({wheat:30,bread:1}),decor:'cart'}),
+ mei:Object.freeze({name:'Mei',role:'The flower grower',likes:Object.freeze({lettuce:15,berries:3}),decor:'flowerbed'}),
+ otto:Object.freeze({name:'Otto',role:'The carpenter',likes:Object.freeze({corn:8,cheese:1}),decor:'firewood'}),
+ hank:Object.freeze({name:'Hank',role:'The beekeeper',likes:Object.freeze({sunflower:1,honey:10}),decor:'bench'})
+});
+export const NEIGHBOUR_HEARTS=Object.freeze([1,3,6,10,15]);   // gifts in all for hearts 1 to 5
+export const NEIGHBOUR_REWARDS=Object.freeze([{coinsPerLevel:20},{coinsPerLevel:40,diamonds:3},{coinsPerLevel:60},{coinsPerLevel:80,diamonds:5},{diamonds:10,decor:true}]);
+const itemLevel=key=>CROPS[key]?(CROP_LEVELS[key]??CROPS[key].minLevel??1):Math.min(...Object.entries(RECIPES).filter(([,r])=>r.output?.[key]&&r.building!=='factory').map(([id])=>RECIPE_LEVELS[id]??RECIPES[id].minLevel??1),Infinity);
+export const neighbourLevel=key=>Math.max(NEIGHBOURS_LEVEL,Math.min(...Object.keys(NEIGHBOURS[key].likes).map(itemLevel)));
+export const neighbourOpen=(state,key)=>Object.hasOwn(NEIGHBOURS,key)&&featureUnlocked(state,'neighbours')&&levelOf(state)>=neighbourLevel(key);
+const neighbourOf=(state,key)=>{const n=state.neighbours?.[key];return {gifts:Number.isInteger(n?.gifts)&&n.gifts>0?Math.min(n.gifts,NEIGHBOUR_HEARTS.at(-1)):0,day:typeof n?.day==='string'?n.day:''};};
+export const neighbourHearts=(state,key)=>{const g=neighbourOf(state,key).gifts;return NEIGHBOUR_HEARTS.filter(n=>g>=n).length;};
+// What the next heart takes and gives, and whether today's gift is still to come: {hearts, gifts, nextAt, giftedToday, done}.
+export function neighbourStatus(state,key,now=Date.now()){
+ const n=neighbourOf(state,key),hearts=neighbourHearts(state,key),done=hearts>=NEIGHBOUR_HEARTS.length;
+ return {hearts,gifts:n.gifts,nextAt:done?null:NEIGHBOUR_HEARTS[hearts],giftedToday:n.day===utcDay(now),done};
+}
+export function neighbourReward(state,heart){
+ const r=NEIGHBOUR_REWARDS[heart-1];return {coins:(r.coinsPerLevel??0)*levelOf(state),diamonds:r.diamonds??0,decor:!!r.decor};
+}
+export function giveNeighbour(state,key,item,now=Date.now()){
+ if(!Object.hasOwn(NEIGHBOURS,key))throw new Error('Choose a neighbour.');
+ if(!featureUnlocked(state,'neighbours'))throw new Error(featureUnlockHint('neighbours'));
+ if(!neighbourOpen(state,key))throw new Error(`Reach level ${neighbourLevel(key)} to meet ${NEIGHBOURS[key].name}.`);
+ const who=NEIGHBOURS[key],count=who.likes[item];if(!count)throw new Error(`${who.name} would love something else.`);
+ const status=neighbourStatus(state,key,now);
+ if(status.done)throw new Error(`You and ${who.name} are the best of friends already.`);
+ if(status.giftedToday)throw new Error(`${who.name} has had a gift today. Come back tomorrow.`);
+ if((state.inventory[item]??0)<count)throw new Error(`You need ${count} ${ITEMS[item].name.toLowerCase()}.`);
+ state.inventory[item]-=count;
+ const gifts=status.gifts+1;state.neighbours={...(state.neighbours??{}),[key]:{gifts,day:utcDay(now)}};
+ state.stats.neighbour_gifts=(state.stats.neighbour_gifts??0)+1;
+ const heart=NEIGHBOUR_HEARTS.indexOf(gifts)+1;
+ if(!heart)return {neighbour:key,gifts,hearts:status.hearts};
+ const reward=neighbourReward(state,heart);state.coins+=reward.coins;if(reward.diamonds)state.diamonds+=reward.diamonds;
+ const decor=reward.decor?giftDecor(state,who.decor,1):null;
+ return {neighbour:key,gifts,hearts:heart,heart,coins:reward.coins,diamonds:reward.diamonds,...(decor?{decor:who.decor}:{})};
+}
 // The Warehouse (22 Oct 2026, the owner's plan: plan-warehouse/voorstel.md with his choices). Everything a farm keeps in storage takes one
 // place a piece: crops, goods, village goods, heirlooms and season crops (every key of ITEMS in state.inventory). Coins, diamonds, seed
 // packets, boosts, fish, looks and pets are no items and take no place. The rule, as the screen says it: when the Warehouse is full,
@@ -4682,6 +4728,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'warehouse_upgrade':return upgradeWarehouse(state,action.expectedCost);
   case 'bin_add':return shipBinAdd(state,action.item,action.count,now);
   case 'bin_take':return shipBinTake(state,action.item,now);
+  case 'neighbour_gift':return giveNeighbour(state,action.neighbour,action.item,now);
   case 'valley_sell':return valleySell(state,action.stall,action.basket,now);
   case 'valley_skip':return valleySkip(state,action.stall,action.basket,now);
   // World II's market square (Oct 2026): no feature gate, the level check is their own (nothing of it may show below level 100).

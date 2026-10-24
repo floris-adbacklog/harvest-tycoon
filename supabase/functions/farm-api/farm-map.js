@@ -157,6 +157,12 @@ export function purchaseDecor(state,kind,count=1){
  state.coins-=coins;layout.stored={...layout.stored,[kind]:(layout.stored[kind]??0)+count};
  return {bought:kind,count,coins};
 }
+// A gift into your store (24 Oct 2026, the neighbours' last heart): no coins.
+export function giftDecor(state,kind,count=1){
+ if(!Object.hasOwn(DECOR,kind))return null;
+ const layout=layoutOf(state);layout.stored={...layout.stored,[kind]:(layout.stored[kind]??0)+count};
+ return {kind,count};
+}
 // Storing a tree or a path tile you placed: it waits to be placed again.
 export function storeDecor(state,id){
  const layout=layoutOf(state),i=layout.added.findIndex(d=>d.id===id);if(i<0)throw new Error('Choose a tree or a path tile you placed.');

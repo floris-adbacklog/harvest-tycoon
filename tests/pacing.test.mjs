@@ -83,9 +83,10 @@ test('every level up to 20 opens one to three new things, and levels 2 to 10 twe
  // The Fishing pond (11 Oct 2026, the owner's call) is the 21st, at level 4, once it is open (POND_OPEN); level 4 then opens three things.
  // Silo research (23 Oct 2026, the owner's call; 26 before) is the 22nd, at level 5 with Barley and field 12: three things there too.
  // The shipping bin (24 Oct 2026, the owner's "Doe 1&2") is the 23rd, at level 7 beside Delivery orders.
- let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,POND_OPEN?23:22);
+ // The neighbours (24 Oct 2026, the same "Doe 1&2") are the 24th, at level 8 beside the Bakery and bread.
+ let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,POND_OPEN?24:23);
  assert.equal(FEATURE_LEVELS.silo,5);assert.equal(perLevel[5].length,3);
- assert.deepEqual([perLevel[3].length,perLevel[8].length],[3,2]);assert.ok(perLevel[3].includes('feature:activities'));
+ assert.deepEqual([perLevel[3].length,perLevel[8].length],[3,3]);   // level 8: the Bakery, bread and the neighbours (24 Oct 2026)assert.ok(perLevel[3].includes('feature:activities'));
  if(POND_OPEN)assert.deepEqual(perLevel[4].filter(x=>x.startsWith('feature:')),['feature:fishing']);
  assert.equal(FAMILY_MIN_LEVEL,10);
  // Every goal an event can ask for is open when events open (level 15): chores, fertilizer and green beans included.

@@ -12,7 +12,7 @@ const upcoming=state=>unlockEntries(state).filter(e=>!e.unlocked).sort((a,b)=>a.
 // Plan F (13 Oct 2026, proposal 4): every line on the level-up card says what opened and where it is, as the pond's line does (five things
 // said only "Activity unlocked"; the pond, whose line says where, is fished by 78%). The same place on a phone and a computer (a pin or
 // a building on the farm, Today, the diamonds at the top), except Medals: in More on a phone, in Estate on a computer.
-const FEATURE_LINES={shipbin:'Sell tonight for 10% more: To bin at the Market.',challenges:'Three small goals a day, in Today.',activities:'Small jobs at four stops: tap a pin on the farm.',cart:'Customers pay more than the Market: tap the cart.',
+const FEATURE_LINES={neighbours:'Rosie, Mei and Otto moved in: More › Neighbours.',shipbin:'Sell tonight for 10% more: To bin at the Market.',challenges:'Three small goals a day, in Today.',activities:'Small jobs at four stops: tap a pin on the farm.',cart:'Customers pay more than the Market: tap the cart.',
  family:'Play together: tap the Family Hall.',boosts:'Spend your diamonds on a boost: tap the diamonds at the top.',chores:'Small jobs for extra coins: tap its pin on the farm.',
  stall:'It earns coins while you are away: tap its pin on the farm.',tractor:'Works many fields at once: tap its pin on the farm.',silo:'Cheaper seeds and quicker crops: tap its pin on the farm.',
  projects:'Big works for your estate: open Estate.',valleymarket:'Full baskets of goods pay more: tap its pin on the farm.',ranch:'Pick one herd to work faster: tap its pin on the farm.',
