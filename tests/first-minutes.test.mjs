@@ -44,7 +44,9 @@ test('coming back on a second day: the daily gift brings 30 minutes of double ha
 test('the screens: steps announce themselves, the finale opens once, a promise at the end, the next unlock is shown',()=>{
  const guide=read('public/beginner-ui.js'),game=read('public/game.js'),progression=read('public/progression-ui.js');
  assert.match(guide,/\$\('claim-reward'\)\.hidden=!current\?\.ready;/,'no button for steps that finish themselves');
- assert.match(guide,/notify\(`✓ \$\{title\} · \+\$\{xp\} XP\.\$\{current\?` Next: \$\{current\.title\}\.`:''\}`\);/);
+ // 24 Oct 2026 (1+2+3): which step it was, what it gave and what to do next, with confetti from the guide's line or card.
+ assert.match(guide,/notify\(next\?`✓ Step \$\{done\} of 10 done! \+\$\{gained\} XP\. Next: \$\{next\}\.`:`✓ Step \$\{done\} of 10 done! \+\$\{gained\} XP\.`\);/);
+ assert.match(guide,/if\(from\)confettiFrom\(from\.getBoundingClientRect\(\),\{count:28\}\);/);
  assert.match(guide,/if\(current\?\.index===BEGINNER_QUESTS\.length-1&&current\.ready&&!finaleShown\)\{finaleShown=true;open\(\);\}/);
  assert.match(game,/beginner\?\.afterAction\(result\);/);
  // 11 Oct 2026 (Part A A8): the card leads to the next goal (next-goal.js); its text leaves the building out when the quests come first.

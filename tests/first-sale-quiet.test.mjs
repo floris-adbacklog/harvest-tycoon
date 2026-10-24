@@ -63,15 +63,18 @@ test('a farm that opens on step 2 points at Market 1.8 s after the farm is on sc
  ui.tick();t+=1900;ui.tick();assert.equal(pointed.length,2,'the pointer was free again: 1.8 s later once more');
 }));
 
-test('the other steps still point once by themselves, and step 7 is not kept standing',()=>withPage(async()=>{
+// 24 Oct 2026 (the owner: "De beginner guide moet duidelijker zijn", 1+2+3): every step's pointer comes back until its step is done, step 7's
+// too, standing through taps on the farm; only the steps on the fields and the helping hand point once (POINT_ONCE).
+test('the other steps point by themselves and come back until done; the field steps point once',()=>withPage(async()=>{
  const {createBeginnerUI}=await import('../public/beginner-ui.js');
  const p=page();globalThis.document=p.document;let t=now;Date.now=()=>t;
  const s=createFarm(now),ids=beginnerProgress(s).map(q=>q.id),pointed=[];
  s.onboarding={...s.onboarding,completed:6,milestones:Object.fromEntries(ids.slice(0,6).map(k=>[k,true]))};s.inventory.eggs=0;
  const ui=createBeginnerUI({state:s,runAction:async a=>act(s,a,t),icons(){},notify(){},onChange(){},guide:(target,o)=>pointed.push([target,o])});
  t+=5000;ui.tick();assert.deepEqual(pointed,[],'loaded on step 7: nothing changed yet');
- s.inventory.eggs=3;ui.refresh();ui.landed();assert.deepEqual(pointed,[['eggs',{auto:true}]]);
- t+=60000;ui.refresh();ui.tick();ui.landed();assert.equal(pointed.length,1,'once');
+ s.inventory.eggs=3;ui.refresh();ui.landed();assert.deepEqual(pointed,[['eggs',{auto:true,stay:true}]]);
+ t+=60000;ui.refresh();ui.tick();t+=2000;ui.tick();assert.equal(pointed.length,2,'it comes back 1.8 s after the last touch while the step lasts');
+ const {POINT_ONCE}=await import('../public/beginner-ui.js');assert.deepEqual([...POINT_ONCE].sort(),['hand','harvest','plant','tend','water']);
 }));
 
 test('the pointer that stays: a tap on the farm leaves it, a tap on another button or a window over it ends it',async()=>{

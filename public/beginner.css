@@ -198,3 +198,11 @@ html.calm-start .tool-dock .tools,html.calm-start .tool-dock>.tools{grid-templat
 .spotlight[hidden],.spotlight-hole[hidden],.spotlight-skip[hidden]{display:none}
 .spotlight-skip{position:absolute;z-index:7;top:calc(var(--mobile-top,96px) + 62px);left:50%;translate:-50% 0;min-height:34px;padding:6px 14px;border:1px solid #e6ddd1;border-radius:999px;background:#fffdf5e6;color:#5b4520;font:700 13px/1 'DM Sans',sans-serif;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.spotlight-hole{transition:none}}
+
+/* ---- The guide's line on a phone shows the way to its prize (24 Oct 2026, the owner: "De beginner guide moet duidelijker zijn", 1+2+3) ----
+   A gold bar along its foot, as far as the steps done (--guide-done, beginner-ui.js), and the 50 diamonds at its end. */
+#beginner-mobile{position:relative;overflow:hidden;grid-template-columns:auto minmax(0,1fr) auto auto}
+#beginner-mobile::after{content:'';position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(90deg,#e8b94e var(--guide-done,0%),#efe6d8 var(--guide-done,0%))}
+.beginner-mobile-prize{display:inline-flex;align-items:center;gap:3px;flex:none;padding:3px 8px 3px 5px;border-radius:999px;background:#e3f3fd;color:#1f5877;font:700 13px/1 'DM Sans',sans-serif}
+.beginner-mobile-prize>:is(.game-art,img,svg){width:16px;height:16px}
+.next-goal-mobile .beginner-mobile-prize{display:none}

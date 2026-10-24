@@ -3,6 +3,7 @@ import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 import {nextGoal,actNow,readyAllAt} from './next-goal.js';
 import {questArt} from './quests-ui.js';
+import {confettiFrom} from './confetti.js';
 
 // What to do now, in the phone's one-line banner (6 Oct 2026: it said only the step's title, and the instruction was a tap away; only 7
 // of 16 farmers on a phone made the first market sale).
@@ -27,6 +28,11 @@ export function liveStep(state,id,now){
 // window is open and the pointer is free, and only when the step can be done now (a ripe crop for the wheat, a batch that is ready, eggs
 // or a Coop that can start them); otherwise it waits for that while the step lasts.
 export const AUTO_WAIT_MS=1800;
+// The pointer stays until the step is done (24 Oct 2026, the owner: "De beginner guide moet duidelijker zijn, mensen skippen deze", 1+2+3):
+// every step's pointer comes back 1.8 s after the last touch while its step lasts, as step 2's did since 13 Oct, also when the farm opens
+// on it; a tap on the farm leaves it standing. Not the steps on the fields (the spotlight, the sickle and a toast show those, and a toast
+// again and again would nag) nor the helping hand (its Show me turns the camera to the Greenhouse).
+export const POINT_ONCE=Object.freeze(new Set(['harvest','plant','water','tend','hand']));
 export function canPointNow(state,guideTarget,now){
  const jobs=Object.values(state.buildings??{}).flatMap(productionJobs);
  if(guideTarget==='harvest')return state.plots.some(p=>p.crop&&p.readyAt<=now);
@@ -96,7 +102,8 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   const phase=current?current.guide==='eggs'&&(state.inventory?.eggs??0)>0?`${current.id}:sell`:current.id:null;
   // Step 2 also when the farm opens on it (13 Oct 2026: a farmer who left before the first sale), from 1.8 s after the farm is on screen:
   // its pointer comes back (repeat, autoCheck).
-  if(phase&&phase!==lastStep&&(lastStep||phase==='sell')){pending={id:current.id,phase,guide:current.guide,wait:AUTO_WAIT_MS,quietAt:lastStep&&quiet()?Date.now():0,repeat:phase==='sell'};}
+  const again=!POINT_ONCE.has(current?.guide);
+  if(phase&&phase!==lastStep&&(lastStep||again)){pending={id:current.id,phase,guide:current.guide,wait:AUTO_WAIT_MS,quietAt:lastStep&&quiet()?Date.now():0,repeat:again};}
   lastStep=phase;
   // From the first harvest to the first sale the Market stays lit (11 Oct 2026, Part A A11): a steady glow, also after the pointer went.
   // The same while step 7's eggs wait to be sold.
@@ -110,7 +117,10 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   $('game')?.classList.toggle('first-sale-waits',firstSale);$('game')?.classList.toggle('first-harvest-waits',firstSale&&current.id==='harvest');
   goalCard(finished);
   $('quest-number').textContent=Math.min(done+1,steps.length);$('quest-total').textContent=steps.length;
-  $('quest-title').textContent=current?.title??'Ready to grow your own way';
+  // The card says the step as what to do (24 Oct 2026, 1+2+3: "Harvest the ripe corn", not "Your first basket"), its explanation under it.
+  $('quest-title').textContent=current?(current.ready?current.title:liveStep(state,current.id,farmNow())??DO_NOW[current.id]??current.title):'Ready to grow your own way';
+  // The way to the guide's prize in the phone's line too: a bar along its foot and the prize at its end (24 Oct 2026, 1+2+3).
+  $('beginner-mobile')?.style?.setProperty?.('--guide-done',`${Math.round(done/steps.length*100)}%`);{const prize=$('beginner-mobile-prize');if(prize)prize.textContent=String(BEGINNER_REWARD);}
   $('quest-description').textContent=current?.description??`You learned the basics and earned ${BEGINNER_REWARD} diamonds. Find your next goals in Quests and Today.`;
   const questXp=$('quest-xp');if(questXp){questXp.hidden=!current;questXp.innerHTML=current?`${art('xp')}+${BEGINNER_STEP_XP} XP`:'';}
   $('quest-progress').max=steps.length;$('quest-progress').value=done;$('quest-count').textContent=`${done} / ${steps.length}`;
@@ -147,10 +157,16 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
  function afterAction(result){
   const steps=result?.guide??[],current=beginnerProgress(state).find(q=>q.current);
   if(steps.length){
-   const xp=steps.reduce((sum,step)=>sum+step.xp,0),title=steps.length===1?steps[0].title:`${steps.length} guide steps`;
+   const gained=steps.reduce((sum,step)=>sum+step.xp,0);
    // The first basket comes with level 2, whose line says the next step (progression-ui.js, 11 Oct 2026 A11): one message, not two.
    const firstBasket=steps.some(step=>step.step==='harvest')&&current?.id==='sell'&&levelOf(state)===2;
-   if(!firstBasket)notify(`✓ ${title} · +${xp} XP.${current?` Next: ${current.title}.`:''}`);
+   // A finished step is a little party (24 Oct 2026, 1+2+3): confetti from the guide's line or card, and which step it was and what is next.
+   const done=beginnerProgress(state).filter(q=>q.done).length,next=current?DO_NOW[current.id]??current.title:'';
+   // (gained, not xp: the scan for texts takes a name for the markup it holds elsewhere in this file, the card's xp chip.)
+   if(!firstBasket&&steps.length===1)notify(next?`✓ Step ${done} of 10 done! +${gained} XP. Next: ${next}.`:`✓ Step ${done} of 10 done! +${gained} XP.`);
+   else if(!firstBasket)notify(next?`✓ ${steps.length} guide steps done! +${gained} XP. Next: ${next}.`:`✓ ${steps.length} guide steps done! +${gained} XP.`);
+   const from=[$('beginner-mobile'),document.querySelector('.beginner-card')].find(el=>el&&!el.hidden&&el.getClientRects?.().length);
+   if(from)confettiFrom(from.getBoundingClientRect(),{count:28});
    for(const el of [$('beginner-mobile'),document.querySelector('.beginner-card')]){if(!el)continue;el.classList.remove('just-done');void el.offsetWidth;el.classList.add('just-done');}
   }
   if(current?.index===BEGINNER_QUESTS.length-1&&current.ready&&!finaleShown){finaleShown=true;open();}
@@ -168,7 +184,7 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   if(!pending)return;
   const current=beginnerProgress(state).find(q=>q.current);
   if(current?.id!==pending.id){pending=null;return;}
-  if(pending.repeat&&$('market-dialog')?.open){pending=null;return;}
+  if(pending.id==='sell'&&$('market-dialog')?.open){pending=null;return;}
   if(!quiet()){pending.quietAt=0;return;}
   pending.quietAt||=now;
   if(now-Math.max(pending.quietAt,pending.repeat?touchedAt:0)<pending.wait||!canPointNow(state,pending.guide,farmNow()))return;

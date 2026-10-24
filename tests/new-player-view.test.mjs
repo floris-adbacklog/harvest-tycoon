@@ -25,7 +25,8 @@ test('the first minute: fields up close on every screen, the sickle shows itself
  // The way to the Market by itself (since 6 Oct 2026), now for every step (A12): pending after a step, the moment the harvest lands for step 2.
  // 13 Oct 2026: step 2 also when the farm opens on it, and its pointer comes back (repeat; tests/first-sale-quiet.test.mjs); the landing
  // points at once only the first time.
- assert.match(beginner,/if\(phase&&phase!==lastStep&&\(lastStep\|\|phase==='sell'\)\)\{pending=\{id:current\.id,phase,guide:current\.guide,wait:AUTO_WAIT_MS,quietAt:lastStep&&quiet\(\)\?Date\.now\(\):0,repeat:phase==='sell'\};\}/);
+ // 24 Oct 2026 (1+2+3): every step's pointer comes back until the step is done, also when the farm opens on it (not the field steps).
+ assert.match(beginner,/const again=!POINT_ONCE\.has\(current\?\.guide\);\n  if\(phase&&phase!==lastStep&&\(lastStep\|\|again\)\)\{pending=\{id:current\.id,phase,guide:current\.guide,wait:AUTO_WAIT_MS,quietAt:lastStep&&quiet\(\)\?Date\.now\(\):0,repeat:again\};\}/);
  assert.match(beginner,/function landed\(\)\{if\(pending\?\.id!=='sell'&&pending\?\.phase!=='sell_egg:sell'\|\|pending\.shown\)return;pending\.wait=0;autoCheck\(\);\}/);
  const ids=[...beginner.matchAll(/(\w+):'[^']+'/g)].map(m=>m[1]).slice(0,10);
  assert.deepEqual(ids,['harvest','sell','plant','water','produce','gift','chore','tend','wheat','collect'],'a short what-to-do for every guide step, in order');
