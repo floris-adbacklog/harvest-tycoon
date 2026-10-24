@@ -69,11 +69,11 @@ Still to do before release:
 - The fence round the crops stays when a field leaves it.
 - Wiki page (How to play) for moving, clearing and building; News when it goes live.
 
-## Release order
+## Release order (24 Oct 2026)
 
-1. Site first: the new save key `layout` (an old farm-api keeps unknown keys).
-2. Wait about 40 minutes (old open pages).
-3. farm-api, deployed by the owner: the layout_* actions and farm_visit.
+1. farm-api first, deployed by the owner (the layout_* actions and farm_visit). This is safe before the site: today's pages never
+   send these actions, and every farm-api, old or new, keeps a save key it does not know (`layout`), so nothing reads it wrongly.
+2. Then push the site. The Move button, Build and Visit farm appear, and every save already works.
+3. Then the News (~/Harvest Tycoon/news-build-your-farm-2026-10-24/news.sql: 16 languages, level 3 and up, 7 days, says it is a beta).
 
-Until farm-api is out, Move things shows, but saving a move is refused by the server (Unknown farm action) and the farm goes back.
-So either deploy farm-api right after the wait, or keep the button off until then.
+The other way round, Move things would show for a while with every save refused.
