@@ -323,6 +323,14 @@ const waitTip=createWaitTip({state,now:farmNow,show:toast,quiet:()=>adminView||v
 // sits under a modal window, so it waits while one is open (the Windmill's own, where the fertilizer is collected) and comes when it closes.
 const fertilizerTip=createFertilizerTip({state,show:toast,quiet:()=>adminView||villageWorld||!beginnerProgress(state).every(q=>q.done)||Boolean(document.querySelector('dialog[open]'))});
 document.addEventListener('close',e=>{if(e.target instanceof HTMLDialogElement)fertilizerTip.check();},true);
+// The shipping bin's pay (24 Oct 2026, farm-state.js payShipBin): once a morning, the coins it brought, as a note (not in the village or
+// the admin view). Remembered on this device so a reload does not say it again.
+const BIN_NOTE_KEY='harvest-tycoon:bin-paid';
+function binPaidNote(){
+ const paid=state.shipPaid;if(!paid||adminView||villageWorld||paid.day!==utcDay(farmNow())||!(paid.coins>0))return;
+ try{if(localStorage.getItem(BIN_NOTE_KEY)===paid.day)return;localStorage.setItem(BIN_NOTE_KEY,paid.day);}catch{return;}
+ toast(`Your shipping bin was paid: +${paid.coins.toLocaleString('en-US')} coins.`);
+}
 // The one short toast at the bottom for new crop medals (farm.html #medal-toast): the toast at the top stays free for the action's own.
 let medalNotice;
 // The guide's step now (11 Oct 2026, Part A A11): from the first harvest to the first sale only one line speaks, so a medal earned while
@@ -1810,7 +1818,7 @@ function updateUI(){
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  trackTotals(lvl);
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
- nudge?.check();fertilizerTip.check();
+ nudge?.check();fertilizerTip.check();binPaidNote();
  $('level-name').textContent=levelTitle(lvl);
  // What the next level brings, on the level card (computer screens): there is always something just ahead.
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';

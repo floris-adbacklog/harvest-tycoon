@@ -999,9 +999,10 @@ export const POND_OPEN=true,POND_LEVEL=4;
 export const LAKE_OPEN=true,LAKE_LEVEL=WORLD_TWO_LEVEL;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
-export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:5,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
+export const SHIP_BIN_LEVEL=7;   // the shipping bin (below, at the Warehouse)
+export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),shipbin:SHIP_BIN_LEVEL,challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:5,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
-export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
+export const FEATURE_NAMES={...(POND_OPEN?{fishing:'Fishing pond'}:{}),shipbin:'Shipping bin',challenges:'Daily challenges',family:'Farm Family',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',boosts:'Diamond boosts',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'};
 export function guidedFarm(state){return state.progression?.mode==='guided';}
 const kept=(state,kind,key)=>state.progression?.kept?.[kind]?.includes(key)===true;
 export function buildingCost(state,key){return guidedFarm(state)?BUILDING_COSTS[key]??0:BUILDINGS[key]?.buildCost??0;}
@@ -1023,7 +1024,7 @@ export function featureUnlocked(state,key){if(key==='family')return familyUnlock
 export function featureUnlockHint(key){return `Reach level ${FEATURE_LEVELS[key]} to unlock ${FEATURE_NAMES[key]}.`;}
 export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='factory';if(factory)return Math.max(FACTORY_LEVEL,RECIPES[id].base?recipeLevel(state,RECIPES[id].base):1);return guidedFarm(state)&&!kept(state,'recipes',id)&&!kept(state,'buildings',RECIPES[id].building)?RECIPE_LEVELS[id]??1:RECIPES[id].minLevel??1;}
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
-const FEATURE_ART={fishing:'fishingpond',challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
+const FEATURE_ART={fishing:'fishingpond',shipbin:'shipping-bin',challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
 // World II's unlocks (its places, and the farm's recipes for it) only show from level 100: below it nothing of the village does. Its places
 // are their own kind (Oct 2026): built from a golden brief at the market square, one at a time, never from Buildings.
 const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state);
@@ -2904,7 +2905,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);payShipBin(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -4031,6 +4032,48 @@ function normalizeShift(state){
  s.log={rounds:(Array.isArray(s.log.rounds)?s.log.rounds:[]).slice(0,SHIFT_ROUNDS+1).map(count),items:Object.fromEntries(Object.entries(s.log.items&&typeof s.log.items==='object'?s.log.items:{}).filter(([k])=>Object.hasOwn(CROPS,k)).map(([k,v])=>[k,count(v)])),
   planted:count(s.log.planted),watered:count(s.log.watered),tended:count(s.log.tended)};
 }
+// The shipping bin (24 Oct 2026, the owner picked it from the lessons of a well-loved farming game: "Doe 1&2"). From SHIP_BIN_LEVEL a
+// farmer can put crops and goods in the bin at today's price and SHIP_BIN_BONUS on top; the bin is paid at 00:00 UTC, on the farm's next
+// load on a later day (normalizeFarm, payShipBin), so a day ends with something to come back for. What goes in leaves the Warehouse
+// at once. The bin holds shipBinRoom places (more with the farm's level) and can be emptied back into the Warehouse until it is paid,
+// for the price it was put in at. Village goods stay at the Village market. It counts nowhere (no sold or earned counters, so no quest,
+// challenge, event, chest or board), only its own: stats.bin_shipped and stats.bin_earned.
+// Saved as state.shipBin = {day, items:{key:n}, coins} (the price locked in, bonus included) and, once paid, state.shipPaid =
+// {day, coins, count} for the morning's line.
+export const SHIP_BIN_BONUS=.1,SHIP_BIN_ROOM_MAX=500;
+export const shipBinRoom=state=>Math.min(SHIP_BIN_ROOM_MAX,20+5*levelOf(state));
+export const shipBinCount=state=>Object.values(state.shipBin?.items??{}).reduce((n,v)=>n+(Number.isInteger(v)&&v>0?v:0),0);
+export const shipBinItem=key=>Object.hasOwn(ITEMS,key)&&!villageGood(key);
+// What count of `key` would bring in the bin now, bonus included (whole coins).
+export const shipBinValue=(state,key,count,now=Date.now())=>Math.floor(marketSaleValue(state,count*marketQuote(key,now).price,now)*(1+SHIP_BIN_BONUS));
+export function shipBinAdd(state,key,count,now=Date.now()){
+ if(!featureUnlocked(state,'shipbin'))throw new Error(featureUnlockHint('shipbin'));
+ if(!shipBinItem(key))throw new Error('Choose a crop or good for the shipping bin.');
+ if(!Number.isSafeInteger(count)||count<1)throw new Error('Choose how many to put in the bin.');
+ if(count>sellableStock(state,key,now))throw new Error(`You have ${sellableStock(state,key,now)} ${ITEMS[key].name.toLowerCase()} to put in.`);
+ const room=shipBinRoom(state)-shipBinCount(state);if(count>room)throw new Error(room?`The bin has room for ${room} more.`:'The shipping bin is full. It is paid at 00:00 UTC.');
+ const coins=shipBinValue(state,key,count,now),day=utcDay(now);
+ state.shipBin??={day,items:{},coins:0};state.shipBin.day=day;
+ state.inventory[key]-=count;state.shipBin.items[key]=(state.shipBin.items[key]??0)+count;state.shipBin.coins+=coins;
+ return {item:key,count,coins,total:state.shipBin.coins,room:shipBinRoom(state)-shipBinCount(state)};
+}
+// Back into the Warehouse, all of one item, for what it was put in at (its share of the locked price).
+export function shipBinTake(state,key,now=Date.now()){
+ const n=state.shipBin?.items?.[key]??0;if(!n)throw new Error('That is not in the shipping bin.');
+ const all=shipBinCount(state),back=Math.floor(state.shipBin.coins*n/all);
+ state.inventory[key]=(state.inventory[key]??0)+n;delete state.shipBin.items[key];state.shipBin.coins-=back;
+ if(!shipBinCount(state))delete state.shipBin;
+ return {item:key,count:n};
+}
+export function payShipBin(state,now=Date.now()){
+ const bin=state.shipBin;if(!bin)return null;
+ if(typeof bin.day!=='string'||!bin.items||typeof bin.items!=='object'||!Number.isSafeInteger(bin.coins)||bin.coins<0){delete state.shipBin;return null;}
+ const today=utcDay(now);if(bin.day>=today)return null;
+ const count=shipBinCount(state);state.coins+=bin.coins;
+ state.stats.bin_shipped=(state.stats.bin_shipped??0)+count;state.stats.bin_earned=(state.stats.bin_earned??0)+bin.coins;
+ state.shipPaid={day:today,coins:bin.coins,count};delete state.shipBin;
+ return state.shipPaid;
+}
 // The Warehouse (22 Oct 2026, the owner's plan: plan-warehouse/voorstel.md with his choices). Everything a farm keeps in storage takes one
 // place a piece: crops, goods, village goods, heirlooms and season crops (every key of ITEMS in state.inventory). Coins, diamonds, seed
 // packets, boosts, fish, looks and pets are no items and take no place. The rule, as the screen says it: when the Warehouse is full,
@@ -4637,6 +4680,8 @@ function dispatchFarmAction(state,action,now,random){
   case 'silo_upgrade':return upgradeSilo(state);
   // The Warehouse's upgrade (22 Oct 2026): no feature gate, every farm has its Warehouse from the start.
   case 'warehouse_upgrade':return upgradeWarehouse(state,action.expectedCost);
+  case 'bin_add':return shipBinAdd(state,action.item,action.count,now);
+  case 'bin_take':return shipBinTake(state,action.item,now);
   case 'valley_sell':return valleySell(state,action.stall,action.basket,now);
   case 'valley_skip':return valleySkip(state,action.stall,action.basket,now);
   // World II's market square (Oct 2026): no feature gate, the level check is their own (nothing of it may show below level 100).

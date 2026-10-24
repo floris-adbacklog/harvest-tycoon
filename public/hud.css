@@ -249,3 +249,16 @@ html[data-visit-view] :is(.building-label,.utility-label,.activity-label,.pond-l
 .layout-inventory-empty{margin:0;font:400 13px/1.35 'Outfit',sans-serif;color:#7a6a50}
 .layout-inventory-empty[hidden]{display:none}
 
+/* The shipping bin on the Market (24 Oct 2026): a quiet line at the top, its items in a fold, "To bin" beside Sell all. */
+.ship-bin{display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:8px 12px;border:2px solid #ecdcae;border-radius:16px;background:#fff8e4}
+.ship-bin>.game-art{flex:none;width:36px;height:36px;object-fit:contain}
+.ship-bin-copy{display:grid;min-width:0}
+.ship-bin-copy small{color:#7a6b4b;font-weight:400}
+.ship-bin-copy .ship-bin-paid{color:#3f6b2c;font-weight:700}
+.ship-bin-items{margin:0 0 10px}
+.ship-bin-row{display:flex;align-items:center;gap:10px;padding:6px 4px;border-top:1px solid #eee5d8}
+.ship-bin-row>span{flex:1;display:grid;min-width:0}
+.ship-bin-row small{color:#7a6b4b;font-weight:400}
+#market-items .market-bin-button{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:36px;padding:4px 6px;border:0;background:none;color:#6d6048;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+#market-items .market-bin-button>.game-art{width:18px;height:18px;object-fit:contain}
+.market-bin-button:disabled{opacity:.5;cursor:default}

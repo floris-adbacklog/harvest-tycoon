@@ -81,6 +81,8 @@ export const LAKE_PICTURES=Object.freeze(['fish-bleak','fish-chub','fish-whitefi
  'fish-bullhead','fish-vendace','fish-ide','fish-goldenorfe','fish-brooktrout','fish-laketrout','fish-salmon','fish-goldentrout','fish-marbletrout','fish-glacierghost','villagelake']);
 for(const key of LAKE_PICTURES)pictures[key]=key;
 // Feedback & bugs (30 Sep 2026, painted by the user, WebP): the mailbox on its button and in the More menu.
+// The shipping bin and the neighbours' friendship heart (24 Oct 2026), painted for them (WebP, below).
+pictures['shipping-bin']='shipping-bin';pictures['friendship-heart']='friendship-heart';
 pictures.feedback='feedback';
 export const ART_KEYS=Object.freeze([...Object.keys(spriteEntries),...Object.keys(pictures)]);
 // The second batch re-encoded to WebP (every picture of 40 KB or more that was still a PNG; the PNGs stay on disk): same pixel size,
@@ -94,6 +96,7 @@ const webpPictures=new Set(['live-events','family-sharing','farmhand','coin-cart
 for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver','family-chest-gold','family-chest-open']){pictures[key]=key;webpPictures.add(key);}
 // Your own farm layout (24 Oct 2026, painted for the owner): Move things, Rotate, Clear, Store, drawing and erasing a path, the land that
 // opens later and Visit farm.
+for(const key of ['shipping-bin','friendship-heart'])webpPictures.add(key);
 for(const key of ['layout-move','layout-rotate','layout-clear','layout-store','path-draw','path-erase','land-locked','visit-farm']){pictures[key]=key;webpPictures.add(key);}
 // What you can build on your farm (24 Oct 2026, painted for the owner), one picture per Build tile.
 for(const kind of ['fence','flowers','grass','oak','pine','birch','shrub','path','bench','flowerbed','haybale','barrels','cart','firewood']){pictures[`decor-${kind}`]=`decor-${kind}`;webpPictures.add(`decor-${kind}`);}

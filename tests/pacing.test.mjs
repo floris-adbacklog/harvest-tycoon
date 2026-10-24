@@ -82,7 +82,8 @@ test('every level up to 20 opens one to three new things, and levels 2 to 10 twe
  for(let level=2;level<=20;level++){const things=perLevel[level]??[];assert(things.length>=1,`level ${level} has nothing`);assert(things.length<=3,`level ${level}: ${things.join(', ')}`);}
  // The Fishing pond (11 Oct 2026, the owner's call) is the 21st, at level 4, once it is open (POND_OPEN); level 4 then opens three things.
  // Silo research (23 Oct 2026, the owner's call; 26 before) is the 22nd, at level 5 with Barley and field 12: three things there too.
- let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,POND_OPEN?22:21);
+ // The shipping bin (24 Oct 2026, the owner's "Doe 1&2") is the 23rd, at level 7 beside Delivery orders.
+ let first=0;for(let level=2;level<=10;level++)first+=(perLevel[level]??[]).length;assert.equal(first,POND_OPEN?23:22);
  assert.equal(FEATURE_LEVELS.silo,5);assert.equal(perLevel[5].length,3);
  assert.deepEqual([perLevel[3].length,perLevel[8].length],[3,2]);assert.ok(perLevel[3].includes('feature:activities'));
  if(POND_OPEN)assert.deepEqual(perLevel[4].filter(x=>x.startsWith('feature:')),['feature:fishing']);
