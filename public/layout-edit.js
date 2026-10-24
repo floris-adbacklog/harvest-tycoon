@@ -47,7 +47,7 @@ const HINT={
 };
 const OFFER={tree:(coins,xp)=>`Clear this tree for ${coins} coins (+${xp} XP)?`,bush:(coins,xp)=>`Clear this bush for ${coins} coins (+${xp} XP)?`,rock:(coins,xp)=>`Clear this rock for ${coins} coins (+${xp} XP)?`};
 // The picture on each Build tile: a painted one where there is one (data-game-art), else a line icon.
-const ICON=Object.freeze({path:'art:path-draw',fence:'fence',flowers:'flower',grass:'leaf',oak:'tree-deciduous',pine:'tree-pine',birch:'trees',shrub:'shrub',bench:'sofa',flowerbed:'flower-2',haybale:'package',barrels:'cylinder',cart:'truck',firewood:'flame'});
+const ICON=Object.freeze(Object.fromEntries(Object.keys(DECOR).map(kind=>[kind,`art:decor-${kind}`])));
 const icon=name=>name.startsWith('art:')?`<i data-game-art="${name.slice(4)}"></i>`:`<i data-lucide="${name}"></i>`;
 const decorId=id=>/^d\d+$/.test(id);
 // pick(event): the id of what is under the pointer (a yard's name, field:N, dN for a placed tree or tile, new:<kind> for one being
@@ -58,7 +58,7 @@ const decorId=id=>/^d\d+$/.test(id);
 // discard(id) takes it away again. save(id, at, {fresh, kind}), store(id), clear(id): the farm actions. level(), coins(), stored():
 // the farm's level, coins and stored trees and tiles. refresh(): draws new icons. pathAt([x, z]): the path tile or old road piece there.
 // brush({add, remove}): shows a drag's new tiles and what it takes away. savePaths({add, remove}): the farm action layout_paths.
-export function createLayoutEditor({doc=document,root=doc.documentElement,bar,level,coins=()=>0,stored=()=>({}),pick,groundAt,spotOf,preview,footprint,others,roads,blockers=()=>[],mark,rotate,spawn,discard=()=>{},save,store,clear,pathAt=()=>null,brush:showBrush=()=>{},savePaths,notify=()=>{},onToggle=()=>{},refresh=()=>{}}){
+export function createLayoutEditor({doc=document,root=doc.documentElement,bar,inventory=null,level,coins=()=>0,stored=()=>({}),pick,groundAt,spotOf,preview,footprint,others,roads,blockers=()=>[],mark,rotate,spawn,discard=()=>{},save,store,clear,pathAt=()=>null,brush:showBrush=()=>{},savePaths,notify=()=>{},onToggle=()=>{},refresh=()=>{}}){
  let on=false,held=null,offer=null,shop=false,priced=null,brush=null;const brushKinds=new Map();
  const $=id=>bar.querySelector(`[data-layout="${id}"]`);
  const shopRow=$('shop');
@@ -90,9 +90,20 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
   $('hint').textContent=hint;$('hint').classList.toggle('is-wrong',wrong);
   for(const k of all)$(k).hidden=!visible.has(k);
   $('build').setAttribute('aria-pressed',String(shop));shopRow.hidden=!(shop&&!held&&!offer&&!brush);
+  showInventory();
   // The prices (or how many you stored) are drawn again only when they change: a drag shows the bar many times a second.
   const key=JSON.stringify(stored());
   if(key!==priced){priced=key;for(const kind of Object.keys(DECOR)){const n=stored()[kind]??0;shopRow.querySelector(`[data-price="${kind}"]`).innerHTML=n?`${n} stored`:`<i data-lucide="coins"></i>${DECOR[kind].coins}`;}refresh();}
+ }
+ // Your things (24 Oct 2026, the owner: "Doe ook een inventory in het build scherm rechtsboven met al je spullen"): what you stored,
+ // top right while Build is open; a tap places one (for free).
+ let stocked=null;
+ function showInventory(){
+  if(!inventory)return;
+  inventory.hidden=!(on&&shop&&!held&&!offer&&!brush);if(inventory.hidden)return;
+  const have=Object.entries(stored()).filter(([kind,n])=>n>0&&DECOR[kind]),key=JSON.stringify(have);if(key===stocked)return;stocked=key;
+  inventory.querySelector('[data-inventory]').innerHTML=have.map(([kind,n])=>`<button type="button" data-kind="${kind}" title="${DECOR[kind].name}">${icon(ICON[kind])}<b>${n}</b></button>`).join('');
+  inventory.querySelector('[data-inventory-empty]').hidden=have.length>0;refresh();
  }
  function check(){
   const box=footprint(held.id);
@@ -100,7 +111,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
   mark(box,!held.why&&!(held.fresh&&price(held.kind)>coins()));
  }
  function start(){if(on)return;on=true;root.classList.add('farm-editing');bar.hidden=false;show();onToggle(true);}
- function stop(){if(!on)return;endBrush();cancel();offer=null;shop=false;on=false;root.classList.remove('farm-editing');bar.hidden=true;mark(null);onToggle(false);}
+ function stop(){if(!on)return;endBrush();cancel();offer=null;shop=false;on=false;root.classList.remove('farm-editing');bar.hidden=true;if(inventory)inventory.hidden=true;mark(null);onToggle(false);}
  function cancel(){if(brush){endBrush();show();return;}if(!held)return;if(held.fresh)discard(held.id);else preview(held.id,held.from);held=null;mark(null);show();}
  async function place(){
   if(brush){
@@ -206,6 +217,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
  $('build').addEventListener('click',()=>{shop=!shop;show();});
  $('erase').addEventListener('click',()=>{if(!brush)return;brush.mode=brush.mode==='erase'?'draw':'erase';brushRules();show();});
  shopRow.addEventListener('click',event=>{const b=event.target.closest?.('[data-kind]');if(b)choose(b.dataset.kind);});
+ inventory?.addEventListener('click',event=>{const b=event.target.closest?.('[data-kind]');if(b)choose(b.dataset.kind);});
  // On a keyboard R turns what you hold, as the Rotate button does (24 Oct 2026, the owner: "Doe ook R rotate met toetsenbord"), and Esc
  // ends moving (the owner: "Esc moet ook move sluiten"); what you held goes back. Not while typing, and not with Ctrl, Cmd or Alt.
  doc.addEventListener('keydown',event=>{

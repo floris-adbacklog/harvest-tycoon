@@ -95,6 +95,8 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 // Your own farm layout (24 Oct 2026, painted for the owner): Move things, Rotate, Clear, Store, drawing and erasing a path, the land that
 // opens later and Visit farm.
 for(const key of ['layout-move','layout-rotate','layout-clear','layout-store','path-draw','path-erase','land-locked','visit-farm']){pictures[key]=key;webpPictures.add(key);}
+// What you can build on your farm (24 Oct 2026, painted for the owner), one picture per Build tile.
+for(const kind of ['fence','flowers','grass','oak','pine','birch','shrub','path','bench','flowerbed','haybale','barrels','cart','firewood']){pictures[`decor-${kind}`]=`decor-${kind}`;webpPictures.add(`decor-${kind}`);}
 for(const key of [...Object.keys(HEIRLOOMS),...ENDGAME_PICTURES,'master','seedlab','visitors','giantpumpkin','valleyprojects'])webpPictures.add(key);   // looked up by the short name
 for(const key of VILLAGE_ART)webpPictures.add(key);
 webpPictures.add('feedback');

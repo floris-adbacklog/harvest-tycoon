@@ -1138,11 +1138,26 @@ let tileKit=null;
 function tileKitOf(){
  if(tileKit)return tileKit;
  let mesh=null;models.get('road_001')?.object.traverse(n=>{if(!mesh&&n.isMesh)mesh=n;});if(!mesh)return null;
- const pos=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;let top=-Infinity;for(let i=0;i<pos.count;i++)top=Math.max(top,pos.getY(i));
- mesh.geometry.computeBoundingBox();const mid=mesh.geometry.boundingBox.getCenter(new THREE.Vector3());let best=0,dist=Infinity;
- for(let i=0;i<pos.count;i++){if(pos.getY(i)<top-1e-4)continue;const d=Math.hypot(pos.getX(i)-mid.x,pos.getZ(i)-mid.z);if(d<dist){dist=d;best=i;}}
- const geometry=new THREE.BoxGeometry(1,1,1),u=uv?uv.getX(best):0,v=uv?uv.getY(best):0,corners=geometry.attributes.uv;for(let i=0;i<corners.count;i++)corners.setXY(i,u,v);
- return tileKit={geometry,material:roadMaterial(Array.isArray(mesh.material)?mesh.material[0]:mesh.material)};
+ const source=roadMaterial(Array.isArray(mesh.material)?mesh.material[0]:mesh.material),pos=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;
+ // The road's colour: the palette's texel under each vertex of its top, the brightest one (an edge or a seam reads darker), times the
+ // road's own tint; the tile is plain in that colour (one spot of the palette for a whole box picked a dark texel).
+ let top=-Infinity;for(let i=0;i<pos.count;i++)top=Math.max(top,pos.getY(i));
+ const colour=new THREE.Color(.86,.62,.53),image=source.map?.image;
+ try{
+  if(image&&uv){
+   const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(image,0,0);
+   let best=-1;
+   for(let i=0;i<pos.count;i++){
+    if(pos.getY(i)<top-1e-4)continue;
+    const u=uv.getX(i),v=source.map.flipY?1-uv.getY(i):uv.getY(i),[r,gr,b]=g.getImageData(Math.min(c.width-1,Math.max(0,Math.floor(u*c.width))),Math.min(c.height-1,Math.max(0,Math.floor(v*c.height))),1,1).data;
+    const light=r+gr+b;if(light>best){best=light;colour.setRGB(r/255,gr/255,b/255,THREE.SRGBColorSpace);}
+   }
+  }
+ }catch{}
+ // Measured on screen against the road model in the same light (24 Oct 2026): a touch warmer, as the model's own shading makes it.
+ colour.multiply(source.color).multiply(new THREE.Color(1.13,.9,.83));
+ const material=new THREE.MeshStandardMaterial({color:colour,roughness:source.roughness??1,metalness:0});
+ return tileKit={geometry:new THREE.BoxGeometry(1,1,1),material};
 }
 function makeTile(x,z,width,depth,height=.13,y=-.035){
  const kit=tileKitOf(),m=new THREE.Mesh(kit.geometry,kit.material);m.scale.set(width,height,depth);m.position.set(x,y+height/2,z);m.receiveShadow=true;scene.add(m);return m;
@@ -1382,7 +1397,7 @@ const MOVE_KEY='harvest-tycoon:move-things';
 function movingOn(){try{return localStorage.getItem(MOVE_KEY)!=='off';}catch{return true;}}
 function showMoving(){const on=Boolean(layoutEditor)&&movingOn();for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=!on;if(!on)layoutEditor?.stop();}
 function createLayoutTools(){
- layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,coins:()=>state.coins,stored:()=>state.layout?.stored??{},
+ layoutEditor=createLayoutEditor({bar:$('layout-bar'),inventory:$('layout-inventory'),level:()=>levelProgress(state).level,coins:()=>state.coins,stored:()=>state.layout?.stored??{},
   pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
   footprint:layoutFootprint,others:(id,skip)=>{if(skip)return pathOthers(skip);layoutFootprint(id);return layoutBase.others;},roads:roadBoxes,
   pathAt:layoutPathAt,brush:layoutBrush,savePaths:edit=>runAction({type:'layout_draw',...edit}).finally(()=>{layoutBase=null;}),
