@@ -1785,3 +1785,18 @@ html[data-portal] .feedback-copy{display:none!important}
 /* The Fertilize tile opens the pick page: "Choose ›" where the other jobs show their price. */
 .tractor-tile.is-choose .tractor-choose{flex:none;margin-inline-start:auto;display:inline-flex;align-items:center;gap:2px;padding:4px 8px 4px 10px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:var(--btn-second,#f7f0e3);color:var(--btn-second-text,#5b4520);font-weight:700;font-size:.9em}
 .tractor-tile.is-choose .tractor-choose svg{width:16px;height:16px}
+/* A calmer leaderboard (24 Oct 2026, the owner: "maak de leaderboards minder druk", picked 1+2): one list of rows with thin lines
+   between them instead of a card a farmer, the top three as a small gold, silver or bronze number, your own row softly gold, the counts
+   as one quiet line of text, and the board's rule line in How to play (the ⓘ, dialog-shell.js). */
+#leaderboard-dialog #leaderboard-description{display:none}
+#leaderboard-dialog .leaderboard-players{display:block;margin:2px 2px 8px;font:400 12px/1.4 'DM Sans',sans-serif;color:#7a6b4b}
+#leaderboard-dialog .leaderboard-players>span{display:inline;padding:0;border:0;background:none;font:inherit;color:inherit}
+#leaderboard-dialog .leaderboard-players .online-dot{display:inline-block;width:7px;height:7px;margin:0 4px 1px 0;vertical-align:middle}
+#leaderboard-dialog .leaderboard-table{border-collapse:separate;border-spacing:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#leaderboard-dialog .leaderboard-table td,#leaderboard-dialog .leaderboard-table td.leaderboard-place,#leaderboard-dialog .leaderboard-table td.leaderboard-score{border:0;border-radius:0;border-top:1px solid #eee5d8;background:none;box-shadow:none;padding-block:6px}
+#leaderboard-dialog .leaderboard-table tbody tr:first-child td{border-top:0}
+#leaderboard-dialog .leaderboard-table tr.is-you td{border-color:#eee5d8;background:#fff6dc;box-shadow:none}
+#leaderboard-dialog .leaderboard-place .rank-number.is-medal{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font:700 13px/1 'Outfit',sans-serif}
+#leaderboard-dialog tr.is-rank-1 .rank-number.is-medal{background:#f4d77e;color:#6b4a0c}
+#leaderboard-dialog tr.is-rank-2 .rank-number.is-medal{background:#e3e4e6;color:#4f5560}
+#leaderboard-dialog tr.is-rank-3 .rank-number.is-medal{background:#ecc29b;color:#6b3d17}

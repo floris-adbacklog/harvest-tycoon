@@ -32,7 +32,7 @@ export const WINDOW_WIKI=Object.freeze({
  'pass-dialog':['daily','sec-halloween-pass'],'family-dialog':['family','sec-together-is-better'],'utility-dialog':['helpers','sec-tractor'],
  'estate-dialog':['estate','sec-estate-chapters'],'activities-hub-dialog':['helpers','sec-a-helping-hand'],'activities-dialog':['helpers','sec-a-helping-hand'],
  'valley-dialog':['estate','sec-valley-projects'],'village-square-dialog':['village','sec-your-second-world'],'boat-dialog':['village','sec-your-second-world'],
- 'sound-dialog':['account','sec-settings'],'look-dialog':['account','sec-my-farmer']});
+ 'leaderboard-dialog':['quests','sec-leaderboards'],'sound-dialog':['account','sec-settings'],'look-dialog':['account','sec-my-farmer']});
 const BADGE_WIKI=Object.freeze({silo:['helpers','sec-silo-research'],stall:['helpers','sec-farm-stall'],chores:['helpers','sec-farm-chores']});
 export function wikiFor(dialog){
  try{
@@ -44,7 +44,8 @@ export function wikiFor(dialog){
  }catch{return null;}
 }
 export function hintsButton(dialog,doc=dialog?.ownerDocument??globalThis.document,win=doc?.defaultView??globalThis.window){
- const close=dialog?.querySelector?.('.dialog-heading .close-dialog');
+ // The leaderboard's Close is the account windows' own (src/ui.js, data-cloud-close).
+ const close=dialog?.querySelector?.('.dialog-heading .close-dialog')??dialog?.querySelector?.('.dialog-heading [data-cloud-close]');
  if(!close||!WINDOW_WIKI[dialog.id]||typeof win?.harvestWiki!=='function')return null;
  let button=close.parentElement.querySelector(':scope>.hints-button');
  if(!button){

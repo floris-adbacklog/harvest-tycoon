@@ -121,8 +121,10 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
  const config=categoryFor(category);container.replaceChildren();
  if(players){
   const words=countLines({players:players.total,online:players.online}),line=document.createElement('p');line.className='leaderboard-players';
-  const item=(text,online)=>{const span=document.createElement('span'),dot=document.createElement('i');dot.className=`online-dot${online?' is-online':''}`;dot.setAttribute('aria-hidden','true');span.append(dot,text);return span;};
-  line.append(item(words.players,false),item(words.online,true));container.append(line);
+  // One quiet line of text (24 Oct 2026), the online dot before the online count; no chips.
+  const online=document.createElement('span'),dot=document.createElement('i');dot.className='online-dot is-online';dot.setAttribute('aria-hidden','true');online.append(dot,words.online);
+  const total=document.createElement('span'),comma=document.createElement('span');total.append(words.players);comma.append(', ');
+  line.append(total,comma,online);container.append(line);
  }
  const pages=Math.max(1,Math.ceil(rows.length/BOARD_PAGE)),shown=Math.min(Math.max(0,page),pages-1);
  // An empty board is a card with the board's own picture, not a lone sentence.
@@ -134,7 +136,8 @@ export function renderLeaderboard(container,{rows,own,rank,category='level',onli
  const tbody=document.createElement('tbody');
  rankedRows(rows,category).slice(shown*BOARD_PAGE,(shown+1)*BOARD_PAGE).forEach(({row,rank:place,score:value})=>{
   const tr=document.createElement('tr');tr.classList.toggle('is-you',row.player_id===playerId);if(place<=3)tr.classList.add('is-podium',`is-rank-${place}`);
-  const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=rankArt(place);
+  // 24 Oct 2026 (the owner: "maak de leaderboards minder druk"): the top three as a small gold, silver or bronze number, not a trophy.
+  const n=document.createElement('td');n.className='leaderboard-place';n.innerHTML=place<=3?`<span class="rank-number is-medal" role="img" aria-label="${['Gold','Silver','Bronze'][place-1]}, place ${place}">${place}</span>`:rankArt(place);
   const name=document.createElement('td');name.className='leaderboard-who';name.append(farmerCell(row,{playerId,onPlayer,now}));
   const score=document.createElement('td');score.className='leaderboard-score';score.textContent=value.toLocaleString('en-US');tr.append(n,name,score);tbody.append(tr);
  });table.append(tbody);container.append(table);

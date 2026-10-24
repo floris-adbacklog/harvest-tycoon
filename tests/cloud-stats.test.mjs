@@ -98,9 +98,10 @@ test('the board shows how many farmers there are and how many of them are online
  const previous=globalThis.document;globalThis.document={createElement:element};
  try{
   const box=element('div');renderLeaderboard(box,{rows:[],players:{total:4253,online:44}},null);
-  const [players,online]=box.children[0].children;
-  assert.equal(box.children[0].className,'leaderboard-players');assert.equal(players.text,'4\u202f253 players');assert.equal(online.text,'44 online','the sign-in page\'s words, translated already');
-  assert.equal(players.children[0].className,'online-dot','a grey dot before the players');assert.equal(online.children[0].className,'online-dot is-online','the green dot before the online');
+  // 24 Oct 2026 (a calmer board): one quiet line, "4 253 players, 44 online", the green dot before the online only.
+  const [players,comma,online]=box.children[0].children;
+  assert.equal(box.children[0].className,'leaderboard-players');assert.equal(players.text,'4\u202f253 players');assert.equal(comma.text,', ');assert.equal(online.text,'44 online','the sign-in page\'s words, translated already');
+  assert.equal(online.children[0].className,'online-dot is-online','the green dot before the online');
   assert.equal(box.children[1].className,'quest-empty leaderboard-empty');
   renderLeaderboard(box,{rows:[],players:null},null);assert.equal(box.children[0].className,'quest-empty leaderboard-empty','no counts, no line');
  }finally{globalThis.document=previous;}
