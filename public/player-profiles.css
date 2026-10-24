@@ -202,14 +202,16 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 /* The buttons: one compact row; the chat's and the invite's own boxes give their buttons to it. */
 #player-profile-dialog .farmer-actions{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:0 0 14px}
 #player-profile-dialog .farmer-actions:not(:has(>:not([hidden]))){display:none}
-#player-profile-dialog .farmer-actions>:is(.farmer-own-actions,.farmer-chat:not([hidden]),.farmer-invite:not([hidden])),#player-profile-dialog .farmer-actions .farmer-chat-row,#player-profile-dialog .farmer-own-actions>.farmer-share{display:contents}
-#player-profile-dialog .farmer-actions :is(.farmer-chat-send,.farmer-invite-button,.farmer-open-button,.farmer-share-button){display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 150px;box-sizing:border-box;width:auto;min-width:0;height:auto;min-height:44px;margin:0;padding:6px 14px;font-size:14px;white-space:nowrap}
+#player-profile-dialog .farmer-actions>:is(.farmer-own-actions,.farmer-chat:not([hidden]),.farmer-invite:not([hidden]),.farmer-visit:not([hidden])),#player-profile-dialog .farmer-actions .farmer-chat-row,#player-profile-dialog .farmer-own-actions>.farmer-share{display:contents}
+#player-profile-dialog .farmer-actions :is(.farmer-chat-send,.farmer-invite-button,.farmer-open-button,.farmer-share-button,.farmer-visit-button){display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 150px;box-sizing:border-box;width:auto;min-width:0;height:auto;min-height:44px;margin:0;padding:6px 14px;font-size:14px;white-space:nowrap}
 #player-profile-dialog .farmer-actions .farmer-mine{display:flex;flex:1 1 150px;margin:0}
 #player-profile-dialog .farmer-actions .farmer-mine[hidden]{display:none}
 #player-profile-dialog .farmer-actions .farmer-mine .farmer-open-button{flex:1}
-#player-profile-dialog .farmer-actions :is(.farmer-open-button,.farmer-chat-send) .game-art{width:24px;height:24px}
+#player-profile-dialog .farmer-actions :is(.farmer-open-button,.farmer-chat-send,.farmer-visit-button) .game-art{width:24px;height:24px}
 #player-profile-dialog .farmer-actions .farmer-chat-send{order:1}
 #player-profile-dialog .farmer-actions .farmer-invite-button{order:2}
+/* Visit farm (24 Oct 2026) right after Send message, the same size as the other buttons in the row. */
+#player-profile-dialog .farmer-actions .farmer-visit-button{order:1}
 #player-profile-dialog .farmer-actions .farmer-invite-button:not(:disabled){border:1px solid #8cc06a;background:#fffdf4;box-shadow:0 2px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset;color:#42632e}
 #player-profile-dialog .farmer-actions .farmer-invite-button:not(:disabled):hover{background:#f3f8ec}
 #player-profile-dialog .farmer-actions .farmer-chat-report{order:3;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;width:auto;min-height:44px;margin:0;padding:4px 12px;font-size:13px}
