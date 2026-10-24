@@ -29,6 +29,10 @@ test('the translator: exact texts, texts with changing parts, a known name insid
  assert.equal(createTranslator({'Wheat':'Weizen'},'de').translate('+2 wheat'),'+2 Weizen','German nouns keep their capital');
  // 6 Oct 2026: "3 × Pumpkin" (the pass's rewards), and sentences the page joins into one text (the chore result).
  assert.equal(u.translate('3 × Wheat'),'3 × Trigo');
+ // 24 Oct 2026: a count after a known text, the Factory's batches ("Grind grain meal ×20", jobName "Grind grain meal ×12").
+ const hu=createTranslator({'Grind grain meal':'Darálj gabonadarát','Mix barley feed':'Keverj árpatápot'},'hu');
+ assert.equal(hu.translate('Grind grain meal ×20'),'Darálj gabonadarát ×20');assert.equal(hu.translate('Mix barley feed × 12'),'Keverj árpatápot × 12');
+ assert.equal(hu.translate('Something new ×20'),null,'only a known text');
  const nl=createTranslator({'Wheat':'Tarwe','No {0} this time.':'Deze keer geen {0}.','Practice raised your chance to':'Door te oefenen is je kans nu','One sentence.':'Eén zin.'},'nl');
  assert.equal(nl.translate('No wheat this time. Practice raised your chance to'),'Deze keer geen tarwe. Door te oefenen is je kans nu');
  assert.equal(nl.translate('One sentence. Something new'),null,'only when every sentence is known');assert.ok(nl.missing.has('One sentence. Something new'));

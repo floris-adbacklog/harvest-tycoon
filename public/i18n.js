@@ -101,6 +101,11 @@ export function createTranslator(dict,code='en'){
    const lead=key.match(/^([+−-]?\d[\d.,/×%]*\s?(?:×|[a-z]{0,2}))\s+(\S.*)$/),tail=lead&&(translate(lead[2],true)??known(lead[2]));
    if(tail)result=`${lead[1]} ${tail}`;
   }
+  // And a count after it (24 Oct 2026, players in Hungarian and Dutch: the Factory's batches stayed English): "Grind grain meal ×20".
+  if(result===undefined){
+   const trail=key.match(/^(\S.*?)\s+(×\s?\d[\d.,]*)$/),head=trail&&(translate(trail[1],true)??known(trail[1]));
+   if(head)result=`${head} ${trail[2]}`;
+  }
   if(result===undefined&&/^· |\s·$/.test(key)){
    const inner=key.replace(/^· /,'').replace(/\s·$/,''),done=translate(inner,true);
    if(done!=null)result=key.replace(inner,done);
