@@ -1331,14 +1331,22 @@ function layoutMark(box,ok){
  layoutMarker.scale.set(box[1]-box[0],box[3]-box[2],1);layoutMarker.position.set((box[0]+box[1])/2,.06,(box[2]+box[3])/2);
  layoutMarker.material.color.setHex(ok?0x58b865:0xe0624c);
 }
-// Rotate: a quarter turn that keeps the yard's middle where it was (snapped to the grid), so it turns in place.
+// Rotate: a quarter turn round the yard's own middle, so it turns in place (24 Oct 2026, the owner: "als je wilt draaien dan schuift die
+// een beetje, soms raak ik daardoor het gebouw kwijt"). The middle's offset from the anchor is measured once per yard, at no turn, and
+// every turn is worked out from the middle where the turning started, so rounding to the grid never adds up and four turns come back.
+const yardMiddle=new Map();let turning=null;
+const turnVector=([dx,dz],quarters)=>{const a=quarters*QUARTER,c=Math.cos(a),sn=Math.sin(a);return [dx*c+dz*sn,-dx*sn+dz*c];};
+function middleOffset(id){
+ if(!yardMiddle.has(id)){const b=footprint(id),[x,z]=yardSpot(id),t=yardTurn.get(id)??0;yardMiddle.set(id,turnVector([(b[0]+b[1])/2-x,(b[2]+b[3])/2-z],-t));}
+ return yardMiddle.get(id);
+}
 function layoutRotate(id,[x,z,turn=0]){
  const placed=decorViews.get(id)??layoutGhosts.get(id);
  if(placed){const next=(turn+1)%4;placed.obj.rotation.y+=QUARTER;placed.turn=next;placed.obj.updateMatrixWorld(true);renderer.shadowMap.needsUpdate=true;return [x,z,next];}
- const mid=b=>[(b[0]+b[1])/2,(b[2]+b[3])/2],[x0,z0]=mid(footprint(id));
- const next=(turn+1)%4;placeYard(id,[x,z,next]);
- const [x1,z1]=mid(footprint(id)),at=[Math.round((x+x0-x1)/LAYOUT_GRID)*LAYOUT_GRID,Math.round((z+z0-z1)/LAYOUT_GRID)*LAYOUT_GRID,next];
- placeYard(id,at);layoutBase=null;hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;
+ const off=middleOffset(id),same=turning?.id===id&&turning.at.every((v,i)=>v===[x,z,turn][i]);
+ const middle=same?turning.middle:(([ox,oz])=>[x+ox,z+oz])(turnVector(off,turn));
+ const next=(turn+1)%4,[nx,nz]=turnVector(off,next),snap=v=>Math.round(v/LAYOUT_GRID)*LAYOUT_GRID,at=[snap(middle[0]-nx),snap(middle[1]-nz),next];
+ placeYard(id,at);turning={id,at,middle};layoutBase=null;hideUnderLayout([id]);renderer.shadowMap.needsUpdate=true;
  return at;
 }
 // Drawing a path (layout-edit.js brush): what stands in the way (everything but the tiles this drag takes away), the tile or old road
