@@ -1179,20 +1179,40 @@ function roadBoxes(){
 const DECOR_LOOK=Object.freeze({
  path:{model:'road_001',width:2,depth:2,height:.13,y:-.035,half:1},
  oak:{model:'tree_004',height:5.2,half:.8},pine:{model:'fir_tree_001',height:4.8,half:.8},
- birch:{model:'tree_008',height:3.4,half:.7},shrub:{model:'bush_001',width:2.2,half:.9}
+ birch:{model:'tree_008',height:3.4,half:.7},shrub:{model:'bush_001',width:2.2,half:.9},
+ // 24 Oct 2026 (the owner: "Doe 1,2,3"): a fence along its cell, flowers and tall grass in clumps (drawn), and more to place.
+ fence:{model:'fence_001',width:2,half:1},flowers:{model:'plant_008',height:.75,half:1,clump:9},grass:{model:'grass_001',height:.7,half:1,clump:10},
+ bench:{model:'chair_001',height:1.1,half:.8},flowerbed:{model:'garden_bed_001',width:2,half:1},haybale:{model:'hay_001',width:1.4,half:.7},
+ barrels:{model:'barrel_001',height:1.1,half:.6},cart:{model:'cart_003',width:2,half:1},firewood:{model:'firewood_005',width:1.6,half:.8}
 });
+// A model the farm has not loaded yet (the bench, the flower bed…) is loaded when it is first needed; what waited for it is drawn then.
+const decorLoading=new Map();
+function decorReady(kind){
+ const name=DECOR_LOOK[kind]?.model;if(!name||kind==='path'||models.has(name))return true;
+ if(!decorLoading.has(name))decorLoading.set(name,loadModel(name).catch(()=>{}).then(()=>{applyLayout();}));
+ return false;
+}
 const decorViews=new Map();
-function makeDecor(kind,x,z,id){
+function makeDecor(kind,x,z,id,turn=0){
  if(kind==='path'){const tile=makeTile(x,z,2,2);tile.userData.decor=id;tile.userData.decorKind=kind;return tile;}
- const look=DECOR_LOOK[kind],before=currentZone();zone('fields',{keep:true});
- const o=cloneModel(look.model,x,z,{width:look.width,depth:look.depth,height:look.height,y:look.y??0,rotation:kind==='path'?0:(x*.7+z*.3)%6.28});
+ if(!decorReady(kind))return null;
+ const look=DECOR_LOOK[kind],before=currentZone();zone('fields',{keep:true});let o;
+ if(look.clump){
+  // A clump: a few small plants round the cell's middle, each its own size and turn (fixed by the spot, so it looks the same each visit).
+  o=new THREE.Group();o.position.set(x,0,z);scene.add(o);
+  for(let i=0;i<look.clump;i++){const a=i*2.4+x*.37+z*.21,r=.15+(i%4)*.22,p=cloneModel(look.model,0,0,{height:look.height*(.8+(i%3)*.15),rotation:a});scene.remove(p);p.position.set(Math.cos(a)*r,0,Math.sin(a)*r);o.add(p);}
+ }else o=cloneModel(look.model,x,z,{width:look.width,depth:look.depth,height:look.height,y:look.y??0,rotation:kind==='fence'?(turn?Math.PI/2:0):(x*.7+z*.3)%6.28});
  zone(before,{keep:true});o.userData.decor=id;o.userData.decorKind=kind;return o;
 }
 const decorBox=(kind,x,z)=>{const r=DECOR_LOOK[kind].half;return [x-r,x+r,z-r,z+r];};
 function syncDecor(){
  const want=new Map((state.layout?.added??[]).map(d=>[d.id,d]));
- for(const [id,v] of decorViews)if(want.get(id)?.kind!==v.kind){scene.remove(v.obj);decorViews.delete(id);}
- for(const [id,d] of want){let v=decorViews.get(id);if(!v){v={obj:makeDecor(d.kind,d.x,d.z,id),kind:d.kind};decorViews.set(id,v);}v.obj.position.set(d.x,v.obj.position.y,d.z);v.obj.updateMatrixWorld(true);}
+ for(const [id,v] of decorViews)if(want.get(id)?.kind!==v.kind||(want.get(id).turn??0)!==v.turn){scene.remove(v.obj);decorViews.delete(id);}
+ for(const [id,d] of want){
+  let v=decorViews.get(id);
+  if(!v){const obj=makeDecor(d.kind,d.x,d.z,id,d.turn??0);if(!obj)continue;v={obj,kind:d.kind,turn:d.turn??0};decorViews.set(id,v);}
+  v.obj.position.set(d.x,v.obj.position.y,d.z);v.obj.updateMatrixWorld(true);
+ }
 }
 
 // Loose scenery under something that moved or that you placed is hidden (an obstacle never: it is in the way instead), and what you
@@ -1296,18 +1316,18 @@ function layoutRotate(id,[x,z,turn=0]){
  return at;
 }
 // Drawing a path (layout-edit.js brush): what stands in the way (everything but the tiles this drag takes away), the tile or old road
-// piece under a spot, and the drag on the screen: its new tiles, and what it takes away hidden until it is saved.
+// piece under a spot ({id, kind}: an old road piece comes back as a path tile), and the drag on the screen: its new tiles, and what it takes away hidden until it is saved.
 function pathOthers(skip=new Set()){
  return [...LAYOUT_YARDS,'farmhouse',...plots.map((_,i)=>`field:${i}`),...[...decorViews.keys()].filter(id=>!skip.has(id))].map(footprint).filter(Boolean);
 }
 function layoutPathAt([x,z]){
- for(const [id,v] of decorViews)if(v.kind==='path'&&v.obj.visible&&Math.abs(v.obj.position.x-x)<1&&Math.abs(v.obj.position.z-z)<1)return id;
- const gone=new Set([...(state.layout?.roads??[]),...roadsAway]);
- return roadPieces().find(p=>!gone.has(p.id)&&x>p.box[0]&&x<p.box[1]&&z>p.box[2]&&z<p.box[3])?.id??null;
+ for(const [id,v] of decorViews)if(DECOR[v.kind]?.draw&&v.obj.visible&&Math.abs(v.obj.position.x-x)<1&&Math.abs(v.obj.position.z-z)<1)return {id,kind:v.kind};
+ const gone=new Set([...(state.layout?.roads??[]),...roadsAway]),piece=roadPieces().find(p=>!gone.has(p.id)&&x>p.box[0]&&x<p.box[1]&&z>p.box[2]&&z<p.box[3]);
+ return piece?{id:piece.id,kind:'path'}:null;
 }
 let brushTiles=[],brushHidden=[];
-function layoutBrush({add,remove}){
- for(const m of brushTiles)scene.remove(m);brushTiles=add.map(([x,z])=>makeTile(x,z,2,2));
+function layoutBrush({kind='path',add,remove}){
+ for(const m of brushTiles)scene.remove(m);brushTiles=add.map(([x,z,turn])=>makeDecor(kind,x,z,`new:${kind}`,turn)).filter(Boolean);
  for(const o of brushHidden)o.visible=true;brushHidden=[];roadsAway.clear();
  for(const id of remove){const d=decorViews.get(id);if(d){d.obj.visible=false;brushHidden.push(d.obj);}else roadsAway.add(id);}
  syncRoads();renderer.shadowMap.needsUpdate=true;
@@ -1316,7 +1336,7 @@ function layoutBrush({add,remove}){
 function layoutSpawn(kind){
  const rect=renderer.domElement.getBoundingClientRect(),at=layoutGround({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height*.45});if(!at)return null;
  const id=`new:${kind}`,spot=at.map(v=>Math.round(v/LAYOUT_GRID)*LAYOUT_GRID);
- layoutDiscard(id);layoutGhosts.set(id,{obj:makeDecor(kind,spot[0],spot[1],id),kind});
+ layoutDiscard(id);const obj=makeDecor(kind,spot[0],spot[1],id);if(!obj){toast('One moment…');return null;}layoutGhosts.set(id,{obj,kind});
  return {id,at:spot};
 }
 function layoutDiscard(id){const ghost=layoutGhosts.get(id);if(!ghost)return;scene.remove(ghost.obj);layoutGhosts.delete(id);hideUnderLayout();}
@@ -1365,11 +1385,11 @@ function createLayoutTools(){
  layoutEditor=createLayoutEditor({bar:$('layout-bar'),level:()=>levelProgress(state).level,coins:()=>state.coins,stored:()=>state.layout?.stored??{},
   pick:layoutPick,groundAt:layoutGround,spotOf:layoutSpot,preview:layoutPreview,
   footprint:layoutFootprint,others:(id,skip)=>{if(skip)return pathOthers(skip);layoutFootprint(id);return layoutBase.others;},roads:roadBoxes,
-  pathAt:layoutPathAt,brush:layoutBrush,savePaths:edit=>runAction({type:'layout_paths',...edit}).finally(()=>{layoutBase=null;}),
+  pathAt:layoutPathAt,brush:layoutBrush,savePaths:edit=>runAction({type:'layout_draw',...edit}).finally(()=>{layoutBase=null;}),
   blockers:standingObstacles,mark:layoutMark,rotate:layoutRotate,spawn:layoutSpawn,discard:layoutDiscard,save:layoutSave,
   store:id=>runAction({type:'layout_store',id}).finally(()=>{layoutBase=null;}),clear:id=>runAction({type:'layout_clear',id}).finally(()=>{layoutBase=null;}),
   notify:toast,refresh:icons,
-  onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;showLand(on);if(on)obstacles();else{shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
+  onToggle:on=>{$('layout-button').setAttribute('aria-pressed',String(on));$('tooltip').hidden=true;layoutBase=null;showLand(on);if(on){obstacles();for(const kind of Object.keys(DECOR_LOOK))decorReady(kind);}else{shootMinimap();renderer.shadowMap.needsUpdate=true;}}});
  $('layout-button').addEventListener('click',()=>layoutEditor.active()?layoutEditor.stop():layoutEditor.start());
  showMoving();
 }

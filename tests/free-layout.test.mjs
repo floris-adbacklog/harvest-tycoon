@@ -133,3 +133,19 @@ test('a visit: farm-api farm_visit, Visit farm on someone else\'s profile, the p
  assert.match(game,/if\(!villageWorld&&!adminView\)\{window\.harvestVisit=playerId=>void openVisit\(playerId\);window\.harvestCloseVisit=closeVisit;\}/);
  assert.match(game,/const visitInfo=window\.harvestInitialFarm\.visit\?\?null;/,'read before the page lets go of the first farm');
 });
+
+test('drawing (24 Oct 2026, "1+2", then "Doe 1,2,3"): paths, fences, flowers and grass with a drag; erased ones and old road pieces go to your store',async()=>{
+ const {DECOR:D,roadPieces,OLD_ROADS}=await import('../game/farm-map.js');
+ assert.deepEqual(Object.keys(D).filter(k=>D[k].draw),['path','fence','flowers','grass']);
+ assert.equal(roadPieces().filter(p=>p.road===0).length,38);assert.equal(OLD_ROADS.length,5,'the road out of the valley stays');
+ const s=farmAt(30),coins=s.coins;
+ assert.deepEqual(act(s,{type:'layout_draw',kind:'fence',add:[[0,24,1],[0,26,1]],remove:['r:0:3']},now),{kind:'fence',added:2,removed:1,coins:20});
+ assert.equal(s.coins,coins-20);assert.deepEqual(s.layout.stored,{path:1},'the road piece came back as a path tile');assert.equal(s.layout.added[0].turn,1);
+ act(s,{type:'layout_draw',kind:'path',add:[[2,24]]},now);assert.equal(s.coins,coins-20,'the stored tile went first');
+ assert.throws(()=>act(s,{type:'layout_draw',kind:'path',add:[[2,24]]},now),/something there already/);
+ assert.throws(()=>act(s,{type:'layout_draw',kind:'path',add:[[1,24]]},now),/on the grid/);
+ assert.throws(()=>act(s,{type:'layout_draw',kind:'oak',add:[[4,24]]},now),/what to draw/);
+ assert.throws(()=>act(s,{type:'layout_draw',kind:'path',remove:['r:0:3']},now),/a path that is there/,'a piece goes once');
+ act(s,{type:'layout_draw',kind:'flowers',add:[[6,24]],remove:['d0']},now);assert.deepEqual(s.layout.stored,{fence:1});
+});
+

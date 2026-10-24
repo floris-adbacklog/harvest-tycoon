@@ -18,7 +18,7 @@ export const bridgeClock=bridge=>Number.isFinite(bridge?.serverNow)?bridge.serve
 // village lake too (12 Oct 2026, lake_fish): fixed the same way, from the farm's seed with the lake's own salt.
 // Your own farm layout (24 Oct 2026, game/farm-map.js): moving, clearing a tree or bush, buying, placing and storing show at once too
 // (coins only, worked out from the farm alone).
-export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','warehouse_upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish','layout_move','layout_clear','layout_buy','layout_place','layout_store','layout_paths']));
+export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','warehouse_upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish','layout_move','layout_clear','layout_buy','layout_place','layout_store','layout_draw']));
 // No lucky double batch on the screen before the server has rolled for it (its answer shows it when it comes).
 const noLuck=()=>1;
 // Whether a tap can show at once: an everyday action that the rules accept. A level-up shows at once too (the rules pay its reward

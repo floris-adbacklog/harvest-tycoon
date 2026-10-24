@@ -35,12 +35,22 @@ export const WATER=Object.freeze([Object.freeze([16.88,34.48,9.36,20.56])]);
 export const OBSTACLES=Object.freeze({tree:Object.freeze({coins:120,xp:4}),bush:Object.freeze({coins:40,xp:2}),rock:Object.freeze({coins:160,xp:5})});
 const LAND_FACTOR=Object.freeze({middle:1,north:1.5,west:2,south:2.5,east:4,westedge:5,westsouth:5,eastedge:7,eastsouth:7});
 // What you can buy and place: path tiles and trees (the model each one shows is chosen on the screen).
+// draw: laid with a drag on the 2-step grid (24 Oct 2026, the owner: "Doe 1,2,3": fences, more to place, flowers and grass to draw).
 export const DECOR=Object.freeze({
- path:Object.freeze({name:'Path tile',coins:20}),
+ path:Object.freeze({name:'Path tile',coins:20,draw:true}),
+ fence:Object.freeze({name:'Fence',coins:10,draw:true}),
+ flowers:Object.freeze({name:'Flowers',coins:8,draw:true}),
+ grass:Object.freeze({name:'Tall grass',coins:4,draw:true}),
  oak:Object.freeze({name:'Oak tree',coins:250}),
  pine:Object.freeze({name:'Pine tree',coins:250}),
  birch:Object.freeze({name:'Young tree',coins:150}),
- shrub:Object.freeze({name:'Bush',coins:60})
+ shrub:Object.freeze({name:'Bush',coins:60}),
+ bench:Object.freeze({name:'Bench',coins:120}),
+ flowerbed:Object.freeze({name:'Flower bed',coins:90}),
+ haybale:Object.freeze({name:'Hay bale',coins:40}),
+ barrels:Object.freeze({name:'Barrels',coins:60}),
+ cart:Object.freeze({name:'Wooden cart',coins:150}),
+ firewood:Object.freeze({name:'Firewood',coins:50})
 });
 const MAX_CLEARED=3000,MAX_ADDED=600;
 const onGrid=v=>Number.isFinite(v)&&Math.abs(v/LAYOUT_GRID-Math.round(v/LAYOUT_GRID))<1e-6;
@@ -60,7 +70,7 @@ export function normalizeLayout(state){
  // A yard's spot can carry its quarter turns (0-3, rotated a quarter at a time round its own anchor; 24 Oct 2026, the owner: "Rotate building maybe?").
  for(const [id,spot] of Object.entries(l.at&&typeof l.at==='object'?l.at:{}))if(movableId(state,id,l)&&Array.isArray(spot)&&(spot.length===2||spot.length===3)&&spot.slice(0,2).every(Number.isFinite))at[id]=validTurn(spot[2])&&spot[2]?[spot[0],spot[1],spot[2]]:[spot[0],spot[1]];
  const cleared=[...new Set((Array.isArray(l.cleared)?l.cleared:[]).filter(obstacleId))].slice(-MAX_CLEARED);
- const added=(Array.isArray(l.added)?l.added:[]).filter(d=>d&&typeof d.id==='string'&&/^d\d+$/.test(d.id)&&Object.hasOwn(DECOR,d.kind)&&Number.isFinite(d.x)&&Number.isFinite(d.z)).map(d=>({id:d.id,kind:d.kind,x:d.x,z:d.z})).slice(0,MAX_ADDED);
+ const added=(Array.isArray(l.added)?l.added:[]).filter(d=>d&&typeof d.id==='string'&&/^d\d+$/.test(d.id)&&Object.hasOwn(DECOR,d.kind)&&Number.isFinite(d.x)&&Number.isFinite(d.z)).map(d=>({id:d.id,kind:d.kind,x:d.x,z:d.z,...(d.turn===1?{turn:1}:{})})).slice(0,MAX_ADDED);
  const stored=Object.fromEntries(Object.keys(DECOR).filter(k=>Number.isSafeInteger(l.stored?.[k])&&l.stored[k]>0).map(k=>[k,l.stored[k]]));
  const n=Number.isSafeInteger(l.n)&&l.n>=0?l.n:added.reduce((m,d)=>Math.max(m,Number(d.id.slice(1))+1),0);
  const roads=[...new Set((Array.isArray(l.roads)?l.roads:[]).filter(id=>typeof id==='string'&&/^r:\d:\d{1,3}$/.test(id)))];
@@ -157,31 +167,37 @@ export function roadPieces(){
 }
 const PIECES=new Map(roadPieces().map(p=>[p.id,p]));
 const MAX_STROKE=200;
-// One drag: path tiles laid at [x, z] (add) and tiles or old road pieces taken away (remove: a path tile's dN or a piece's r:<road>:<k>).
-export function editPaths(state,{add=[],remove=[]}={},level){
+// One drag (layout_draw): things of one drawn kind laid at [x, z] (a fence also [x, z, turn], 1 when it runs along z), and drawn things or
+// old road pieces taken away (a placed one's dN, a piece's r:<road>:<k>), each back into your store (a road piece as a path tile).
+// One drawn thing per grid cell; the new ones use your store before any coins.
+export function editDrawn(state,{kind='path',add=[],remove=[]}={},level){
+ if(!DECOR[kind]?.draw)throw new Error('Choose what to draw.');
  if(!Array.isArray(add)||!Array.isArray(remove)||!add.length&&!remove.length||add.length>MAX_STROKE||remove.length>MAX_STROKE*2)throw new Error('Draw or take away a path.');
- const layout=layoutOf(state),gone=new Set(layout.roads),paths=new Map(layout.added.filter(d=>d.kind==='path').map(d=>[d.id,d]));
+ const layout=layoutOf(state),gone=new Set(layout.roads),drawn=new Map(layout.added.filter(d=>DECOR[d.kind]?.draw).map(d=>[d.id,d]));
  const removing=new Set(remove);if(removing.size!==remove.length)throw new Error('Take each piece away once.');
+ const back={};
  for(const id of remove){
-  if(paths.has(id))continue;
+  const d=drawn.get(id);if(d){back[d.kind]=(back[d.kind]??0)+1;continue;}
   const piece=PIECES.get(id);if(!piece||gone.has(id))throw new Error('Take away a path that is there.');
   if(!landOpen(level,piece.x,piece.z))throw new Error(`This land opens at level ${landAt(piece.x,piece.z)?.level??'?'}.`);
+  back.path=(back.path??0)+1;
  }
- const taken=new Set([...paths.values()].filter(d=>!removing.has(d.id)).map(d=>`${d.x},${d.z}`)),cells=[];
+ const taken=new Set([...drawn.values()].filter(d=>!removing.has(d.id)).map(d=>`${d.x},${d.z}`)),cells=[];
  for(const spot of add){
-  const [x,z]=Array.isArray(spot)?spot:[];
+  const [x,z,turn]=Array.isArray(spot)?spot:[];
   if(!Number.isFinite(x)||!Number.isFinite(z)||x%PATH_GRID!==0||z%PATH_GRID!==0)throw new Error('Draw the path on the grid.');
-  checkSpot(level,x,z);const key=`${x},${z}`;if(taken.has(key))throw new Error('There is a path there already.');
-  taken.add(key);cells.push([x,z]);
+  checkSpot(level,x,z);const key=`${x},${z}`;if(taken.has(key))throw new Error('There is something there already.');
+  taken.add(key);cells.push([x,z,kind==='fence'&&turn===1?1:0]);
  }
- const store=(layout.stored.path??0)+remove.length,coins=Math.max(0,cells.length-store)*DECOR.path.coins;
+ const stores={...layout.stored};for(const [k,n] of Object.entries(back))stores[k]=(stores[k]??0)+n;
+ const own=stores[kind]??0,coins=Math.max(0,cells.length-own)*DECOR[kind].coins;
  if(state.coins<coins)throw new Error(`You need ${coins} coins.`);
- if(layout.added.length-[...removing].filter(id=>paths.has(id)).length+cells.length>MAX_ADDED)throw new Error('Your farm is full of trees and paths.');
- // Taken away first: each one a tile in the store, which the new ones use before any coins.
+ if(layout.added.length-[...removing].filter(id=>drawn.has(id)).length+cells.length>MAX_ADDED)throw new Error('Your farm is full of trees and paths.');
  layout.added=layout.added.filter(d=>!removing.has(d.id));
  layout.roads=[...layout.roads,...remove.filter(id=>PIECES.has(id))];
- for(const [x,z] of cells){layout.added.push({id:`d${layout.n}`,kind:'path',x,z});layout.n+=1;}
- const left=store-Math.min(store,cells.length);if(left)layout.stored.path=left;else delete layout.stored.path;
+ for(const [x,z,turn] of cells){layout.added.push({id:`d${layout.n}`,kind,x,z,...(turn?{turn:1}:{})});layout.n+=1;}
+ stores[kind]=own-Math.min(own,cells.length);
+ layout.stored=Object.fromEntries(Object.entries(stores).filter(([,n])=>n>0));
  state.coins-=coins;
- return {added:cells.length,removed:remove.length,coins};
+ return {kind,added:cells.length,removed:remove.length,coins};
 }

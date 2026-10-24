@@ -41,11 +41,13 @@ const HINT={
  rock:'A rock is in the way. Tap it to clear it.',
  fixed:'The farmhouse and the pond stay where they are.',
  draw:'Drag over the grass to draw a path.',
+ drawFence:'Drag over the grass to put up a fence.',
+ drawPlants:'Drag over the grass to plant them.',
  erase:'Drag over a path or a road to take it away.'
 };
 const OFFER={tree:(coins,xp)=>`Clear this tree for ${coins} coins (+${xp} XP)?`,bush:(coins,xp)=>`Clear this bush for ${coins} coins (+${xp} XP)?`,rock:(coins,xp)=>`Clear this rock for ${coins} coins (+${xp} XP)?`};
 // The picture on each Build tile: a painted one where there is one (data-game-art), else a line icon.
-const ICON=Object.freeze({path:'art:path-draw',oak:'tree-deciduous',pine:'tree-pine',birch:'trees',shrub:'shrub'});
+const ICON=Object.freeze({path:'art:path-draw',fence:'fence',flowers:'flower',grass:'leaf',oak:'tree-deciduous',pine:'tree-pine',birch:'trees',shrub:'shrub',bench:'sofa',flowerbed:'flower-2',haybale:'package',barrels:'cylinder',cart:'truck',firewood:'flame'});
 const icon=name=>name.startsWith('art:')?`<i data-game-art="${name.slice(4)}"></i>`:`<i data-lucide="${name}"></i>`;
 const decorId=id=>/^d\d+$/.test(id);
 // pick(event): the id of what is under the pointer (a yard's name, field:N, dN for a placed tree or tile, new:<kind> for one being
@@ -57,7 +59,7 @@ const decorId=id=>/^d\d+$/.test(id);
 // the farm's level, coins and stored trees and tiles. refresh(): draws new icons. pathAt([x, z]): the path tile or old road piece there.
 // brush({add, remove}): shows a drag's new tiles and what it takes away. savePaths({add, remove}): the farm action layout_paths.
 export function createLayoutEditor({doc=document,root=doc.documentElement,bar,level,coins=()=>0,stored=()=>({}),pick,groundAt,spotOf,preview,footprint,others,roads,blockers=()=>[],mark,rotate,spawn,discard=()=>{},save,store,clear,pathAt=()=>null,brush:showBrush=()=>{},savePaths,notify=()=>{},onToggle=()=>{},refresh=()=>{}}){
- let on=false,held=null,offer=null,shop=false,priced=null,brush=null;
+ let on=false,held=null,offer=null,shop=false,priced=null,brush=null;const brushKinds=new Map();
  const $=id=>bar.querySelector(`[data-layout="${id}"]`);
  const shopRow=$('shop');
  shopRow.innerHTML=Object.entries(DECOR).map(([kind,d])=>`<button type="button" data-kind="${kind}">${icon(ICON[kind])}<span>${d.name}</span><b data-price="${kind}"></b></button>`).join('');
@@ -67,10 +69,10 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
   let hint,wrong=false;
   if(brush){
    const adds=brush.add.size,removes=brush.remove.size,cost=brushCost();
-   hint=cost>coins()?`You need ${cost} coins.`:HINT[brush.mode];wrong=cost>coins();
+   hint=cost>coins()?`You need ${cost} coins.`:brush.mode==='erase'?HINT.erase:brush.kind==='fence'?HINT.drawFence:brush.kind==='path'?HINT.draw:HINT.drawPlants;wrong=cost>coins();
    visible.add('erase');visible.add('cancel');visible.add('place');
    $('erase').setAttribute('aria-pressed',String(brush.mode==='erase'));
-   $('place').disabled=!adds&&!removes||cost>coins();$('place').textContent=cost?`Buy for ${cost}`:'Save path';
+   $('place').disabled=!adds&&!removes||cost>coins();$('place').textContent=cost?`Buy for ${cost}`:'Save';
   }else if(offer){
    const piece=landAt(offer.x,offer.z),open=landOpen(level(),offer.x,offer.z),short=coins()<offer.cost.coins;
    hint=!open?`This land opens at level ${piece?.level??'?'}.`:short?`You need ${offer.cost.coins} coins to clear it.`:OFFER[offer.cost.kind](offer.cost.coins,offer.cost.xp);
@@ -102,7 +104,7 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
  function cancel(){if(brush){endBrush();show();return;}if(!held)return;if(held.fresh)discard(held.id);else preview(held.id,held.from);held=null;mark(null);show();}
  async function place(){
   if(brush){
-   const edit={add:[...brush.add.values()],remove:[...brush.remove]};if(!edit.add.length&&!edit.remove.length||brushCost()>coins())return;
+   const edit={kind:brush.kind,add:[...brush.add.values()],remove:[...brush.remove]};if(!edit.add.length&&!edit.remove.length||brushCost()>coins())return;
    try{await savePaths(edit);}catch(error){notify(error.message);}
    endBrush();if(on)show();return;
   }
@@ -156,8 +158,8 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
  // fits; in Erase every path tile or old road piece it passes goes (a tile drawn in this same drag just goes again).
  const cell=v=>Math.round(v/PATH_GRID)*PATH_GRID;
  function brushCost(){
-  if(!brush)return 0;const free=(stored().path??0)+brush.remove.size;
-  return Math.max(0,brush.add.size-free)*DECOR.path.coins;
+  if(!brush)return 0;const back=[...brush.remove].filter(id=>brushKinds.get(id)===brush.kind).length,free=(stored()[brush.kind]??0)+back;
+  return Math.max(0,brush.add.size-free)*DECOR[brush.kind].coins;
  }
  function brushRules(){brush.rules={level:level(),others:others('path:new',brush.remove),roads:roads(),blockers:blockers()};}
  function paint(event){
@@ -167,23 +169,25 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,le
    const x=from[0]+(at[0]-from[0])*i/steps,z=from[1]+(at[1]-from[1])*i/steps;
    if(brush.mode==='draw'){
     const c=[cell(x),cell(z)],key=c.join(',');if(brush.add.has(key))continue;
+    // A fence runs the way the drag goes: along x (0) or along z (1); the first one follows the second.
+    if(brush.kind==='fence'){const prev=brush.lastCell;const turn=prev&&Math.abs(c[1]-prev[1])>Math.abs(c[0]-prev[0])?1:0;c.push(turn);if(prev&&brush.add.size===1)brush.add.get(prev.join(',')).splice(2,1,turn);}
     const planned=[...brush.add.values()].map(([px,pz])=>[px-1,px+1,pz-1,pz+1]);
     if(misfit([c[0]-1,c[0]+1,c[1]-1,c[1]+1],{...brush.rules,others:brush.rules.others.concat(planned)}))continue;
-    brush.add.set(key,c);changed=true;
+    brush.add.set(key,c);brush.lastCell=c.slice(0,2);changed=true;
    }else{
     const key=[cell(x),cell(z)].join(',');if(brush.add.delete(key)){changed=true;continue;}
-    const id=pathAt([x,z]);if(id&&!brush.remove.has(id)){brush.remove.add(id);changed=true;}
+    const found=pathAt([x,z]);if(found&&!brush.remove.has(found.id)){brush.remove.add(found.id);brushKinds.set(found.id,found.kind);changed=true;}
    }
   }
-  if(changed){showBrush({add:[...brush.add.values()],remove:[...brush.remove]});if(brush.mode==='erase')brushRules();show();}
+  if(changed){showBrush({kind:brush.kind,add:[...brush.add.values()],remove:[...brush.remove]});if(brush.mode==='erase')brushRules();show();}
  }
- function startBrush(){cancel();offer=null;shop=false;brush={mode:'draw',add:new Map(),remove:new Set(),last:null};brushRules();show();}
+ function startBrush(kind='path'){cancel();offer=null;shop=false;brush={kind,mode:'draw',add:new Map(),remove:new Set(),last:null,lastCell:null};brushKinds.clear();brushRules();show();}
  function endBrush(){if(!brush)return;brush=null;showBrush({add:[],remove:[]});}
  function turn(){if(!held||held.fresh||decorId(held.id)||held.id.startsWith('field:'))return;held.at=rotate(held.id,held.at);held.base=held.at;check();show();}
  // Build: a new tree or tile appears in the middle of the view, picked up, to drag where you want it.
  function choose(kind){
   if(!Object.hasOwn(DECOR,kind))return;
-  if(kind==='path'){startBrush();return;}cancel();offer=null;shop=false;
+  if(DECOR[kind].draw){startBrush(kind);return;}cancel();offer=null;shop=false;
   const made=spawn(kind);if(!made)return;
   held={id:made.id,kind,fresh:true,from:null,at:made.at,why:null};check();
   // Not on top of something: the nearest free spot, ring by ring round the middle of the view (its box moved along, so the screen
