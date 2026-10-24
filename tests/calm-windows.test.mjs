@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {hintsButton} from '../public/dialog-shell.js';
+import {hintsButton,hintTexts,HINT_LINES} from '../public/dialog-shell.js';
 import {confettiBurst,confettiFrom,CONFETTI_COLOURS} from '../public/confetti.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const css=read('public/calm-windows.css');
@@ -21,30 +21,44 @@ test('the calm sheet comes after every window\'s own sheet and the shell, before
  assert.match(css,/#buildings-dialog \.building-status:not\(\.ready\)\{padding:0;background:none\}/);
 });
 
-test('a window\'s rules wait behind its ⓘ: the same lines in both lists, each one still in the game',()=>{
- const lists=[...css.matchAll(/:is\((\.seed-yield-line,[^)]*)\)/g)].map(m=>m[1].replace(/\s+/g,''));
- assert.equal(lists.length,2,'the hidden lines and the ⓘ\'s own check');assert.equal(lists[0],lists[1]);
+test('a window\'s rules wait behind its ⓘ: hidden where they stand, the same lines as the ⓘ\'s card, each one still in the game',()=>{
+ const list=css.match(/dialog :is\((\.seed-yield-line,[^)]*)\)/)[1].replace(/\s+/g,'');
+ assert.equal(list,HINT_LINES,'the sheet hides what the card shows');
  const sources=['public/farm.html','public/economy-ui.js','public/retention-ui.js','public/warehouse-ui.js','public/growth-ui.js','public/boosts-ui.js','public/season-ui.js','public/pass-ui.js','public/family-ui.js'].map(read).join('\n');
- for(const name of lists[0].match(/\.[\w-]+/g))assert.ok(sources.includes(name.slice(1)),`still made by the game: ${name}`);
- // Shown again with the ⓘ: the rule hides them only while the window is not .show-hints, and beats a window's own id rule.
- assert.match(css,/dialog:not\(\.show-hints\) :is\(/);assert.match(css,/#seed-dialog:not\(\.show-hints\)>p\{display:none!important\}/);
+ for(const name of list.match(/\.[\w-]+/g))assert.ok(sources.includes(name.slice(1)),`still made by the game: ${name}`);
+ assert.match(css,/#seed-dialog>p\{display:none!important\}/,'beats a window\'s own id rule');
  // A building's window keeps its lines in view (23 Oct 2026, the owner: "dezelfde layout en informatie").
- assert.doesNotMatch(lists[0],/milling|production-capacity|recipe-section/);
+ assert.doesNotMatch(list,/milling|production-capacity|recipe-section/);
 });
 
-test('the ⓘ beside Close: added once, its name the game\'s own words, a press shows the rules, each opening starts with them hidden',()=>{
- const made=[],classes=new Set();
- const dialog={ownerDocument:null,classList:{toggle:n=>{if(classes.has(n)){classes.delete(n);return false;}classes.add(n);return true;},remove:n=>classes.delete(n)}};
- let kept=null;const heading={querySelector:()=>kept};
- const close={parentElement:heading,before:b=>{kept=b;made.push(b);}};
- dialog.querySelector=sel=>sel==='.dialog-heading .close-dialog'?close:null;
- const doc={createElement:()=>{const attrs={},on={};return {attrs,on,setAttribute:(k,v)=>{attrs[k]=v;},getAttribute:k=>attrs[k],addEventListener:(t,f)=>{on[t]=f;}};}};
- const button=hintsButton(dialog,doc);
- assert.equal(made.length,1);assert.equal(button.className,'hints-button');assert.equal(button.textContent,'i');assert.equal(button.attrs['aria-label'],'How it works');
- button.on.click();assert.ok(classes.has('show-hints'));assert.equal(button.attrs['aria-pressed'],'true');
- assert.equal(hintsButton(dialog,doc),button,'once');assert.equal(made.length,1);assert.ok(!classes.has('show-hints'),'opened again: hidden again');assert.equal(button.attrs['aria-pressed'],'false');
+// 24 Oct 2026 (the owner: "wat doet dit i'tje hier? ik klik erop maar er gebeurt niks"): the ⓘ opens a card under the heading with the
+// window's lines, and only shows while there is one to show (not one in a tab that is not open).
+test('the ⓘ beside Close: a card with the window\'s rules under its heading, a second press closes it; there only while there is a rule',()=>{
+ const el=(extra={})=>{const kids=[],attrs={};return {kids,attrs,hidden:false,textContent:'',setAttribute:(k,v)=>{attrs[k]=v;},getAttribute:k=>attrs[k],append:(...n)=>kids.push(...n),...extra};};
+ const line=(text,inHidden=false)=>({textContent:text,closest:sel=>sel==='[hidden]'?(inHidden?{}:null):null});
+ let lines=[line('Coins grow  with your level.'),line('Customers pay more.',true),line('Coins grow with your level.')];
+ const made=[];let panel=null,kept=null,scrolled=null;
+ const head={after:p=>{panel=p;made.push('panel');}};
+ const close={parentElement:{querySelector:()=>kept},before:b=>{kept=b;made.push('button');}};
+ const dialog={id:'today-dialog',scrollTo:o=>{scrolled=o;},querySelectorAll:sel=>sel===HINT_LINES?lines:[],
+  querySelector:sel=>sel==='.dialog-heading .close-dialog'?close:sel===':scope>.dialog-top,:scope>.dialog-heading'?head:sel==='.hints-panel'?panel:sel==='.hints-button'?kept:null};
+ const doc={createElement:tag=>{const e=el({tag});e.addEventListener=(t,f)=>{e['on'+t]=f;};e.remove=()=>{if(panel===e)panel=null;};return e;}};
+ assert.deepEqual(hintTexts(dialog),['Coins grow with your level.'],'its own words once, not a line in a closed tab');
+ const button=hintsButton(dialog,doc,null);
+ assert.equal(button.className,'hints-button');assert.equal(button.textContent,'i');assert.equal(button.attrs['aria-label'],'How it works');assert.equal(button.hidden,false);
+ button.onclick();
+ assert.ok(panel,'a card');assert.equal(panel.className,'hints-panel');assert.equal(panel.attrs.translate,'no','already in the farmer\'s language');
+ assert.deepEqual(panel.kids.map(p=>p.textContent),['Coins grow with your level.']);assert.equal(button.attrs['aria-pressed'],'true');assert.deepEqual(scrolled,{top:0});
+ // A second press closes it; opening the window again starts closed.
+ panel.remove=()=>{panel=null;};button.onclick();assert.equal(panel,null);assert.equal(button.attrs['aria-pressed'],'false');
+ button.onclick();panel.remove=()=>{panel=null;};assert.ok(panel);hintsButton(dialog,doc,null);assert.equal(panel,null,'closed on opening');
+ assert.equal(made.filter(m=>m==='button').length,1,'one ⓘ');
+ // With no rule to show (all in closed tabs) the ⓘ hides.
+ lines=[line('Customers pay more.',true)];hintsButton(dialog,doc,null);assert.equal(button.hidden,true);
  assert.equal(hintsButton({querySelector:()=>null},doc),null,'a window without a Close in its heading has none');
- assert.match(read('public/dialog-shell.js'),/if\(!dialog\.open\)\{dialog\.removeAttribute\('data-scrolled'\);return;\}\n try\{hintsButton\(dialog\);\}catch\{\}/,'on every opening');
+ const shell=read('public/dialog-shell.js');
+ assert.match(shell,/if\(!dialog\.open\)\{dialog\.removeAttribute\('data-scrolled'\);try\{hintWatch\.get\(dialog\)\?\.disconnect\(\);hintWatch\.delete\(dialog\);closeHints\(dialog\);\}catch\{\}return;\}\n try\{hintsButton\(dialog\);\}catch\{\}/,'on every opening; the watch ends on closing');
+ assert.match(css,/\.dialog-heading \.hints-button\[hidden\]\{display:none\}/);
  assert.ok('How it works' in JSON.parse(read('i18n/catalog.json')),'translated already');
 });
 

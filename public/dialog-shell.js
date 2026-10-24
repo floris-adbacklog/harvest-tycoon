@@ -18,25 +18,51 @@ function measure(dialog){
  if(h>0)dialog.style.setProperty('--head-h',`${h}px`);
 }
 const sizes=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{for(const e of entries){const d=e.target.closest?.('dialog');if(d)measure(d);}}):null;
-// The ⓘ beside Close (23 Oct 2026, the owner: the windows too busy; public/calm-windows.css): a window's rules (how it works, where flour
-// comes from) wait behind it. A press shows them, a second hides them, and each time the window opens they start hidden. Its sheet hides
-// it in a window that has no such line. Its name is the words the game already has ("How it works"), so the page translates it.
-export function hintsButton(dialog,doc=dialog?.ownerDocument??globalThis.document){
+// The ⓘ beside Close (23 Oct 2026, the owner: the windows too busy): a window's rules (how it works) are hidden where they stand
+// (public/calm-windows.css, the same list) and wait behind it. A press opens a small card under the heading with them, a second press
+// closes it, and each time the window opens it starts closed (24 Oct 2026, the owner: "wat doet dit i'tje hier? ik klik erop maar er
+// gebeurt niks": it showed the lines where they stood, which could be in another tab or far down the window). It shows only while the
+// window has such a line to show, one in a tab that is not open does not count. Its name is the words the game already has ("How it
+// works"), so the page translates it; the card holds the lines' own words, already in the farmer's language.
+export const HINT_LINES='.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.season-rule,.pass-rule,.tractor-rule,.family-footnote';
+// A line's words with a space between its parts (a title and its sentence), as they read on screen.
+const words=line=>{const parts=[];const walk=node=>{for(const child of node.childNodes??[]){if(child.nodeType===3)parts.push(child.data);else walk(child);}};walk(line);return (parts.length?parts.join(' '):line.textContent??'').replace(/\s+/g,' ').trim();};
+export function hintTexts(dialog){
+ const lines=[...dialog.querySelectorAll(HINT_LINES)];
+ if(dialog.id==='seed-dialog')lines.unshift(...dialog.querySelectorAll(':scope>p'));
+ const seen=new Set();
+ return lines.filter(line=>!line.closest('[hidden]')&&!line.closest('.hints-panel')).map(words).filter(text=>text&&!seen.has(text)&&seen.add(text));
+}
+const hintWatch=new WeakMap();
+function closeHints(dialog){dialog?.querySelector?.('.hints-panel')?.remove();dialog?.querySelector?.('.hints-button')?.setAttribute('aria-pressed','false');}
+export function hintsButton(dialog,doc=dialog?.ownerDocument??globalThis.document,Observer=globalThis.MutationObserver){
  const close=dialog?.querySelector?.('.dialog-heading .close-dialog');
  if(!close)return null;
  let button=close.parentElement.querySelector(':scope>.hints-button');
  if(!button){
   button=doc.createElement('button');button.type='button';button.className='hints-button';button.textContent='i';
   button.setAttribute('aria-label','How it works');
-  button.addEventListener('click',()=>{const on=dialog.classList.toggle('show-hints');button.setAttribute('aria-pressed',String(on));});
+  button.addEventListener('click',()=>{
+   if(dialog.querySelector('.hints-panel')){closeHints(dialog);return;}
+   const texts=hintTexts(dialog);if(!texts.length)return;
+   const panel=doc.createElement('div');panel.className='hints-panel';panel.setAttribute('translate','no');
+   for(const text of texts){const line=doc.createElement('p');line.textContent=text;panel.append(line);}
+   const head=dialog.querySelector(':scope>.dialog-top,:scope>.dialog-heading')??close.parentElement;
+   head.after(panel);button.setAttribute('aria-pressed','true');
+   try{dialog.scrollTo?.({top:0});}catch{}
+  });
   close.before(button);
  }
- dialog.classList.remove('show-hints');button.setAttribute('aria-pressed','false');
+ closeHints(dialog);
+ const show=()=>{const none=!hintTexts(dialog).length;if(button.hidden!==none)button.hidden=none;};
+ show();
+ // While the window is open its content changes (a tab, a new batch): the ⓘ follows; the watch ends when it closes (watch below).
+ if(typeof Observer==='function'&&!hintWatch.has(dialog)){const w=new Observer(show);w.observe(dialog,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});hintWatch.set(dialog,w);}
  return button;
 }
 function watch(dialog){
  if(!dialog?.matches?.(SHELL))return;
- if(!dialog.open){dialog.removeAttribute('data-scrolled');return;}
+ if(!dialog.open){dialog.removeAttribute('data-scrolled');try{hintWatch.get(dialog)?.disconnect();hintWatch.delete(dialog);closeHints(dialog);}catch{}return;}
  try{hintsButton(dialog);}catch{}
  measure(dialog);
  const head=dialog.querySelector(':scope>.dialog-top,:scope>.dialog-heading');

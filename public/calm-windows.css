@@ -59,12 +59,14 @@
 #today-content .daily-order .ingredient.missing{color:#a3473a}
 
 /* ---- 3. A window's rules wait behind its ⓘ ---- */
-/* The lines that explain (not what is going on now): hidden until the ⓘ is pressed. Keep this list and the one under it the same.
-   !important: a window's own sheet shows some of them by its id (#daily-gift .gift-note{display:block}), which a class rule cannot beat. */
-dialog:not(.show-hints) :is(.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.shop-earn,.season-rule,.pass-rule,.tractor-rule,.family-footnote),
-#seed-dialog:not(.show-hints)>p{display:none!important}
-/* The ⓘ shows only in a window that has such a line (a browser without :has shows it in every window, where it does nothing). */
-dialog:not(:has(:is(.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.shop-earn,.season-rule,.pass-rule,.tractor-rule,.family-footnote))):not(#seed-dialog) .hints-button{display:none}
+/* The lines that explain (not what is going on now) are hidden where they stand; the ⓘ shows them in a card under the heading
+   (dialog-shell.js HINT_LINES, the same list). !important: a window's own sheet shows some of them by its id
+   (#daily-gift .gift-note{display:block}), which a class rule cannot beat. */
+dialog :is(.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.silo-note,.estate-lead,.season-rule,.pass-rule,.tractor-rule,.family-footnote),
+#seed-dialog>p{display:none!important}
+.dialog-heading .hints-button[hidden]{display:none}
+.hints-panel{display:grid;gap:6px;margin:0 0 12px;padding:10px 14px;border:1px solid #e8d7a8;border-radius:14px;background:#fff8e6;color:#5f4f30;font-size:14px;line-height:1.45}
+.hints-panel>p{margin:0}
 .dialog-heading .hints-button{flex:none;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;margin-inline-start:auto;padding:0;border:2px solid var(--btn-icon-line);border-radius:14px;background:var(--btn-icon);box-shadow:0 2px 0 var(--btn-icon-edge);color:var(--btn-icon-text);font:700 22px/1 'Outfit',sans-serif;cursor:pointer}
 .dialog-heading .hints-button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
 .dialog-heading .hints-button[aria-pressed=true]{border-color:#e0a13a;background:#fff3d6;box-shadow:0 2px 0 #c98f2e}
