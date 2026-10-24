@@ -97,10 +97,10 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
  }
  // Your things (24 Oct 2026, the owner: "Doe ook een inventory in het build scherm rechtsboven met al je spullen"): what you stored,
  // top right while Build is open; a tap places one (for free).
- let stocked=null;
+ let stocked=null,inventoryDrag=false;
  function showInventory(){
   if(!inventory)return;
-  inventory.hidden=!(on&&shop&&!held&&!offer&&!brush);if(inventory.hidden)return;
+  inventory.hidden=!(on&&(shop&&!held||inventoryDrag)&&!offer&&!brush);if(inventory.hidden)return;
   const have=Object.entries(stored()).filter(([kind,n])=>n>0&&DECOR[kind]),key=JSON.stringify(have);if(key===stocked)return;stocked=key;
   inventory.querySelector('[data-inventory]').innerHTML=have.map(([kind,n])=>`<button type="button" data-kind="${kind}" title="${DECOR[kind].name}">${icon(ICON[kind])}<b>${n}</b></button>`).join('');
   inventory.querySelector('[data-inventory-empty]').hidden=have.length>0;refresh();
@@ -224,7 +224,24 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
   try{await buy(kind);notify(`${DECOR[kind].name}: in Your things.`);}catch(error){notify(error.message);}
   stocked=null;show();
  });
- inventory?.addEventListener('click',event=>{const b=event.target.closest?.('[data-kind]');if(b)choose(b.dataset.kind);});
+ // Out of Your things with a drag (24 Oct 2026, the owner: "dat je ziet hoe het eruit komt te zien als je hem uit de Your things
+ // haalt"): it appears under your finger and follows it over the farm, green or red; let go and it waits there for Place. A tap puts it
+ // on the nearest free spot in view instead.
+ let dragged=false;
+ inventory?.addEventListener('pointerdown',event=>{
+  const b=event.target.closest?.('[data-kind]');if(!b||DECOR[b.dataset.kind]?.draw)return;
+  const kind=b.dataset.kind,from={x:event.clientX,y:event.clientY};let moving=false;
+  b.setPointerCapture?.(event.pointerId);
+  const move=e=>{
+   if(!moving){if(Math.hypot(e.clientX-from.x,e.clientY-from.y)<8)return;moving=true;inventoryDrag=true;choose(kind);}
+   const ground=groundAt(e);if(!ground||!held?.fresh)return;
+   const at=[snap(ground[0]),snap(ground[1])];if(at[0]===held.at[0]&&at[1]===held.at[1])return;
+   preview(held.id,at);held.at=at;check();show();
+  };
+  const up=()=>{b.removeEventListener('pointermove',move);b.removeEventListener('pointerup',up);b.removeEventListener('pointercancel',up);if(moving){dragged=true;inventoryDrag=false;show();}};
+  b.addEventListener('pointermove',move);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);
+ });
+ inventory?.addEventListener('click',event=>{if(dragged){dragged=false;return;}const b=event.target.closest?.('[data-kind]');if(b)choose(b.dataset.kind);});
  // On a keyboard R turns what you hold, as the Rotate button does (24 Oct 2026, the owner: "Doe ook R rotate met toetsenbord"), and Esc
  // ends moving (the owner: "Esc moet ook move sluiten"); what you held goes back. Not while typing, and not with Ctrl, Cmd or Alt.
  doc.addEventListener('keydown',event=>{
