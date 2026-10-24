@@ -58,7 +58,7 @@ test('the function counts players and those active in the last 30 minutes, the s
 test('the public function returns two numbers, from the leaderboard table only, and answers GET',()=>{
  const all=read('supabase/functions/player-counts/index.ts');
  // ?invite=CODE answers only the player name behind a code its owner shared (Invite a friend); the counts part stays as it was.
- const invite=all.slice(all.indexOf("searchParams.get('invite')"),all.indexOf('if(cached&&now-cached.at<CACHE_MS)'));
+ const invite=all.slice(all.indexOf("searchParams.get('ref')"),all.indexOf('if(cached&&now-cached.at<CACHE_MS)'));   // with ?ref=CODE (24 Oct 2026): a partner's label
  assert.match(invite,/JSON\.stringify\(\{inviter\}\)/);assert.match(invite,/select\('player_id,closed_at'\)\.eq\('code',code\)/);assert.match(invite,/select\('username'\)/);assert(!/email|auth\.admin|level|currency/.test(invite));
  const code=all.replace(invite,'');
  assert.match(code,/verify_jwt is off/);assert.equal((code.match(/admin\.from\(/g)??[]).length,2);assert.equal((code.match(/admin\.from\('player_stats'\)/g)??[]).length,2);

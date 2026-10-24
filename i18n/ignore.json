@@ -160,5 +160,8 @@
  "Samsung Internet",
  "This browser has no import maps.",
  "load failed {0}",
- "no import maps"
+ "no import maps",
+ "code.eq.{0},alias.eq.{1}",
+ "That alias is another partner's code.",
+ "That code is another partner's alias."
 ]

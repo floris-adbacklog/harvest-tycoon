@@ -9,7 +9,7 @@ import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdmin
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleAdminReload,readReloadAfter} from './reload-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
-import {linkPartner} from './partner-service.js';
+import {linkPartner,partnerWelcomeNotice} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
 import {handleAppleToken} from './apple-sign-in-service.js';
 import {recordSource} from './source-service.js';
@@ -220,18 +220,22 @@ Deno.serve(async(req)=>{
    const found=await admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle();if(found.error)throw found.error;
    const row=found.data,now=Date.now();
    if(!row){
-    const initial=createFarm(now);
+    const initial=createFarm(now);let partner:{diamonds:number,label:string|null}|null=null;
     // Preserve only progress already stored on the server. Never import browser saves.
     if(profile){initial.coins=profile.currency;initial.xp=xpForLevel(profile.level);initial.xpOffset=0;}
     // A brand-new farm started from an invite link remembers who invited it (invite-service.js). An invite can never be
     // added to a farm that already exists, and a problem with it never stops the farm from opening.
     else{const invite=await linkInvite({admin,player:user.id,code:body.inviteCode??user.user_metadata?.invite,now}).catch((error:{code?:string})=>{console.error('Invite link failed',error?.code);return null;});if(invite)initial.invite=invite;
      // And from a partner's link (partner-service.js): never in the way of the farm either.
-     await linkPartner({admin,player:user.id,code:body.partnerCode??user.user_metadata?.ref,now}).catch((error:{code?:string})=>{console.error('Partner link failed',error?.code);});
+     // A partner's welcome diamonds (24 Oct 2026, supabase/partner-signup-bonus.sql) go into the new farm, with a note once it is saved.
+     partner=await linkPartner({admin,player:user.id,code:body.partnerCode??user.user_metadata?.ref,now}).catch((error:{code?:string})=>{console.error('Partner link failed',error?.code);return null;});
+     if((partner?.diamonds??0)>0&&partner)initial.diamonds=(initial.diamonds??0)+partner.diamonds;
      // And how this new farmer found the game (source-service.js): once, beside the first load, never in the farm's way.
      later(recordSource({admin,player:user.id,source:body.source??user.user_metadata?.source,headers:req.headers,language:body.language,now}).catch((error:{code?:string})=>{console.error('Source record failed',error?.code);}));}
     const created=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:0,p_state:initial,p_receipts:[],p_username:username,p_currency:initial.coins,p_level:levelOf(initial)});
-    if(created.error)throw created.error;continue;
+    if(created.error)throw created.error;
+    if((partner?.diamonds??0)>0&&partner)later(admin.from('player_notices').insert({player_id:user.id,kind:'gift',body:partnerWelcomeNotice(partner)}).then(()=>{},()=>{}));
+    continue;
    }
    // An admin account's Family window and invite card read the showcase farm too (3 Oct 2026), with the real farm's family: its real
    // level may be under the Family's level 10. These are reads (p_write_farm false), so the showcase is never stored; family actions

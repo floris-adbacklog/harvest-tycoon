@@ -13,7 +13,7 @@ import {createChatClient} from './chat-client.js';
 import {startLoadingTips,ACCOUNT_STEPS,farmHandOver,LOAD_FAILED_TEXT} from '../public/loading-screen.js';
 import {startPlayerCounts} from './player-counts.js';
 import {takeInviteFromUrl,pendingInvite,clearInvite,inviterName,inviteBannerText} from './invite-link.js';
-import {takeRefFromUrl,pendingRef,clearRef} from './partner-link.js';
+import {takeRefFromUrl,pendingRef,clearRef,partnerWelcome,partnerBannerText} from './partner-link.js';
 import {readSource,sourceQuery} from './source-link.js';
 import {createConnection,connectionMessage,describeFailure,reasonOf,refused,WAKE_GRACE} from './connection.js';
 import {stopPageZoom,gameViewport} from './page-zoom.js';
@@ -127,6 +127,16 @@ async function showInviter(){
  const text=inviteBannerText(name);setOwnText(box.querySelector('strong'),text.title,[name]);setOwnText(box.querySelector('span'),text.body,[name]);box.hidden=false;
 }
 void showInviter();
+// A partner's link (24 Oct 2026): "You're joining via Warrior of Light 777" and their welcome diamonds on the same card, in its own
+// picture, when no friend's invite is shown there.
+async function showPartner(){
+ const code=pendingRef(localStore),box=document.getElementById('account-invite');if(!code||!box||pendingInvite(localStore))return;
+ const partner=await partnerWelcome(functionsUrl,code);if(!partner||pendingRef(localStore)!==code||pendingInvite(localStore))return;
+ const text=partnerBannerText(partner),img=box.querySelector('img');
+ if(img){img.src='/assets/icons/offer-diamonds.webp';img.alt='';}
+ setOwnText(box.querySelector('strong'),text.title,[partner.label]);setOwnText(box.querySelector('span'),text.body,[partner.label]);box.hidden=false;
+}
+void showPartner();
 const linkText=()=>`${globalThis.location?.hash??''}&${globalThis.location?.search??''}`;
 const linkKind=()=>/type=(recovery|signup|magiclink|invite|email_change)/.exec(linkText())?.[1]??'';
 // This tab opened a reset link (17 Oct 2026, the review of Set a password): read now, before supabase-js clears the address. Only such a

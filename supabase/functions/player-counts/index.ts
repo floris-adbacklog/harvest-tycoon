@@ -4,6 +4,8 @@ import {onlineSince,normaliseCounts,CACHE_MS} from './counts.js';
 // verify_jwt is off for this function: the sign-in page shows these numbers before anyone has an account.
 // It answers GET with {players, online} and nothing else, and remembers the answer for 30 seconds. With ?invite=CODE it
 // answers {inviter} instead: the player name behind an invite code, for the sign-in page's "Tony invited you" (or null).
+// With ?ref=CODE (24 Oct 2026, supabase/partner-signup-bonus.sql) it answers {partner}: {label, diamonds} of the partner behind a code
+// or alias, for the sign-in page's "You're joining via ...", or null. Never the partner's own name: only the label the admin set.
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET, OPTIONS','Access-Control-Allow-Headers':'*','Content-Type':'application/json'};
 let cached:{at:number,body:string}|null=null;
@@ -12,6 +14,16 @@ Deno.serve(async(request:Request)=>{
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(request.method!=='GET')return new Response(JSON.stringify({error:'Use GET.'}),{status:405,headers});
  const now=Date.now();
+ const ref=new URL(request.url).searchParams.get('ref');
+ if(ref!==null){
+  const code=ref.trim().toUpperCase(),answer=(partner:{label:string,diamonds:number}|null)=>new Response(JSON.stringify({partner}),{headers:{...headers,'Cache-Control':'public, max-age=300'}});
+  if(!/^[A-Z0-9]{4,20}$/.test(code))return answer(null);
+  try{
+   const found=await admin.from('partners').select('label,signup_diamonds').or(`code.eq.${code},alias.eq.${code}`).limit(1);
+   const row=found.error?null:found.data?.[0];
+   return answer(row&&typeof row.label==='string'&&row.label?{label:row.label,diamonds:Math.max(0,Number(row.signup_diamonds)||0)}:null);
+  }catch{return answer(null);}
+ }
  const invite=new URL(request.url).searchParams.get('invite');
  if(invite!==null){
   const code=invite.trim().toUpperCase(),answer=(inviter:string|null)=>new Response(JSON.stringify({inviter}),{headers:{...headers,'Cache-Control':'public, max-age=300'}});

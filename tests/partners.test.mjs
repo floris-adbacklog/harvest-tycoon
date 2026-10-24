@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {PARTNER_RULES,partnerCode,joinDetails,payoutDetails,payoutMail,ensurePartner,partnerPayout,euro} from '../supabase/functions/partner-api/partner.js';
-import {linkPartner} from '../supabase/functions/farm-api/partner-service.js';
-import {takeRefFromUrl,pendingRef,REF_KEY} from '../src/partner-link.js';
+import {linkPartner,partnerWelcomeNotice} from '../supabase/functions/farm-api/partner-service.js';
+import {takeRefFromUrl,pendingRef,REF_KEY,partnerBannerText} from '../src/partner-link.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // 1 Oct 2026: the partner programme, apart from Invite a friend: partners who are not players, their own account on /partners,
@@ -12,12 +12,14 @@ function db(tables={}){
  const calls=[];
  const from=table=>{
   const q={table,filters:[],op:'select'};calls.push(q);
-  const rows=()=>(tables[table]??[]).filter(r=>q.filters.every(([k,v])=>r[k]===v));
+  const rows=()=>(tables[table]??[]).filter(r=>q.filters.every(([k,v])=>r[k]===v)&&(!q.any||q.any.some(([k,v])=>r[k]===v)));
   const api={
    select(){return api;},eq(k,v){q.filters.push([k,v]);return api;},order(){return api;},limit(){return api;},
+   or(expr){q.any=expr.split(',').map(part=>{const [k,,v]=part.split('.');return [k,v];});return api;},
    maybeSingle:async()=>({data:rows()[0]??null,error:null}),single:async()=>({data:q.row,error:null}),
    insert(row){q.op='insert';q.row={...row,created_at:'2026-10-01T20:00:00Z'};(tables[table]??=[]).push(q.row);return api;},
-   upsert(row,opts){q.op='upsert';q.row=row;q.opts=opts;if(!(tables[table]??=[]).some(r=>r.player_id===row.player_id))tables[table].push(row);return Promise.resolve({error:null});},
+   upsert(row,opts){q.op='upsert';q.row=row;q.opts=opts;const made=!(tables[table]??=[]).some(r=>r.player_id===row.player_id);if(made)tables[table].push(row);
+    const done={error:null};return {select:async()=>({data:made?[{player_id:row.player_id}]:[],error:null}),then:(resolve,reject)=>Promise.resolve(done).then(resolve,reject)};},
    delete(){q.op='delete';return {eq:async(k,v)=>{tables[table]=(tables[table]??[]).filter(r=>r[k]!==v);return {error:null};}};},
    then(resolve){return Promise.resolve({data:rows(),error:null}).then(resolve);}
   };
@@ -48,9 +50,9 @@ test('a partner\'s link is remembered on a new visitor\'s device, goes along wit
  delete store[REF_KEY];assert.equal(takeRefFromUrl({location:{href:'https://x.com/?ref=ABCD12'},history,storage,known:true}),null,'not for a browser that already played');
  const main=read('src/main.js');
  assert.match(main,/\.\.\.\(partnerCode\?\{partnerCode\}:\{\}\)/);assert.match(main,/\.\.\.\(ref\?\{ref\}:\{\}\)/);
- assert.match(read('supabase/functions/farm-api/index.ts'),/await linkPartner\(\{admin,player:user\.id,code:body\.partnerCode\?\?user\.user_metadata\?\.ref,now\}\)\.catch/,'only where a brand-new farm is made, and never in its way');
+ assert.match(read('supabase/functions/farm-api/index.ts'),/partner=await linkPartner\(\{admin,player:user\.id,code:body\.partnerCode\?\?user\.user_metadata\?\.ref,now\}\)\.catch/,'only where a brand-new farm is made, and never in its way');
  const base={partners:[{user_id:'p1',code:'GREENA123'}]};
- const a=db(structuredClone(base));assert.deepEqual(await linkPartner({admin:a,player:'f1',code:'greena123'}),{code:'GREENA123'});assert.equal(a.tables.partner_referrals[0].partner_id,'p1');
+ const a=db(structuredClone(base));assert.deepEqual(await linkPartner({admin:a,player:'f1',code:'greena123'}),{code:'GREENA123',diamonds:0,label:null});assert.equal(a.tables.partner_referrals[0].partner_id,'p1');
  assert.equal(await linkPartner({admin:db(structuredClone(base)),player:'p1',code:'GREENA123'}),null,'never the partner\'s own account');
  assert.equal(await linkPartner({admin:db(structuredClone(base)),player:'f1',code:'NOPE99'}),null,'an unknown code');
  assert.equal(await linkPartner({admin:db(structuredClone(base)),player:'f1',code:'<x>'}),null);
@@ -90,4 +92,24 @@ test('/partners: its own account box and panel, the assets to download, the term
  assert.ok(vercel.rewrites.some(r=>r.source==='/partners'&&r.destination==='/partners.html'));
  for(const path of ['public/play.html','public/404.html','public/delete-account.html','public/privacy.html','public/partners.html','scripts/build-wiki.mjs'])assert.match(read(path),/<a href="\/partners">Partner programme<\/a>/,path);
  assert.match(read('src/admin-dashboard.js'),/data-payout-status="paid">Paid<\/button>/);assert.match(read('src/chat-client.js'),/partnerPayout:\(id,status\)=>rpc\('partner_admin_payout',\{p_id:id,p_status:status\}\)/);
+});
+
+// 24 Oct 2026 (supabase/partner-signup-bonus.sql): a partner's alias in the link, and welcome diamonds for a brand-new farm only.
+test('a partner\'s alias and welcome diamonds: the alias links to the partner\'s own code, the diamonds come once, with the label',async()=>{
+ const base={partners:[{user_id:'p1',code:'PRESTO217',alias:'WARRIOROFLIGHT777',label:'Warrior of Light 777',signup_diamonds:300}]};
+ const a=db(structuredClone(base));
+ assert.deepEqual(await linkPartner({admin:a,player:'f1',code:'warrioroflight777'}),{code:'PRESTO217',diamonds:300,label:'Warrior of Light 777'});
+ assert.equal(a.tables.partner_referrals[0].code,'PRESTO217','the referral keeps the partner\'s own code');
+ assert.deepEqual(await linkPartner({admin:a,player:'f1',code:'PRESTO217'}),{code:'PRESTO217',diamonds:0,label:'Warrior of Light 777'},'linked already: no second gift');
+ assert.equal(takeRefFromUrl({location:{href:'https://www.harvesttycoon.com/?ref=WarriorOfLight777'},history:{replaceState(){}},storage:{setItem(){}},known:false}),'WARRIOROFLIGHT777');
+ assert.equal(partnerWelcomeNotice({diamonds:300,label:'Warrior of Light 777'}),"Welcome to the valley! You joined with Warrior of Light 777's link, so you start with 300 extra diamonds.");
+ assert.deepEqual(partnerBannerText({label:'Warrior of Light 777',diamonds:300}),{title:"You're joining via Warrior of Light 777",body:'Sign up and your farm starts with 300 extra diamonds.'});
+ const api=read('supabase/functions/farm-api/index.ts');
+ assert.match(api,/if\(\(partner\?\.diamonds\?\?0\)>0&&partner\)initial\.diamonds=\(initial\.diamonds\?\?0\)\+partner\.diamonds;/);
+ assert.match(api,/if\(created\.error\)throw created\.error;\n    if\(\(partner\?\.diamonds\?\?0\)>0&&partner\)later\(admin\.from\('player_notices'\)\.insert/,'the note only once the farm is saved');
+ const sql=read('supabase/partner-signup-bonus.sql');
+ assert.match(sql,/update public\.partners set alias='WARRIOROFLIGHT777', label='Warrior of Light 777', signup_diamonds=300 where code='PRESTO217';/);
+ assert.match(sql,/check \(signup_diamonds between 0 and 1000\)/);
+ const counts=read('supabase/functions/player-counts/index.ts');
+ assert.match(counts,/select\('label,signup_diamonds'\)/,'the card gets the label and the diamonds, never the partner\'s name');
 });
