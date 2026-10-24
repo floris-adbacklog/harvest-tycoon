@@ -4030,12 +4030,12 @@ function normalizeShift(state){
 //   one action may go over the line (a harvest with Double harvest, a Factory batch of 20, a collect-all), so a field or batch is never split.
 // - What always arrives, also above the line: rewards (quests, challenges, the passes, level rewards, events, family orders), purchases,
 //   family and admin gifts, chores, a helping hand, pets, the village carts and a night shift already running (settleShift).
-// - Capacity (option C, the tight one): levels 1-10 with coins only, then levels 11-15 from farm level 108/120/140/160/180 with coins and
+// - Capacity (option C, the tight one; 24 Oct 2026, the owner picked option 2: level 1 holds 750 and every step adds at least 300 places, same prices): levels 1-10 with coins only, then levels 11-15 from farm level 108/120/140/160/180 with coins and
 //   the master steps' tools, planks and stone (as the farm's buildings past 10). The Buildings discount voucher halves an upgrade.
 // - Saved as state.warehouse = {level}, not in BUILDINGS (old pages throw on a building key they do not know). A farm without one (every
 //   farm from before, and a new one) starts on the lowest level that holds its stock and a quarter more, as high as its farm level
 //   allows: nobody loses anything, and a farm that holds more than even that keeps it all but brings nothing in before it sells.
-export const WAREHOUSE_CAPACITY=Object.freeze([500,650,800,950,1100,1300,1500,1750,2000,2300,2700,3100,3500,4000,4500]);
+export const WAREHOUSE_CAPACITY=Object.freeze([750,1050,1350,1650,1950,2250,2550,2850,3150,3450,3850,4250,4650,5150,5650]);
 export const WAREHOUSE_MAX_LEVEL=10,WAREHOUSE_TOP_LEVEL=WAREHOUSE_CAPACITY.length,WAREHOUSE_START_ROOM=1.25,WAREHOUSE_NEAR_FULL=.9,WAREHOUSE_XP=15;
 // What the upgrade TO each level costs: index 0 is the upgrade to level 2.
 export const WAREHOUSE_COSTS=Object.freeze([20000,48000,80000,140000,220000,340000,520000,800000,1200000]);

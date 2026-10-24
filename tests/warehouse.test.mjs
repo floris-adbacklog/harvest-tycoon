@@ -17,7 +17,7 @@ const ripe=(s,id,crop='wheat')=>Object.assign(s.plots[id],{crop,plantedAt:now-CR
 const ready=(s,building='coop',recipe='eggs',count=1)=>{s.inventory.feed+=count*5;const r=act(s,{type:'produce',recipe,count},now);for(const j of productionJobs(s.buildings[building]))j.readyAt=now;return r;};
 
 test('capacity and prices: option C and the owner’s coin ladder, the village levels with master goods',()=>{
- assert.deepEqual([...WAREHOUSE_CAPACITY],[500,650,800,950,1100,1300,1500,1750,2000,2300,2700,3100,3500,4000,4500]);
+ assert.deepEqual([...WAREHOUSE_CAPACITY],[750,1050,1350,1650,1950,2250,2550,2850,3150,3450,3850,4250,4650,5150,5650]);
  assert.deepEqual([...WAREHOUSE_COSTS],[20000,48000,80000,140000,220000,340000,520000,800000,1200000]);
  assert.equal(WAREHOUSE_MAX_LEVEL,10);assert.equal(WAREHOUSE_TOP_LEVEL,15);
  assert.deepEqual(WAREHOUSE_MASTER.map(s=>[s.level,s.coins]),[[108,3000000],[120,4000000],[140,5200000],[160,6800000],[180,8800000]]);
@@ -47,38 +47,38 @@ test('what counts: every item in storage, one place a piece; coins, diamonds, se
 });
 
 test('a full Warehouse: harvests, collects, the Seed Lab and the tractor’s harvest work wait, with the note’s numbers',()=>{
- const s=farm();s.warehouse={level:1};fill(s,500);ripe(s,0);ripe(s,1);
+ const s=farm();s.warehouse={level:1};fill(s,750);ripe(s,0);ripe(s,1);
  assert.equal(warehouseFull(s),true);
- const text=warehouseFullText(s);assert.equal(text,'Warehouse full (500 / 500). Sell or use something to bring in more.');
+ const text=warehouseFullText(s);assert.equal(text,'Warehouse full (750 / 750). Sell or use something to bring in more.');
  const before=structuredClone(s);
  for(const action of [{type:'field',id:0,action:'harvest'},{type:'fields',action:'harvest',ids:[0,1]},{type:'tractor',mode:'harvest',crop:'wheat'}])
   assert.throws(()=>act(s,action,now),{message:text},action.type);
  assert.deepEqual(s.plots,before.plots,'the ripe crops stay on their fields');
  // A finished batch waits in its building.
- const c=farm();c.warehouse={level:1};fill(c,100);c.inventory.feed=10;ready(c);fill(c,500);c.inventory.feed=0;
+ const c=farm();c.warehouse={level:1};fill(c,100);c.inventory.feed=10;ready(c);fill(c,750);c.inventory.feed=0;
  const jobs=structuredClone(productionJobs(c.buildings.coop));
- assert.throws(()=>act(c,{type:'collect',building:'coop'},now),/Warehouse full \(500 \/ 500\)/);
+ assert.throws(()=>act(c,{type:'collect',building:'coop'},now),/Warehouse full \(750 \/ 750\)/);
  assert.throws(()=>act(c,{type:'collect_all',building:'coop'},now),/Warehouse full/);
  assert.deepEqual(productionJobs(c.buildings.coop),jobs);
  // The Seed Lab's collect.
- const l=farm(95);l.warehouse={level:1};l.lab.beds[0]={heirloom:Object.keys(HEIRLOOMS)[0],startedAt:now-2*H,readyAt:now-1};fill(l,500);
+ const l=farm(95);l.warehouse={level:1};l.lab.beds[0]={heirloom:Object.keys(HEIRLOOMS)[0],startedAt:now-2*H,readyAt:now-1};fill(l,750);
  assert.throws(()=>act(l,{type:'lab_collect',bed:0},now),/Warehouse full/);assert.ok(l.lab.beds[0]);
  // The night shift harvests, so it does not start.
- const n=farm();n.warehouse={level:1};fill(n,600);const cost=nightShiftQuote(n,'wheat',now).cost;
- assert.throws(()=>act(n,{type:'tractor_shift',crop:'wheat',expectedCost:cost},now),/Warehouse full \(600 \/ 500\)/);assert.equal(n.tractorShift,undefined);
+ const n=farm();n.warehouse={level:1};fill(n,850);const cost=nightShiftQuote(n,'wheat',now).cost;
+ assert.throws(()=>act(n,{type:'tractor_shift',crop:'wheat',expectedCost:cost},now),/Warehouse full \(850 \/ 750\)/);assert.equal(n.tractorShift,undefined);
 });
 
 test('one action may go over the line: a harvest, a sweep’s last field, a collect-all and the tractor are never split',()=>{
- const s=farm();s.warehouse={level:1};fill(s,499);ripe(s,0);ripe(s,1);ripe(s,2);
+ const s=farm();s.warehouse={level:1};fill(s,749);ripe(s,0);ripe(s,1);ripe(s,2);
  const r=act(s,{type:'fields',action:'harvest',ids:[0,1,2]},now);
- assert.equal(r.count,1);assert.equal(r.full,true,'the sweep stops at full');assert.ok(storedCount(s)>500);
+ assert.equal(r.count,1);assert.equal(r.full,true,'the sweep stops at full');assert.ok(storedCount(s)>750);
  assert.equal(s.plots[1].crop,'wheat');assert.equal(s.plots[2].crop,'wheat');
- const t=farm();t.warehouse={level:1};fill(t,499);for(const id of [0,1,2,3])ripe(t,id);
+ const t=farm();t.warehouse={level:1};fill(t,749);for(const id of [0,1,2,3])ripe(t,id);
  const job=act(t,{type:'tractor',mode:'harvest',crop:'wheat'},now);assert.equal(job.count,4);assert.ok(t.plots.slice(0,4).every(p=>!p.crop));
- const c=farm();c.warehouse={level:1};c.buildings.coop.level=5;fill(c,0);ready(c,'coop','eggs',5);c.inventory.wheat=499-storedCount(c)+c.inventory.wheat;
- assert.equal(storedCount(c),499);
- const all=act(c,{type:'collect_all',building:'coop'},now);assert.equal(all.count,5);assert.ok(storedCount(c)>500);
- const h=farm();h.warehouse={level:1};fill(h,499);ripe(h,0);act(h,{type:'field',id:0,action:'harvest'},now);assert.equal(h.plots[0].crop,null);
+ const c=farm();c.warehouse={level:1};c.buildings.coop.level=5;fill(c,0);ready(c,'coop','eggs',5);c.inventory.wheat=749-storedCount(c)+c.inventory.wheat;
+ assert.equal(storedCount(c),749);
+ const all=act(c,{type:'collect_all',building:'coop'},now);assert.equal(all.count,5);assert.ok(storedCount(c)>750);
+ const h=farm();h.warehouse={level:1};fill(h,749);ripe(h,0);act(h,{type:'field',id:0,action:'harvest'},now);assert.equal(h.plots[0].crop,null);
 });
 
 test('never blocked: planting, starting batches, selling, the other tractor jobs, upgrades and fields, at any stock',()=>{
@@ -101,8 +101,8 @@ test('always arrives above the line: a running night shift, a pet’s find and a
  const cost=nightShiftQuote(s,'wheat',now).cost;act(s,{type:'tractor_shift',crop:'wheat',expectedCost:cost},now);
  fill(s,900);settleShift(s,now+5*SHIFT_ROUND_MS);
  assert.ok(storedCount(s)>900,'the shift that runs keeps harvesting');
- const p=farm();p.warehouse={level:1};fill(p,800);delete p.pets;
- const found=act(p,{type:'pet_pat',pet:'cat'},now);assert.equal(storedCount(p),800+found.count);
+ const p=farm();p.warehouse={level:1};fill(p,1000);delete p.pets;
+ const found=act(p,{type:'pet_pat',pet:'cat'},now);assert.equal(storedCount(p),1000+found.count);
  // Rewards, purchases, gifts, chores, helping hands and carts have no Warehouse check at all: only these six places check it.
  const rules=readFileSync(new URL('../game/farm-state.js',import.meta.url),'utf8');
  const checks=rules.split('\n').filter(line=>/assertWarehouseRoom\(state\)|warehouseFull\(state\)\)\{full=true/.test(line)&&!/^function /.test(line)).map(line=>line.trim());
@@ -131,7 +131,7 @@ test('upgrades: coins only on the farm, XP and counters, the price the card show
  s.coins=20000;const xp=s.xp,upgrades=s.stats.upgrades;
  assert.throws(()=>act(s,{type:'warehouse_upgrade',expectedCost:10000},now),/price has changed/);
  const r=act(s,{type:'warehouse_upgrade',expectedCost:20000},now);
- assert.deepEqual([r.level,r.capacity,r.cost,s.coins,s.warehouse.level],[2,650,20000,0,2]);
+ assert.deepEqual([r.level,r.capacity,r.cost,s.coins,s.warehouse.level],[2,1050,20000,0,2]);
  assert.equal(s.xp-xp>=15,true);assert.equal(s.stats.upgrades,upgrades+1);assert.equal(s.stats.warehouse_upgrades,1);
  assert.ok(s.stats.coins_spent>=20000,'counts as coins spent for the events');
  // Level 10 -> 11 needs farm level 108 and the master goods.
@@ -150,15 +150,15 @@ test('the Buildings discount voucher halves a Warehouse upgrade, its goods too, 
  const coins=s.coins;act(s,{type:'warehouse_upgrade',expectedCost:70000},now);
  assert.equal(coins-s.coins,70000);assert.equal(s.boosts.upgradeCredits,0);assert.equal(warehouseUpgrade(s).coins,220000);
  const v=farm(120);v.warehouse={level:11};v.boosts.upgradeCredits=1;
- assert.deepEqual(warehouseUpgrade(v),{level:12,capacity:3100,added:400,coins:2000000,materials:{mastertools:1,plank:20,stone:30},farmLevel:120,voucher:true});
+ assert.deepEqual(warehouseUpgrade(v),{level:12,capacity:4250,added:400,coins:2000000,materials:{mastertools:1,plank:20,stone:30},farmLevel:120,voucher:true});
 });
 
 test('near full and the capacity of a level',()=>{
- const s=farm();s.warehouse={level:3};fill(s,719);
- assert.equal(warehouseCapacity(s),800);assert.equal(warehouseNearFull(s),false);
- s.inventory.wheat=720;assert.equal(warehouseNearFull(s),true);assert.equal(warehouseFull(s),false);
- s.inventory.wheat=800;assert.equal(warehouseFull(s),true);
- assert.equal(warehouseCapacity(s,15),4500);
+ const s=farm();s.warehouse={level:3};fill(s,1214);
+ assert.equal(warehouseCapacity(s),1350);assert.equal(warehouseNearFull(s),false);
+ s.inventory.wheat=1215;assert.equal(warehouseNearFull(s),true);assert.equal(warehouseFull(s),false);
+ s.inventory.wheat=1350;assert.equal(warehouseFull(s),true);
+ assert.equal(warehouseCapacity(s,15),5650);
 });
 
 test('the guided first steps never come near the line',()=>{
