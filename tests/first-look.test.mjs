@@ -44,7 +44,7 @@ test('the first look never locks the farm: no farm-saving and no saving status, 
  assert.equal(locked(),false,'the farm takes taps at once');assert.ok(!statuses.includes('saving'));
  await tick();assert.equal(sent.length,1);assert.equal(sent[0].type,'first_look');assert.ok(Number.isFinite(sent[0].look.sentAt),'stamped as it leaves');
  assert.equal(locked(),false,'nor while it is on its way');
- // A tap meanwhile shows at once and waits its turn behind it (its own request does lock, as every tap does).
+ // A tap meanwhile shows at once and waits its turn behind it (its own request shows saving, as every tap does).
  const harvested=await client.runAction({type:'field',id:0,action:'harvest'});assert.equal(harvested.action,'harvest');assert.equal(state.stats.harvested,1);
  await tick();assert.equal(sent.length,1,'still in the line');
  gates.shift()();await tick();await tick();

@@ -22,7 +22,9 @@ export function cameraDragDelta(dx,dy,spanX,spanY,width,height){
 export const SWIPE_HOLD_MS=350;
 // The farm's pins (a building, the pond, a helping-hand spot, a field's label) sit on top of the canvas (18 Oct 2026).
 export const FARM_PINS='#plot-labels,#building-labels,.plot-label,.building-label,.utility-label,.activity-label,.pond-label';
-export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
+// busy() (24 Oct 2026): while the game waits for the server's answer to an action that cannot show at once, a press only moves the farm
+// (no field is worked, nothing opens); dragging and zooming never wait.
+export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sweep=null,settle=()=>{},busy=()=>false,holdMs=SWIPE_HOLD_MS,later=setTimeout,cancelLater=clearTimeout}){
  const pointers=new Map();
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
  const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
@@ -41,7 +43,7 @@ export function bindFarmInput({canvas,surface=null,isReady,pick,open,pan,zoom,sw
   if(!pointers.size)settle();
  }
  function down(event){
-  const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2);
+  const panOnly=event.pointerType==='mouse'&&(event.button===1||event.button===2)||Boolean(busy());
   if(event.button!==0&&!panOnly||!isReady())return;
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
   const target=panOnly?null:pick(event);

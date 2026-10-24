@@ -86,13 +86,19 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
  const note=entry=>{if(adminView()||!entry||typeof entry!=='object')return;notes=[...notes,entry].slice(-5);if(!noteTimer)noteTimer=setTimeout(()=>{noteTimer=0;if(notes.length)void refresh().catch(()=>{});},NOTE_WAIT_MS);};
  const withLook=action=>{if(!noted||String(action?.type).startsWith('family_'))return action;const carried={...action,look:noted};noted=null;return carried;};
  const stamped=action=>action.look?{...action,look:{...action.look,sentAt:Date.now()}}:action;
- // One request in the line; the saving status stays on until the line is empty. A quiet one (the first look, 7 Oct 2026) keeps its
- // place in the line but shows no saving and never locks the farm: it goes out just as a new farmer can first tap.
- function send(action,hushed=false){
+ // One request in the line; the saving status (body.farm-saving) stays on until the line is empty. A quiet one (the first look, 7 Oct
+ // 2026) keeps its place in the line but shows no saving: it goes out just as a new farmer can first tap.
+ // Only an action the screen waits for (held: one that cannot show at once, such as a diamond spend) keeps taps off the farm until its
+ // answer is back (body.farm-waiting, farm-input.js busy); dragging the farm stays free. A tap that already shows never does (24 Oct
+ // 2026, a farmer and the owner: after "Round complete!" the farm took no tap or drag for about a second, while the chore's three taps
+ // were on their way): the line keeps the order.
+ let held=0;
+ function send(action,hushed=false,holds=false){
   if(hushed)quiet++;else{waiting++;onStatus('saving');document.body.classList.add('farm-saving');}
+  if(holds){held++;document.body.classList.add('farm-waiting');}
   const sent=withLook(action),run=line.then(()=>bridge.request(withNotes({operation:'action',action:stamped(sent),requestId:crypto.randomUUID()})));
   line=run.catch(()=>{});
-  const done=hushed?()=>{quiet--;}:()=>{waiting--;if(!waiting)document.body.classList.remove('farm-saving');};
+  const done=hushed?()=>{quiet--;}:()=>{waiting--;if(!waiting)document.body.classList.remove('farm-saving');if(holds&&!--held)document.body.classList.remove('farm-waiting');};
   run.then(done,done);
   return run;
  }
@@ -120,7 +126,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
    settle(entry,instant.result);
    return instant.result;
   }
-  try{const data=await send(action);replace(data);const result=data.result;track(action,result);return result;}
+  try{const data=await send(action,false,true);replace(data);const result=data.result;track(action,result);return result;}
   catch(error){onStatus(error.code==='ACTION_REJECTED'?'saved':'error');throw error;}
  }
  // A sweep across the fields (Oct 2026, "the drag should feel physical"): each field is worked on the screen the moment the pointer
