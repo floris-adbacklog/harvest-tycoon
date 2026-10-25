@@ -2515,8 +2515,10 @@ function bindUI(){
  // The Warehouse's window and its full note (22 Oct 2026, public/warehouse-ui.js). A refusal because it is full is that note, with the Market
  // and Upgrade, over any open window (the toast sits under a modal window); every other message stays the toast.
  warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI});
- // The neighbours (24 Oct 2026, public/neighbours.js): More › Neighbours.
- neighbours=createNeighboursUI({state,runAction,notify:toast,onChange:updateUI,farmNow});
+ // The neighbours (24 Oct 2026, public/neighbours.js): More › Neighbours. Not on an admin's showcase farm (25 Oct 2026, the owner: "Je moet
+ // geen buren kunnen doen als admin"; farm-api refuses an admin's actions anyway).
+ if(adminView)document.querySelector('[data-menu-utility="neighbours"]')?.setAttribute('hidden','');
+ else neighbours=createNeighboursUI({state,runAction,notify:toast,onChange:updateUI,farmNow});
  {const plain=showToast??createToast($('toast'));showToast=(message,options)=>{if(isWarehouseFull(message))warehouse.note(message);else plain(message,options);};}
  let savedCrop=null;try{savedCrop=localStorage.getItem(CROP_KEY);}catch{}
  if(savedCrop&&CROPS[savedCrop]&&cropUnlocked(state,savedCrop))economy.chooseCrop(savedCrop);

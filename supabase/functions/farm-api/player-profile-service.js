@@ -1,6 +1,7 @@
 import {playerAvatar} from './player-avatars.js';
 import {isRecentlyActive} from './presence.js';
 import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem,wornLook,seasonBadges,visitView,levelOf} from './farm-state.js';
+import {isAdminAddress} from './admin-service.js';
 
 const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key));   // the farm's goods, not World II's
 // The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
@@ -20,8 +21,9 @@ async function familiesFor(admin,ids){
  for(const member of members??[]){const f=byId.get(member.family_id);if(f)result.set(member.player_id,{id:f.id,name:f.name,emblem:f.emblem,role:({leader:'Leader',coleader:'Co-leader',honorary:'Honorary'})[member.role]??'Member'});}
  return result;
 }
-async function memberSince(admin,playerId){
- try{const {data}=await admin.auth.admin.getUserById(playerId);const time=Date.parse(data?.user?.created_at);return Number.isFinite(time)?time:null;}catch{return null;}
+// The account behind a farmer: since when, and whether it is an admin's (25 Oct 2026: an admin's farm is a showcase, never visited).
+async function accountOf(admin,playerId){
+ try{const {data}=await admin.auth.admin.getUserById(playerId);const time=Date.parse(data?.user?.created_at);return {since:Number.isFinite(time)?time:null,admin:isAdminAddress(data?.user?.email)};}catch{return {since:null,admin:false};}
 }
 function summary(row,families,now){return {playerId:row.player_id,username:row.username,avatarId:playerAvatar(row.avatar_id).id,level:number(row.level),vipExpiresAt:Date.parse(row.vip_expires_at)||0,online:isRecentlyActive(row.last_active_at,now),family:families.get(row.player_id)??null,look:wornLook(row.look)};}
 // Auth/session validation happens in index.ts before this read-only directory is reached.
@@ -45,7 +47,7 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
   if(typeof id!=='string')return [];const [crop,tier,...extra]=id.split(':');
   return !extra.length&&cropKeys.includes(crop)&&/^[0-3]$/.test(tier)&&MASTERY_TIERS[Number(tier)]?[{crop,tier:Number(tier)}]:[];
  });
- return respond({playerProfile:{...summary(row,families,now),memberSince:await memberSince(admin,row.player_id),lastOnline:Date.parse(row.last_active_at)||null,stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length,
+ return respond({playerProfile:{...summary(row,families,now),...await accountOf(admin,row.player_id).then(a=>({memberSince:a.since,...(a.admin?{noVisit:true}:{})})),lastOnline:Date.parse(row.last_active_at)||null,stats:{...Object.fromEntries(metrics.map(key=>[key,number(row[key])])),goods_kinds:goodKeys.filter(key=>number(row.goods_made?.[key])>0).length,
   // Village goods made (20 Oct 2026): every World II good in goods_made, packed lunches included; the client never gets goods_made.
   village_goods:Object.entries(row.goods_made??{}).filter(([k])=>worldTwoItem(k)).reduce((n,[,v])=>n+number(v),0)},harvests:Object.fromEntries(cropKeys.map(key=>[key,number(row[`harvested_${key}`])])),badges,
   // The Season Pass (Oct 2026): every season badge this farmer collected, the "Seasons" row.
@@ -54,11 +56,15 @@ export async function handlePlayerDirectory({admin,body,player,now=Date.now()}){
 
 // Visiting a farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"): another farmer's farm as it stands, to
 // look at (farm-state.js visitView: never its coins, diamonds, stock, purchases or invite), with their name, picture and level.
-export async function handleFarmVisit({admin,body,player,now=Date.now()}){
+// No visits for the admins (25 Oct 2026, the owner: "Je moet geen buren kunnen doen als admin", both ways): an admin account visits no
+// farm, and nobody visits an admin's (they never play; the profile shows no Visit farm for them, noVisit).
+export async function handleFarmVisit({admin,body,player,visitorAdmin=false,now=Date.now()}){
  const respond=(data,status=200)=>({status,data:{...data,profile:{player_id:player},serverNow:now}});
+ if(visitorAdmin)return respond({error:'Admin accounts do not visit farms.',code:'VISIT_REFUSED'},403);
  if(typeof body.playerId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.playerId))return respond({error:'Choose a valid farmer.'},400);
- const [farm,row]=await Promise.all([read(admin.from('player_farms').select('state').eq('player_id',body.playerId).maybeSingle()),read(admin.from('player_stats').select('username,avatar_id').eq('player_id',body.playerId).maybeSingle())]);
+ const [account,farm,row]=await Promise.all([accountOf(admin,body.playerId),read(admin.from('player_farms').select('state').eq('player_id',body.playerId).maybeSingle()),read(admin.from('player_stats').select('username,avatar_id').eq('player_id',body.playerId).maybeSingle())]);
  if(!farm?.state||!row)return respond({error:'This farm could not be found.',code:'PLAYER_NOT_FOUND'},404);
+ if(account.admin)return respond({error:'This farm cannot be visited.',code:'VISIT_REFUSED'},403);
  const state=visitView(farm.state,now);
  return respond({visit:{playerId:body.playerId,username:row.username,avatarId:playerAvatar(row.avatar_id).id,level:levelOf(state)},state});
 }

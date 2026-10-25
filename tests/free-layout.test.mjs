@@ -120,7 +120,7 @@ test('a visit shows the farm as it stands (its own layout too), never its coins,
 
 test('a visit: farm-api farm_visit, Visit farm on someone else\'s profile, the page marked and locked, and the way back',()=>{
  const api=read('supabase/functions/farm-api/index.ts'),service=read('supabase/functions/farm-api/player-profile-service.js');
- assert.match(api,/'player_profile','farm_visit',/);assert.match(api,/if\(body\.operation==='farm_visit'\)\{const visit=await handleFarmVisit\(\{admin,body,player:user\.id\}\);/);
+ assert.match(api,/'player_profile','farm_visit',/);assert.match(api,/if\(body\.operation==='farm_visit'\)\{const visit=await handleFarmVisit\(\{admin,body,player:user\.id,visitorAdmin:isAdminAccount\(user\)\}\);/);
  assert.match(service,/const state=visitView\(farm\.state,now\);/);assert.match(service,/select\('state'\)\.eq\('player_id',body\.playerId\)/);
  const profiles=read('src/player-profiles.js');
  assert.match(profiles,/\$\{self\?'':'<div class="farmer-visit" data-farmer-visit hidden><\/div>'\}/,'only on someone else\'s profile');
@@ -132,6 +132,22 @@ test('a visit: farm-api farm_visit, Visit farm on someone else\'s profile, the p
  assert.match(game,/requestAnimationFrame\(frame\);if\(!ready\|\|document\.hidden\|\|visitLayer\)return;/,'your own farm rests meanwhile');
  assert.match(game,/if\(!villageWorld&&!adminView\)\{window\.harvestVisit=playerId=>void openVisit\(playerId\);window\.harvestCloseVisit=closeVisit;\}/);
  assert.match(game,/const visitInfo=window\.harvestInitialFarm\.visit\?\?null;/,'read before the page lets go of the first farm');
+});
+
+test('no visits for the admins, both ways, and no Neighbours on their showcase farm (25 Oct 2026, the owner: "Je moet geen buren kunnen doen als admin")',async()=>{
+ const {handleFarmVisit}=await import('../supabase/functions/farm-api/player-profile-service.js');
+ const ADMIN='11111111-1111-4111-8111-111111111111',FARMER='22222222-2222-4222-8222-222222222222';
+ const query=data=>{const q={select:()=>q,eq:()=>q,maybeSingle:()=>Promise.resolve({data,error:null})};return q;};
+ const client={auth:{admin:{getUserById:async id=>({data:{user:{created_at:'2026-10-01T00:00:00Z',email:id===ADMIN?'floris@millstone.nl':'farmer@example.com'}}})}},
+  from:table=>query(table==='player_farms'?{state:createFarm(Date.now())}:{username:'Sam',avatar_id:'default'})};
+ const visit=(playerId,visitorAdmin=false)=>handleFarmVisit({admin:client,body:{playerId},player:FARMER,visitorAdmin});
+ assert.equal((await visit(FARMER)).status,200,'an ordinary farm');
+ assert.deepEqual([(await visit(ADMIN)).status,(await visit(ADMIN)).data.code],[403,'VISIT_REFUSED'],'never an admin\'s farm');
+ assert.equal((await visit(FARMER,true)).status,403,'an admin visits nobody');
+ // The profile shows no Visit farm for an admin (noVisit), and the admin's own game has no Neighbours (farm-api refuses their actions).
+ assert.match(read('supabase/functions/farm-api/player-profile-service.js'),/\.\.\.\(a\.admin\?\{noVisit:true\}:\{\}\)/);
+ assert.match(read('src/player-profiles.js'),/if\(!box\|\|typeof visit!=='function'\|\|player\.noVisit\)return;/);
+ assert.match(read('public/game.js'),/if\(adminView\)document\.querySelector\('\[data-menu-utility="neighbours"\]'\)\?\.setAttribute\('hidden',''\);\n else neighbours=createNeighboursUI\(/);
 });
 
 test('drawing (24 Oct 2026, "1+2", then "Doe 1,2,3"): paths, fences, flowers and grass with a drag; erased ones and old road pieces go to your store',async()=>{

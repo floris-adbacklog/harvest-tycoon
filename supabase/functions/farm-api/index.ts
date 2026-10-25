@@ -88,7 +88,7 @@ Deno.serve(async(req)=>{
    const directory=await handlePlayerDirectory({admin,body,player:user.id});return reply(directory.data,directory.status);
   }
   // Visiting another farmer's farm (24 Oct 2026), to look at only.
-  if(body.operation==='farm_visit'){const visit=await handleFarmVisit({admin,body,player:user.id});return reply(visit.data,visit.status);}
+  if(body.operation==='farm_visit'){const visit=await handleFarmVisit({admin,body,player:user.id,visitorAdmin:isAdminAccount(user)});return reply(visit.data,visit.status);}
   if(body.operation==='admin_grant'){
    const granted=await handleAdminGrant({admin,body,user});
    if(granted.status===200&&granted.data?.granted)later(writeLog(admin,String(body.playerId),adminGrantLog(granted.data.granted),user.id));

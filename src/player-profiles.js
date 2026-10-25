@@ -225,8 +225,9 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  // that is possible and sends the invitation; the reason shows on the button when it is not).
  // Visit farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"): someone else's farm as it stands, to look at
  // (the game opens it over your own: public/game.js harvestVisit). Not from the village, an admin's view or a farm you are visiting.
+ // Never an admin's showcase farm (25 Oct 2026, farm-api noVisit).
  function showVisit(player){
-  const box=content.querySelector('[data-farmer-visit]'),visit=window.harvestVisit;if(!box||typeof visit!=='function')return;
+  const box=content.querySelector('[data-farmer-visit]'),visit=window.harvestVisit;if(!box||typeof visit!=='function'||player.noVisit)return;
   box.hidden=false;box.innerHTML=`<button type="button" class="secondary-button farmer-visit-button">${art('visit-farm')}Visit farm</button>`;
   box.querySelector('button').onclick=()=>{dialog.close();visit(player.playerId,player.username);};
  }
