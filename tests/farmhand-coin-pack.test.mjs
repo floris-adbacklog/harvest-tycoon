@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createFarm,applyFarmAction as act,xpForLevel,buildingSlots,productionSlots,farmhandActive,farmhandWorks,buildingRecipes,BOOSTS,COIN_PACK,coinPackCoins,RECIPES,recipeAvailability,normalizeFarm,farmSummary,startProduction} from '../game/farm-state.js';
-import {OFFER,offerFill,offerValueCents,offerProblem} from '../game/payments.js';
+import {OFFER,offerFill,offerValueCents,offerProblem,offerCoinsFor,OFFER_COINS_PER_LEVEL} from '../game/payments.js';
 const now=Date.UTC(2026,9,20,12),DAY=86400000;
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 function farm(level=20){const s=createFarm(now);s.xp=xpForLevel(level);s.diamonds=1000;return s;}
@@ -75,14 +75,23 @@ test('the coin pack gives 1,000 coins for every level for 100 diamonds, as often
  assert.throws(()=>act(farm(31),{type:'buy_coins',expectedCost:100,expectedCoins:30000},now),/Prices have changed/,'a level gained since the shop was drawn');
  const poor=farm(30);poor.diamonds=99;const before=structuredClone(poor);assert.throws(()=>act(poor,{type:'buy_coins',expectedCost:100,expectedCoins:30000},now),/100 diamonds/);assert.deepEqual(poor,before);
 });
-test('the special offer values coins at 500 a diamond',()=>{
+test('the special offer values coins at 500 a diamond, and each farmer gets them at their level as in the shop (25 Oct 2026)',()=>{
  assert.equal(OFFER.coinsPerDiamond,500);
  assert.deepEqual(offerFill({diamonds:true,coins:true,vipDays:60}),{diamonds:1000,coins:500000,vipDays:60});
  assert.equal(offerProblem({diamonds:1000,coins:500000,vipDays:60}),null);
  assert.match(offerProblem({diamonds:1000,coins:200000,vipDays:60})??'',/must be worth .*€49\.99; it is worth €43\.91/,'the old mix is no longer worth €49.99');
  assert.equal(offerValueCents({coins:500000}),offerValueCents({diamonds:1000}));
- // The offer window's fine print names the same rate (the coin pack in Power-ups has its own).
- assert.match(read('src/offer-ui.js'),new RegExp(`Worth: diamonds and VIP at shop prices, coins at ${OFFER.coinsPerDiamond} a diamond\\.`));
+ // The farmer gets them at their own level, as the coin pack in Power-ups (1,000 × the level for 100 diamonds): 500 a diamond is level
+ // 50; the offer window says so, the checkout sends and books the farmer's amount, the Admin panel names level 50.
+ assert.equal(OFFER_COINS_PER_LEVEL,COIN_PACK.perLevel/COIN_PACK.cost);assert.equal(OFFER_COINS_PER_LEVEL*50,OFFER.coinsPerDiamond);
+ assert.equal(offerCoinsFor(500000,50),500000);assert.equal(offerCoinsFor(500000,14),140000);assert.equal(offerCoinsFor(500000,120),1200000);
+ assert.equal(offerCoinsFor(2500000,200),OFFER.maxCoins);assert.equal(offerCoinsFor(0,80),0);assert.equal(offerCoinsFor(500000,undefined),10000);
+ assert.match(read('src/offer-ui.js'),/Worth: diamonds, VIP and coins at shop prices; your coins grow with your level\./);
+ const checkout=read('supabase/functions/diamond-checkout/index.ts');
+ assert.match(checkout,/coins:offerCoinsFor\(o\.coins,stats\.data\?\.level\?\?1\),worthCoins:o\.coins,/);
+ assert.match(checkout,/if\(offerProblem\(\{diamonds:special\.diamonds,coins:special\.worthCoins,vipDays:special\.vipDays\}\)\)return/);
+ assert.match(checkout,/pack=\{id:'offer',cents:OFFER\.cents,price:OFFER\.price,diamonds:special\.diamonds,coins:special\.coins,/,'the purchase holds the farmer\'s amount');
+ assert.match(read('src/admin-dashboard.js'),/<label>Coins at level 50<input id="admin-offer-coins"/);
  for(const f of ['diamond-checkout','stripe-webhook','play-voided','app-store-notify'])assert.equal(read(`supabase/functions/${f}/payments.js`),read('game/payments.js'),f);
 });
 test('the shop shows both under Power-ups, the bonuses list the farmhand, and the pictures are WebP',()=>{

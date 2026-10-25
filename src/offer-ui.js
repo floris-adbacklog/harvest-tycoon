@@ -62,7 +62,7 @@ export function createOfferUI(bridge,{doc=document,win=window,storage=win.localS
    +`<p class="offer-worth"><span>Worth</span> <s>${worth()}</s> <b>${price()}</b></p>`
    +`<p class="offer-time"><img src="/assets/icons/offer-hourglass.webp" alt=""><span data-offer-left></span></p>`
    +`<button type="button" class="primary-button offer-buy is-money"></button><p class="offer-feedback" role="status" aria-live="polite"></p>`
-   +`<small class="offer-fine">Once per farmer. Worth: diamonds and VIP at shop prices, coins at 500 a diamond.</small></div>`;
+   +`<small class="offer-fine">Once per farmer. Worth: diamonds, VIP and coins at shop prices; your coins grow with your level.</small></div>`;
   dialog.dataset.parts=String(parts.length);
   dialog.querySelector('.offer-close').onclick=()=>dialog.close();
   dialog.querySelector('.offer-buy').onclick=buy;

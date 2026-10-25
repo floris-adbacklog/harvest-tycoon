@@ -58,7 +58,9 @@ test('a paid offer is credited only with contents that still make a valid offer'
  // worth €49.99 at neither rate are not.
  const before=fixture({diamonds:1750,coins:350000,vip_days:30});assert.equal(validatePaidSession(before.session,before.purchase,before.items),'pi_1');
  assert.equal(paidOfferProblem({diamonds:0,coins:1000000,vip_days:0}),null);assert.equal(paidOfferProblem({diamonds:0,coins:2500000}),null);
- const neither=fixture({diamonds:1750,coins:600000,vip_days:30});assert.throws(()=>validatePaidSession(neither.session,neither.purchase,neither.items),/Offer mismatch/);
+ // Since 25 Oct 2026 the coins are at the farmer's level (10 × the level a diamond): 500,000 at level 50 is 300,000 at level 30.
+ assert.equal(paidOfferProblem({diamonds:1000,coins:300000,vip_days:60}),null,'level 30');assert.equal(paidOfferProblem({diamonds:1000,coins:1000000,vip_days:60}),null,'level 100');
+ const neither=fixture({diamonds:4000,coins:3000000,vip_days:0});assert.throws(()=>validatePaidSession(neither.session,neither.purchase,neither.items),/Offer mismatch/);
  assert.equal((read('game/payments.js').match(/\|\|paidOfferProblem\(purchase\)\)\)throw new Error\('Offer mismatch\.'\);/g)??[]).length,4,'the checkout, Google Play, Apple and Kongregate');
 });
 

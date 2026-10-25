@@ -61,10 +61,19 @@ export function offerProblem({diamonds=0,coins=0,vipDays=0}={},coinsPerDiamond=O
  if(offerDiscountOf(value)==null){const w=offerWorths();return `The offer must be worth ${w.slice(0,-1).join(', ')} or ${w.at(-1)}; it is worth €${(value/100).toFixed(2)}.`;}
  return null;
 }
+// Coins as in the shop (25 Oct 2026, the owner: "Hanteer bij Special offer dezelfde coin prijzen als in shop"): the coin pack in
+// Power-ups gives 1,000 coins for every level for 100 diamonds (game/farm-state.js COIN_PACK), so 10 × the level for a diamond. The
+// offer keeps its coins at 500 a diamond (what the Admin panel fills, offer_post checks and the worth is), which is that rate at level
+// 50; each farmer sees and gets them at their own level (diamond-checkout currentOffer: the purchase row holds the farmer's amount).
+export const OFFER_COINS_PER_LEVEL=10,OFFER_MAX_LEVEL=200;
+export const offerCoinsFor=(coins,level)=>coins>0?Math.min(OFFER.maxCoins,Math.round(coins/OFFER.coinsPerDiamond*OFFER_COINS_PER_LEVEL*Math.min(OFFER_MAX_LEVEL,Math.max(1,Math.floor(Number(level))||1)))):0;
 // A paid offer (a checkout, a Google Play or Kongregate purchase) may come from an offer made at 200 coins a diamond, before 20 Oct 2026:
-// a farmer who paid for it later still gets it. Its contents come from the offer row, never from the browser.
+// a farmer who paid for it later still gets it; since 25 Oct 2026 its coins are at the farmer's level (10 × the level a diamond, any
+// level). Its contents come from the offer row, never from the browser.
 export const paidOfferProblem=purchase=>{const contents={diamonds:purchase.diamonds,coins:purchase.coins??0,vipDays:purchase.vip_days??0};
- return offerProblem(contents)&&offerProblem(contents,OFFER.coinsPerDiamondBefore);};
+ let problem=offerProblem(contents)&&offerProblem(contents,OFFER.coinsPerDiamondBefore);
+ for(let level=1;problem&&contents.coins>0&&level<=OFFER_MAX_LEVEL;level++)problem=offerProblem(contents,OFFER_COINS_PER_LEVEL*level);
+ return problem;};
 // The VIP lengths that fit an offer at this discount: VIP worth less than the whole offer, so diamonds or coins fill the rest (at 33% and
 // 50% only 7 days; 30 days alone is already worth €14.97).
 export const offerVipFits=(vipDays,discount=OFFER.defaultDiscount)=>!vipDays||(OFFER.vipDiamonds[vipDays]??Infinity)<(OFFER.discounts[discount]??OFFER.discounts[OFFER.defaultDiscount]).target;

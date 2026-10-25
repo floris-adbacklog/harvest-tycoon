@@ -1,6 +1,6 @@
 import Stripe from 'npm:stripe@22.4.0';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
-import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,offerShownCents,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonsOnSale,seasonForCheckout,seasonSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,offerValueCents,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT,UNFINISHED_HOURS,unfinishedCheckout} from './payments.js';
+import {PAYMENT_PACKS,checkoutPack,UUID,starterEligibility,livePaymentConfiguration,OFFER,offerProblem,offerShownCents,PASS,passOnSale,passCheckoutProblem,SEASON_SALE,seasonOnSale,seasonsOnSale,seasonForCheckout,seasonSale,seasonCheckoutProblem,seasonStoreProblem,offerPausedForSeason,offerValueCents,offerCoinsFor,PLAY_PACKAGE,PLAY_PRODUCT,PLAY_TOKEN,playProduct,checkPlayPurchase,APPLE_BUNDLE,APPLE_JWS,APPLE_JWS_MAX,appleProduct,checkApplePurchase,APPLE_SELLS_OFFER,kongProduct,kongPaymentsEnabled,kongTestUsers,kongKreds,kongPlan,checkKongPurchase,KONG_CLAIM_LIMIT,UNFINISHED_HOURS,unfinishedCheckout} from './payments.js';
 import {serviceAccount,getPurchase,consumePurchase} from './google-play.js';
 import {verifyAppleJws} from './app-store.js';
 import {kongId,kongToken,KongregateRefused,REFUSED_TEXT,verifyKongregate,kongUserItems,kongUseItem,kongItemPrices} from './kongregate-api.js';
@@ -41,7 +41,8 @@ async function currentOffer(player:string){
  if((stats.data?.level??1)<o.min_level)return null;
  // valueCents: the round worth of the discount the contents were made at (21 Oct 2026: the admin picks 33%, 50% or 90% off,
  // game/payments.js OFFER.discounts and offerShownCents: €50, €10 or €7.50), so the window's "Worth" and its discount follow it.
- return {id:o.id,diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days,audience:o.audience,endsAt:Date.parse(o.ends_at),cents:OFFER.cents,valueCents:offerShownCents({diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days}),bought:(bought.data??[]).some(b=>b.offer_id===o.id)};
+ // coins: at this farmer's level, as the shop's coin pack (game/payments.js offerCoinsFor, 25 Oct 2026); worthCoins: the offer's own.
+ return {id:o.id,diamonds:o.diamonds,coins:offerCoinsFor(o.coins,stats.data?.level??1),worthCoins:o.coins,vipDays:o.vip_days,audience:o.audience,endsAt:Date.parse(o.ends_at),cents:OFFER.cents,valueCents:offerShownCents({diamonds:o.diamonds,coins:o.coins,vipDays:o.vip_days}),bought:(bought.data??[]).some(b=>b.offer_id===o.id)};
 }
 // A purchase in an app about to start (the app's create, Google Play or, since Oct 2026, the App Store): the same pending row as a
 // Stripe checkout, with the store's product as its price. Google's purchase sheet gets the farmer's id and this row's; Apple's gets this
@@ -285,7 +286,7 @@ Deno.serve(async req=>{
   if(body.pack==='offer'){
    if(!special||special.id!==body.offerId)return reply({error:'This offer has ended.'},409);
    if(special.bought)return reply({error:'You have already bought this offer.'},409);
-   if(offerProblem({diamonds:special.diamonds,coins:special.coins,vipDays:special.vipDays}))return reply({error:'This offer has ended.'},409);
+   if(offerProblem({diamonds:special.diamonds,coins:special.worthCoins,vipDays:special.vipDays}))return reply({error:'This offer has ended.'},409);
    pack={id:'offer',cents:OFFER.cents,price:OFFER.price,diamonds:special.diamonds,coins:special.coins,vipDays:special.vipDays,offerId:special.id};
   }else if(body.pack==='pass'){
    // From the preview on (the pre-sale, Oct 2026) until the season ends, from its level, once per farmer per pass (a unique index too,

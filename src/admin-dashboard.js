@@ -118,7 +118,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<label><input type="checkbox" id="admin-offer-has-diamonds" checked> Diamonds</label><label><input type="checkbox" id="admin-offer-has-coins"> Coins</label>'
   +'<label>VIP<select id="admin-offer-vip"><option value="0">None</option><option value="7">7 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></label></div>'
   +'<div class="admin-popup-fields"><label>Diamonds<input id="admin-offer-diamonds" type="number" min="0" max="'+OFFER.maxDiamonds+'" step="50" inputmode="numeric"></label>'
-  +'<label>Coins<input id="admin-offer-coins" type="number" min="0" max="'+OFFER.maxCoins+'" step="1000" inputmode="numeric"></label>'
+  // Coins at level 50 (25 Oct 2026): each farmer gets them at their own level, as the shop's coin pack (game/payments.js offerCoinsFor).
+  +'<label>Coins at level 50<input id="admin-offer-coins" type="number" min="0" max="'+OFFER.maxCoins+'" step="1000" inputmode="numeric"></label>'
   // The pop-ups' groups but the Android app and the website (9 Oct 2026): the database takes no offer for those
   // (supabase/popup-android-app.sql, supabase/popup-web.sql).
   +'<label>Who sees it<select id="admin-offer-audience">'+Object.entries(POPUP_AUDIENCES).filter(([key])=>key!=='android_app'&&key!=='web'&&key!=='crazygames'&&key!=='phone_web').map(([key,name])=>`<option value="${key}">${name}</option>`).join('')+'</select></label>'
@@ -691,7 +692,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  // Special offer: the amounts, their worth as the checkout counts it (game/payments.js), a preview, posting and the list.
  const $o=id=>dialog.querySelector(`#admin-offer-${id}`);
  const offerDraft=()=>({diamonds:$o('has-diamonds').checked?Math.max(0,Math.round(Number($o('diamonds').value)||0)):0,coins:$o('has-coins').checked?Math.max(0,Math.round(Number($o('coins').value)||0)):0,vipDays:Number($o('vip').value)||0});
- const offerText=o=>[o.diamonds>0&&`${number(o.diamonds)} diamonds`,o.coins>0&&`${number(o.coins)} coins`,o.vipDays>0&&`VIP ${o.vipDays} days`].filter(Boolean).join(' + ')||'Nothing yet';
+ const offerText=o=>[o.diamonds>0&&`${number(o.diamonds)} diamonds`,o.coins>0&&`${number(o.coins)} coins at level 50`,o.vipDays>0&&`VIP ${o.vipDays} days`].filter(Boolean).join(' + ')||'Nothing yet';
  function offerWorth(){
   const o=offerDraft(),problem=offerProblem(o),line=$o('worth');
   $o('diamonds').disabled=!$o('has-diamonds').checked;$o('coins').disabled=!$o('has-coins').checked;

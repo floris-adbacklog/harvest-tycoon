@@ -3573,7 +3573,7 @@
 "Once it starts, it cannot be stopped.":"public/retention-ui.js",
 "Once one line of the order is full, the Tournament tab takes any crop or good from your farm (nothing from the village), as many as you like. They count for the tournament only: no coins, XP or diamonds.":"public/wiki-content.js",
 "Once one line of the order is full, the Tournament tab takes any crop or good from your farm, as many as you like. They count for the tournament only: no coins, XP or diamonds.":"public/wiki-content.js",
-"Once per farmer. Worth: diamonds and VIP at shop prices, coins at 500 a diamond.":"src/offer-ui.js",
+"Once per farmer. Worth: diamonds, VIP and coins at shop prices; your coins grow with your level.":"src/offer-ui.js",
 "One big garden":"public/neighbours.js",
 "One big order a day that pays the most: tap the cart.":"public/progression-ui.js",
 "One chapter at a time, in this order. Pay the coins and goods, and the work takes the time shown. Some chapters also ask for crop medals.":"public/wiki-content.js",
