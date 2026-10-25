@@ -81,7 +81,7 @@ dialog :is(.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.
 #buildings-dialog #building-catalog>.building-card:has(.building-status.ready){margin:0 0 -1px;padding:10px 14px;border:0;border-bottom:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
 #buildings-dialog #building-catalog>.building-card:hover{background:#f9f4eb}
 #buildings-dialog .building-card-art{background:none}
-#buildings-dialog .building-status.ready{padding:0;background:none;color:#9a6a12}
+#buildings-dialog .building-status.ready{padding:0;background:none;color:#3f6b2c}
 /* Places to unlock: the last row of the frame, over the whole width. */
 #buildings-dialog #building-catalog>.future-unlocks{margin:0;padding:10px 14px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
 
