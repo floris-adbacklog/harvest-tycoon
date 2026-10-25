@@ -2,7 +2,7 @@ import {HEIRLOOMS,FAMILY_EMBLEMS} from './farm-state.js';
 import {LANGUAGES} from './languages.js';
 // Every item has one explicit image. Square sprite cells cannot reveal neighbouring art.
 const sheets=[
- {file:'crops-v2.webp',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
+ {file:'crops-v2.webp?v=20261025',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
  {file:'goods-v2.webp',columns:4,keys:['grainmeal','flour','feed','fertilizer','salad','pickles','oil','milk','eggs','cheese','bread','pie','vegetables','tractor','silo','cart']},
  // ?v=: the sheet's address changes when a picture in it changes, so a browser that keeps the sheet a day gets the new one at once
  // (18 Oct 2026: the Care glove lost its leaf).
