@@ -22,7 +22,9 @@ test('on a phone the windows waste less room: title-only headings, a short Famil
  assert.match(css,/^#market-items \.market-card \.market-sale-controls\{display:none;/m,'every size');
  assert.match(css,/^#market-items \.market-card\.is-open \.market-sale-controls\{display:block\}/m);
  assert.match(css,/\.wiki-quick button\{min-height:40px/);
- assert.match(css,/#market-items \.market-card:not\(:has\(\[data-sell-amount\]\)\) \.market-sale-controls\{display:block\}/,'a row of one keeps its buttons open on a computer');
+ // A row of one (25 Oct 2026, the owner: "rommelig als je 1 maar hebt"): the same card as the rest on every size, one Sell and To bin.
+ assert.doesNotMatch(css,/market-card:not\(:has\(\[data-sell-amount\]\)\)/,'a row of one no longer opens the picker on a computer');
+ assert.match(read('public/economy-ui.js'),/>\$\{stock>1\?`Sell all \$\{number\(stock\)\}`:'Sell'\}<\/button>\$\{stock>1\?/);
 });
 
 test('a market row on a phone has Sell all and a Pick amount button that opens the slider',()=>{

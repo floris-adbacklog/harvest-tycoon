@@ -21,9 +21,6 @@
 #market-items .market-card.is-open .market-sale-controls{display:block}
 #market-items .market-card .market-sale-buttons [data-sell-item-all]{display:none}
 @media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){
- #market-items .market-card:not(:has([data-sell-amount])) .market-quick{display:none}
- #market-items .market-card:not(:has([data-sell-amount])) .market-sale-controls{display:block}
- #market-items .market-card:not(:has([data-sell-amount])) .market-sale-buttons [data-sell-item-all]{display:inline-flex}
  #market-dialog .market-daily-note{display:none}
 }
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){

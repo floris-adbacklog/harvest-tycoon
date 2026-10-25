@@ -4375,7 +4375,7 @@
 "Select unique growing fields to fertilize.":"public/farm-state.js",
 "Select {0}":"public/field-picker.js",
 "Selected crop":"public/farm.html",
-"Sell":"public/wiki-content.js",
+"Sell":"public/economy-ui.js",
 "Sell 1 basket at the Valley Market.":"public/farm-state.js",
 "Sell 1,000 items at the market.":"public/farm-state.js",
 "Sell 100 baskets at the Valley Market.":"public/farm-state.js",
