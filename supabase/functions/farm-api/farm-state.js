@@ -3865,8 +3865,9 @@ export function tractorQuote(state,mode,crop='corn',now=Date.now(),ids){
 // Windmill's "Give a field a head start" does by hand (fertilizeField: 1 natural fertilizer a field, 35% off the time left, once per
 // growing cycle, 5 XP and stats.fertilized, so it counts for the same quests, challenges and events), on every growing crop that has
 // none yet. With less fertilizer in storage than such fields it does as many as there is fertilizer for, the longest time left first
-// (the most time saved). Fuel as Water: TRACTOR_FUEL_BASE a job + each field's crop fuel (fieldFuel). No diamonds. fields: every field it
-// could do; count: the ones it will do; fertilizer: what it uses (= count).
+// (the most time saved). No coins (25 Oct 2026, the owner: "ook mag bemesten gratis, het kost alleen mest"; it burned fuel as Water
+// before): it only uses the fertilizer, so fuel and total stay 0. No diamonds. fields: every field it could do; count: the ones it will
+// do; fertilizer: what it uses (= count).
 // ids (24 Oct 2026, the owner: "Laat bij tractor kiezen welk veld je wilt fertilizen"): the fields the farmer picked. Only those that can
 // still take fertilizer count; more picked than there is fertilizer for is refused (the window never lets that happen). Without ids
 // (the tile's own line, and an older page) it picks the longest waits first, as before.
@@ -3877,12 +3878,10 @@ export function fertilizeQuote(state,now=Date.now(),ids){
   if(!Array.isArray(ids)||ids.length>state.plots.length||!ids.every(Number.isInteger))throw new Error('Choose the fields to fertilize.');
   const picked=new Set(ids),chosen=eligible.filter(p=>picked.has(p.id));
   if(chosen.length>have)throw new Error(have===1?'You have 1 natural fertilizer.':`You have ${have} natural fertilizer.`);
-  const fuel=chosen.length?TRACTOR_FUEL_BASE+chosen.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
-  return {count:chosen.length,fuel,seeds:0,total:fuel,ids:chosen.map(p=>p.id),fields:eligible.length,fertilizer:chosen.length};
+  return {count:chosen.length,fuel:0,seeds:0,total:0,ids:chosen.map(p=>p.id),fields:eligible.length,fertilizer:chosen.length};
  }
  const count=Math.min(eligible.length,have),worked=eligible.slice(0,count);
- const fuel=count?TRACTOR_FUEL_BASE+worked.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
- return {count,fuel,seeds:0,total:fuel,ids:worked.map(p=>p.id),fields:eligible.length,fertilizer:count};
+ return {count,fuel:0,seeds:0,total:0,ids:worked.map(p=>p.id),fields:eligible.length,fertilizer:count};
 }
 // expectedCost (17 Oct 2026): the price the tile showed. Never more is charged; a farm that changed in between asks to look again. An
 // older page sends none and pays the rules' price.

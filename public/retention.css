@@ -1779,9 +1779,7 @@ html[data-portal] .feedback-copy{display:none!important}
 .fert-row.is-on .fert-check::after{content:'';width:6px;height:11px;border:solid #fff;border-width:0 3px 3px 0;transform:translateY(-1px) rotate(45deg)}
 .fert-foot{display:flex;gap:8px}
 .fert-foot .primary-button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:10px}
-.fert-cost{display:inline-flex;align-items:center;gap:3px}
-.fert-cost>.game-art{width:18px;height:18px}
-.fert-empty,.fert-short{margin:0;text-align:center;color:#8a7756}
+.fert-empty{margin:0;text-align:center;color:#8a7756}
 /* The Fertilize tile opens the pick page: "Choose ›" where the other jobs show their price. */
 .tractor-tile.is-choose .tractor-choose{flex:none;margin-inline-start:auto;display:inline-flex;align-items:center;gap:2px;padding:4px 8px 4px 10px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:var(--btn-second,#f7f0e3);color:var(--btn-second-text,#5b4520);font-weight:700;font-size:.9em}
 .tractor-tile.is-choose .tractor-choose svg{width:16px;height:16px}

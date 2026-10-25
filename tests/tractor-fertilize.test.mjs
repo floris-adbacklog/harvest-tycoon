@@ -59,7 +59,7 @@ test('short of fertilizer: as many as there is fertilizer for, the longest time 
  const q=fertilizeQuote(s,now);
  assert.equal(q.fields,4);assert.equal(q.count,2);assert.equal(q.fertilizer,2);
  assert.deepEqual(q.ids,order.slice(0,2),'the two longest waits');
- assert.equal(q.fuel,TRACTOR_FUEL_BASE+q.ids.reduce((n,id)=>n+fieldFuel(s.plots[id].crop),0),'fuel only for the fields it does');
+ assert.equal(q.fuel,0,'no fuel (25 Oct 2026)');
  const r=job(s,q.total);
  assert.equal(r.count,2);assert.equal(r.fields,4);assert.equal(s.inventory.fertilizer,0);
  assert.deepEqual(s.plots.filter(p=>p.fertilized).map(p=>p.id).sort(),[...q.ids].sort());
@@ -67,29 +67,29 @@ test('short of fertilizer: as many as there is fertilizer for, the longest time 
  const t=farm({fertilizer:1});growing(t,3,'corn');growing(t,1,'corn');assert.deepEqual(fertilizeQuote(t,now).ids,[1]);
 });
 
-test('cost: 12 a job + each field’s crop fuel, as Water and Harvest; never more than the tile showed',()=>{
+// 25 Oct 2026, the owner: "ook mag bemesten gratis, het kost alleen mest". It burned fuel as Water before (12 a job + each field's crop fuel).
+test('free: no coins, only the fertilizer, also with no coins at all or an older page',()=>{
  const s=farm();growing(s,0,'sunflower');growing(s,1,'wheat');growing(s,2,'pumpkin');
  const q=fertilizeQuote(s,now);
- assert.equal(q.fuel,12+fieldFuel('sunflower')+fieldFuel('wheat')+fieldFuel('pumpkin'));assert.equal(q.fuel,12+19+2+10);assert.equal(q.total,q.fuel);
- assert.equal(q.fuel,tractorQuote(s,'water','corn',now).fuel,'the same fuel Water asks for these fields');
- const coins=s.coins,r=job(s,q.total);assert.equal(coins-s.coins,q.total);assert.equal(r.cost,q.total);assert.equal(r.fuel,q.fuel);
- // A field that started growing after the tile was drawn: the price went up, so it asks to look again.
- const t=farm();growing(t,0,'sunflower');const shown=fertilizeQuote(t,now).total;growing(t,1,'squash');
- const before=structuredClone(t);
- assert.throws(()=>job(t,shown),{message:'The price has changed. Review the current price.'});
- assert.deepEqual(core(t),core(before),'nothing charged, nothing fertilized');
- // An older page sends no price: the rules' price.
- const u=farm();growing(u,0,'corn');assert.equal(job(u).cost,12+fieldFuel('corn'));
+ assert.deepEqual([q.fuel,q.seeds,q.total],[0,0,0]);
+ assert.ok(tractorQuote(s,'water','corn',now).fuel>=TRACTOR_FUEL_BASE,'the coin jobs still burn fuel');
+ const coins=s.coins,spent=s.stats.coins_spent??0,r=job(s,q.total);
+ assert.equal(s.coins,coins,'not a coin');assert.equal(s.stats.coins_spent??0,spent,'nothing for "Spend coins"');
+ assert.deepEqual([r.cost,r.fuel,r.count,s.inventory.fertilizer],[0,0,3,17]);
+ // A page that still shows the old price sends a higher expectedCost: never more is charged, so it works and takes nothing.
+ const t=farm();growing(t,0,'squash');const before=t.coins;assert.equal(job(t,12+fieldFuel('squash')).count,1);assert.equal(t.coins,before);
+ // An older page sends no price.
+ const u=farm();growing(u,0,'corn');assert.equal(job(u).cost,0);
+ // A farm with no coins fertilizes too.
+ const poor=farm({coins:0});growing(poor,0,'sunflower');assert.equal(job(poor,0).count,1);assert.equal(poor.coins,0);assert.equal(poor.plots[0].fertilized,true);
 });
 
-test('refuses cleanly: no fertilizer, nothing to fertilize, too few coins, below the tractor’s level',()=>{
+test('refuses cleanly: no fertilizer, nothing to fertilize, below the tractor’s level',()=>{
  const none=farm({fertilizer:0});growing(none,0,'pumpkin');let before=structuredClone(none);
  assert.equal(fertilizeQuote(none,now).fields,1);assert.equal(fertilizeQuote(none,now).count,0);assert.equal(fertilizeQuote(none,now).total,0);
  assert.throws(()=>job(none,0),{message:'Make natural fertilizer at the Windmill first.'});assert.deepEqual(core(none),core(before));
  const empty=farm();ripe(empty,0,'corn');growing(empty,1,'wheat');empty.plots[1].fertilized=true;before=structuredClone(empty);
  assert.throws(()=>job(empty,0),{message:'No growing crops need fertilizer.'});assert.deepEqual(core(empty),core(before));
- const poor=farm({coins:20});growing(poor,0,'sunflower');before=structuredClone(poor);
- assert.throws(()=>job(poor,fertilizeQuote(poor,now).total),{message:`You need ${12+19} coins for tractor fuel. Working by hand is free.`});assert.deepEqual(core(poor),core(before));
  const young=farm({level:FEATURE_LEVELS.tractor-1});growing(young,0,'pumpkin');before=structuredClone(young);
  assert.throws(()=>job(young));assert.deepEqual(core(young),core(before),'the tractor stays at its own level');
  assert.equal(FEATURE_LEVELS.tractor,18,'unchanged');
@@ -100,8 +100,8 @@ test('it counts as fertilizing by hand: the same farm afterwards, quests, challe
  const a=farm(),b=farm();for(const s of [a,b]){growing(s,0,'pumpkin');growing(s,1,'cabbage');growing(s,2,'sunflower');growing(s,3,'barley');}
  const q=fertilizeQuote(a,now);job(a,q.total);applyFarmAction(b,{type:'fertilize',ids:[0,1,2,3]},now);
  assert.deepEqual(a.plots,b.plots);assert.deepEqual(a.inventory,b.inventory);assert.equal(a.xp,b.xp);
- assert.deepEqual({...a.stats,tractor:0,coins_spent:0},{...b.stats,tractor:0,coins_spent:0},'every counter the same, plus one tractor job and its fuel');
- assert.equal(a.coins,b.coins-q.total,'and the fuel');
+ assert.deepEqual({...a.stats,tractor:0,coins_spent:0},{...b.stats,tractor:0,coins_spent:0},'every counter the same, plus one tractor job');
+ assert.equal(a.coins,b.coins,'and no fuel (25 Oct 2026)');
  // "A gentler way to grow" (4 fields) can be claimed; "Rich soil" (50) counts the same stat.
  const gentle=QUESTS.findIndex(x=>x.title==='A gentler way to grow');assert.equal(QUESTS[gentle].stat,'fertilized');
  assert.ok(applyFarmAction(a,{type:'quest',id:gentle},now).coins>0);
@@ -171,8 +171,10 @@ test('the wiki: a Natural fertilizer section (make it, the tractor, the Glasshou
  assert.match(site,/At the Windmill, 2 grain meal and 2 cabbage make 3 natural fertilizer in 30 min\. A helping hand at the Animal paddock gives some too\./);
  const young=wikiArticle('crops',{level:20}).html;assert.ok(!young.includes('In the village, the Village Fields'),'World II stays out below level 100 in the game');
  const helpers=wikiArticle('helpers').html;
- assert.match(helpers,/<strong>Fertilize<\/strong><p>Natural fertilizer on the growing crops you pick, 1 a field: 35% off its time left\. It opens with the longest waits picked\./);
+ assert.match(helpers,/<strong>Fertilize<\/strong><p>Natural fertilizer on the growing crops you pick, 1 a field and no coins: 35% off its time left\. It opens with the longest waits picked\./);
  assert.match(helpers,/data-wiki-anchor="sec-natural-fertilizer"/);
+ assert.match(helpers,/Planting also pays the seeds\. Fertilize costs no coins, only the fertilizer\./,'free (25 Oct 2026)');
+ assert.ok(site.includes('It costs no coins, only the fertilizer.'));
 });
 
 test('every new text is in the catalog and in all 14 other languages, without a middle dot or a leaked ${',()=>{
@@ -180,7 +182,7 @@ test('every new text is in the catalog and in all 14 other languages, without a 
  const texts=Object.entries(all).filter(([,file])=>['public/fertilizer-tip.js'].includes(file)).map(([t])=>t);
  assert.deepEqual(texts,[FERTILIZER_TIP_TEXT]);
  // The toasts too: a translated toast keeps its middle dots (no undot), so these are whole words.
- const toasts=['The tractor fertilized 1 field with 1 fertilizer for {0} coins! +{1} XP.','The tractor fertilized {0} fields with {1} fertilizer for {2} coins! +{3} XP.'];
+ const toasts=['The tractor fertilized 1 field with 1 fertilizer! +{0} XP.','The tractor fertilized {0} fields with {1} fertilizer! +{2} XP.'];
  texts.push(...toasts);
  const mine=['Fertilize','Choose the fields: 35% off their time left','No growing crops without fertilizer','{0} fields can take it, you have {1}','1 field can take it, you have {0}','No growing crops need fertilizer.',...texts];
  for(const t of mine)assert.ok(all[t],t);
@@ -230,13 +232,13 @@ test('you pick the fields: only those, at most as many as there is fertilizer fo
  const s=farm({fertilizer:2});growing(s,0,'sunflower');growing(s,1,'pumpkin');growing(s,2,'wheat');ripe(s,3,'corn');growing(s,4,'cabbage');s.plots[4].fertilized=true;
  assert.deepEqual(fertilizeChoices(s,now).map(p=>p.id).sort(),[0,1,2],'growing, not ripe, not fertilized yet');
  const q=fertilizeQuote(s,now,[2]);
- assert.deepEqual([q.count,q.ids,q.fertilizer,q.fields,q.fuel],[1,[2],1,3,TRACTOR_FUEL_BASE+fieldFuel('wheat')]);
+ assert.deepEqual([q.count,q.ids,q.fertilizer,q.fields,q.fuel],[1,[2],1,3,0]);
  assert.deepEqual(fertilizeQuote(s,now,[3,4,2]).ids,[2],'a ripe or fertilized field does not count');
  assert.throws(()=>fertilizeQuote(s,now,[0,1,2]),/You have 2 natural fertilizer\./);
  assert.throws(()=>fertilizeQuote(s,now,'all'),/Choose the fields to fertilize\./);
  const left=s.plots[2].readyAt-now,coins=s.coins;
  const r=applyFarmAction(s,{type:'tractor',mode:'fertilize',crop:'wheat',ids:[2],expectedCost:q.total},now);
- assert.deepEqual([r.count,r.fertilizer,coins-s.coins,s.inventory.fertilizer],[1,1,q.total,1]);
+ assert.deepEqual([r.count,r.fertilizer,coins-s.coins,s.inventory.fertilizer],[1,1,0,1]);
  assert.equal(s.plots[2].fertilized,true);assert.equal(s.plots[2].readyAt-now,left-Math.floor(left*FERTILIZER_CUT));
  assert.equal(s.plots[0].fertilized,false);assert.equal(s.plots[1].fertilized,false);
  assert.throws(()=>applyFarmAction(s,{type:'tractor',mode:'fertilize',crop:'wheat',ids:[]},now),/Choose the fields to fertilize\./);
