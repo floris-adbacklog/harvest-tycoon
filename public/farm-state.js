@@ -999,7 +999,7 @@ export const POND_OPEN=true,POND_LEVEL=4;
 export const LAKE_OPEN=true,LAKE_LEVEL=WORLD_TWO_LEVEL;
 // A helping hand opens at level 3 (11 Oct 2026, the owner's call; it was 8): its stops grow with the farm until level 10 (activityStatus),
 // so it pays no more an hour than from level 8 before. Level 3 then opens lettuce, Daily challenges and the hand: three things.
-export const SHIP_BIN_LEVEL=7;   // the shipping bin (below, at the Warehouse)
+export const SHIP_BIN_LEVEL=4;   // the shipping bin (below, at the Warehouse)
 export const NEIGHBOURS_LEVEL=8;   // the neighbours (below, after the shipping bin)
 export const FEATURE_LEVELS=Object.freeze({...(POND_OPEN?{fishing:POND_LEVEL}:{}),shipbin:SHIP_BIN_LEVEL,neighbours:NEIGHBOURS_LEVEL,challenges:3,cart:7,activities:3,chores:15,mastery:14,family:FAMILY_MIN_LEVEL,stall:19,tractor:18,boosts:10,silo:5,projects:27,valleymarket:62,ranch:70,estateworkshop:75,tradedepot:85,grandfair:90,master:91,seedlab:92,visitors:93,giantpumpkin:94,valleyprojects:95});
 export const DELIVERY_LEVELS=Object.freeze({quick:7,village:8,commission:16});
@@ -4033,7 +4033,7 @@ function normalizeShift(state){
  s.log={rounds:(Array.isArray(s.log.rounds)?s.log.rounds:[]).slice(0,SHIFT_ROUNDS+1).map(count),items:Object.fromEntries(Object.entries(s.log.items&&typeof s.log.items==='object'?s.log.items:{}).filter(([k])=>Object.hasOwn(CROPS,k)).map(([k,v])=>[k,count(v)])),
   planted:count(s.log.planted),watered:count(s.log.watered),tended:count(s.log.tended)};
 }
-// The shipping bin (24 Oct 2026, the owner picked it from the lessons of a well-loved farming game: "Doe 1&2"). From SHIP_BIN_LEVEL a
+// The shipping bin (24 Oct 2026, the owner picked it from the lessons of a well-loved farming game: "Doe 1&2"; at level 4 since 25 Oct, the owner: "lvl 4", where most new farmers still are). From SHIP_BIN_LEVEL a
 // farmer can put crops and goods in the bin at today's price and SHIP_BIN_BONUS on top; the bin is paid at 00:00 UTC, on the farm's next
 // load on a later day (normalizeFarm, payShipBin), so a day ends with something to come back for. What goes in leaves the Warehouse
 // at once. The bin holds shipBinRoom places (more with the farm's level) and can be emptied back into the Warehouse until it is paid,

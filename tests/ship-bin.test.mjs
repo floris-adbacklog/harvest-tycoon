@@ -7,9 +7,9 @@ import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,marketQuote,m
 const now=Date.UTC(2026,9,24,15),DAY=86400000;
 const farm=(level=20)=>{const s=createFarm(now-30*DAY);s.xp=xpForLevel(level)+10;s.rookieUntil=0;s.onboarding={...s.onboarding,completed:10,rewardClaimed:true};s.inventory.wheat=100;s.inventory.eggs=40;return normalizeFarm(s,now);};
 
-test('opens at its level, beside Delivery orders; room grows with the level up to 500',()=>{
- assert.equal(FEATURE_LEVELS.shipbin,SHIP_BIN_LEVEL);assert.equal(SHIP_BIN_LEVEL,7);
- assert.throws(()=>act(farm(6),{type:'bin_add',item:'wheat',count:1},now),/Reach level 7 to unlock Shipping bin\./);
+test('opens at level 4 (25 Oct 2026, the owner: "lvl 4"); room grows with the level up to 500',()=>{
+ assert.equal(FEATURE_LEVELS.shipbin,SHIP_BIN_LEVEL);assert.equal(SHIP_BIN_LEVEL,4);
+ assert.throws(()=>act(farm(3),{type:'bin_add',item:'wheat',count:1},now),/Reach level 4 to unlock Shipping bin\./);
  assert.equal(shipBinRoom(farm(7)),55);assert.equal(shipBinRoom(farm(200)),500);
 });
 
