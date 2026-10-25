@@ -822,3 +822,20 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-dialog .family-stats-tiles.is-two .family-stats-tile small{grid-area:note}
 /* What you can do now is filled light green, not only edged (23 Oct 2026, the owner). */
 #family-dialog .family-order-line.is-ready,#family-dialog .family-sharing .sharing-row:has(.sharing-give),#family-dialog .family-rejoin,#family-dialog .family-incoming-invitation,#family-dialog .family-requests .family-list-row,#family-dialog .family-requests .family-list-row+.family-list-row,#family-dialog .family-reward,#family-dialog .family-reward+.family-reward{background:#eef7e3}
+/* A calmer family profile (25 Oct 2026, the owner: "Maak profiles en family profiles cleaner zoals je ook bij ranglijst hebt gedaan"):
+   the heading on the window's cream with a thin edge instead of a green card, the join mode as quiet text, the four all-time numbers and
+   the farmers as lists of rows with thin lines between them instead of a card each, and the ranks as quiet words. */
+#family-profile-dialog .family-profile-hero{border:2px solid #e6ddd1;background:#fffdf4}
+#family-profile-dialog .family-mode-chip{padding:0;border-radius:0;background:none;color:#7a6b4b;font-weight:700}
+#family-profile-dialog .family-profile-level{box-shadow:none;border-width:2px}
+#family-profile-dialog .family-profile-stats{grid-template-columns:1fr;gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#family-profile-dialog .family-profile-stat{display:flex;align-items:center;gap:10px;padding:8px 12px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none;text-align:start}
+#family-profile-dialog .family-profile-stat:first-child{border-top:0}
+#family-profile-dialog .family-profile-stat>.game-art{flex:none;width:26px;height:26px}
+#family-profile-dialog .family-profile-stat span{flex:1;order:1;font-size:14px;color:#5b4f3a}
+#family-profile-dialog .family-profile-stat strong{order:2;font-size:15px}
+#family-profile-dialog .family-member-list{gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#family-profile-dialog .family-member{border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+#family-profile-dialog .family-member:first-child{border-top:0}
+#family-profile-dialog .family-role,#family-profile-dialog .family-top{padding:0;border-radius:0;background:none;font-weight:700;font-size:12px;color:#7a5410}
+#family-profile-dialog .family-role .game-art,#family-profile-dialog .family-top .game-art{width:14px;height:14px}

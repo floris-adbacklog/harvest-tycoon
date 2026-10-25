@@ -275,3 +275,24 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
  #player-profile-dialog .farmer-stat>.game-art{width:20px;height:20px}
  #player-profile-dialog .farmer-stat strong{font-size:14.5px}
 }
+/* A calmer profile (25 Oct 2026, the owner: "Maak profiles en family profiles cleaner zoals je ook bij ranglijst hebt gedaan"): the level,
+   online and the family as one line of quiet text instead of chips, the stats as one list of rows with thin lines (the label, then the
+   number at the end) instead of a card each, and Report and Block as small text buttons. */
+#player-profile-dialog .farmer-identity{border-width:2px;border-color:#e6ddd1;box-shadow:none}
+#player-profile-dialog .farmer-identity-meta{gap:4px 12px}
+#player-profile-dialog .farmer-identity-meta>:is(.farmer-level,.farmer-presence,.farmer-family-open,.farmer-family-none,.vip-badge-detail),
+#player-profile-dialog .farmer-identity-meta>.farmer-level,#player-profile-dialog .farmer-identity-meta>.farmer-presence:has(.is-online),#player-profile-dialog .farmer-identity-meta>.vip-badge-detail{min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;font-size:13px}
+#player-profile-dialog .farmer-identity-meta>.farmer-level{color:#7a5410;font-weight:700}
+#player-profile-dialog .farmer-identity-meta>.farmer-presence,#player-profile-dialog .farmer-identity-meta>.farmer-presence:has(.is-online){color:#7a6b4b;font-weight:400}
+#player-profile-dialog button.farmer-family-open{color:#5b4520;font-weight:700}
+#player-profile-dialog button.farmer-family-open:hover{background:none}
+#player-profile-dialog .farmer-stat-grid{grid-template-columns:1fr;gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#player-profile-dialog .farmer-stat,#player-profile-dialog .farmer-stat.is-zero{display:flex;flex-direction:row;align-items:center;gap:10px;min-height:0;padding:8px 12px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none;text-align:start}
+#player-profile-dialog .farmer-stat:first-child{border-top:0}
+#player-profile-dialog .farmer-stat>.game-art{flex:none;width:24px;height:24px}
+#player-profile-dialog .farmer-stat span{flex:1;order:1;font-size:14px;color:#5b4f3a}
+#player-profile-dialog .farmer-stat strong{order:2;font-size:15px}
+#player-profile-dialog button.farmer-stat:active{transform:none}
+#player-profile-dialog .farmer-actions .farmer-chat-report,#player-profile-dialog .farmer-actions .farmer-chat-report:not(:disabled){order:3;min-height:36px;padding:2px 6px;border:0;background:none;box-shadow:none;font-size:12px;font-weight:700;color:#8a4a3a}
+#player-profile-dialog .farmer-actions .farmer-chat-report:not(:disabled):hover{background:none;text-decoration:underline;text-underline-offset:3px}
+#player-profile-dialog .farmer-actions .farmer-chat-report .game-art{width:16px;height:16px}
