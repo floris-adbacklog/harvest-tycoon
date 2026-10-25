@@ -254,3 +254,40 @@ span.season-coming-tile{cursor:default}
 .season-prev-strip .season-prev-art{width:30px;height:30px;flex:none;object-fit:contain}
 .season-prev-strip>.season-prev-tiers{flex-basis:100%;margin:2px 0 4px}
 @media(max-width:600px){#season-dialog .season-coming .primary-button.season-buy{width:100%;justify-self:stretch}.season-coming-tiles{gap:5px}.season-coming-tile{width:47px;height:47px;padding:2px;border-radius:12px}.season-coming-tile .game-art,.season-coming-tile img,.season-coming-tile .season-farmer-thumb{width:40px;height:40px}}
+/* A calmer Season Pass (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards"): the tiers as one list of rows with thin lines between them (free and paid side by side, a thin line between the two)
+   instead of a box each, the tier numbers as quiet text (the next one keeps its ring), the locks small and pale, a Claim button only
+   where something can be collected; the leaves, the paid rewards, the bonus chest and Winter on the window's cream with a thin edge
+   instead of a gold band, their pictures without a tile behind them. The Buy button stays the green money button. */
+#season-dialog .season-bars{border:2px solid #e6ddd1;background:#fffdf4}
+#season-dialog .season-waiting{padding:0 2px;border-radius:0;background:none}
+#season-dialog .season-paid-box{border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;box-shadow:none}
+#season-dialog .season-paid-look{border:0;background:none}
+#season-dialog .season-heads{padding-inline:12px}
+#season-dialog .season-heads b{padding-inline-start:0}
+#season-dialog .season-heads b:last-child{padding-inline-start:11px}
+#season-dialog .season-tiers{gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#season-dialog .season-tiers>li{border-top:1px solid #eee5d8}
+#season-dialog .season-tiers>li:first-child{border-top:0}
+#season-dialog .season-block h3{margin:0;padding:10px 12px 6px}
+#season-dialog .season-row{align-items:center;padding:7px 10px}
+#season-dialog .season-tier{width:28px;height:28px;background:none;color:#a0957f}
+#season-dialog .season-row.is-reached .season-tier{background:none;color:#c76f12}
+#season-dialog .season-row.is-next .season-tier{background:none;box-shadow:0 0 0 2px #e08a2c inset;color:#a85f14}
+#season-dialog .season-cell,#season-dialog .season-cell.is-paid,#season-dialog .season-cell.is-claimed{min-height:40px;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#season-dialog .season-row .season-cell.is-paid{padding-inline-start:10px;border-inline-start:1px solid #eee5d8}
+#season-dialog .season-row.is-reached .season-cell:not(.is-claimed):not(.is-locked){border-color:#eee5d8;box-shadow:none}
+#season-dialog .season-lock .game-art{width:16px;height:16px;opacity:.45}
+#season-dialog .season-chest{border:2px solid #e6ddd1;background:#fffdf4}
+#season-dialog .season-coming{border:2px solid #e6ddd1;box-shadow:none}
+#season-dialog .season-coming-tile{border:0;background:none}
+@media(max-width:600px){
+ #season-dialog .season-heads{padding-inline:8px}
+ #season-dialog .season-heads b:last-child{padding-inline-start:8px}
+ #season-dialog .season-row{padding:7px 6px}
+ #season-dialog .season-row .season-cell.is-paid{padding-inline-start:7px}
+ #season-dialog .season-tier{width:24px;height:24px}
+ #season-dialog .season-cell.is-locked{position:relative;padding-inline-end:16px}
+ #season-dialog .season-cell.is-locked>.season-lock{position:absolute;top:50%;margin-top:-7px;inset-inline-end:0}
+ #season-dialog .season-lock .game-art{width:14px;height:14px}
+}

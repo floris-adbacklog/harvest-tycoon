@@ -1800,3 +1800,36 @@ html[data-portal] .feedback-copy{display:none!important}
 #leaderboard-dialog tr.is-rank-1 .rank-number.is-medal{background:#f4d77e;color:#6b4a0c}
 #leaderboard-dialog tr.is-rank-2 .rank-number.is-medal{background:#e3e4e6;color:#4f5560}
 #leaderboard-dialog tr.is-rank-3 .rank-number.is-medal{background:#ecc29b;color:#6b3d17}
+/* A calmer tractor (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards"): the jobs and the diamond work as lists of rows with thin lines between them in one frame each instead of tiles and
+   cards: the picture without a tile behind it, the job's name with its fact under it, the price at the end as the button (coins like
+   Fertilize's Choose, diamonds the diamond button). The crop to plant on the window's cream with a thin edge; Plant's question keeps
+   its light gold while it asks. */
+#utility-dialog .tractor-seed{border:2px solid #e6ddd1;background:#fffdf4}
+#utility-dialog .tractor-tiles,#utility-dialog .tractor-cards{grid-template-columns:1fr;gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#utility-dialog .tractor-tile{display:grid;grid-template-columns:40px minmax(0,1fr) auto;grid-template-areas:"art name cost" "art fact cost";align-items:center;gap:0 12px;padding:8px 12px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+#utility-dialog .tractor-tile:first-child,#utility-dialog .tractor-card:first-child{border-top:0}
+#utility-dialog :is(.tractor-tile,.tractor-card):hover:not(:disabled){background:#f9f4eb}
+#utility-dialog .tractor-tile:disabled{background:none}
+#utility-dialog .tractor-tile.is-asking{grid-template-areas:"art name cost" "art ask ask";background:#fff8e1}
+#utility-dialog .tractor-tile-art{grid-area:art;width:40px;height:40px;margin:0;border-radius:0;background:none}
+#utility-dialog .tractor-tile>strong{grid-area:name}
+#utility-dialog .tractor-tile>small{grid-area:fact}
+#utility-dialog .tractor-tile .tractor-job-cost{grid-area:cost;position:static;padding:4px 10px 4px 7px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:var(--btn-second,#f7f0e3);color:var(--btn-second-text,#5b4520)}
+#utility-dialog .tractor-ask-buttons{grid-area:ask}
+#utility-dialog .tractor-tile.is-asking .tractor-job-cost{padding:0;border:0;background:none}
+#utility-dialog .tractor-tile.is-wide{display:flex;gap:12px}
+#utility-dialog .tractor-card{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;justify-items:start;gap:1px 12px;padding:10px 12px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none;text-align:start}
+#utility-dialog .tractor-card:disabled{background:none}
+#utility-dialog .tractor-card>*{grid-column:2}
+#utility-dialog .tractor-card-art{grid-column:1;grid-row:1/span 4;align-self:center;width:52px;height:52px;margin:0;border-radius:0;background:none}
+#utility-dialog .tractor-card-art>.game-art{width:50px;height:50px}
+#utility-dialog .tractor-card>small:last-of-type{margin-bottom:0}
+#utility-dialog .tractor-card .tractor-price{grid-column:3;grid-row:1/span 4;align-self:center;margin:0}
+#utility-dialog .tractor-subhead{margin:16px 0 8px}
+@media(max-width:600px){
+ #utility-dialog .tractor-tile,#utility-dialog .tractor-card{padding:8px 10px;column-gap:10px}
+ #utility-dialog .tractor-card{grid-template-columns:44px minmax(0,1fr) auto}
+ #utility-dialog .tractor-card-art{width:44px;height:44px}
+ #utility-dialog .tractor-card-art>.game-art{width:42px;height:42px}
+}

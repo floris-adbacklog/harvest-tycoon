@@ -105,3 +105,34 @@
 /* The paid pass brings the Lantern keeper avatar (4 Oct 2026): its face beside the line, in the buy box. */
 .pass-avatar-line{display:flex;align-items:center;gap:8px}
 .pass-avatar-line img{flex-shrink:0;width:40px;height:40px;border-radius:50%;object-fit:cover;background:#f3e7d3}
+/* A calmer Halloween Pass (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards"): the tiers as one list of rows with thin lines between them (free and paid side by side, a thin line between the two)
+   instead of a box each, the tier numbers as quiet text (the next one keeps its ring), the locks small and pale, a Claim button only
+   where something can be collected; the lanterns and the paid rewards on the window's cream with a thin edge instead of a gold band.
+   The Buy button stays the green money button. */
+#pass-dialog .pass-progress{border:2px solid #e6ddd1;background:#fffdf4}
+#pass-dialog .pass-waiting{padding:0 2px;border-radius:0;background:none}
+#pass-dialog .pass-paid-box,#pass-dialog .pass-paid-box.is-owned{border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;box-shadow:none}
+#pass-dialog .pass-heads{padding-inline:12px}
+#pass-dialog .pass-heads b{padding-inline-start:0}
+#pass-dialog .pass-heads b:last-child{padding-inline-start:11px}
+#pass-dialog .pass-tiers{gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#pass-dialog .pass-row{align-items:center;padding:7px 10px;border-top:1px solid #eee5d8}
+#pass-dialog .pass-row:first-child{border-top:0}
+#pass-dialog .pass-tier{width:28px;height:28px;background:none;color:#a0957f}
+#pass-dialog .pass-row.is-reached .pass-tier{background:none;color:#c76f12}
+#pass-dialog .pass-row.is-next .pass-tier{background:none;box-shadow:0 0 0 2px #e08a2c inset;color:#a85f14}
+#pass-dialog .pass-cell,#pass-dialog .pass-cell.is-paid,#pass-dialog .pass-cell.is-claimed{min-height:40px;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#pass-dialog .pass-row .pass-cell.is-paid{padding-inline-start:10px;border-inline-start:1px solid #eee5d8}
+#pass-dialog .pass-row.is-reached .pass-cell:not(.is-claimed):not(.is-locked){border-color:#eee5d8;box-shadow:none}
+#pass-dialog .pass-lock .game-art{width:16px;height:16px;opacity:.45}
+@media(max-width:600px){
+ #pass-dialog .pass-heads{padding-inline:8px}
+ #pass-dialog .pass-heads b:last-child{padding-inline-start:8px}
+ #pass-dialog .pass-row{padding:7px 6px}
+ #pass-dialog .pass-row .pass-cell.is-paid{padding-inline-start:7px}
+ #pass-dialog .pass-tier{width:24px;height:24px}
+ #pass-dialog .pass-cell.is-locked{position:relative;padding-inline-end:16px}
+ #pass-dialog .pass-cell.is-locked>.pass-lock{position:absolute;top:50%;margin-top:-7px;inset-inline-end:0}
+ #pass-dialog .pass-lock .game-art{width:14px;height:14px}
+}

@@ -71,3 +71,38 @@ dialog :is(.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.
 .dialog-heading .hints-button{flex:none;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;margin-inline-start:auto;padding:0;border:2px solid var(--btn-icon-line);border-radius:14px;background:var(--btn-icon);box-shadow:0 2px 0 var(--btn-icon-edge);color:var(--btn-icon-text);font:700 22px/1 'Outfit',sans-serif;cursor:pointer}
 .dialog-heading .hints-button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-icon-edge)}
 .dialog-heading .hints-button+.close-dialog{margin-inline-start:8px}
+
+/* A calmer Buildings list (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards", then "Not the building list but inside": a building's own window stays as it is). The buildings as rows in one frame
+   with thin lines between them (two columns on a wide screen, the lines running across both), pictures without a tile behind them,
+   and "1 ready" as a quiet gold word instead of a green card. Each row's own bottom line hides under the frame's edge on the last row. */
+#buildings-dialog .building-catalog{column-gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#buildings-dialog #building-catalog>.building-card,
+#buildings-dialog #building-catalog>.building-card:has(.building-status.ready){margin:0 0 -1px;padding:10px 14px;border:0;border-bottom:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+#buildings-dialog #building-catalog>.building-card:hover{background:#f9f4eb}
+#buildings-dialog .building-card-art{background:none}
+#buildings-dialog .building-status.ready{padding:0;background:none;color:#9a6a12}
+/* Places to unlock: the last row of the frame, over the whole width. */
+#buildings-dialog #building-catalog>.future-unlocks{margin:0;padding:10px 14px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+
+/* A calmer Today (25 Oct 2026, the owner, as above): the streak in one frame on the window's cream, its days as light columns (no box
+   for a day already behind you; today keeps its edge, tomorrow its dashed gold), tomorrow's gift as a row under them; the bonus as a
+   quiet line; the challenges and the orders as rows in one frame with thin lines between them. What you can claim or deliver keeps its
+   light green and its button. */
+#daily-gift .streak-panel{border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;box-shadow:none}
+#daily-gift .streak-days{gap:4px}
+#daily-gift .streak-day,#daily-gift .streak-day.collected{min-height:0;border:2px solid transparent;border-radius:12px;background:none;box-shadow:none}
+#daily-gift .streak-day.collected.is-today{border:2px solid #8cc06a;background:#eef7e3;box-shadow:none}
+#daily-gift .streak-day.current{border:2px solid #d9a53c;background:#fff6dc;box-shadow:none}
+#daily-gift .streak-day.is-next{border:2px dashed #d9a53c;background:none}
+#daily-gift .streak-day svg{width:26px;height:26px;padding:4px}
+#daily-gift .streak-boost{border-color:#e6ddd1;background:#fffdf4;box-shadow:none}
+#daily-gift .streak-panel.is-claimed .streak-claim{padding:10px 2px 0;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none}
+#daily-gift .streak-done{padding:0;background:none}
+#today-content .daily-bonus-card,#today-content .daily-bonus-card.is-done{border:2px solid #e6ddd1;background:#fffdf4}
+#today-content .daily-bonus-art,#today-content :is(.daily-card,.daily-order) .quest-art,#today-content .order-icon,#today-content .daily-card.is-ready .quest-art{background:none}
+#today-content .daily-list{column-gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#today-content .daily-list>:is(.daily-card,.daily-order),
+#today-content .daily-list>:is(.daily-card,.daily-order):is(.is-ready,.commission,.village,.completed){margin:0 0 -1px;padding:12px 14px;border:0;border-bottom:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+#today-content .daily-list>:is(.daily-card,.daily-order).is-ready{background:var(--calm-ready-fill)}
+#today-content .order-replace{border-top:1px solid #eee5d8}

@@ -170,3 +170,34 @@
  .activity-tile.needs-care .activity-tile-art,.activity-tile.just-done,.activity-tile.just-done .activity-tile-tick,.activity-dots>i.is-new,.activity-result,.activity-result-art>.activity-tile-tick{animation:none}
  .activity-tile,.round-stop{transition:none}
 }
+/* A calmer helping hand (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards"): the farm round and the four stops as one list of rows with thin lines between them in one frame (the round is its top
+   row) instead of a box and a card each; the stops' pictures without a round tile (the tick still marks a stop done), what a stop brings
+   and Ready as quiet text instead of pills, the round's bonus and count as quiet text too. Only the hub; a stop's own window keeps its look. */
+#activities-hub-dialog #activities-hub-round{margin:16px 0 0;padding:10px 14px;border:2px solid #e6ddd1;border-bottom:1px solid #eee5d8;border-radius:16px 16px 0 0;background:#fffdf4;box-shadow:none}
+#activities-hub-dialog .activity-round-heading{margin-bottom:6px}
+#activities-hub-dialog .activity-round-heading b{padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#7a5410}
+#activities-hub-dialog .round-stop,#activities-hub-dialog .round-stop.complete{width:40px;height:40px;flex-basis:40px;border:0;background:none;box-shadow:none}
+#activities-hub-dialog .round-stop>.game-art{width:36px;height:36px}
+#activities-hub-dialog .round-stop:not(:disabled):hover{transform:none;opacity:.85}
+#activities-hub-dialog .round-stop>.round-tick{inset-inline-end:-2px;bottom:-2px}
+#activities-hub-dialog .round-bonus{padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#7a5410}
+#activities-hub-dialog .round-bonus>.game-art{width:20px;height:20px}
+#activities-hub-dialog #activities-hub-grid{grid-template-columns:1fr;gap:0;margin:0;border:2px solid #e6ddd1;border-top:0;border-radius:0 0 16px 16px;background:#fffdf4;overflow:hidden}
+#activities-hub-dialog #activities-hub-grid>.activity-stop{display:flex;flex-direction:row;align-items:center;gap:12px;min-height:0;margin:0;padding:8px 12px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none;text-align:start;transform:none}
+#activities-hub-dialog #activities-hub-grid>.activity-stop:first-child{border-top:0}
+#activities-hub-dialog #activities-hub-grid>.activity-stop:hover{background:#f9f4eb}
+#activities-hub-dialog .activity-stop-art>.game-art{width:52px;height:52px}
+#activities-hub-dialog .activity-stop .building-card-info{display:grid;flex:1;gap:2px;justify-items:start;min-width:0}
+#activities-hub-dialog .activity-stop strong{font-size:16px}
+#activities-hub-dialog .activity-stop .activity-chips{gap:2px 12px;margin:0}
+#activities-hub-dialog .activity-stop .activity-chip,#activities-hub-dialog .activity-stop .activity-chip.is-xp{gap:4px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#5b4f3a;font-size:13px}
+#activities-hub-dialog .activity-stop .activity-chip .game-art{width:18px;height:18px}
+#activities-hub-dialog #activities-hub-grid .building-status{padding:0;border-radius:0;background:none;font-size:12px;font-weight:700}
+#activities-hub-dialog .activity-stop>svg{display:block;flex:none;width:18px;height:18px;color:#a8998a}
+@media(max-width:600px){
+ #activities-hub-dialog #activities-hub-round{padding:10px 12px}
+ #activities-hub-dialog #activities-hub-grid>.activity-stop{padding:8px 10px;gap:10px}
+ #activities-hub-dialog .activity-stop-art>.game-art{width:46px;height:46px}
+ #activities-hub-dialog .activity-stop strong{font-size:15px}
+}
