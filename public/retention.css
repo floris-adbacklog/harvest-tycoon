@@ -1844,3 +1844,16 @@ html[data-portal] .feedback-copy{display:none!important}
 .giveaway-label small{font-weight:400;color:#8a7756}
 .giveaway-names{width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:#fffdf7;font:inherit;resize:vertical}
 .giveaway-clear{justify-self:start}
+.giveaway-subhead{margin:6px 0 0;font-size:1.05rem;color:#3f2806}
+.giveaway-countdown{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.giveaway-minutes{width:90px;padding:8px 10px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:#fffdf7;font:inherit;font-weight:700}
+.giveaway-countdown .primary-button{flex:1;min-height:44px}
+.giveaway-hint{margin:0;color:#8a7756;font-size:.9rem}
+/* The stream countdown (public/giveaway-ui.js showCountdown): a cream card with the logo and a big clock over the farm. */
+.stream-countdown{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;background:rgba(43,30,10,.35);cursor:pointer}
+.stream-countdown-card{display:grid;justify-items:center;gap:6px;padding:28px 56px 34px;background:#fffaf0;border:5px solid #d9c7a4;border-radius:36px;box-shadow:0 10px 0 #e2d3b3,0 24px 50px rgba(43,30,10,.35);text-align:center}
+.stream-countdown-card img{width:min(380px,60vw);aspect-ratio:1.55;object-fit:cover}
+.stream-countdown-title{margin:0;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;color:#3f8a4a}
+.stream-countdown-clock{margin:0;font-size:clamp(4.5rem,13vw,9rem);line-height:1;font-weight:700;color:#3f2806;font-variant-numeric:tabular-nums}
+.stream-countdown-note{margin:0;font-size:clamp(1.1rem,2.4vw,1.6rem);font-weight:700;color:#5b4520}
+.stream-countdown.is-live .stream-countdown-clock{color:#3f8a4a}

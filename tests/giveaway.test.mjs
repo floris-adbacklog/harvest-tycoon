@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {giveawayNames,pickIndex,rollTimes,rollSequence,ROLL_MS,GIVEAWAY_KEY} from '../public/giveaway-ui.js';
+import {giveawayNames,pickIndex,rollTimes,rollSequence,ROLL_MS,GIVEAWAY_KEY,countdownText,COUNTDOWN_KEY} from '../public/giveaway-ui.js';
 import {catalog} from '../scripts/i18n.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
@@ -42,4 +42,17 @@ test('only the stream account sees it, and it loads only there; English like the
  assert.ok(JSON.parse(read('i18n/ignore.json')).includes('Draw a winner'));
  assert.equal(GIVEAWAY_KEY,'harvest-tycoon:giveaway-names');
  assert.doesNotMatch(read('public/giveaway-ui.js'),/ · /);
+});
+
+// 25 Oct 2026, the owner: a countdown he sets himself, in the game, "ook voor de volgende x".
+test('the countdown: minutes and seconds, hours when it is longer, never below zero, kept on the device over a reload',()=>{
+ assert.equal(countdownText(30*60000),'30:00');assert.equal(countdownText(61000),'01:01');assert.equal(countdownText(1),'00:01');
+ assert.equal(countdownText(0),'00:00');assert.equal(countdownText(-5000),'00:00');assert.equal(countdownText(2*3600000+5*60000),'2:05:00');
+ assert.equal(COUNTDOWN_KEY,'harvest-tycoon:stream-countdown');
+ const ui=read('public/giveaway-ui.js');
+ assert.match(ui,/data-countdown-show>Show countdown<\/button>/);assert.match(ui,/showCountdown\(Date\.now\(\)\+minutes\*60000,doc\)/);
+ assert.match(ui,/if\(kept>Date\.now\(\)\)showCountdown\(kept,doc\)/,'a reload keeps counting');
+ assert.match(ui,/layer\.onclick=\(\)=>hideCountdown\(doc\)/,'a tap hides it');
+ for(const text of ['Starting soon',"We're live!",'Show countdown'])assert.equal(catalog()[text],undefined,text);
+ assert.match(read('public/retention.css'),/\.stream-countdown\{position:fixed;inset:0;z-index:2147482000;/);
 });

@@ -33,20 +33,43 @@ export function rollTimes(total=ROLL_MS,ticks=ROLL_TICKS,curve=ROLL_CURVE,minGap
 }
 // The names shown on the way: a random one each tick, never the same twice in a row, and the winner last.
 export function rollSequence(names,winner,steps,random=Math.random){
- const seq=[];
- for(let i=0;i<steps-1;i++){
+ // Built back from the winner: each name differs from the one after it, so no name shows twice in a row.
+ const seq=new Array(steps);seq[steps-1]=winner;
+ for(let i=steps-2;i>=0;i--){
   let pick=Math.floor(random()*names.length);
-  if(names.length>1&&names[pick]===seq.at(-1))pick=(pick+1)%names.length;
-  seq.push(names[pick]);
+  if(names.length>1&&names[pick]===seq[i+1])pick=(pick+1)%names.length;
+  seq[i]=names[pick];
  }
- if(names.length>1&&seq.at(-1)===winner)seq[seq.length-1]=names[(names.indexOf(winner)+1)%names.length];
- seq.push(winner);
  return seq;
 }
 
 const read=()=>{try{return localStorage.getItem(GIVEAWAY_KEY)??'';}catch{return '';}};
 const write=text=>{try{localStorage.setItem(GIVEAWAY_KEY,text);}catch{}};
 const escape=text=>String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// The countdown (25 Oct 2026, the owner: "in-game wat ik kan instellen als mijn speler", "ook voor de volgende x"): set the minutes in
+// the Giveaway window and a big clock lies over the farm ("Starting soon", then "We're live!"), for the stream's picture. The end time
+// is kept on this device, so a reload keeps counting; a tap on the clock hides it.
+export const COUNTDOWN_KEY='harvest-tycoon:stream-countdown';
+export function countdownText(ms){const left=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(left/3600),m=Math.floor(left%3600/60),s=left%60,two=n=>String(n).padStart(2,'0');return h?`${h}:${two(m)}:${two(s)}`:`${two(m)}:${two(s)}`;}
+let countdownTimer=0;
+export function showCountdown(endAt,doc=document){
+ hideCountdown(doc);
+ try{localStorage.setItem(COUNTDOWN_KEY,String(endAt));}catch{}
+ const layer=doc.createElement('div');layer.id='stream-countdown';layer.className='stream-countdown';layer.setAttribute('role','timer');
+ layer.innerHTML='<div class="stream-countdown-card"><img src="/assets/harvest-tycoon-logo.webp?v=20261023" alt="Harvest Tycoon"><p class="stream-countdown-title">Starting soon</p><p class="stream-countdown-clock">--:--</p><p class="stream-countdown-note">Win diamonds in the chat 💎</p></div>';
+ layer.onclick=()=>hideCountdown(doc);
+ doc.body.append(layer);
+ const clock=layer.querySelector('.stream-countdown-clock'),title=layer.querySelector('.stream-countdown-title');
+ const tick=()=>{const left=endAt-Date.now();clock.textContent=countdownText(left);
+  if(left<=0){title.textContent="We're live!";layer.classList.add('is-live');clearInterval(countdownTimer);countdownTimer=setTimeout(()=>hideCountdown(doc),8000);}};
+ tick();countdownTimer=setInterval(tick,250);
+}
+export function hideCountdown(doc=document){
+ clearInterval(countdownTimer);clearTimeout(countdownTimer);
+ doc.getElementById('stream-countdown')?.remove();
+ try{localStorage.removeItem(COUNTDOWN_KEY);}catch{}
+}
 
 let mounted=false;
 export function mountGiveaway(doc=document){
@@ -59,7 +82,9 @@ export function mountGiveaway(doc=document){
   +`<div class="giveaway-actions"><button type="button" class="primary-button" data-giveaway-draw>Draw a winner</button><button type="button" class="secondary-button" data-giveaway-remove hidden>Take out the winner</button></div>`
   +`<label class="giveaway-label" for="giveaway-names">Everyone who joins, one name per line <small data-giveaway-count></small></label>`
   +`<textarea id="giveaway-names" class="giveaway-names" rows="8" spellcheck="false" placeholder="Paste the farm names from the chat"></textarea>`
-  +`<button type="button" class="secondary-button giveaway-clear" data-giveaway-clear>Clear the list</button></div>`;
+  +`<button type="button" class="secondary-button giveaway-clear" data-giveaway-clear>Clear the list</button>`
+  +`<h3 class="giveaway-subhead">Countdown</h3><div class="giveaway-countdown"><label class="giveaway-label" for="giveaway-minutes">Minutes</label><input id="giveaway-minutes" class="giveaway-minutes" type="number" min="1" max="600" step="1" value="30" inputmode="numeric"><button type="button" class="primary-button" data-countdown-show>Show countdown</button></div>`
+  +`<p class="giveaway-hint">A big clock over the farm for the stream. Tap the clock to hide it.</p></div>`;
  doc.body.append(dialog);
  const $=selector=>dialog.querySelector(selector),box=$('#giveaway-names'),draw=$('[data-giveaway-draw]'),remove=$('[data-giveaway-remove]');
  const name=$('[data-giveaway-name]'),prev=$('[data-giveaway-prev]'),next=$('[data-giveaway-next]'),result=$('[data-giveaway-result]'),count=$('[data-giveaway-count]');
@@ -92,6 +117,10 @@ export function mountGiveaway(doc=document){
  };
  for(const close of dialog.querySelectorAll('[data-giveaway-close]'))close.onclick=()=>dialog.close();
  update();
+
+ $('[data-countdown-show]').onclick=()=>{const minutes=Math.max(1,Math.min(600,Math.round(Number($('#giveaway-minutes').value)||30)));dialog.close();showCountdown(Date.now()+minutes*60000,doc);};
+ // A countdown that was running before a reload goes on.
+ try{const kept=Number(localStorage.getItem(COUNTDOWN_KEY));if(kept>Date.now())showCountdown(kept,doc);else if(kept)localStorage.removeItem(COUNTDOWN_KEY);}catch{}
 
  // The entry: one row in More, under Friends, after Invite a friend.
  const menu=doc.getElementById('more-dialog'),after=menu?.querySelector('[data-menu-action="invite-button"]');
