@@ -1831,3 +1831,16 @@ html[data-portal] .feedback-copy{display:none!important}
  #utility-dialog .tractor-card-art{width:44px;height:44px}
  #utility-dialog .tractor-card-art>.game-art{width:42px;height:42px}
 }
+/* The giveaway (25 Oct 2026, public/giveaway-ui.js): one big name rolling between its neighbours, the winner in gold. */
+.giveaway{display:grid;gap:12px}
+.giveaway-reel{display:grid;justify-items:center;gap:2px;padding:14px 12px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:16px;background:#fffaf0;overflow:hidden}
+.giveaway-reel strong{font-size:clamp(1.6rem,6vw,2.6rem);line-height:1.15;color:#3f2806;text-align:center;overflow-wrap:anywhere}
+.giveaway-side{min-height:1.3em;font-size:1rem;color:#b3a893;text-align:center;overflow-wrap:anywhere}
+#giveaway-dialog.has-winner .giveaway-reel{border-color:var(--btn-gold-line,#b07a22);background:#fff3d6}
+.giveaway-result{margin:0;text-align:center;font-size:1.15rem;color:#5b4520}
+.giveaway-actions{display:flex;gap:8px}
+.giveaway-actions .primary-button{flex:1;min-height:48px;font-size:1.05rem}
+.giveaway-label{font-weight:700;color:#5b4520}
+.giveaway-label small{font-weight:400;color:#8a7756}
+.giveaway-names{width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:#fffdf7;font:inherit;resize:vertical}
+.giveaway-clear{justify-self:start}

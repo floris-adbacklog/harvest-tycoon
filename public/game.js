@@ -133,7 +133,10 @@ let tractorCrop='wheat';
 let toolPicked=false;
 let emailAccount={needed:false,email:''},emailCheckUI=null;
 // No email on CrazyGames (Oct 2026, public/portal.js): nothing to confirm or change there.
-function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check,needed:false,canChange:false}:check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
+// The giveaway (25 Oct 2026, the owner, for the Twitch stream): only for the stream's own account, loaded only there (public/giveaway-ui.js).
+const GIVEAWAY_EMAILS=Object.freeze(['harvesttycoon+twitch@gmail.com']);
+function mountGiveawayFor(email){if(!adminView&&!visitView&&GIVEAWAY_EMAILS.includes(String(email??'').trim().toLowerCase()))import('./giveaway-ui.js').then(m=>m.mountGiveaway()).catch(()=>{});}
+function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check,needed:false,canChange:false}:check;mountGiveawayFor(emailAccount.email);const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
