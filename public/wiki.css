@@ -408,3 +408,27 @@ html[data-portal] .wiki-copy{display:none!important}
  .wiki-page .wiki-cta a{flex:1 1 100%}
 }
 @media(prefers-reduced-motion:reduce){.wiki-page .wiki-play,.wiki-page .wiki-cta a{transition:none}}
+/* A calmer wiki in the game (25 Oct 2026, the owner: "Maak de wiki ook cleaner", "ingelogd"; the public wiki pages stay as they are):
+   like the leaderboard and the profiles, the topics, the facts, the cards and the related topics are one list of rows with thin lines
+   between them instead of a card each; the topic's intro is plain text with its picture, no tinted band; the jump links and the quick
+   searches are quiet words; the pictures sit without their coloured tiles. */
+#help-dialog .wiki :is(.wiki-tiles,.wiki-facts,.wiki-cards,.wiki-next-list){grid-template-columns:minmax(0,1fr);gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#help-dialog .wiki :is(.wiki-tile,.wiki-facts li,.wiki-card,.wiki-next){margin:0;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none;transform:none}
+#help-dialog .wiki :is(.wiki-tile,.wiki-facts li,.wiki-card,.wiki-next):first-child{border-top:0}
+#help-dialog .wiki :is(.wiki-tile,.wiki-next):hover{background:#f9f3e8;box-shadow:none;transform:none}
+#help-dialog .wiki .wiki-tile{grid-template-columns:36px minmax(0,1fr) auto;padding:10px 12px}
+#help-dialog .wiki .wiki-tile.is-featured{grid-template-columns:36px minmax(0,1fr) auto;margin:0 0 10px;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4}
+#help-dialog .wiki .wiki-tile strong{font-size:15px}
+#help-dialog .wiki .wiki-facts li{padding:10px 12px;grid-template-columns:30px minmax(0,1fr)}
+#help-dialog .wiki .wiki-facts li>.game-art{width:28px;height:28px}
+#help-dialog .wiki .wiki-next{min-height:48px;padding:6px 12px}
+#help-dialog .wiki :is(.wiki-tile,.wiki-next,.wiki-card)>.game-art{width:36px;height:36px;padding:0;border-radius:0;background-color:transparent;box-shadow:none}
+#help-dialog .wiki :is(.wiki-tile,.wiki-next,.wiki-card)>.game-art-sprite{background-image:var(--art-sheet);background-size:var(--art-size) var(--art-size);background-position:var(--art-position);background-origin:padding-box;background-clip:border-box}
+#help-dialog .wiki .wiki-hero{padding:2px 0 6px;border:0;border-radius:0;background:none;box-shadow:none}
+#help-dialog .wiki .wiki-hero .game-art{width:56px;height:56px;filter:none}
+#help-dialog .wiki .wiki-hero p{color:#5b4f3a}
+#help-dialog .wiki :is(.wiki-jump a,.wiki-quick :is(button,a)){min-height:32px;padding:4px 8px;border:0;border-radius:8px;background:none;box-shadow:none;color:#5b4520}
+#help-dialog .wiki :is(.wiki-jump a,.wiki-quick :is(button,a)):hover{background:#f4ecdc}
+#help-dialog .wiki .wiki-quick{gap:2px 4px}
+#help-dialog .wiki .wiki-jump-wrap{border:0;border-radius:0;background:#fffdf4;box-shadow:0 1px 0 #eee5d8}
+#help-dialog .wiki .wiki-jump{padding:6px 0;background:none;border:0;box-shadow:none}
