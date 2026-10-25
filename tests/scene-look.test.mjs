@@ -62,7 +62,7 @@ test('the harvest: a ripe field\'s plants are picked and the harvest flies to th
  assert.match(read('public/harvest-fly.js'),/flight\.finished\.then\(\(\)=>\{outer\.remove\(\);/,'each flying picture is removed when it lands');
  assert.match(rows,/new THREE\.InstancedMesh\(template\.geometry,template\.material,spots\.length\)/);
  assert.match(rows,/if\(n\.isInstancedMesh\)n\.dispose\(\)/,'the picked plants are freed');
- assert.match(game,/if\(cropMotion\?\.animate\(\)\)renderer\.shadowMap\.needsUpdate=true;/,'shadows follow the moving plants');
+ assert.match(game,/if\(cropMotion\?\.animate\(\)\)\{cropsMoving=true;if\(now-lastShadows>CROP_SHADOWS\)\{renderer\.shadowMap\.needsUpdate=true;lastShadows=now;\}\}else if\(cropsMoving\)\{cropsMoving=false;renderer\.shadowMap\.needsUpdate=true;lastShadows=now;\}/,'shadows follow the moving plants (every CROP_SHADOWS ms since 25 Oct 2026, and once more when they stop)');
  assert.doesNotMatch(read('public/farm-life.js'),/stone_fence_001',wx,wz/,'no loose stone walls beside the neighbouring fields');
 });
 test('goods: a tap on a building\'s yellow name collects everything ready on the farm and the goods fly to the Market button',()=>{

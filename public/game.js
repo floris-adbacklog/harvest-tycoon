@@ -16,7 +16,7 @@ import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} fr
 import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure,noteOnDevice} from './loading-screen.js';
 import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
-import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE} from './graphics-mode.js';
+import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE,slowPhone,probeGpu,NEW_FARM_LEVEL,lighterStep,setLighter,choseFull,createSpeedCheck,CHECK_AFTER_MS,CHECK_UNTIL_MS} from './graphics-mode.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -137,6 +137,10 @@ function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
+let lastShadows=0;
+const SHADOWS_EVERY=10000;   // the sun's shadows drawn again at least this often (frame), for the crops that grow
+const CROP_SHADOWS=120;      // while crops hop or are picked, their shadows follow this often (and once more when they stop)
+let cropsMoving=false;
 const handheld=handheldDevice();   // phones, tablets and the apps: the farm rests under a window (frame, public/windows.js)
 // The graphics (21 Oct 2026, public/graphics-mode.js). A phone, a tablet, the apps or an unfolded foldable (a touch screen, even one wider
 // than 900 px) never get the computer's heavy settings; simple graphics after any trouble; no shadows on a PowerVR or Imagination GPU.
@@ -144,6 +148,9 @@ const handheld=handheldDevice();   // phones, tablets and the apps: the farm res
 const gpuHandheld=handheld||mobileLayout.matches||matchMedia('(pointer: coarse)').matches;
 const gfxStore=(()=>{try{return window.localStorage;}catch{return null;}})();
 let graphicsSimple=false,gfxMode='full',runHealthy=false,lastShown=Date.now();
+// Lighter by itself when the farm runs slowly (25 Oct 2026, graphics-mode.js): the step this device is on (-1: the player went back),
+// the measuring while it runs (from checkFrom, a frame time), the sun (its shadows go at step 2) and whether the player was told.
+let lighter=0,speedCheck=null,checkFrom=0,sunLight=null,toldLighter=false;
 addEventListener('pagehide',()=>endRun(gfxStore));
 document.addEventListener('visibilitychange',()=>{lastShown=Date.now();if(!runHealthy&&gfxStore?.getItem?.(RUN_KEY))markRun(gfxStore,{away:document.hidden});});
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
@@ -619,7 +626,7 @@ function greyed(material){
 }
 function setLocked(object,locked){
  if(object.userData.locked===locked)return;object.userData.locked=locked;
- object.traverse(mesh=>{if(!mesh.isMesh)return;mesh.userData.original??=mesh.material;const original=mesh.userData.original;mesh.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;});
+ object.traverse(mesh=>{if(!mesh.isMesh||mesh.userData.softShadow)return;mesh.userData.original??=mesh.material;const original=mesh.userData.original;mesh.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;});
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -1810,7 +1817,7 @@ function hudNumbers(){
  else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent='';market.removeAttribute('aria-label');}
 }
 function updateUI(){
- hudNumbers();warehouse?.refresh();
+ hudNumbers();if(renderer)renderer.shadowMap.needsUpdate=true;warehouse?.refresh();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
  // batch ready, and the market square when the golden brief or a landmark can be built (Oct 2026; no pop-up). Not a villager you could
@@ -1890,7 +1897,7 @@ function resize(){
  if(!renderer||!camera)return;
  measureTools();
  const width=world.clientWidth,height=world.clientHeight;if(width<=0||height<=0)return;const aspect=width/height;
- const ratio=pixelRatioFor({devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple});
+ const ratio=pixelRatioFor({devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple,lighter:lighter>=1});
  if(ratio!==viewportRatio){renderer.setPixelRatio(ratio);viewportRatio=ratio;}
  if(width!==viewportWidth||height!==viewportHeight){renderer.setSize(width,height);viewportWidth=width;viewportHeight=height;lastDraw=0;}   // a new size clears the picture: drawn again at once, under a window too
  const mobile=mobileLayout.matches;
@@ -2444,6 +2451,23 @@ function clearRail(){
 function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();if(layoutKey!==(layoutKey=JSON.stringify(state.layout??{})))applyLayout();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
 // Settings › Graphics (21 Oct 2026, public/graphics-mode.js): Simple graphics on or off, saved on this device, and the farm opens again
 // with it as Try again does (on a portal its page opens the farm again). Its text says it also switches on by itself after trouble.
+// One step lighter, at once (graphics-mode.js): less sharp (skipped where the picture is no sharper already), no shadows (skipped where
+// there were none), then simple graphics from the next start; the player hears it once (not in a calm start) and Settings › Graphics
+// takes it back.
+function runLighter(){
+ speedCheck?.reset();
+ if(lighter===0&&pixelRatioFor({devicePixelRatio,width:world.clientWidth,height:world.clientHeight,handheld:gpuHandheld,lighter:true})>=viewportRatio)lighter=1;
+ if(lighter===1&&gfxMode!=='full')lighter=2;
+ if(lighter<2){lighter++;setLighter(gfxStore,lighter);
+  if(lighter===1)resize();
+  else{renderer.shadowMap.enabled=false;if(sunLight)sunLight.castShadow=false;gfxMode='noshadow';try{if(window.harvestStartup)window.harvestStartup.gfx=gfxMode;}catch{}markRun(gfxStore,{gfx:gfxMode});}
+  if(!toldLighter&&calmStep(state)===null)toast('Your farm runs a little lighter on this device, so it moves more smoothly. Settings › Graphics takes it back.');
+ }else{
+  speedCheck=null;if(choseFull(gfxStore))return;graphicsTrouble(gfxStore);
+  if(calmStep(state)===null)toast('Your farm opens with simple graphics next time, so it runs more smoothly here. Settings › Graphics takes it back.');
+ }
+ toldLighter=true;const box=$('graphics-lighter');if(box)box.checked=lighter>=1;
+}
 function bindGraphicsSetting(){
  // Left-handed fishing (23 Oct 2026, a player): the fish bar stands left of the reel button, or right of it when this is on (public/pond-ui.js).
  const hand=$('pond-bar-right');
@@ -2454,7 +2478,11 @@ function bindGraphicsSetting(){
  const box=$('graphics-simple');if(!box)return;
  box.checked=graphicsSimple;
  box.onchange=()=>{chooseGraphics(gfxStore,box.checked);$('graphics-status').textContent='Opening your farm again…';
-  const again=document.querySelector('#error .primary-button');setTimeout(()=>{if(typeof again?.onclick==='function')again.onclick();else try{window.parent.location.reload();}catch{location.reload();}},300);};
+  reopen();};
+ // Lighter graphics (25 Oct 2026): on by itself when the farm runs slowly (runLighter); off here means never again by itself on this device.
+ const light=$('graphics-lighter');
+ if(light){light.checked=lighter>=1;light.disabled=graphicsSimple;light.onchange=()=>{setLighter(gfxStore,light.checked?2:-1);$('graphics-status').textContent='Opening your farm again…';reopen();};}
+ function reopen(){const again=document.querySelector('#error .primary-button');setTimeout(()=>{if(typeof again?.onclick==='function')again.onclick();else try{window.parent.location.reload();}catch{location.reload();}},300);}
 }
 function bindUI(){
  bindGraphicsSetting();
@@ -2567,14 +2595,20 @@ function frame(now){
  const gliding=Boolean(glide);if(gliding)glide.step(now);
  if(!gliding&&now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
  pond?.tick(now,dt);
- if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
+ // The sun's shadows (25 Oct 2026, the owner: the game faster on slower phones and computers): drawing the shadow map is about two plain
+ // frames' work, so it is drawn again only when the farm changed (updateUI, a field, a building, the layout, the sun's turn, a crop that
+ // moves) and else every SHADOWS_EVERY for the crops that grow; what walks has a soft shadow of its own (soft-shadow.js).
+ if(renderer.shadowMap.needsUpdate)lastShadows=now;
+ if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();if(now-lastShadows>SHADOWS_EVERY){renderer.shadowMap.needsUpdate=true;lastShadows=now;}lastTick=now;}
  // Phones, tablets and the apps (13 Oct 2026, Android vitals): under a window opened with showModal the farm is drawn once a second,
  // not 30 times (public/windows.js farmRests); the 500 ms tick above still runs, so the windows' own timers keep going.
- if(farmRests(handheld||mobileLayout.matches,now-lastDraw,modalOpen))return;lastDraw=now;
+ const drawGap=now-lastDraw;if(farmRests(handheld||mobileLayout.matches,now-lastDraw,modalOpen))return;lastDraw=now;
+ // Lighter by itself (graphics-mode.js): the gaps between drawn frames in the farm's first minute and a half, in sight, no window open.
+ if(speedCheck&&now>=checkFrom&&!gliding&&!modalOpen()){if(now>checkFrom-CHECK_AFTER_MS+CHECK_UNTIL_MS)speedCheck=null;else if(speedCheck.add(drawGap))runLighter();}
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate()){cropsMoving=true;if(now-lastShadows>CROP_SHADOWS){renderer.shadowMap.needsUpdate=true;lastShadows=now;}}else if(cropsMoving){cropsMoving=false;renderer.shadowMap.needsUpdate=true;lastShadows=now;}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -2681,7 +2715,11 @@ async function init(){
   try{gfxStore?.removeItem(OLD_GRAPHICS_KEY);}catch{}
   const crashed=lastRunCrashed(gfxStore),crashes=crashed?(Number(crashed.crashes)||0)+1:0;
   if(crashed){if(crashes>=CRASHES_FOR_SIMPLE)graphicsTrouble(gfxStore);noteOnDevice({kind:'crash',step:crashed.step??'code',percent:crashed.percent??0,stage:crashed.stage==='ready'?'ready':'farm',gpu:crashed.gpu??null,gfx:crashed.gfx??null,error:`[crash] The last start ended at ${crashed.percent??0}% without a minute of play.`});}
-  endRun(gfxStore);graphicsSimple=graphicsChoice({storage:gfxStore,search:location.search}).simple;
+  endRun(gfxStore);
+  // A slower phone starts a new farm in simple graphics (25 Oct 2026, graphics-mode.js slowPhone): only with no graphics choice on this
+  // device yet, so the chip is asked only then.
+  if(gpuHandheld&&graphicsChoice({storage:gfxStore,search:location.search}).from===null&&levelProgress(state).level<NEW_FARM_LEVEL&&slowPhone({memory:navigator.deviceMemory,gpu:probeGpu()}))graphicsTrouble(gfxStore);
+  graphicsSimple=graphicsChoice({storage:gfxStore,search:location.search}).simple;lighter=graphicsSimple?0:lighterStep(gfxStore);
   markRun(gfxStore,{stage:'farm',step:'code',percent:Number($('load-progress')?.value)||0,gfx:graphicsSimple?'simple':'full',crashes,away:document.hidden});
   // Until the renderer names the chip, notes about this start carry the last start's chip and this start's planned mode.
   try{if(window.harvestStartup){window.harvestStartup.gpu=crashed?.gpu??null;window.harvestStartup.gfx=graphicsSimple?'simple':'full';}}catch{}
@@ -2694,7 +2732,7 @@ async function init(){
   renderer.setClearColor(0xdeede6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.32;
   // The graphics chip and the mode: no shadows in simple graphics or on a PowerVR or Imagination GPU (set before anything is drawn, so no
   // shader ever reads a shadow map there). Both go with every note about this start (src/game-cloud.js harvestStartup, loading-screen.js).
-  const gpu=gpuName(renderer.getContext());gfxMode=graphicsMode({simple:graphicsSimple,gpu});
+  const gpu=gpuName(renderer.getContext());gfxMode=graphicsMode({simple:graphicsSimple,gpu,lighter:Math.max(0,lighter)});
   try{if(window.harvestStartup){window.harvestStartup.gpu=gpu;window.harvestStartup.gfx=gfxMode;}}catch{}
   markRun(gfxStore,{gpu,gfx:gfxMode,step:'models'});
   renderer.shadowMap.enabled=gfxMode==='full';renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
@@ -2706,7 +2744,7 @@ async function init(){
   // (the old warm-yellow sky, sun and haze made the whole valley beige, so the haze stays a light green-white). daylight.js moves it
   // through the day.
   const hemi=new THREE.HemisphereLight(0xdcebff,0x778b40,1.95);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=gfxMode==='full';{const size=shadowSize({handheld:gpuHandheld,simple:graphicsSimple});sun.shadow.mapSize.set(size,size);}sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const sun=sunLight=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=gfxMode==='full';{const size=shadowSize({handheld:gpuHandheld,simple:graphicsSimple});sun.shadow.mapSize.set(size,size);}sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   cropMotion=createCropMotion({scene,reducedMotion});
   scene.fog=new THREE.Fog(0xdeede6,60,150);
   let loaded=0;
@@ -2792,7 +2830,7 @@ async function init(){
   showVisitBar();
   ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
-  markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');if(!graphicsSimple&&lighter>=0){speedCheck=createSpeedCheck();checkFrom=performance.now()+CHECK_AFTER_MS;}registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});

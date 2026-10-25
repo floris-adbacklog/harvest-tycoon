@@ -64,7 +64,7 @@ test('they come after the farm is on screen, never in the loading bar\'s models,
 
 test('a tap on an animal opens what it opened before: the still model stays as its unseen tap target and walks with it',()=>{
  const game=read('public/game.js'),animals=read('public/farm-animals.js');
- assert.match(animals,/obj\.traverse\(n=>\{if\(n\.isMesh\)n\.visible=false;\}\);\n  obj\.add\(rig\);relock\(obj\);/,'drawn inside the still model, greyed with its yard');
+ assert.match(animals,/obj\.traverse\(n=>\{if\(n\.isMesh\)n\.visible=false;\}\);\n  obj\.add\(rig\);\{const shade=softShadow\(size\.x\*k\/s\*1\.5,size\.z\*k\/s\*1\.4,1\);shade\.position\.y=\.05\/s;obj\.add\(shade\);\}relock\(obj\);/,'drawn inside the still model with a soft shadow under it (25 Oct 2026), greyed with its yard');
  assert.match(game,/\.\.\.animals\.map\(v=>v\.obj\)/,'the still models are still the tap targets');
  assert.match(game,/relock:o=>\{if\(o\.userData\.locked\)\{o\.userData\.locked=false;setLocked\(o,true\);\}\}/);
  // The Animal paddock's horse (a stop with a pin and a tap box of its own) and the scenery's hen and chicks stay on their spots.

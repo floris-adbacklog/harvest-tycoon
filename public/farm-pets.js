@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {sharePalette,shareAtlas,download} from './model-atlas.js';
+import {softShadow} from './soft-shadow.js';
 
 // The farm's pets (20 Oct 2026, the owner: "doe de kat en de hond, en het hert in Village II"): a dog and a cat by the lane in front of
 // the Farmhouse, from the start (no level), and a deer in World II, on the quiet slope above the village lake's east cliff by the woods.
@@ -43,17 +44,6 @@ async function loadPet(name){
  const url=`/assets/models/${name}.glb`,open=address=>download(address).then(data=>loader.parseAsync(data,'/assets/models/'));
  return open(url).catch(()=>open(`${url}?fresh=${Date.now()}`));
 }
-// The soft round shadow under a pet. The sun's shadow map is drawn only now and then (game.js), so a walking pet's own shadow would lag.
-let blobTexture=null;
-function blob(size){
- if(!blobTexture){
-  const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),r=g.createRadialGradient(32,32,4,32,32,31);
-  r.addColorStop(0,'rgba(40,52,24,.42)');r.addColorStop(1,'rgba(40,52,24,0)');g.fillStyle=r;g.fillRect(0,0,64,64);
-  blobTexture=new THREE.CanvasTexture(c);
- }
- const m=new THREE.Mesh(new THREE.PlaneGeometry(size,size*.62),new THREE.MeshBasicMaterial({map:blobTexture,transparent:true,depthWrite:false}));
- m.rotation.x=-Math.PI/2;m.renderOrder=1;return m;
-}
 // Every scene's pets, for the screenshot harness (where they stand on the screen, to tap one).
 export const PET_HERDS=new Set();
 // The pets of one scene. ground(x, z): the height of the ground there (0 on the farm). labels: the layer the heart pops up in.
@@ -68,7 +58,7 @@ export async function createPets({scene,kinds,ground=()=>0,labels,reducedMotion}
   model.scale.setScalar(k);model.position.set(-(box.min.x+box.max.x)/2*k,-box.min.y*k,-(box.min.z+box.max.z)/2*k);
   const body=new THREE.Group();body.add(model);
   const root=new THREE.Group();root.name=`pet-${id}`;root.add(body);
-  const shadow=blob(spec.length*.9);shadow.position.y=.02;root.add(shadow);
+  root.add(softShadow(spec.length*.9,spec.length*.9*.62));
   // The tap target: a box round the animal, a little bigger than it, so a small pet is easy to tap on a phone. Never drawn.
   const hit=new THREE.Mesh(new THREE.BoxGeometry(size.x*k+.5,size.y*k+.3,size.z*k+.5),new THREE.MeshBasicMaterial({visible:false}));
   hit.position.y=size.y*k/2;hit.userData.pet=id;root.add(hit);

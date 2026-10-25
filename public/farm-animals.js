@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {sharePalette,shareAtlas,download} from './model-atlas.js';
+import {softShadow} from './soft-shadow.js';
 
 // The farm's animals move (20 Oct 2026, the owner: "voeg (nog) niks toe, alleen de 6 bestaande"): the chickens, cows, goats, pigs,
 // sheep and horses that stood still get animated twins from ithappy Studios' Animals pack (scripts/build-farm-animals.mjs,
@@ -95,7 +96,8 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   const others=[];rig.traverse(n=>{if(n.isSkinnedMesh&&n.name!==variant)others.push(n);});
   for(const n of others)n.removeFromParent();
   let body=null;rig.traverse(n=>{if(n.isSkinnedMesh&&n.name===variant)body=n;});if(!body)return null;
-  body.castShadow=true;body.receiveShadow=true;body.material.roughness=1;body.material.metalness=0;
+  // No shadow of its own in the sun's shadow map (drawn again only when the farm changes, game.js): a soft one under it (soft-shadow.js).
+  body.castShadow=false;body.receiveShadow=true;body.material.roughness=1;body.material.metalness=0;
   shareAtlas(rig,file);
   const mixer=new THREE.AnimationMixer(rig),actions={};
   for(const clip of gltf.animations)if(clip.name==='walk'||kind.odds[clip.name]||clip.name==='idle')actions[clip.name]=mixer.clipAction(clip);
@@ -112,7 +114,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   body.computeBoundingSphere();body.boundingSphere.radius*=1.3;
   // The still model goes out of sight but stays as the tap target; the animal is drawn in its place.
   obj.traverse(n=>{if(n.isMesh)n.visible=false;});
-  obj.add(rig);relock(obj);
+  obj.add(rig);{const shade=softShadow(size.x*k/s*1.5,size.z*k/s*1.4,1);shade.position.y=.05/s;obj.add(shade);}relock(obj);
   const home=[obj.position.x,obj.position.z];
   // It walks along the screen, the way the layout turned it or the other way (axes).
   const a={obj,rig,mixer,actions,kind,file,still,home,length,pen,axes:[turn,turn+Math.PI],yaw:turn,state:null,timer:0,target:null,bend:0,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
