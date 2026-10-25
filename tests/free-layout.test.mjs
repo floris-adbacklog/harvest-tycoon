@@ -126,6 +126,7 @@ test('a visit: farm-api farm_visit, Visit farm on someone else\'s profile, the p
  assert.match(profiles,/\$\{self\?'':'<div class="farmer-visit" data-farmer-visit hidden><\/div>'\}/,'only on someone else\'s profile');
  assert.match(profiles,/box\.querySelector\('button'\)\.onclick=\(\)=>\{dialog\.close\(\);visit\(player\.playerId,player\.username\);\};/);
  const cloud=read('src/game-cloud.js');assert.match(cloud,/if\(visit\)\{markAdminView\(document\);document\.documentElement\.dataset\.visitView='';\}/);
+ assert.match(cloud,/const visit=Boolean\(window\.harvestInitialFarm\.visit\);/,'a visit is a visit on Kongregate, CrazyGames and Discord too (25 Oct 2026)');
  assert.match(read('public/farm-client.js'),/export const VISIT_LOCKED='You are visiting this farm\. Go back to your own farm to play\.';/);
  const game=read('public/game.js');
  assert.match(game,/request:body=>body\?\.operation==='action'\?locked\(\):body\?\.operation==='load'\?/,'their farm loads, every action is refused');

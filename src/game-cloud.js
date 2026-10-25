@@ -66,8 +66,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   const adminView=!portal&&window.harvestInitialFarm.adminView===true;
   if(adminView)markAdminView(document);
   // Visiting someone else's farm (24 Oct 2026, public/game.js harvestVisit opens this page over your own): to look at only, so it is
-  // marked as an admin view (nothing to play, no pop-ups) and as a visit (only the farm and the way back show).
-  const visit=!portal&&Boolean(window.harvestInitialFarm.visit);
+  // marked as an admin view (nothing to play, no pop-ups) and as a visit (only the farm and the way back show). On a portal too (25 Oct
+  // 2026, a Kongregate player: the visit opened with every tool, and moving a building only said "You are visiting this farm").
+  const visit=Boolean(window.harvestInitialFarm.visit);
   if(visit){markAdminView(document);document.documentElement.dataset.visitView='';}
   document.body.hidden=false;
   const watch=watchLoading(bridge,portal,{translate:()=>void startTranslation(document)});
