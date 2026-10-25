@@ -238,15 +238,28 @@ test('your farmer joins in: a harvest, a collect or a chore takes them to a chec
  assert.ok(FARM_WALK.spots.every(([x,z])=>Math.hypot(x+13.6,z+2)<3),'every trip leaves from the loop');
  const walker=read('public/farm-farmer.js'),game=read('public/game.js');
  // One trip at a time, a rest after it, only to a spot in the picture; off the picture they keep walking (not their arms and legs).
- assert.match(walker,/if\(me\.trip\)\{if\(me\.trip\.trip===place&&me\.trip\.leg==='stay'\)\{me\.rest=Math\.min\(TRIP_STAY_MAX,me\.rest\+TRIP_MORE\);return true;\}return false;\}/);
- assert.match(walker,/if\(me\.clock-me\.tripDone<TRIP_REST\|\|!inView\(place\.at\)\)return false;/);
+ assert.match(walker,/if\(me\.trip&&same\)\{if\(me\.trip\.leg==='stay'\)\{me\.rest=Math\.min\(TRIP_STAY_MAX,me\.rest\+TRIP_MORE\);return true;\}if\(me\.trip\.leg==='way'\)return true;\}\n  if\(me\.trip&&!recent\)return false;/);
+ assert.match(walker,/if\(\(!recent&&me\.clock-me\.tripDone<TRIP_REST\)\|\|!inView\(place\.at\)\)return false;/,'a collect skips the rest, never a spot off the picture');
  assert.match(walker,/   if\(me\.trip\)\{me\.clock\+=t;step\(t\);\}return;\}/);
  assert.match(walker,/const TRIP_PACE=1\.6,TRIP_STAY=\[7,10\],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;/);
  // game.js: after every farm action and after a sweep; trips on the farm on a computer only (never in lite mode: phones, tablets, apps).
  assert.match(game,/farmerNews\(\);farmerJoins\(action\);/);
  assert.match(game,/if\(action==='harvest'\)\{nudge\?\.harvested\(\);farmerJoins\(\{type:'field',action:'harvest',id:result\.fields\.at\(-1\)\.id\}\);\}/);
- assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches,bench,family,tag:farmerTag\(ownName\(\)\),blockers:tagBlockers\}\);farmerTrip=tripFor;/);
+ assert.match(game,/trips:!villageWorld&&!handheld&&!mobileLayout\.matches,bench,family,tag:farmerTag\(ownName\(\)\),blockers:tagBlockers\}\);farmerTrip=tripFor;farmerBeside=besideTrip;/);
  assert.doesNotMatch(walker,/localStorage|runAction|client\.|track\(/,'visual only');
+});
+
+test('a collect at any building, also a moved one: your farmer walks beside it, and the newest collect wins (the owner, 25 Oct 2026: "meest recente batch loopt die heen")',{skip},async()=>{
+ const {besideTrip}=await import('../public/farm-farmer.js');
+ // Beside it along the screen's width, on the loop's side, 3.2 from its middle; out of the loop, along the main road, then across.
+ const t=besideTrip([10,-12]),k=Math.SQRT1_2*3.2;
+ assert.ok(Math.abs(t.at[0]-(10-k))<1e-9&&Math.abs(t.at[1]-(-12+k))<1e-9,'the side nearer the loop');
+ assert.ok(Math.abs(Math.hypot(t.at[0]-10,t.at[1]+12)-3.2)<1e-9);
+ assert.deepEqual(t.via,[[-13.6,-4.4],[t.at[0],-4.4]]);
+ const walker=read('public/farm-farmer.js'),game=read('public/game.js');
+ assert.match(walker,/path:\[\.\.\.backToRoad\(me\.trip\),\.\.\.fromRoad\(place\.via\),place\.at\]/,'from another trip: back to the road first');
+ assert.match(game,/const now=\[view\.object\.position\.x,view\.object\.position\.z\],moved=!home\|\|Math\.hypot\(now\[0\]-home\[0\],now\[1\]-home\[1\]\)>\.5;/,'where the building stands now');
+ assert.match(game,/place\?\?=farmerBeside\(now\);walker\.visit\(place,look,\{recent:true\}\);return;\}/);
 });
 
 test('your farmer celebrates a level-up or an event won: two happy hops and a little confetti, once the level-up card is closed (the owner, 21 Oct 2026, item 2)',()=>{

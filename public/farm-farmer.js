@@ -43,6 +43,15 @@ export const FIELD_TRIPS=Object.freeze([
  ...[4.8,9.3,13.05,17.55,22.05,26.55].map(z=>trip([-7,z],[...LANE,[-7.8,z]])),
  ...[.85,3.1,6.1].map(x=>trip([x,-2.8],[OUT,[x,-4.4],[x,-3.6]]))
 ]);
+// Beside a building wherever it stands (25 Oct 2026, the owner: "loopt naar de gebouwen bij ophalen batches, meest recente batch loopt
+// die heen"): for a building with no checked spot above, or one moved with Move things. They stand next to it along the screen's
+// width (the camera looks from +x+z, so (1,-1) runs across the picture), on the side nearer their loop, so they never stand in front of
+// it, r beyond its middle; out of their loop, along the main road to it and then across to it.
+const ROAD_Z=-4.4,onRoad=([,z])=>Math.abs(z-ROAD_Z)<.01;
+export function besideTrip([x,z],r=3.2){
+ const k=Math.SQRT1_2*r,a=[x+k,z-k],b=[x-k,z+k],home=[-15,-2.5],at=Math.hypot(a[0]-home[0],a[1]-home[1])<=Math.hypot(b[0]-home[0],b[1]-home[1])?a:b;
+ return trip(at,[OUT,[at[0],ROAD_Z]]);
+}
 // The trip for a place (a building's key, 'chores', or 'fields' with the field's x and z), or null.
 export function tripFor(place,[x,z]=[0,0]){
  if(place!=='fields')return Object.hasOwn(FARM_TRIPS,place)?FARM_TRIPS[place]:null;
@@ -51,6 +60,7 @@ export function tripFor(place,[x,z]=[0,0]){
 // A trip: they walk at TRIP_PACE times their calm pace, stay TRIP_STAY seconds (a little longer with every new action there), and
 // go nowhere for TRIP_REST seconds after they are back, so a farmer harvesting all over never sees them zig-zag.
 const TRIP_PACE=1.6,TRIP_STAY=[7,10],TRIP_MORE=4,TRIP_STAY_MAX=18,TRIP_REST=20;
+// A collect at a building (recent): they go to the newest one at once, also from the middle of another trip or the rest after one.
 // The evening (21 Oct 2026, item 3): from 20:00 to 7:00 by the player's own clock they rest on a chair at the edge of their loop (the
 // farm's chair_001, the one at the Farmhouse's garden table: that one stands in front of the Farmhouse, which a farmer sitting there
 // would hide); in the morning they go back to work. The chair stands on the open ground south of the loop, checked in the harness like
@@ -254,14 +264,26 @@ export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=f
  // A trip to a place (tripFor's): look, the x and z they face once there (the building or the field). Only on the farm on a computer
  // (trips), while they are walking their loop or resting in it (not hopping), the place's spot in the picture, and TRIP_REST seconds
  // after the last trip ended. A new action at the place they stand at keeps them there a little longer. True when they go (or stay).
- function goTo(place,look){
+ function goTo(place,look,{recent=false}={}){
   if(!trips||!place||me.hopping>0||me.away)return false;
-  if(me.trip){if(me.trip.trip===place&&me.trip.leg==='stay'){me.rest=Math.min(TRIP_STAY_MAX,me.rest+TRIP_MORE);return true;}return false;}
-  if(me.clock-me.tripDone<TRIP_REST||!inView(place.at))return false;
-  const from=[root.position.x,root.position.z];
-  me.trip={trip:place,leg:'way',i:0,path:[...place.via,place.at],from,look,stay:TRIP_STAY[0]+random()*(TRIP_STAY[1]-TRIP_STAY[0])};
+  const same=me.trip&&me.trip.trip.at[0]===place.at[0]&&me.trip.trip.at[1]===place.at[1];
+  if(me.trip&&same){if(me.trip.leg==='stay'){me.rest=Math.min(TRIP_STAY_MAX,me.rest+TRIP_MORE);return true;}if(me.trip.leg==='way')return true;}
+  if(me.trip&&!recent)return false;
+  if((!recent&&me.clock-me.tripDone<TRIP_REST)||!inView(place.at))return false;
+  me.trip=me.trip?{...me.trip,trip:place,leg:'way',i:0,path:[...backToRoad(me.trip),...fromRoad(place.via),place.at],look}
+   :{trip:place,leg:'way',i:0,path:[...place.via,place.at],from:[root.position.x,root.position.z],look,stay:TRIP_STAY[0]+random()*(TRIP_STAY[1]-TRIP_STAY[0])};
   tripStep();return true;
  }
+ // From the middle of another trip to the newest place: back the way they came as far as the main road (nothing when they are on it),
+ // then along the road to where the new place's way leaves it, so they never cut across a yard or the fields, nor walk back first.
+ function backToRoad(t){
+  if(Math.abs(root.position.z-ROAD_Z)<.5)return [];
+  const now=Math.max(t.i-1,0);   // the point they are walking to
+  if(t.leg==='home'){const k=t.path.findIndex((p,j)=>j>=now&&onRoad(p));return k<0?[]:t.path.slice(now,k+1);}
+  const came=(t.leg==='stay'?t.path.slice(0,-1):t.path.slice(0,now)).reverse(),k=came.findIndex(onRoad);return k<0?[]:came.slice(0,k+1);
+ }
+ const fromRoad=via=>{const k=via.findLastIndex(onRoad);return k<0?via:via.slice(k);};
+
  // A tap that found nothing else (game.js pointerTarget): true when it was the farmer.
  const pick=raycaster=>raycaster.intersectObject(hit,false).length>0;
  // A tap: they stop, turn to you and hop once, then stand a while before walking on. Returns a promise that settles when they are back on

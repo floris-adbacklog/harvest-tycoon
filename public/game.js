@@ -241,12 +241,17 @@ function farmerNews(){
 const LANDED_BEAT=150;
 // Your farmer joins in (21 Oct 2026, the owner: "Doe alles behalve 9", item 1; farm-farmer.js visit): after a harvest, a collect at a
 // building or a chore, they walk over and stand by it a while. Visual only; on the farm on a computer (addFarmer's trips).
-let farmerTrip=null;
+let farmerTrip=null,farmerBeside=null;
 function farmerJoins(action){
  if(!walker||!farmerTrip||villageWorld||!action)return;
  let place=null,look=null;
  if(action.type==='field'&&action.action==='harvest'&&plots[action.id]){look=[plots[action.id].x,plots[action.id].z];place=farmerTrip('fields',look);}
- else if((action.type==='collect'||action.type==='collect_all')&&Object.hasOwn(BUILDINGS,action.building)&&ANCHORS[action.building]){look=anchorAt(action.building);place=farmerTrip(action.building);}
+ else if((action.type==='collect'||action.type==='collect_all')&&Object.hasOwn(BUILDINGS,action.building)){
+  // Every building, also one moved with Move things (25 Oct 2026, the owner): its checked spot while it stands at home, else beside it
+  // where it stands now; and the newest collect wins (farm-farmer.js goTo recent).
+  const view=buildingViews.get(action.building),home=ANCHORS[action.building]?anchorAt(action.building):null;if(!view)return;
+  const now=[view.object.position.x,view.object.position.z],moved=!home||Math.hypot(now[0]-home[0],now[1]-home[1])>.5;
+  look=now;place=moved?null:farmerTrip(action.building);place??=farmerBeside(now);walker.visit(place,look,{recent:true});return;}
  else if(action.type==='chore'){look=anchorAt('chores');place=farmerTrip('chores');}
  if(place)walker.visit(place,look);
 }
@@ -496,7 +501,7 @@ async function addFarmer(){
  try{
   if(!farmerComes())return;
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
-  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,FARM_FAMILY_WALKS,FARM_FAMILY_LITE,familyStage,tripFor}=await import('./farm-farmer.js');
+  const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,FARM_FAMILY_WALKS,FARM_FAMILY_LITE,familyStage,tripFor,besideTrip}=await import('./farm-farmer.js');
   // On the farm the farmer comes after the scenery is planted, so it never stands where the scenery looks for room.
   if(!villageWorld)await sceneryDone;
   // On the farm the grass is the ground and a lane's top .085 over it, as for the pets (addPets).
@@ -508,7 +513,7 @@ async function addFarmer(){
   const bench=villageWorld?null:farmBench;
   // The family shirt (item 6) is drawn in the family's cut, colour and emblem: kept from the last Family read, or read once.
   const config=farmerOf(state,farmerFarm()),family=config.top==='family_shirt'?await (await import('./family-shirt.js')).familyShirt(state.family?.familyId):null;
-  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family,tag:farmerTag(ownName()),blockers:tagBlockers});farmerTrip=tripFor;
+  walker=await createFarmWalker({scene,walk,ground,lite:handheld||mobileLayout.matches,config,trips:!villageWorld&&!handheld&&!mobileLayout.matches,bench,family,tag:farmerTag(ownName()),blockers:tagBlockers});farmerTrip=tripFor;farmerBeside=besideTrip;
   // Your Farm Family's members online now, on the farm and in the village alike (on a phone's farm at most FARM_FAMILY_LITE).
   const walks=villageWorld?VILLAGE_FAMILY_WALKS:FARM_FAMILY_WALKS,cap=villageWorld||!(handheld||mobileLayout.matches)?walks.length:FARM_FAMILY_LITE;
   void addFamilyFarmers(createFarmWalker,familyStage,walks,cap,villageWorld?null:ground);
