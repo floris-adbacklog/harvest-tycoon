@@ -356,12 +356,16 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  }
  dialog.querySelectorAll('[data-purchase-filter]').forEach(b=>b.onclick=()=>{purchaseFilter=b.dataset.purchaseFilter;dialog.querySelectorAll('[data-purchase-filter]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-pressed',String(on));});renderPurchases();});
  dialog.querySelector('#admin-purchase-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
- async function load(){
+ // The list of every farmer is the heavy part (26 Oct 2026: with the dashboard open every minute it helped fill the database to 89%
+ // CPU): it comes on opening and then every 5 minutes, the rest every minute; nothing while the tab is in the background.
+ const PLAYERS_EVERY=5*60000;let playersAt=0;
+ async function load({all=false}={}){
+  if(!all&&document.hidden)return;
   const status=dialog.querySelector('#admin-dashboard-status');status.textContent='Refreshing…';
   void loadChat();void loadFeedback();
   // Every part loads on its own: one that fails leaves the others showing, and the line at the bottom says which one is missing. A
   // moderator only loads what Players shows (src/admin-overview.js partsFor): Retention and Invites are on the admin's Growth tab.
-  const PARTS=partsFor(role);
+  const freshPlayers=all||Date.now()-playersAt>=PLAYERS_EVERY,PARTS=partsFor(role).filter(([operation])=>freshPlayers||operation!=='admin_players');
   const got=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
   const part=name=>got[PARTS.findIndex(([operation])=>operation===name)]??null,online=part('admin_online'),players=part('admin_players'),retention=part('admin_retention'),invites=part('admin_invites');
   if(role==='admin')void showOffers();
@@ -370,7 +374,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(role==='admin')newsMail.show();
   if(role==='admin')void reloadCard.show();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(data=>{overview.purchases=data?.purchases??[];renderPurchases(data);renderOverview();}).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
-  if(players)showPlayers(players);
+  if(players){playersAt=Date.now();showPlayers(players);}
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}
   if(retention)renderRetention(retention);
   if(online)overview.online=online;if(retention)overview.retention=retention;renderOverview();
@@ -779,8 +783,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{await bridge.chat.setLevels(global,dm);chatStatus.textContent=`Saved: global chat from level ${global}, private messages from level ${dm}.`;}catch(error){chatStatus.textContent=why(error);}
  });
  function openDashboard(){
-  document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();load();
-  clearInterval(refreshTimer);refreshTimer=setInterval(load,60000);
+  document.querySelectorAll('dialog[open]').forEach(d=>d.close());refreshArt();dialog.showModal();void load({all:true});
+  clearInterval(refreshTimer);refreshTimer=setInterval(()=>void load(),60000);
  }
  button.onclick=openDashboard;
  // "Open in dashboard" on a farmer's profile (src/player-profiles.js): the Players tab, on that farmer's details. From the

@@ -178,6 +178,13 @@ export async function allRows(query,page=1000){
  }
 }
 
+// Every account at once (26 Oct 2026, supabase/admin-player-accounts-all.sql): page by page the database worked every account out
+// again for each page (0.24 s a page for 9,000 accounts, every minute). Until that SQL has run, the pages as before.
+export async function allAccounts(admin,page=1000){
+ try{const {data,error}=await admin.rpc('admin_player_accounts_all');if(!error&&Array.isArray(data))return data;}catch{}
+ return allRows(()=>admin.rpc('admin_player_accounts',{}),page);
+}
+
 // Every farmer in one list, for the Players tab and the new-player funnel (src/admin-dashboard.js): when they joined and how they
 // sign in, when they were last active, their level, days played, beginner guide step, VIP, family and the language they play in. The
 // country, IP address and device are for the admin only, never for the moderators.
@@ -187,7 +194,7 @@ export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  const owner=isSuperadmin(user);
  const [accounts,stats,farms,families]=await Promise.all([
-  allRows(()=>admin.rpc('admin_player_accounts',{}),page),
+  allAccounts(admin,page),
   allRows(()=>admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id').order('player_id'),page),
   allRows(()=>admin.from('player_farms').select('player_id,diamonds:summary->diamonds,visits:summary->visits,streak:summary->streak,guide:summary->guide,guideDone:summary->guideDone,family:summary->family').order('player_id'),page),
   allRows(()=>admin.from('families').select('id,name').order('id'),page)
