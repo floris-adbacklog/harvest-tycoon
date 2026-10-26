@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {normalizeFarm,applyFarmAction as act,choreStatus,CHORES,CHORE_PRACTICE_STEP,ACTIVE_STATIONS,levelOf,levelReward} from '../game/farm-state.js';
+import {normalizeFarm,applyFarmAction as act,choreStatus,choreRoll,choreFinds,CHORES,CHORE_PRACTICE_STEP,ACTIVE_STATIONS,levelOf,levelReward} from '../game/farm-state.js';
 import {art} from '../public/visual-icons.js';
 import {soundForAction} from '../public/farm-audio.js';
 const now=Date.UTC(2026,8,18);
@@ -24,25 +24,43 @@ test('practice unlocks chores in order at their mastery threshold and respects c
   assert.equal(choreStatus(s,id,time).chance,c.maxChance);
  }
 });
+// A chore's lucky find is the farm's own since 26 Oct 2026 (choreRoll: the farm's seed, the chore, the attempt), so a chore shows at
+// once in the browser with the find farm-api pays. seeded() gives a farm whose rolls fall as a test needs.
+const seeded=(farm,want)=>{for(let seed=1;seed<100000;seed++){farm.rookieUntil=seed;if(want(farm))return farm;}throw new Error('no seed');};
 test('a regular completion earns guaranteed rewards, advances practice, starts cooldown and ignores forged outcome',()=>{
- const s=createFarm(now,{level:CHORE_LEVEL}),coins=s.coins,xp=s.xp,inventory=structuredClone(s.inventory),level=levelOf(s);
+ const s=seeded(createFarm(now,{level:CHORE_LEVEL}),f=>!choreFinds(choreRoll(f,'weeds',0),60)&&choreFinds(choreRoll(f,'weeds',1),64)),coins=s.coins,xp=s.xp,inventory=structuredClone(s.inventory),level=levelOf(s);
  s.boosts.xpUntil=now+999999;
- const r=act(s,{type:'chore',id:'weeds',success:true,roll:0,chance:100},now,()=>.99);
+ const r=act(s,{type:'chore',id:'weeds',success:true,roll:0,chance:100,bonus:true},now,()=>0);
  assert.equal(r.success,true);assert.equal(r.coins,27);assert.equal(r.xp,90,'45 XP, doubled by the XP boost');
- assert.equal(s.coins,coins+27+levelGain(level,levelOf(s),'coins'));assert.equal(s.xp,xp+90);assert.deepEqual(s.inventory,inventory);
+ assert.equal(s.coins,coins+27+levelGain(level,levelOf(s),'coins'));assert.equal(s.xp,xp+90);assert.deepEqual(s.inventory,inventory,'no find: neither the action nor the server\'s roll can claim one');
  assert.equal(s.stats.chores,1);assert.ok(s.onboarding.milestones.chore);
  assert.equal(r.nextChance,64);assert.equal(s.chores.weeds,now+900000);
  assert.throws(()=>act(s,{type:'chore',id:'weeds'},now+899999,()=>{throw Error('must not roll');}),/returns in/);
  assert.equal(s.chorePractice.weeds,1);assert.equal(r.bonus,false);
  const restored=normalizeFarm(JSON.parse(JSON.stringify(s)),now);
  assert.equal(restored.chorePractice.weeds,1);
- assert.equal(act(restored,{type:'chore',id:'weeds'},now+900000,()=>0).bonus,true);
+ const found=act(restored,{type:'chore',id:'weeds'},now+900000,()=>.99);
+ assert.equal(found.bonus,true,'the second attempt\'s find, whatever the server would have rolled');const {item,count}=CHORES.weeds.bonus;assert.equal(restored.inventory[item],(inventory[item]??0)+count);
 });
 test('success boundary is strict and a mastered first chore always succeeds',()=>{
- assert.equal(act(createFarm(now,{level:CHORE_LEVEL}),{type:'chore',id:'weeds'},now,()=>.6).bonus,false);
- assert.equal(act(createFarm(now,{level:CHORE_LEVEL}),{type:'chore',id:'weeds'},now,()=>.5999).bonus,true);
- const s=createFarm(now,{level:CHORE_LEVEL});s.chorePractice.weeds=20;
- assert.equal(act(s,{type:'chore',id:'weeds'},now,()=>.999999).bonus,true);
+ assert.equal(choreFinds(.6,60),false);assert.equal(choreFinds(.5999,60),true);assert.equal(choreFinds(.999999,100),true);
+ for(let seed=1;seed<=50;seed++){const s=createFarm(now,{level:CHORE_LEVEL});s.rookieUntil=seed;s.chorePractice.weeds=20;assert.equal(act(s,{type:'chore',id:'weeds'},now).bonus,true,`seed ${seed}`);}
+ const miss=seeded(createFarm(now,{level:CHORE_LEVEL}),f=>!choreFinds(choreRoll(f,'weeds',0),60));
+ assert.equal(act(miss,{type:'chore',id:'weeds'},now,()=>0).bonus,false,'a roll of 0 from outside changes nothing');
+});
+test('a chore\'s find is the farm\'s own: the same farm and attempt always roll the same, and finds come as often as the chance says',()=>{
+ const s=createFarm(now,{level:CHORE_LEVEL});s.rookieUntil=Date.UTC(2026,9,26,12);
+ assert.equal(choreRoll(s,'weeds',3),choreRoll(structuredClone(s),'weeds',3),'the browser and farm-api work it out alike');
+ assert.notEqual(choreRoll(s,'weeds',3),choreRoll(s,'weeds',4));assert.notEqual(choreRoll(s,'weeds',3),choreRoll(s,'troughs',3));
+ const other=structuredClone(s);other.rookieUntil+=1;assert.notEqual(choreRoll(s,'weeds',3),choreRoll(other,'weeds',3),'every farm has its own sequence');
+ const old=structuredClone(s);delete old.rookieUntil;assert.ok(choreRoll(old,'weeds',0)>=0&&choreRoll(old,'weeds',0)<1,'a farm from before the seed rolls too');
+ // Over many farms and attempts the finds come as often as before: 35%, 60% and 85% within a point.
+ for(const chance of [35,60,85]){
+  let finds=0,n=0;
+  for(let seed=1;seed<=400;seed++){const f={rookieUntil:seed*7919};for(let attempt=0;attempt<50;attempt++,n++)if(choreFinds(choreRoll(f,'weeds',attempt),chance))finds++;}
+  assert.ok(Math.abs(finds/n*100-chance)<1,`${chance}%: ${(finds/n*100).toFixed(2)}%`);
+ }
+ for(let i=0;i<1000;i++){const r=choreRoll({rookieUntil:i},'sorting',i%37);assert.ok(r>=0&&r<1);}
 });
 test('old farms retain balances and cooldowns without inventing per-chore practice',()=>{
  const s=createFarm(now);delete s.chorePractice;s.stats.chores=100;s.chores.weeds=now+30000;

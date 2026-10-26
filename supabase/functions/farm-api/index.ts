@@ -236,9 +236,10 @@ Deno.serve(async(req)=>{
    const family=!own.error&&own.data?.family&&typeof own.data.family==='object'?own.data.family:null;
    return reply({state:createShowcaseFarm(now,{family}),profile:{player_id:user.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile?.avatar_id??'default'},adminView:true,emailCheck:{needed:false,email:user.email??'',canChange:false},serverNow:now,reloadAfter:await reloadAt});
   }
-  // Keep one server-owned roll across optimistic concurrency retries.
-  let choreRoll:number|undefined;
-  const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
+  // Keep one server-owned roll across optimistic concurrency retries (a lucky double batch; a chore's find is fixed by the farm itself
+  // since 26 Oct 2026, farm-state.js choreRoll).
+  let serverRoll:number|undefined;
+  const random=()=>serverRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
   for(let attempt=0;attempt<5;attempt++){
    const found=await (attempt===0&&mine?.farm?mine.farm:admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle());if(found.error)throw found.error;
    const row=found.data,now=Date.now();mark('farm');

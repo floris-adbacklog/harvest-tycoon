@@ -40,7 +40,8 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  }
  // While the farm waits for the server's answer (about a second, 26 Oct 2026: "chores take long after the tap"), the tapped chore turns its
  // hourglass at once ("One moment…" for screen readers and on hover; the button keeps its width, so nothing beside it moves), and the
- // window's other buttons are off, so nothing is tapped twice. A render meanwhile keeps it.
+ // window's other buttons are off, so nothing is tapped twice. A render meanwhile keeps it. A chore itself shows at once since the same
+ // evening (farm-client.js INSTANT_ACTIONS), so this is for what still waits; with an answer at once it never shows.
  let acting=null;
  function markBusy(){
   const box=$('estate-content');box.setAttribute('aria-busy','true');

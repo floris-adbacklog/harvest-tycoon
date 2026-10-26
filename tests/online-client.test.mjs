@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createFarmClient,instantResult,INSTANT_ACTIONS} from '../public/farm-client.js';
-import {createFarm,levelOf,xpForLevel} from '../public/farm-state.js';
+import {createFarm,levelOf,xpForLevel,applyFarmAction,CHORES} from '../public/farm-state.js';
+import {createLegacyFarm} from './legacy-farm.mjs';
 function setup(request){
  globalThis.localStorage={getItem(){throw new Error('Legacy save must not be read');},setItem(){throw new Error('Farm state must not be saved locally');}};
  globalThis.document={body:{classList:{add(){},remove(){}}}};
@@ -56,8 +57,17 @@ test('a level-up shows at once too (a new farm levels up on its first harvest); 
  assert.equal(instantResult(farm,{type:'buy_vip',plan:'week'},now),null,'not an everyday tap');
  // A fish (11 Oct 2026, the Fishing pond) shows at once too: every fish is fixed in advance from the farm itself. So does a fish at
  // the village lake (12 Oct 2026, lake_fish).
- assert.deepEqual([...INSTANT_ACTIONS].sort(),['activity_start','activity_work','beginner_claim','checkin','collect','collect_all','comeback','construct','daily','delivery','expand','field','fields','fish','lake_fish','layout_buy','layout_clear','layout_draw','layout_move','layout_place','layout_purchase','layout_store','mastery','pass_claim','produce','quest','sell','stall_collect','tractor','upgrade','warehouse_upgrade']);   // the Warehouse's upgrade (22 Oct 2026): coins only, like a building's; your own farm layout's actions (24 Oct 2026) too
- assert(!INSTANT_ACTIONS.has('chore'),'a chore\'s lucky bonus is the server\'s roll');
+ assert.deepEqual([...INSTANT_ACTIONS].sort(),['activity_start','activity_work','beginner_claim','checkin','chore','collect','collect_all','comeback','construct','daily','delivery','expand','field','fields','fish','lake_fish','layout_buy','layout_clear','layout_draw','layout_move','layout_place','layout_purchase','layout_store','mastery','pass_claim','produce','quest','sell','stall_collect','tractor','upgrade','warehouse_upgrade']);   // the Warehouse's upgrade (22 Oct 2026): coins only, like a building's; your own farm layout's actions (24 Oct 2026) too
+ // A farm chore (26 Oct 2026): its lucky find is fixed by the farm itself (choreRoll), so it shows at once with the find the server pays,
+ // whatever roll the server would bring (its own crypto roll no longer decides a chore).
+ const chores=createLegacyFarm(now,{level:15});
+ for(let attempt=0;attempt<12;attempt++){
+  const at=now+attempt*CHORES.weeds.cooldown,shown=instantResult(chores,{type:'chore',id:'weeds'},at);
+  assert.ok(shown,'a chore shows at once');
+  const server=structuredClone(chores),paid=applyFarmAction(server,{type:'chore',id:'weeds'},at,()=>Math.random());
+  assert.deepEqual(shown.result,paid,`attempt ${attempt}: the same find, coins and XP as the server`);assert.deepEqual(shown.trial,server);
+  applyFarmAction(chores,{type:'chore',id:'weeds'},at);
+ }
  assert.match(readFileSync(new URL('../public/farm-client.js',import.meta.url),'utf8'),/if\(\(trial\.diamonds\?\?0\)<\(state\.diamonds\?\?0\)\)return null;/,'spending diamonds waits for the server');
  assert.equal(instantResult({coins:1},{type:'quest',id:'x'},now),null,'a slip in the rules (not a refusal) leaves it to the server');
 });
@@ -86,4 +96,27 @@ test('an expected game-rule rejection does not show a broken connection',async()
  globalThis.window={parent:{harvestBridge:{serverNow:Date.now(),request:async()=>{throw Object.assign(new Error('Choose a dry seedling.'),{code:'ACTION_REJECTED'});}}}};
  const statuses=[],s={coins:180};const client=createFarmClient(s,{onChange(){},onStatus:status=>statuses.push(status)});
  await assert.rejects(client.runAction({type:'chore',id:'weeds'}),/seedling/);assert.deepEqual(statuses,['saving','saved']);assert.equal(s.coins,180);
+});
+test('a farm chore shows at once (26 Oct 2026): the answer is there before the server\'s, which then changes nothing; a refusal puts it back',async()=>{
+ const now=Date.now(),farm=createLegacyFarm(now,{level:15});
+ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
+ const run=async refuse=>{
+  const server=structuredClone(farm);let answer=null;const sent=[],statuses=[],errors=[];
+  globalThis.document={body:{classList:{add(){},remove(){}}}};
+  globalThis.window={parent:{harvestBridge:{serverNow:now,request:body=>{sent.push(body);return new Promise((resolve,reject)=>{answer=()=>{
+   if(refuse)return reject(Object.assign(new Error('This chore returns in 5m.'),{code:'ACTION_REJECTED'}));
+   const result=applyFarmAction(server,body.action,Date.now(),()=>Math.random());resolve({state:structuredClone(server),result,revision:2,serverNow:Date.now()});};});}}}};
+  const state=structuredClone(farm),client=createFarmClient(state,{onChange(){},onStatus:s=>statuses.push(s),onError:e=>errors.push(e)});
+  const result=await client.runAction({type:'chore',id:'weeds'});
+  return {server,state,result,sent,statuses,errors,answer:async()=>{answer();await tick();await tick();}};
+ };
+ const ok=await run(false);
+ assert.equal(ok.result.success,true,'the chore\'s result is back before the server answered');assert.equal(ok.state.stats.chores,farm.stats.chores+1,'and on the farm');
+ assert.equal(ok.sent.length,1);assert.deepEqual(ok.sent[0].action,{type:'chore',id:'weeds'});
+ const shown=structuredClone(ok.state);await ok.answer();
+ assert.deepEqual(ok.state.inventory,shown.inventory,'the find the server paid is the one shown');assert.equal(ok.state.coins,shown.coins);assert.equal(ok.state.chorePractice.weeds,1);
+ const no=await run(true);
+ assert.equal(no.state.stats.chores,farm.stats.chores+1,'shown at once');
+ await no.answer();
+ assert.equal(no.state.stats.chores,farm.stats.chores,'refused: the farm goes back');assert.equal(no.state.coins,farm.coins);assert.deepEqual(no.errors,['This chore returns in 5m.']);
 });

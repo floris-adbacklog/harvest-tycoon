@@ -4692,7 +4692,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'fertilize':return action.ids===undefined?fertilizeField(state,action.id,now):fertilizeFields(state,action.ids,now);
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);
-  case 'chore':return doChore(state,action.id,now,random);
+  case 'chore':return doChore(state,action.id,now);
   case 'activity_start':return startActivity(state,action.station,now);
   case 'activity_work':return workActivity(state,action,now);
   case 'mastery':return claimMastery(state,action.crop,action.tier);
@@ -4831,6 +4831,15 @@ export function choreStatus(state,id,now=Date.now()){
  return {...c,attempts,chance,mastered:chance===c.maxChance,locked:!!previous&&(previous.locked||!previous.mastered),remaining:Math.max(0,(state.chores[id]??0)-now)};
 }
 function secureChoreRandom(){return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
+// A chore's lucky find (26 Oct 2026, the owner: "chores take long after the tap"): fixed by the farm itself, as a fish is (waterRandom):
+// mulberry32 over the farm's seed, the chore and the number of the attempt. The same in the browser and in farm-api, so a chore shows at
+// once, find and all; it waited about a second for the server's roll. The chance of each attempt is as before. Farms without a seed
+// share one sequence per chore, as on the pond (harmless).
+export function choreRoll(state,id,attempt){
+ let a=(calendarHash(`chore:${id}:${Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0}`)^Math.imul(attempt+1,0x9E3779B1))>>>0;
+ a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;
+}
+export const choreFinds=(roll,chance)=>roll<chance/100;
 // Half since 7 Oct 2026 (was 10/20/35/50/75/100/125/150/175/200, 940 in all; now 470). A chapter paid before keeps what it paid.
 export const CHAPTER_DIAMONDS=Object.freeze([5,10,18,25,37,50,63,75,87,100]);
 export const PROJECTS=Object.freeze([
@@ -4883,11 +4892,11 @@ export function upgradeStall(state,now=Date.now()){
  const cost=stallStatus(state,now).upgradeCost;if(cost===null)throw new Error('Your farm stall is fully upgraded.');if(state.coins<cost)throw new Error(`You need ${cost} coins to upgrade the stall.`);
  settleStall(state,now);state.coins-=cost;state.stall.level++;return {level:state.stall.level,cost};
 }
-export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
+export function doChore(state,id,now=Date.now()){
  const chore=choreStatus(state,id,now);
  if(chore.locked)throw new Error(`Master ${CHORES[chore.requires].name} first.`);
  if(chore.remaining)throw new Error(`This chore returns in ${formatDuration(chore.remaining)}.`);
- const bonus=random()<chore.chance/100;
+ const bonus=choreFinds(choreRoll(state,id,chore.attempts),chore.chance);
  state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
  state.chores[id]=now+chore.cooldown;
  const rewards=choreRewards(chore,bonus),{coins,xp,items}=rewards;
