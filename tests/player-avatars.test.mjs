@@ -69,7 +69,8 @@ test('profile directory returns the saved avatar in both search and profile',asy
 });
 test('avatar save is authenticated, session-checked and separate from farm rewards',()=>{
  const index=readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8');const route=index.indexOf('const saved=await savePlayerAvatar');
- assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf("admin.from('player_farms')"));assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin\(user\)\}\)/);
+ assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf('for(let attempt=0;attempt<5;attempt++)'));
+ assert.doesNotMatch(index.match(/const FARM_OPERATIONS=new Set\(\[[^\]]*\]\)/)[0],/'avatar'/,'and no farm is read early for it (26 Oct 2026)');assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin\(user\)\}\)/);
  assert.match(index,/avatar_id:profile\?\.avatar_id\?\?'default'/);
  const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,41);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
  assert.equal((html.match(/data-emblem-step=/g)||[]).length,2,'one row of faces with an arrow on each side, not a wall of squares');

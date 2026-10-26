@@ -71,7 +71,7 @@ test('farm-api logs them beside the game\'s next action or refresh, whatever tha
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/import \{handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog\} from '\.\/player-log\.js';/);
  assert.match(api,/if\(\(body\.operation==='load'\|\|body\.operation==='action'\)&&Array\.isArray\(body\.notes\)&&!isAdminAccount\(user\)\)\{const noted=noteLog\(body\.notes\);if\(noted\.length\)later\(writeLog\(admin,user\.id,noted\)\);\}/);
- assert.ok(api.indexOf('noteLog(body.notes)')<api.indexOf("const profileResponse=await admin.from('player_stats')"),'before the farm is read, so a refused action still logs them');
+ assert.ok(api.indexOf('noteLog(body.notes)')<api.indexOf('const profileResponse=await (mine?.profile'),'before the farm is read, so a refused action still logs them');
  assert.ok(api.indexOf('noteLog(body.notes)')>api.indexOf("if(body.operation==='avatar')"),'after the operations that are not the farm\'s');
 });
 

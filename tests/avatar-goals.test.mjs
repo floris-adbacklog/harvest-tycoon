@@ -39,7 +39,8 @@ test('in the picker an achievement avatar carries a trophy: grey with a lock unt
  const picker=read('public/avatar-settings.js');
  assert.match(picker,/`\$\{goal\.text\} to use this avatar\.\$\{goal\.target>1\?` You are at \$\{number\(Math\.min\(goalCount\(id,farm\),goal\.target\)\)\} of \$\{number\(goal\.target\)\}\.`:''\}`/);
  assert.match(read('src/game-cloud.js'),/state:window\.harvestInitialFarm\.state/);
- assert.match(read('supabase/functions/farm-api/index.ts'),/select\('player_id,username,currency,level,avatar_id,events_finished,look'\)/,'the picker knows the farm events finished');
+ assert.match(read('supabase/functions/farm-api/index.ts'),/const PROFILE_FIELDS='player_id,username,currency,level,avatar_id,events_finished,look';/,'the picker knows the farm events finished');
+ assert.equal(read('supabase/functions/farm-api/index.ts').match(/from\('player_stats'\)\.select\(PROFILE_FIELDS\)/g).length,2,'early and late, the same fields');
  const ui=read('public/progression-ui.js');
  assert.match(ui,/if\(earned\.length\)announce\(\{leveled:false,level,entries:\[\],reward:null,avatars:earned\}\);/,'an avatar earned while playing is announced');
  assert.match(ui,/const earned=toldGoals\?goals\.filter/,'not the ones the farm already had when the game opened');

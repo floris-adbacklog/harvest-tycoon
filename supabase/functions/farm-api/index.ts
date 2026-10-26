@@ -31,6 +31,14 @@ const nameFree=async(admin:any,name:string)=>{const {data,error}=await admin.rpc
 const freeName=(admin:any,name:string)=>firstFreeName(name,(candidate:string)=>nameFree(admin,candidate));
 // Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
 const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
+// Asks the database now (a supabase-js query only goes out when it is awaited) and never rejects: a failure comes back as {error}.
+const ask=(query:PromiseLike<any>)=>Promise.resolve().then(()=>query).catch((error:unknown)=>({data:null,error}));
+// The operations that open the player's own farm: their profile and farm row are read beside the account check (26 Oct 2026).
+const FARM_OPERATIONS=new Set(['load','action','family','family_profile','invite']);
+const PROFILE_FIELDS='player_id,username,currency,level,avatar_id,events_finished,look';
+// One action in 20 logs how long each step took (ms from the start: account, profile, farm, apply, commit, reply), to see where a
+// tap's wait goes (26 Oct 2026).
+const TIMING_SHARE=0.05;
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 // The team's Sign in with Apple key (16 Oct 2026, apple-sign-in-service.js), set by the owner as secrets: without it no Apple token is
 // kept or revoked, and nothing else changes.
@@ -52,14 +60,28 @@ Deno.serve(async(req)=>{
  try{
   const token=req.headers.get('Authorization')?.replace(/^Bearer /,'');
   if(!token)return reply({error:'Please sign in.'},401);
+  // 26 Oct 2026 (the owner: "chores take long after the tap"): every answer from the database takes about 70 ms on its way through the
+  // API, and a tap asked four in a row before it could start: the account, the session, the profile and the farm. Now the last three go
+  // out beside the account check, for the player the token names. Nothing read this way is used before the account is verified and is
+  // that same player; otherwise everything is asked again for the verified account, as before.
+  const started=Date.now(),timed=Math.random()<TIMING_SHARE,marks:Record<string,number>={},mark=(name:string)=>{if(timed)marks[name]=Date.now()-started;};
+  const raw=await req.text();
+  let body:any,parsed=false;if(raw.length<=4096){try{body=JSON.parse(raw);parsed=true;}catch{}}
+  let claims:any={};try{claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))??{};}catch{}
+  const named=typeof claims.sub==='string'&&/^[0-9a-f-]{36}$/i.test(claims.sub)?claims.sub:null;
+  const early=named&&claims.session_id?{
+   session:ask(admin.rpc('harvest_session_active',{p_player:named,p_session:claims.session_id})),
+   ...(parsed&&FARM_OPERATIONS.has(body?.operation)?{profile:ask(admin.from('player_stats').select(PROFILE_FIELDS).eq('player_id',named).maybeSingle()),farm:ask(admin.from('player_farms').select('*').eq('player_id',named).maybeSingle())}:{})
+  }:null;
   const {data:{user},error:authError}=await admin.auth.getUser(token);
   if(authError||!user||user.is_anonymous)return reply({error:'Please sign in with your account.'},401);
-  const claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
   if(!claims.session_id)return reply({error:'Your session has ended. Please sign in again.'},401);
+  const mine=early&&user.id===named?early:null;
   // How this session was signed in (password, oauth, otp…): the admin's powers need Google (admin-service.js isSuperadmin).
   (user as {signInMethods?:string[]}).signInMethods=Array.isArray(claims.amr)?claims.amr.map((a:{method?:string})=>String(a?.method??'')).filter(Boolean):[];
-  const active=await admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id});
+  const active=await (mine?.session??admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id}));
   if(active.error)throw active.error;
+  mark('auth');
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   // A CrazyGames account (Oct 2026, crazygames-auth, portal.js) signs in through CrazyGames, and its address on players.harvesttycoon.com
   // is made up and never read: here its provider is CrazyGames, so every "email sign-up" rule below leaves it out (no confirm-your-email
@@ -70,8 +92,8 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='kongregate')user.app_metadata={...user.app_metadata,provider:'kongregate'};
   // And for a Discord account (Oct 2026, discord-auth): signed in through Discord, a made-up address, the bonus quietly.
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
-  const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
-  let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
+  if(raw.length>4096)return reply({error:'Request is too large.'},413);
+  if(!parsed)return reply({error:'Invalid request.'},400);
   if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
   // beside the farm (cached, never fails), so a load waits no longer for it.
@@ -155,8 +177,9 @@ Deno.serve(async(req)=>{
   if(body.operation==='apple_token'){
    const kept=await handleAppleToken({admin,body,user,...appleKey()});return reply(kept.data,kept.status);
   }
-  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished,look').eq('player_id',user.id).maybeSingle();
+  const profileResponse=await (mine?.profile??admin.from('player_stats').select(PROFILE_FIELDS).eq('player_id',user.id).maybeSingle());
   if(profileResponse.error)throw profileResponse.error;
+  mark('profile');
   let profile=profileResponse.data;
   // A farmer who signed in with Facebook or Google brings no name: they get a friendly one ("Sunny Acres 4821"), as an email
   // sign-up without a name does, and go straight to their farm. Settings invites them to make it their own.
@@ -217,8 +240,8 @@ Deno.serve(async(req)=>{
   let choreRoll:number|undefined;
   const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
   for(let attempt=0;attempt<5;attempt++){
-   const found=await admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle();if(found.error)throw found.error;
-   const row=found.data,now=Date.now();
+   const found=await (attempt===0&&mine?.farm?mine.farm:admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle());if(found.error)throw found.error;
+   const row=found.data,now=Date.now();mark('farm');
    if(!row){
     const initial=createFarm(now);let partner:{diamonds:number,label:string|null}|null=null;
     // Preserve only progress already stored on the server. Never import browser saves.
@@ -318,6 +341,7 @@ Deno.serve(async(req)=>{
    if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
    const before=snapshot(state);
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
+   mark('apply');
    // Invite a friend: the action that brings an invited farm to level 10 pays its reward in the same save.
    const inviteReward=inviteeReward(state,now);if(inviteReward)result.inviteReward=inviteReward;
    // The tractor's diamond work counts for no event (NO_EVENT_ACTIONS): saved as no event action, so its stats only move the baselines.
@@ -325,9 +349,12 @@ Deno.serve(async(req)=>{
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
    if(saved.error)throw saved.error;
    if(saved.data){
+    mark('commit');
     if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));
     later(writeLog(admin,user.id,farmLog(body.action,before,state,result)));
-    return reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now});
+    const answer=reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now});
+    mark('reply');if(timed)try{console.log(JSON.stringify({timing:'action',type:String(body.action.type).slice(0,40),attempt,...marks}));}catch{}
+    return answer;
    }
   }
   return reply({error:'Your farm changed in another tab. Please try again.'},409);

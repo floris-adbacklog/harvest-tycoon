@@ -103,7 +103,7 @@ test('farm-api writes the lines after the reply, for actions, opening the game, 
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/const later=\(work:Promise<unknown>\)=>\(globalThis as unknown as \{EdgeRuntime\?:\{waitUntil\?:\(p:Promise<unknown>\)=>void\}\}\)\.EdgeRuntime\?\.waitUntil\?\.\(work\);/);
  assert.match(api,/const before=snapshot\(state\);\n   let result;try\{result=applyFarmAction/);
- assert.match(api,/later\(writeLog\(admin,user\.id,farmLog\(body\.action,before,state,result\)\)\);\n    return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
+ assert.match(api,/if\(saved\.data\)\{\n    mark\('commit'\);\n    if\(inviteReward\)[^\n]*\n    later\(writeLog\(admin,user\.id,farmLog\(body\.action,before,state,result\)\)\);\n    const answer=reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
  assert.match(api,/const logged=loadLog\(\{away:now-\(Date\.parse\(row\.updated_at\)\|\|now\),gift:donations\.length\?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback,from:body\.opened\}\);/,'13 Oct 2026: with the reminder that opened the game');
  assert.equal((api.match(/later\(writeLog\(admin,user\.id,logged\)\);/g)??[]).length,2,'both ways a load can answer');
  assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('rename',/);assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('avatar','Picked a new face'\)\)\)/);
