@@ -40,7 +40,7 @@ import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
-import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind, OLD_ROADS, PATH_GRID, roadPieces } from './farm-map.js';
+import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind, OLD_ROADS, PATH_GRID, roadPieces, fieldHome } from './farm-map.js';
 import { createLayoutEditor } from './layout-edit.js';
 import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
@@ -1076,7 +1076,6 @@ function createPlots(){
 // spot: a yard's pieces (userData.yard, from the zone they were made in) move together, with their tap boxes, pins, pens and animals.
 // Loose scenery under something that moved is hidden (a tuft or a flower one by one).
 const yardShift=new Map(),yardTurn=new Map();let layoutKey='{}';
-const fieldHome=i=>[-2.15+(i%4)*3.15,.25+Math.floor(i/4)*3.2];
 const fieldSpot=i=>state.layout?.at?.[`field:${i}`]??fieldHome(i);
 // A yard's pieces that move: the ones on the farm itself (or in a top group: the scenery's, the polish's dirt yards), not a piece inside
 // another (a building's parts, the sails in their rotor), which goes with it.

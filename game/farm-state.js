@@ -1,7 +1,7 @@
 // Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
 // copied beside each farm-state.js by scripts/sync-game.mjs).
 import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS,farmerPassParts} from './farmer-parts.js';
-import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor,giftDecor} from './farm-map.js';
+import {normalizeLayout,settleFields,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor,giftDecor} from './farm-map.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -1597,6 +1597,7 @@ export function expandFarm(state){
  state.coins-=cost;for(const [key,n] of Object.entries(materials))state.inventory[key]-=n;
  state.plots.push({id:state.plots.length,crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false});
  state.xp+=20;if(!early){state.stats.expansions++;state.buildings.farmhouse.level++;}
+ settleFields(state);   // never under a field that was moved onto its place (farm-map.js)
  return {fields:state.plots.length,cost,materials};
 }
 // Every quest pays 15 XP unless it says otherwise; the starter quests pay coins only (xp:0).
@@ -2908,7 +2909,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);
- normalizeShift(state);settleShift(state,now);payShipBin(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);payShipBin(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);settleFields(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
