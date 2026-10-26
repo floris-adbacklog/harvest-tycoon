@@ -142,7 +142,7 @@ const folder=key=>pictureFolder[key]??'icons';
 // A picture that changed under the same name gets a version (/assets/ is kept a day and then served stale for a week while it is
 // checked), so a returning farmer sees the new one at once: the Sheep Barn's slate-blue roof (22 Oct 2026; that morning's render of
 // its new barn still showed the old green-roofed barn to farmers whose browser had kept the picture).
-const PICTURE_VERSIONS=Object.freeze({sheepbarn:'20261022'});
+const PICTURE_VERSIONS=Object.freeze({sheepbarn:'20261022',blackbarley:'20261026'});
 const stamp=key=>PICTURE_VERSIONS[key]?`?v=${PICTURE_VERSIONS[key]}`:'';
 export const pictureFile=name=>`/assets/${folder(name)}/${name}.${webpPictures.has(name)?'webp':'png'}${stamp(name)}`;
 // Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.
