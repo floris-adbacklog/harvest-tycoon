@@ -174,6 +174,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  let found=null,findTimer=null,findTicket=0;
 
  let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false,switchedOff=false;
+// A chat opened before shows what it showed last time at once, and the fresh page replaces it quietly when it comes (26 Oct 2026, the
+// owner: windows that show the last state feel faster). Kept for the last few chats of this visit only; a message deleted meanwhile
+// leaves the kept copy too. noticesRead: the Notifications were read once, so they show at once as well.
+const RECENT_CHATS=8,recent=new Map();let noticesRead=false;
+const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);recent.set(name,{rows:messages,more});while(recent.size>RECENT_CHATS)recent.delete(recent.keys().next().value);};
  // Earlier messages (5 Oct 2026, a farmer's feedback: an old conversation could not be read back): the newest PAGE come first, and a button
  // at the end of the list fetches the PAGE before them, as long as there are more.
  const PAGE=50;let more=false,loadingMore=false;
@@ -439,19 +444,20 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   busy=false;
   if(tab==='private'&&!thread){messages=[];paint();return;}
   if(tab==='notices'){
-   busy=true;paint();const fresh=unread().notices;
+   busy=!noticesRead;paint();const fresh=unread().notices;
    // News from before you signed up (and a gift for everyone you could not have received) is not yours to read.
    try{const rows=await chat.notices(),joined=Date.parse(overview?.joined??'')||0;if(ticket!==loading)return;notices=rows.filter(n=>(n.player_id||Date.parse(n.created_at)>joined)&&(n.kind!=='news'||newsShown()));freshNotices=fresh;}catch(error){if(ticket===loading)note(error.message);}
-   if(ticket!==loading)return;busy=false;paint();markRead('notices');return;
+   if(ticket!==loading)return;busy=false;noticesRead=true;paint();markRead('notices');return;
   }
   const name=channelOf();if(!name){messages=[];paint();return;}
-  busy=true;paint();
-  more=false;
-  try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){messages=[];note(error.message);}}
-  if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');
+  const kept=recent.get(name);
+  if(kept){messages=kept.rows;more=kept.more;busy=false;}else{busy=true;more=false;}
+  paint();
+  try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){if(!kept)messages=[];note(error.message);}}
+  if(ticket!==loading)return;busy=false;keepRecent(name);paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');
  }
  function show(next,{keepThread=false}={}){
-  tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
+  keepRecent(channelOf());tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
  // 8 Oct 2026: a push for a private chat that is not in the list (the welcome sender has 1,500+ of them) opens it all the same, as
@@ -488,7 +494,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(disposed)return;
   if(event.type==='connected'){if(connected){void refreshOverview();if(dialog.open)void load();}connected=true;return;}
   if(!overview)return;
-  if(event.type==='deleted'){if(messages.some(m=>m.id===event.id)){messages=messages.filter(m=>m.id!==event.id);if(dialog.open)paint();}return;}
+  if(event.type==='deleted'){for(const [name,kept] of recent)if(kept.rows.some(m=>m.id===event.id))recent.set(name,{...kept,rows:kept.rows.filter(m=>m.id!==event.id)});
+   if(messages.some(m=>m.id===event.id)){messages=messages.filter(m=>m.id!==event.id);if(dialog.open)paint();}return;}
   if(event.type==='edited'){const changed=event.message;if(changed&&messages.some(m=>m.id===changed.id)){messages=withEdit(messages,changed);if(dialog.open)paint();}return;}
   if(event.type==='notice'){
    if(event.notice?.kind==='news'&&!newsShown())return;
