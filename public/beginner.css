@@ -177,6 +177,8 @@
    still opens all of them). What comes glows for a moment (.calm-new). */
 html.calm-start :is(#more-dot,#layout-button,#tasks-button,#events-button,#estate-button,#invite-button,#boosts-button,#email-button,#pass-button,#season-button,#family-button,#chat-button,#feedback-button,#offer-button,#offer-chip,#starter-pack-chip,#starter-pack-button,#rail-stack,.minimap,.building-label.locked,.utility-label.locked,.farmer-name,.pond-label,.pond-shortcut){display:none!important}
 html.calm-start[data-guide-step="0"] #market-button{display:none!important}
+/* A CrazyGames guest's "Save your farm" chip (26 Oct 2026, portal.css): from the first sale on, never during the first harvest. */
+html.calm-start:is([data-guide-step="0"],[data-guide-step="1"]) #portal-save{display:none!important}
 html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"]) .tool[data-tool="water"]{display:none!important}
 html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"]) :is(#buildings-button,.building-label){display:none!important}
 html.calm-start:is([data-guide-step="0"],[data-guide-step="1"],[data-guide-step="2"],[data-guide-step="3"],[data-guide-step="4"]) #today-button{display:none!important}

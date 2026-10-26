@@ -4333,6 +4333,7 @@
 "Save my name":"src/ui.js",
 "Save picture":"public/farm-share.js",
 "Save to use this avatar.":"public/avatar-settings.js",
+"Save your farm":"src/portal-ui.js",
 "Save your farm: log in with CrazyGames":"src/portal-ui.js",
 "Save your progress":"src/ui.js",
 "Saved for you":"public/wiki-content.js",

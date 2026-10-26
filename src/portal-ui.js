@@ -1,4 +1,5 @@
 import {privacyLine,privacyContact,PRIVACY_URL,portalLogIn,openOut,portalSells} from '../public/portal.js';
+import {art} from '../public/visual-icons.js';
 // The farm on CrazyGames, Kongregate or Discord (Oct 2026; src/game-cloud.js calls this only there). The page is marked
 // (html[data-portal], so portal.css hides what the portal does not allow: our purchases, invites, sharing, email, reminders, the app,
 // Sign out and cookies) and gets what the portal asks for instead:
@@ -29,6 +30,18 @@ export function createPortalUI({portal,doc=globalThis.document}){
    button.textContent='Save your farm: log in with CrazyGames';
    button.onclick=async()=>{button.disabled=true;try{await portal.showAuthPrompt();}finally{button.disabled=false;}};
    account.prepend(button);
+  }
+  // And in the top bar (26 Oct 2026, the final CrazyGames Basic Launch; plan A16): "Save your farm" beside the diamonds, a chip that is
+  // never a pop-up nor the main button, from the first sale on (beginner.css hides it in the calm start's first two steps). Guests came
+  // back 1.5% of the time in the first test, logged-in players 8%. A tap opens CrazyGames' own log-in window, never by itself; a guest
+  // who logs in keeps this farm and the page opens again as theirs, without the chip.
+  const bar=doc.querySelector('.topbar .resources');
+  if(bar&&!doc.getElementById('portal-save')){
+   const chip=doc.createElement('button');chip.type='button';chip.id='portal-save';chip.className='portal-save';
+   chip.title='Save your farm: log in with CrazyGames';chip.setAttribute('aria-label','Save your farm: log in with CrazyGames');
+   chip.innerHTML=`${art('farm')}<span>Save your farm</span>`;
+   chip.onclick=async()=>{chip.disabled=true;try{await portal.showAuthPrompt();}finally{chip.disabled=false;}};
+   bar.append(chip);
   }
  }
 }

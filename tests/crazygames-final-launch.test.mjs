@@ -41,3 +41,18 @@ test('the avatar earned with invited friends is not offered where invites are of
 test('portal.css hides the Season Pass banner, buy box and buy button on a portal that sells nothing',()=>{
  assert.match(read('public/portal.css'),/html\[data-portal\]:not\(\[data-portal-shop\]\) #shop-season,html\[data-portal\]:not\(\[data-portal-shop\]\) \.season-paid-box,html\[data-portal\]:not\(\[data-portal-shop\]\) \.season-buy\{display:none!important\}/);
 });
+
+test('a CrazyGames guest gets a "Save your farm" chip in the top bar from the first sale on, which opens the log-in only on a tap',()=>{
+ const ui=read('src/portal-ui.js');
+ // Only for a guest where CrazyGames has accounts (the same block as the Settings button), once.
+ assert.match(ui,/if\(portal\.guest&&portalLogIn\(portal\)\)\{[\s\S]*const bar=doc\.querySelector\('\.topbar \.resources'\);\n  if\(bar&&!doc\.getElementById\('portal-save'\)\)\{/);
+ assert.match(ui,/chip\.onclick=async\(\)=>\{chip\.disabled=true;try\{await portal\.showAuthPrompt\(\);\}finally\{chip\.disabled=false;\}\};/,'a tap opens it');
+ assert.equal((ui.match(/showAuthPrompt\(\)/g)??[]).length,2,'only the two buttons ever ask: never by itself');
+ assert.match(ui,/chip\.innerHTML=`\$\{art\('farm'\)\}<span>Save your farm<\/span>`;/);
+ // Never during the first harvest: the calm start hides it until the first sale (step 2).
+ assert.match(read('public/beginner.css'),/html\.calm-start:is\(\[data-guide-step="0"\],\[data-guide-step="1"\]\) #portal-save\{display:none!important\}/);
+ // The phone bar gives it its own 44 px column, and takes the column away while it is hidden.
+ const css=read('public/portal.css');
+ assert.match(css,/html\[data-portal\] \.topbar \.resources:has\(#portal-save\):has\(#rookie-button:not\(\[hidden\]\)\)\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) 44px 44px\}/);
+ for(const n of ['0','1'])assert.ok(css.includes(`html[data-portal].calm-start[data-guide-step="${n}"] .topbar .resources:has(#portal-save){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}`),n);
+});
