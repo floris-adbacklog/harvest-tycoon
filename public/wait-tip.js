@@ -2,7 +2,7 @@ import {CROPS,POND_OPEN,beginnerProgress,cropDuration,cropUnlocked,featureUnlock
 // Long waits early on (16 Oct 2026, the owner: "People quickly plant lots of corn, or even barley early on, and then sit in a long waiting
 // time."). Live on 16 Oct: of 1,225 early farms (level 1-8) that stopped, 10% left with 5 minutes or more still to grow, 98% of those with
 // corn or barley on their fields; 56 of the 71 farms with barley on their fields never harvested barley. Up to level 8 the game says it
-// twice, in the farm's own times (cropDuration, the first day's beginner boost included):
+// twice, in the farm's own times (cropDuration, the beginner boost included):
 // 1. Choosing a crop that is not quick in the seed shop says how long it takes and names the quickest crop for playing on.
 // 2. Right after planting one (a tap or a sweep), when more than half of the fields now grow and the last of them is 10 minutes or more
 //    away: when the fields are ready and what is open meanwhile. Once a day on this device; not during the Beginner guide, in the admin

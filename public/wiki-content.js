@@ -344,7 +344,7 @@ const BODIES={
    ['double-harvest','A big first harvest',`Your very first harvest gives ${FIRST_HARVEST_BONUS} times the crop.`],
    // The three goods of STARTER_KEEP (farm-state.js), named here in words.
    ['market','Kept for your first buildings',`The corn, feed and barley you start with are kept for your first buildings during your first ${ROOKIE_MS/60000} minutes. What you harvest or make sells right away.`],
-   ['boost','Beginner boost',`When you start your farm, waiting times for crops and batches are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller evenly, hour by hour, and stops after your first ${Math.round(ROOKIE_BOOST_MS/3600000)} hours. On a computer, the hourglass at the top shows how much is left.`],
+   ['boost','Beginner boost',`When you start your farm, waiting times for crops and batches are ${Math.round(ROOKIE_TIMER_BOOST*100)}% shorter. The boost gets smaller evenly, day by day, and stops after your first ${Math.round(ROOKIE_BOOST_MS/86400000)} days. On a computer, the hourglass at the top shows how much is left.`],
    // The same fact as in Buildings and goods (farm-state.js batchDuration).
    ['eggs','A quick first batch',`The first batch in each new building is ready in ${FIRST_BATCH_MS/1000} seconds. After that every batch takes its usual time.`]
   ]))

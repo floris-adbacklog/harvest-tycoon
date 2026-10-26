@@ -61,7 +61,7 @@ test('every row says what it is worth, and Running now has what runs out',()=>{
  assert.equal(groupOf(rich,'production').rows.find(r=>r.id==='ranch').sub,'Goat Shed','the chosen herd’s building');
  const fresh=STATES['a new farm in its beginner boost'];
  assert.deepEqual(rows(fresh,'running'),{rookie:`−${Math.round(rookieBoost(fresh,now)*100)}%`});
- assert.match(groupOf(fresh,'running').rows[0].sub,/^\d+h( \d+m)? left$/);
+ assert.match(groupOf(fresh,'running').rows[0].sub,/^\d+(d|h)( \d+(h|m))? left$/,'a week since 26 Oct 2026: days and hours');
  assert.equal(groupOf(STATES['level 80 with Orchard ladders only'],'running'),undefined,'nothing runs: no Running now');
  assert.equal(groupOf(farm(120,s=>{s.siloLevel=5;s.vipExpiresAt=0;s.master={growth:10,production:10,market:10,visitors:10};s.improvements=['ladders','heating','watertower','hayloft','ledger'];s.ranch.focus='dairy';for(const id of ['canal','terraces','barn','watermill','bridge'])s.valleyProjects[id].level=3;}),'cheaper').rows.length,1,'all research done, no voucher: only the seed price, no next row');
 });

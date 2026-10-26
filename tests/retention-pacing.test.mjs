@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFarm,rookieBoost,cropDuration,CHORES,ITEMS,choreRewards} from '../game/farm-state.js';
-test('the beginner boost starts at 50% (40% from 9 Oct, 80% before; 50% since 13 Oct 2026), drops in a straight line, and is gone after the first day; it never rewrites running timers',()=>{
+test('the beginner boost starts at 50% (40% from 9 Oct, 80% before; 50% since 13 Oct 2026), drops in a straight line, and is gone after the first week (the first day until 26 Oct 2026); it never rewrites running timers',()=>{
  const start=1e12,H=3600000,s=createFarm(start),ready=s.plots[0].readyAt,near=(a,b)=>Math.abs(a-b)<1e-9;
- assert.equal(rookieBoost(s,start),.5);assert(near(rookieBoost(s,start+6*H),.375));assert(near(rookieBoost(s,start+12*H),.25));assert(near(rookieBoost(s,start+18*H),.125));assert.equal(rookieBoost(s,start+24*H),0);
- let previous=0;for(let h=0;h<=26;h++){const duration=cropDuration(s,'corn',false,start+h*H);assert(duration>=previous);previous=duration;}
+ assert.equal(rookieBoost(s,start),.5);assert(near(rookieBoost(s,start+42*H),.375));assert(near(rookieBoost(s,start+84*H),.25));assert(near(rookieBoost(s,start+126*H),.125));assert.equal(rookieBoost(s,start+168*H),0);
+ let previous=0;for(let h=0;h<=170;h++){const duration=cropDuration(s,'corn',false,start+h*H);assert(duration>=previous);previous=duration;}
  assert.equal(s.plots[0].readyAt,ready);assert(Math.abs(rookieBoost(s,start+H-1)-rookieBoost(s,start+H+1))<.000001);
 });
 test('every chore pays coins and its full XP; the bonus adds a few goods instead of more coins, worth no more than the full old reward',()=>{

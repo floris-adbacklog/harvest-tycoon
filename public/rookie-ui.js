@@ -6,10 +6,11 @@ import {art} from './visual-icons.js';
 // and tapping it opens a screen that explains what it is and what changes when it ends. The rules live in farm-state.js
 // (rookieLeft); this only shows them.
 const percent=Math.round(ROOKIE_TIMER_BOOST*100);
-// Under an hour in minutes, then hours and minutes (the boost now lasts a day); the small badge shows whole hours.
-export const rookieTimeLeft=ms=>{if(ms<60000)return `${Math.max(1,Math.ceil(ms/1000))}s`;const m=Math.ceil(ms/60000);if(m<60)return `${m} min`;const h=Math.floor(m/60),rest=m%60;return rest?`${h} h ${rest} min`:`${h} h`;};
-export const rookieBadge=ms=>ms<60000?'<1m':ms<3600000?`${Math.ceil(ms/60000)}m`:`${Math.ceil(ms/3600000)}h`;
-// The boost falls in a straight line to 0% at the end of the first day; its last few minutes are under half a percent and would read
+// Under an hour in minutes, then hours and minutes, and from a day on whole days (the boost lasts a week since 26 Oct 2026); the small
+// badge shows whole hours, then whole days.
+export const rookieTimeLeft=ms=>{if(ms<60000)return `${Math.max(1,Math.ceil(ms/1000))}s`;if(ms>=86400000){const d=Math.ceil(ms/86400000);return d===1?`${d} day`:`${d} days`;}const m=Math.ceil(ms/60000);if(m<60)return `${m} min`;const h=Math.floor(m/60),rest=m%60;return rest?`${h} h ${rest} min`:`${h} h`;};
+export const rookieBadge=ms=>ms<60000?'<1m':ms<3600000?`${Math.ceil(ms/60000)}m`:ms<86400000?`${Math.ceil(ms/3600000)}h`:`${Math.ceil(ms/86400000)}d`;
+// The boost falls in a straight line to 0% at the end of the first week; its last few minutes are under half a percent and would read
 // "0% shorter waiting" (27 Sep 2026). From then on it counts as over here: the hourglass goes and the clock runs to that moment.
 export const ROOKIE_FADED_MS=Math.ceil(ROOKIE_BOOST_MS*.005/ROOKIE_TIMER_BOOST);
 export const rookieShownLeft=(state,now)=>Math.max(0,rookieBoostLeft(state,now)-ROOKIE_FADED_MS);
@@ -27,7 +28,7 @@ export function createRookieUI({state,document:doc=globalThis.document,now=farmN
   const on=left>0,currentPercent=Math.round(rookieBoost(state,now())*100);phase=on?'on':'ended';
   dialog.innerHTML=`<button type="button" class="rookie-close" data-rookie-close aria-label="Close">×</button>${art('hourglass','rookie-art')}`+
    // Short on purpose (26 Sep 2026): the whole screen fits a small phone, Got it included, without scrolling.
-   (on?`<h2 id="rookie-title"><span data-rookie-percent>${currentPercent}</span>% shorter waiting</h2><p>Waiting times start ${percent}% shorter and ease back to normal over your first ${ROOKIE_BOOST_MS/3600000} hours.</p>
+   (on?`<h2 id="rookie-title"><span data-rookie-percent>${currentPercent}</span>% shorter waiting</h2><p>Waiting times start ${percent}% shorter and ease back to normal over your first ${ROOKIE_BOOST_MS/86400000} days.</p>
     <div class="rookie-clock"><progress max="${ROOKIE_BOOST_MS-ROOKIE_FADED_MS}" value="${left}" aria-label="Time left of your beginner boost"></progress><b data-rookie-left>${rookieTimeLeft(left)} left</b></div>
     <ul class="rookie-notes"><li${corn()===normal?' hidden':''}>Corn now takes <b data-rookie-corn>${corn()}</b> instead of ${normal}.</li><li>Crops and batches already running keep their times.</li>${rookieLeft(state,now())>0?`<li>Your starter corn and feed can be sold after ${ROOKIE_MS/60000} minutes.</li>`:''}</ul>`
    :`<h2 id="rookie-title">Beginner boost ended</h2><p>Waiting times are back to normal, and your starter corn and feed are free to sell.</p>${(state.login?.visits??0)<2?'<p>Come back tomorrow: your next daily gift brings 30 minutes of double harvest.</p>':''}`)+
