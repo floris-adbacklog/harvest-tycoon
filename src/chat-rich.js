@@ -44,7 +44,7 @@ export function insertMention(text,caret,start,name){
 }
 // "Mention" in a message's menu (3 Oct 2026): "@Full Name " at the end of what is typed already, after a space; a name that is in it
 // already is not added twice. Null when it would not fit the box.
-export function appendMention(text,name,max=200){
+export function appendMention(text,name,max=300){
  const value=String(text??''),tag=`@${name}`;
  if(new RegExp(`(^|\\s)${tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(\\s|$)`).test(value))return {text:value,caret:value.length};
  const next=value+(value&&!/\s$/.test(value)?' ':'')+tag+' ';

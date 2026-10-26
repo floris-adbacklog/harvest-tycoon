@@ -6,7 +6,7 @@ const MESSAGE_COLUMNS='id,channel,sender,sender_name,sender_avatar,sender_staff,
 // A family request card (supabase/family-request-chat.sql) carries its kind and details; until that is in the database the chat
 // reads the columns it always had.
 const CARD_COLUMNS=`${MESSAGE_COLUMNS},kind,meta`;let cards=true;
-// The database says why in plain words ("Write 1–200 characters."); a lost connection gets a sentence of its own.
+// The database says why in plain words ("Write 1–300 characters."); a lost connection gets a sentence of its own.
 // Oct 2026: a request that was cut off or timed out ("AbortError: …", "TimeoutError: …") is no connection either, and a sign-in
 // that ran out ("JWT expired") says so. The pace limit names itself: "Slow down a little." told 8 farmers in a week nothing about
 // the 2 seconds (supabase/chat.sql; the 12 a minute it also keeps is never reached by players, at most 6 so far).

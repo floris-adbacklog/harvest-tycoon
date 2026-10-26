@@ -4,7 +4,7 @@
 -- a mention reaches you like a private message. The message gets a soft mark, Global a red count (its only one), the chat button and the
 -- app icon count it, the private message's sound plays, and a push comes through the private messages switch (Settings: "Private
 -- messages and mentions"), in the farmer's own language ("Bram mentioned you", supabase/functions/notify-hourly/messages.js).
--- Limits against spam to strangers: at most 5 farmers in one message (3 until 26 Oct 2026, chat-mentions-five.sql), at most 10
+-- Limits against spam to strangers: at most 5 farmers in one message (3 until 26 Oct 2026, chat-more-room.sql), at most 10
 -- different farmers an hour from one farmer, at most one push per 3 minutes per farmer per chat (chat_push_state, as a private
 -- message), nothing for a farmer who blocked the writer, and in Family only its members. Not in private chats or the Crew.
 --

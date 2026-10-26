@@ -203,16 +203,29 @@ test('Mention from a message\'s menu: "@Name " after what is typed, once, within
  assert.match(ui,/input\.value=next\.text;picked\.set\(m\.sender,name\);/,'the message takes their id along, as a picked one');
 });
 
-// 26 Oct 2026: up to 5 farmers in one message. The live trigger is patched from its definition, only its count; the rest stays.
-test('up to 5: the live patch changes only the count, once, and stops on a definition it does not know',()=>{
- const five=read('supabase/chat-mentions-five.sql');
- assert.match(five,/pg_get_functiondef\('public\.chat_mentions_tag\(\)'::regprocedure\)/,'from the live definition');
- assert.ok(five.includes("old text:=$o$if cardinality(ids)>3 then raise exception 'Mention up to 3 farmers in one message.' using errcode='22023'; end if;$o$;"));
- assert.ok(five.includes("new text:=$n$if cardinality(ids)>5 then raise exception 'Mention up to 5 farmers in one message.' using errcode='22023'; end if;$n$;"));
- assert.match(five,/if position\(new in def\)>0 then return; end if;/,'re-runnable');
- assert.match(five,/if position\(old in def\)=0 then raise exception/,'a changed live definition stops it');
- assert.match(five,/execute replace\(def,old,new\);/);
- assert.doesNotMatch(five.replace(/^--.*$/gm,''),/chat_send|drop |delete |update |insert /i,'nothing else changes');
- // The new limit in the full file is the same text the patch writes.
- assert.ok(read('supabase/chat-mentions.sql').includes("if cardinality(ids)>5 then raise exception 'Mention up to 5 farmers in one message.' using errcode='22023'; end if;"));
+// 26 Oct 2026: more room in one message, up to 5 farmers and 300 characters. Each live function is patched from its definition, only
+// that one line; the rest stays.
+test('more room: 5 farmers and 300 characters, patched from the live definitions, once, stopping on one it does not know',()=>{
+ const room=read('supabase/chat-more-room.sql'),code=room.replace(/^--.*$/gm,'');
+ assert.match(room,/declare def text:=pg_get_functiondef\(p_fn\);/,'from the live definition');
+ assert.match(room,/if position\(p_new in def\)>0 then return; end if;/,'re-runnable');
+ assert.match(room,/if position\(p_old in def\)=0 then raise exception/,'a changed live definition stops it');
+ assert.match(room,/execute replace\(def,p_old,p_new\);/);
+ assert.match(code,/^begin;[\s\S]*^commit;/m,'all three or none');
+ const pairs=[...code.matchAll(/select pg_temp\.chat_more_room\('([^']+)',\n \$o\$([^$]+)\$o\$,\n \$n\$([^$]+)\$n\$\);/g)].map(m=>[m[1],m[2],m[3]]);
+ assert.deepEqual(pairs.map(p=>p[0]),['public.chat_mentions_tag()','public.chat_send(text,text)','public.chat_mod_edit(uuid,text)']);
+ assert.deepEqual(pairs[0].slice(1),["if cardinality(ids)>3 then raise exception 'Mention up to 3 farmers in one message.' using errcode='22023'; end if;","if cardinality(ids)>5 then raise exception 'Mention up to 5 farmers in one message.' using errcode='22023'; end if;"]);
+ assert.deepEqual(pairs[1].slice(1),["if char_length(body)<1 or char_length(body)>200 then raise exception 'Write 1–200 characters.' using errcode='22023'; end if;","if char_length(body)<1 or char_length(body)>300 then raise exception 'Write 1–300 characters.' using errcode='22023'; end if;"]);
+ assert.deepEqual(pairs[2].slice(1),["if char_length(clean)<1 or char_length(clean)>200 then raise exception 'Write 1–200 characters.' using errcode='22023'; end if;","if char_length(clean)<1 or char_length(clean)>300 then raise exception 'Write 1–300 characters.' using errcode='22023'; end if;"]);
+ assert.doesNotMatch(code.replace(/select pg_temp\.chat_more_room\([\s\S]*?\);/g,''),/chat_send|drop |delete |update |insert |alter /i,'nothing else changes');
+ // The new limit in the full mentions file is the same line the patch writes.
+ assert.ok(read('supabase/chat-mentions.sql').includes(pairs[0][2]));
+ // The game lets you type as much as the database takes: the box, the menu's Mention and the staff's edit.
+ const ui=read('src/chat-ui.js');
+ assert.match(ui,/<form class="chat-compose" hidden><input type="text" maxlength="300" /);
+ assert.match(ui,/appendMention\(input\.value,name,input\.maxLength>0\?input\.maxLength:300\)/);
+ assert.match(ui,/title:'Edit this message',[^\n]*maxLength:300,/);
+ assert.doesNotMatch(ui,/maxlength="200"|maxLength:200/);
+ assert.equal(appendMention('x'.repeat(250),'Anna').text.length,257,'room for a name after 250 characters');
+ assert.equal(appendMention('x'.repeat(295),'Anna'),null);
 });

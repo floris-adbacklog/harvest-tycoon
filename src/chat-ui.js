@@ -156,7 +156,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   <button type="button" role="tab" data-chat-tab="private">Private<b class="chat-count" hidden></b></button>
  </div><button type="button" class="icon-button chat-close" aria-label="Close chat"><i data-lucide="x"></i></button></div>
  <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-report" hidden>${art('alert')}</button><button type="button" class="chat-block" hidden>${art('block')}</button></div>
- <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button><ul class="chat-mentions" role="listbox" aria-label="Mention a farmer" hidden></ul></form>
+ <form class="chat-compose" hidden><input type="text" maxlength="300" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button><ul class="chat-mentions" role="listbox" aria-label="Mention a farmer" hidden></ul></form>
  <div class="chat-find" hidden><input type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Find a farmer to message…" aria-label="Find a farmer to message"></div>
  <p class="chat-note" role="status" hidden></p>
  <ol class="chat-list"></ol>`;
@@ -642,7 +642,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const card=(await chat.cards?.([m.sender]).catch(()=>[])??[]).find(c=>c?.playerId===m.sender),name=card?.username??m.sender_name;
   if(!name||!canMention())return;
   if(!picked.has(m.sender)&&mentionIds(input.value,picked,me).length>=MAX_MENTIONS){note('Mention up to 5 farmers in one message.');return;}
-  const next=appendMention(input.value,name,input.maxLength>0?input.maxLength:200);if(!next)return;
+  const next=appendMention(input.value,name,input.maxLength>0?input.maxLength:300);if(!next)return;
   input.value=next.text;picked.set(m.sender,name);closePicks();input.focus({preventScroll:true});input.setSelectionRange(next.caret,next.caret);
  }
  function pick(i){
@@ -744,7 +744,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    else if(key==='block')await setBlock(m.sender,m.sender_name,true);
    else if(key==='edit'){
     // The staff can change a message (to take out a phone number, say) instead of deleting it; the chat rules still apply.
-    const body=await promptText({title:'Edit this message',description:m.sender===me?'Everyone sees the new text, marked “edited”.':`Everyone sees the new text, marked “edited by a moderator”.`,value:m.body,maxLength:200,confirmLabel:'Save',picture:'admin'});
+    const body=await promptText({title:'Edit this message',description:m.sender===me?'Everyone sees the new text, marked “edited”.':`Everyone sees the new text, marked “edited by a moderator”.`,value:m.body,maxLength:300,confirmLabel:'Save',picture:'admin'});
     if(body==null||body.trim()===m.body)return;
     messages=withEdit(messages,await chat.editMessage(m.id,body));paint();
    }else if(key==='delete'){
