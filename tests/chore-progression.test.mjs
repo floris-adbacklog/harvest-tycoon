@@ -67,3 +67,17 @@ test('a resting chore shows its time left on a dark button that reads at a glanc
  assert.match(ui,/b\.classList\.toggle\('is-waiting',shown\.waiting\)/,'the live countdown keeps the dark look');
  assert.match(css,/\.chore-card>button\.is-waiting:disabled\{background:linear-gradient\(180deg,#4d4330,#2b2417\);[^}]*color:#fff5d8/);
 });
+test('a tapped chore answers at once: its hourglass turns while the server works, nothing tapped twice (26 Oct 2026)',()=>{
+ const ui=readFileSync(new URL('../public/growth-ui.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/beta.css',import.meta.url),'utf8');
+ assert.match(ui,/if\(acting\)return;acting=\{chore:action\.type==='chore'\?action\.id:null\};markBusy\(\);/,'marked before the request goes out; a second tap is ignored');
+ assert.match(ui,/if\(b\.dataset\.chore===acting\.chore\)\{b\.disabled=false;b\.setAttribute\('aria-disabled','true'\);b\.classList\.add\('is-busy'\);b\.classList\.remove\('is-waiting'\);b\.textContent='';b\.title='One moment…';b\.setAttribute\('aria-label','One moment…'\);\}else b\.disabled=true;/,'the tapped chore keeps its colour and width, every other button is off');
+ assert.match(ui,/finally\{acting=null;const said=\$\('estate-feedback'\)\.textContent;render\(\);\$\('estate-feedback'\)\.textContent=said;/,'a failed request gives the buttons back too');
+ assert.match(ui,/lastReadiness=readiness\(\);icons\(\);if\(acting\)markBusy\(\);/,'a render while waiting keeps the mark');
+ assert.match(ui,/if\(!\$\('estate-dialog'\)\.open\|\|acting\)return;/,'the clock does not overwrite it');
+ assert.match(css,/\.chore-act>button\.is-busy::before\{content:"";flex:none;width:22px;height:22px;background:url\(\/assets\/icons\/hourglass\.svg\)/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\.chore-act>button\.is-busy::before\{animation:none\}\}/);
+ for(const lang of ['ar','cs','de','es','fr','hi','hu','id','ja','nl','pt','ru','tr','uk','zh']){
+  const words=JSON.parse(readFileSync(new URL(`../public/i18n/${lang}.json`,import.meta.url),'utf8'));
+  assert.ok(words['One moment…'],`One moment… in ${lang}`);
+ }
+});

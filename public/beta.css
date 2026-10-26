@@ -79,6 +79,10 @@
 .chore-act>small{color:#9a8c72;font-size:12px;font-weight:700;white-space:nowrap}
 .chore-act>button.is-waiting:disabled{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--btn-off);border-color:var(--btn-off-line);color:var(--btn-off-text);box-shadow:none;font-variant-numeric:tabular-nums}
 .chore-act>button.is-waiting:disabled::before{content:"";flex:none;width:18px;height:18px;background:url(/assets/icons/hourglass.svg) center/contain no-repeat;opacity:.75}
+.chore-act>button.is-busy{display:flex;align-items:center;justify-content:center;gap:6px;cursor:progress}
+.chore-act>button.is-busy::before{content:"";flex:none;width:22px;height:22px;background:url(/assets/icons/hourglass.svg) center/contain no-repeat;animation:chore-busy 1s ease-in-out infinite}
+@keyframes chore-busy{50%{transform:rotate(180deg)}}
+@media(prefers-reduced-motion:reduce){.chore-act>button.is-busy::before{animation:none}}
 .chore-unlocks{margin-top:14px}
 .chore-locked-list{display:grid;gap:8px;padding-top:10px}
 .chore-locked{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 12px;border:1px dashed #dccfbd;border-radius:16px;background:#f8f3e8;opacity:.9}
