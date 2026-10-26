@@ -91,10 +91,14 @@ test('typing "@" finds the name being typed; a pick puts "@Full Name " in; only 
  assert.match(read('src/chat-ui.js'),/mentionAt\(input\.value,input\.selectionStart\?\?input\.value\.length,picked\.values\(\)\)/);
  assert.deepEqual(insertMention('hi @Gen',7,3,'Gentle Farm 6170'),{text:'hi @Gentle Farm 6170 ',caret:21});
  assert.deepEqual(insertMention('@Br see you',3,0,'Bram'),{text:'@Bram see you',caret:6},'no second space');
- const picked=new Map([[A,'Anna'],[B,'Bram'],['c','Cor'],['d','Dirk'],['me','Me']]);
+ const picked=new Map([[A,'Anna'],[B,'Bram'],['c','Cor'],['d','Dirk'],['e','Eva'],['f','Fien'],['me','Me']]);
  assert.deepEqual(mentionIds('@Anna @Bram @Me',picked,'me'),[A,B],'never yourself');
  assert.deepEqual(mentionIds('@Bram hi',picked),[B],'Anna was taken out of the text');
- assert.equal(mentionIds('@Anna @Bram @Cor @Dirk',picked).length,MAX_MENTIONS);
+ // 26 Oct 2026, owner: "tot 5". Five go along, a sixth does not; the same farmer twice counts once.
+ assert.equal(MAX_MENTIONS,5);
+ assert.deepEqual(mentionIds('@Anna @Bram @Cor @Dirk @Eva',picked),[A,B,'c','d','e'],'five farmers in one message');
+ assert.deepEqual(mentionIds('@Anna @Bram @Cor @Dirk @Eva @Fien',picked),[A,B,'c','d','e'],'never a sixth');
+ assert.deepEqual(mentionIds('@Anna hi @Anna @Bram',picked),[A,B],'the same name twice counts once');
  const people=[{playerId:'me',username:'Me'},{playerId:A,username:'Anna'},{playerId:A,username:'Anna'},{playerId:B,username:'Bram'},{playerId:'x',username:'Annabel'},{playerId:'blocked',username:'Anne'}];
  assert.deepEqual(mentionMatches(people,'ann',{me:'me',blocked:new Set(['blocked'])}).map(p=>p.playerId),[A,'x'],'any case, you and blocked farmers left out, each once');
  assert.equal(mentionMatches(people,'').length,5);
@@ -120,7 +124,8 @@ test('the list: Global and Family only, recent speakers or from 2 letters every 
  assert.match(ui,/const canMention=\(\)=>\(tab==='global'\|\|\(tab==='family'&&Boolean\(overview\?\.family\)\)\)&&!composeState\(\)\.blocked;/,'not in private chats or the Crew');
  assert.match(ui,/if\(family\)people=await members\(\);\n   else if\(query\.length>=2\)\{try\{people=\(await bridge\.request\(\{operation:'player_search',query\}\)\)\?\.players\?\?\[\];/);
  assert.match(ui,/if\(!family&&query\.length>=2\)pickTimer=setTimeout\(run,300\);/,'a short pause before searching');
- assert.match(ui,/drawPicks\('Mention up to 3 farmers in one message\.'\)/);
+ assert.match(ui,/drawPicks\('Mention up to 5 farmers in one message\.'\)/);
+ assert.match(ui,/picks=mentionMatches\(people,query,\{me,blocked:new Set\(\[\.\.\.blocked\(\),\.\.\.mentionIds\(input\.value,picked,me\)\]\)\}\);/,'a farmer already in the message is not offered again');
  assert.match(ui,/const m=await chat\.send\(name,text,tab==='global'\|\|tab==='family'\?mentionIds\(text,picked,me\):\[\]\);/);
  assert.match(ui,/placeholder:tab==='global'\|\|tab==='family'\?'Type @ to mention a farmer\.':`Message \$\{thread\.otherName\}…`/,'short enough for a phone');
  assert.match(ui,/pickList\.addEventListener\('click',/,'a tap picks on click, so it never lands on a message under the list');
@@ -145,7 +150,9 @@ test('the database: mentions checked before the message is stored, limits, membe
  assert.doesNotMatch(sql,/drop function[^;]*chat_send/);
  assert.match(sql,/result:=public\.chat_send\(p_channel,p_body\);/,'every rule of sending still holds');
  assert.match(sql,/if new\.sender is distinct from \(select auth\.uid\(\)\) or coalesce\(new\.kind,'message'\)<>'message' then return new; end if;/);
- assert.match(sql,/if cardinality\(ids\)>3 then raise exception 'Mention up to 3 farmers in one message\.'/);
+ assert.match(sql,/if cardinality\(ids\)>5 then raise exception 'Mention up to 5 farmers in one message\.'/);
+ assert.match(sql,/ids:=array\(select distinct x from unnest/,'the same farmer twice counts once');
+ assert.doesNotMatch(sql,/Mention up to 3 farmers/);
  assert.match(sql,/position\('@'\|\|whose in new\.body\)=0/,'the name of now must be in the words');
  assert.match(sql,/continue when new\.channel like 'family:%' and not exists\(select 1 from public\.family_members m where m\.player_id=who/,'in Family only its members');
  assert.match(sql,/if seen>10 then raise exception 'You can mention up to 10 farmers an hour\.'/);
@@ -192,6 +199,20 @@ test('Mention from a message\'s menu: "@Name " after what is typed, once, within
  const ui=readFileSync(new URL('../src/chat-ui.js',import.meta.url),'utf8');
  assert.match(ui,/if\(!mine&&canMention\(\)\)items\.push\(\['mention',`Mention \$\{m\.sender_name\}`\]\);\n  if\(!mine\)items\.push\(\['report'/,'for another farmer\'s message, where the "@" list works, before Report');
  assert.match(ui,/if\(key==='mention'\)\{await mentionFrom\(m\);return;\}/);
- assert.match(ui,/if\(!picked\.has\(m\.sender\)&&mentionIds\(input\.value,picked,me\)\.length>=MAX_MENTIONS\)\{note\('Mention up to 3 farmers in one message\.'\);return;\}/,'at most 3, as typed ones');
+ assert.match(ui,/if\(!picked\.has\(m\.sender\)&&mentionIds\(input\.value,picked,me\)\.length>=MAX_MENTIONS\)\{note\('Mention up to 5 farmers in one message\.'\);return;\}/,'at most 5, as typed ones');
  assert.match(ui,/input\.value=next\.text;picked\.set\(m\.sender,name\);/,'the message takes their id along, as a picked one');
+});
+
+// 26 Oct 2026: up to 5 farmers in one message. The live trigger is patched from its definition, only its count; the rest stays.
+test('up to 5: the live patch changes only the count, once, and stops on a definition it does not know',()=>{
+ const five=read('supabase/chat-mentions-five.sql');
+ assert.match(five,/pg_get_functiondef\('public\.chat_mentions_tag\(\)'::regprocedure\)/,'from the live definition');
+ assert.ok(five.includes("old text:=$o$if cardinality(ids)>3 then raise exception 'Mention up to 3 farmers in one message.' using errcode='22023'; end if;$o$;"));
+ assert.ok(five.includes("new text:=$n$if cardinality(ids)>5 then raise exception 'Mention up to 5 farmers in one message.' using errcode='22023'; end if;$n$;"));
+ assert.match(five,/if position\(new in def\)>0 then return; end if;/,'re-runnable');
+ assert.match(five,/if position\(old in def\)=0 then raise exception/,'a changed live definition stops it');
+ assert.match(five,/execute replace\(def,old,new\);/);
+ assert.doesNotMatch(five.replace(/^--.*$/gm,''),/chat_send|drop |delete |update |insert /i,'nothing else changes');
+ // The new limit in the full file is the same text the patch writes.
+ assert.ok(read('supabase/chat-mentions.sql').includes("if cardinality(ids)>5 then raise exception 'Mention up to 5 farmers in one message.' using errcode='22023'; end if;"));
 });

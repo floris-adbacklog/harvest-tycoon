@@ -4,9 +4,9 @@
 -- a mention reaches you like a private message. The message gets a soft mark, Global a red count (its only one), the chat button and the
 -- app icon count it, the private message's sound plays, and a push comes through the private messages switch (Settings: "Private
 -- messages and mentions"), in the farmer's own language ("Bram mentioned you", supabase/functions/notify-hourly/messages.js).
--- Limits against spam to strangers: at most 3 farmers in one message, at most 10 different farmers an hour from one farmer, at most one
--- push per 3 minutes per farmer per chat (chat_push_state, as a private message), nothing for a farmer who blocked the writer, and in
--- Family only its members. Not in private chats or the Crew.
+-- Limits against spam to strangers: at most 5 farmers in one message (3 until 26 Oct 2026, chat-mentions-five.sql), at most 10
+-- different farmers an hour from one farmer, at most one push per 3 minutes per farmer per chat (chat_push_state, as a private
+-- message), nothing for a farmer who blocked the writer, and in Family only its members. Not in private chats or the Crew.
 --
 -- How: chat_send(text,text) stays as it is (one function for every chat, which other files patch). chat_send(p_channel, p_body,
 -- p_mentions) is a second one, found by its third argument's name (PostgREST tells functions apart by their argument names; a game
@@ -39,7 +39,7 @@ begin
  perform set_config('harvest.chat_mentions','',true);
  if new.sender is distinct from (select auth.uid()) or coalesce(new.kind,'message')<>'message' then return new; end if;
  ids:=array(select distinct x from unnest(string_to_array(raw,',')::uuid[]) x where x is not null and x<>new.sender);
- if cardinality(ids)>3 then raise exception 'Mention up to 3 farmers in one message.' using errcode='22023'; end if;
+ if cardinality(ids)>5 then raise exception 'Mention up to 5 farmers in one message.' using errcode='22023'; end if;
  foreach who in array ids loop
   select ps.username into whose from public.player_stats ps where ps.player_id=who;
   continue when whose is null or position('@'||whose in new.body)=0 or public.harvest_portal_guest(who);

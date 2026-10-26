@@ -592,7 +592,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
 
  // Mentions (3 Oct 2026, src/chat-rich.js): an "@" in Global or Family opens a list under the box, never in a private chat. Global: the
  // farmers who spoke there lately, and from 2 letters every farmer by name (the same search as Private); Family: its members only, as
- // the database only lets those through. A tap puts "@Full Name" in the text, and the message takes their ids along (at most 3).
+ // the database only lets those through. A tap puts "@Full Name" in the text, and the message takes their ids along (at most 5,
+ // 26 Oct 2026). A farmer already in the message is not offered again.
  const pickList=form.querySelector('.chat-mentions'),picked=new Map();
  let picks=[],pickAt=null,pickActive=0,pickTimer=null,pickTicket=0,familyPeople=null,recentPeople=null;
  const canMention=()=>(tab==='global'||(tab==='family'&&Boolean(overview?.family)))&&!composeState().blocked;
@@ -622,14 +623,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const at=canMention()?mentionAt(input.value,input.selectionStart??input.value.length,picked.values()):null;
   if(!at){closePicks();return;}
   clearTimeout(pickTimer);pickAt=at;const ticket=++pickTicket,query=at.query.trim(),family=tab==='family';
-  if(mentionIds(input.value,picked,me).length>=MAX_MENTIONS){picks=[];drawPicks('Mention up to 3 farmers in one message.');return;}
+  if(mentionIds(input.value,picked,me).length>=MAX_MENTIONS){picks=[];drawPicks('Mention up to 5 farmers in one message.');return;}
   const run=async()=>{
    let people=[];
    if(family)people=await members();
    else if(query.length>=2){try{people=(await bridge.request({operation:'player_search',query}))?.players??[];}catch{people=[];}}
    else people=await speakers();
    if(ticket!==pickTicket||!dialog.open)return;
-   picks=mentionMatches(people,query,{me,blocked:blocked()});pickActive=0;
+   picks=mentionMatches(people,query,{me,blocked:new Set([...blocked(),...mentionIds(input.value,picked,me)])});pickActive=0;
    drawPicks(!picks.length&&query.length>=2?'No farmers found. Try another name.':'');refreshArt();
   };
   if(!family&&query.length>=2)pickTimer=setTimeout(run,300);else void run();
@@ -640,7 +641,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(!canMention())return;
   const card=(await chat.cards?.([m.sender]).catch(()=>[])??[]).find(c=>c?.playerId===m.sender),name=card?.username??m.sender_name;
   if(!name||!canMention())return;
-  if(!picked.has(m.sender)&&mentionIds(input.value,picked,me).length>=MAX_MENTIONS){note('Mention up to 3 farmers in one message.');return;}
+  if(!picked.has(m.sender)&&mentionIds(input.value,picked,me).length>=MAX_MENTIONS){note('Mention up to 5 farmers in one message.');return;}
   const next=appendMention(input.value,name,input.maxLength>0?input.maxLength:200);if(!next)return;
   input.value=next.text;picked.set(m.sender,name);closePicks();input.focus({preventScroll:true});input.setSelectionRange(next.caret,next.caret);
  }
