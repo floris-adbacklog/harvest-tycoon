@@ -19,7 +19,7 @@ test('phones on the website: only a phone in the browser on harvesttycoon.com',(
 });
 
 test('a game from before the group never shows its pop-up, on any device',()=>{
- const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false,crazygames=false\}\)\{\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1];
+ const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false,crazygames=false\}\)\{\n(?: if\(crazygames===true\)return audience==='crazygames';\n)? (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1];
  const before=new Function('audience','{installed,phone,playApp=false,web=false,crazygames=false}',today.replace("||(audience==='phone_web'&&phone&&web===true&&!installed)",''));
  for(const device of [{installed:false,phone:true,web:true},{installed:false,phone:false,web:true},{installed:true,phone:true,playApp:true}])assert.equal(before('phone_web',device),false);
  assert.match(read('src/popup-ui.js'),/const popup=\(list\?\?\[\]\)\.find\(p=>fitsDevice\(p\.audience,device\(\)\)\);if\(!popup\)return;/,'skipped, so never marked as seen');

@@ -15,7 +15,7 @@ import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {chosenLanguage,ownWords,ownLine,ownText,setOwnText,translateText} from '../public/i18n.js';
-import {portalChat,portalOff} from '../public/portal.js';
+import {portal,portalChat,portalOff} from '../public/portal.js';
 import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
 import {wikiSectionTitle} from '../public/wiki-content.js';
 import {SITE,appPath,settingsPart} from '../public/game-links.js';
@@ -116,6 +116,12 @@ export const byLast=(a,b)=>(Date.parse(b.lastAt)||0)-(Date.parse(a.lastAt)||0)||
 export function mergeThreads(first,older){const seen=new Set();return [...(first??[]),...(older??[])].filter(t=>t?.channel&&!seen.has(t.channel)&&seen.add(t.channel));}
 // The header button counts news and notes, your family and your private messages. Global's own messages do not count: with the whole
 // valley talking, a number on the button would never go away. A mention of you there does (3 Oct 2026): it is meant for you.
+// No News inside CrazyGames (26 Oct 2026, the final Basic Launch): News goes to every farmer and often points elsewhere (a live stream, a
+// review in the App Store, a pass for sale), which CrazyGames does not allow; the links were already plain text there, now the News
+// itself stays away. Gifts, family notes and the rest still come. The count from our server includes News, so it is counted again here
+// from the newest notices: of the unread ones (always the newest), only those that are not News.
+export const newsShown=(found=portal())=>found?.name!=='crazygames';
+export const unreadWithoutNews=(rows,unread)=>(rows??[]).slice(0,Math.max(0,unread|0)).filter(n=>n.kind!=='news').length;
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0)+(unread?.mentions??0);
 const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you',purchase:'In-game purchase',family:'Farm Family'};
 const TITLES={notices:'Notifications',global:'Global chat',private:'Private chats'};
@@ -230,6 +236,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    // fall between the new 30th and the pages already there.
    // Below 99 rows the overview lists every chat with something unread, so a kept chat it no longer lists has nothing unread.
    if(olderMore!==null||loadingThreads){const listed=new Set((next?.threads??[]).map(t=>t.channel)),full=(next?.threads?.length??0)>=99;olderThreads=mergeThreads(overview?.threads,olderThreads).map(t=>full||listed.has(t.channel)||!t.unread?t:{...t,unread:0});}
+   if(!newsShown()&&next?.unread?.notices>0){const rows=await chat.notices().catch(()=>null);if(disposed)return;if(rows){const joined=Date.parse(next.joined??'')||0;next.unread.notices=unreadWithoutNews(rows.filter(n=>n.player_id||Date.parse(n.created_at)>joined),next.unread.notices);}}
    overview=next;button.hidden=switchedOff;settings();
    // What is on screen right now is read, even if the count raced ahead of it.
    if(dialog.open){const name=channelOf();if(tab==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=overview.unread.mentions=0;else if(name&&name===overview.family?.channel)overview.unread.family=0;else if(name)clearThread(name);}
@@ -434,7 +441,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(tab==='notices'){
    busy=true;paint();const fresh=unread().notices;
    // News from before you signed up (and a gift for everyone you could not have received) is not yours to read.
-   try{const rows=await chat.notices(),joined=Date.parse(overview?.joined??'')||0;if(ticket!==loading)return;notices=rows.filter(n=>n.player_id||Date.parse(n.created_at)>joined);freshNotices=fresh;}catch(error){if(ticket===loading)note(error.message);}
+   try{const rows=await chat.notices(),joined=Date.parse(overview?.joined??'')||0;if(ticket!==loading)return;notices=rows.filter(n=>(n.player_id||Date.parse(n.created_at)>joined)&&(n.kind!=='news'||newsShown()));freshNotices=fresh;}catch(error){if(ticket===loading)note(error.message);}
    if(ticket!==loading)return;busy=false;paint();markRead('notices');return;
   }
   const name=channelOf();if(!name){messages=[];paint();return;}
@@ -484,6 +491,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(event.type==='deleted'){if(messages.some(m=>m.id===event.id)){messages=messages.filter(m=>m.id!==event.id);if(dialog.open)paint();}return;}
   if(event.type==='edited'){const changed=event.message;if(changed&&messages.some(m=>m.id===changed.id)){messages=withEdit(messages,changed);if(dialog.open)paint();}return;}
   if(event.type==='notice'){
+   if(event.notice?.kind==='news'&&!newsShown())return;
    // A gift for everyone: an open game fetches it now (the farm adds it on load), a few seconds apart so not everyone asks at once.
    // A gift from the admin's Edit for this farmer alone (kind 'gift', 22 Oct 2026, the owner: it only showed after a refresh): it is
    // already in the farm, and the load shows its window (pendingGift), so fetch it at once.

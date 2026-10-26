@@ -31,7 +31,10 @@ export function inLanguage(item,code=chosenLanguage()){
 // Phones on the website (18 Oct 2026, the owner, phone_web: the pop-up "we also have a mobile app", "excl. dingen zoals Kong"): a phone
 // on harvesttycoon.com in its browser (web, and not on the home screen), never our apps or a game portal (phone_browser does include
 // Kongregate, CrazyGames and Discord on a phone). A game from before it skips it, as above; the offer passes no web.
+// Inside CrazyGames (26 Oct 2026, the final Basic Launch) only the CrazyGames group: a pop-up for everyone or for computers often
+// points elsewhere (a live stream, a post, the app), which CrazyGames does not allow, and its button was already left out there.
 export function fitsDevice(audience,{installed,phone,playApp=false,web=false,crazygames=false}){
+ if(crazygames===true)return audience==='crazygames';
  return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true)||(audience==='crazygames'&&crazygames===true)||(audience==='phone_web'&&phone&&web===true&&!installed);
 }
 

@@ -6,6 +6,9 @@
    (15 Oct 2026, off until Kongregate says yes) marks html[data-portal-shop] (src/game-cloud.js) and keeps the shop. */
 html[data-portal]:not([data-portal-shop]) #diamond-store,html[data-portal]:not([data-portal-shop]) [data-shop-jump="diamond-store"],html[data-portal]:not([data-portal-shop]) .get-diamonds,
 html[data-portal]:not([data-portal-shop]) #shop-pass,html[data-portal]:not([data-portal-shop]) .pass-paid-box,html[data-portal]:not([data-portal-shop]) .pass-cell.is-paid,html[data-portal]:not([data-portal-shop]) .pass-heads b:last-child{display:none!important}
+/* The Season Pass the same way (26 Oct 2026, the final CrazyGames Basic Launch): its banner in the shop, its buy box and the next season's
+   buy button, also should the page's own check (season-ui.js seasonSellsHere) ever miss the portal. */
+html[data-portal]:not([data-portal-shop]) #shop-season,html[data-portal]:not([data-portal-shop]) .season-paid-box,html[data-portal]:not([data-portal-shop]) .season-buy{display:none!important}
 html[data-portal]:not([data-portal-shop]) .pass-heads,html[data-portal]:not([data-portal-shop]) .pass-row{grid-template-columns:34px minmax(0,1fr)}
 @media(max-width:600px){html[data-portal]:not([data-portal-shop]) .pass-heads,html[data-portal]:not([data-portal-shop]) .pass-row{grid-template-columns:26px minmax(0,1fr)}}
 /* Invite a friend and Share my farm (both links to our website). */
