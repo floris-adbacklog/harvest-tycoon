@@ -82,6 +82,7 @@ import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
 import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
 import { giftPass,giftMessageText } from './farm-state.js';
+import { utcDay } from './farm-state.js';   // the shipping bin's morning note (binPaidNote); without it every farm with a paid bin failed to start (26 Oct 2026)
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
