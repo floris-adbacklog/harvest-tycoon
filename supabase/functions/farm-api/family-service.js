@@ -65,6 +65,20 @@ async function readContext(admin,player,family=null){
  if(fetched.error)throw fetched.error;
  return fetched.data;
 }
+// Actions read the same small context since 26 Oct 2026 (the owner: family actions take long): the whole history was about 250 ms
+// and half a megabyte for every action. tests/family-read.test.mjs plays five weeks of families and requires every action's answer,
+// farm and commit to be the same as with the whole context. The request's receipt (an action sent twice) is read beside it, by its key.
+// A move into another family (rare: once per farmer and family) still reads everything: the small context holds only the farmer's own
+// family's chest farmers, and a farmer joining a family must see its chest as it is.
+export const FAMILY_WHOLE_ACTIONS=Object.freeze(new Set(['family_join','family_accept_invite']));
+async function actionContext(admin,player,request,type){
+ if(FAMILY_WHOLE_ACTIONS.has(type)){const whole=await admin.rpc('harvest_family_context',{p_player:player,p_request:request});if(whole.error)throw whole.error;return whole.data;}
+ const [fetched,receipt]=await Promise.all([admin.rpc('harvest_family_read',{p_player:player,p_family:null}),
+  admin.from('family_receipts').select('result,failed').eq('player_id',player).eq('request_id',request).maybeSingle()]);
+ if(fetched.error?.code==='PGRST202'){const whole=await admin.rpc('harvest_family_context',{p_player:player,p_request:request});if(whole.error)throw whole.error;return whole.data;}
+ if(fetched.error)throw fetched.error;if(receipt.error)throw receipt.error;
+ return {...fetched.data,receipt:receipt.data?{result:receipt.data.result,failed:receipt.data.failed}:null};
+}
 // A family's profile (familyProfile, farm-state.js): read only, so it never settles a week or writes anything.
 export async function handleFamilyProfile({admin,body,state,player}){
  if(typeof body.familyId!=='string'||!body.familyId||body.familyId.length>64)return {status:422,data:{error:'Choose a family.',code:'ACTION_REJECTED'}};
@@ -128,7 +142,7 @@ export async function handleFamily({admin,body,row,state,player,username}){
  if(!reading&&body.action.type==='family_read')return {status:422,data:{error:'Use the Family view to refresh.',code:'ACTION_REJECTED'}};
  let before;
  if(reading)before=await addMemberLooks(admin,await readContext(admin,player),player);
- else{const fetched=await admin.rpc('harvest_family_context',{p_player:player,p_request:body.requestId});if(fetched.error)throw fetched.error;before=fetched.data;
+ else{before=await actionContext(admin,player,body.requestId,body.action.type);
   if(body.action.type==='family_emblem'&&Object.hasOwn(SEASON_EMBLEMS,String(body.action.emblem)))before=await addMemberLooks(admin,before,player);}
  const now=before.now;
  const response=(context,result,failed,written=false)=>({status:failed?422:200,data:failed?{error:result.error,code:'ACTION_REJECTED'}:reading?{profile:{player_id:player},family:familyFarmers(publicView(context,player,state,now),context,body),serverNow:now}:{state,profile:{player_id:player,username,currency:state.coins,level:levelOf(state)},result:{...result,family:publicView(context,player,state,now)},revision:row.revision+(written?1:0),serverNow:now}});
@@ -148,7 +162,8 @@ export async function handleFamily({admin,body,row,state,player,username}){
  const receipts=writeFarm?[...row.receipts,{id:body.requestId,result}].slice(-100):row.receipts;
  const saved=await admin.rpc('harvest_family_commit',{p_player:player,p_expected_family:before.revision,p_expected_farm:row.revision,p_week:familyWeek(now),p_changes:changes,p_settled:settled,p_write_farm:writeFarm,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state),p_request:reading?null:body.requestId,p_result:result,p_failed:failed});
  if(saved.error)throw saved.error;if(!saved.data)return null;
- if(writeFarm)await requestNotice(admin,body.action,result,context,player,username,now);
+ // The notice to the other farmer goes beside the reply (26 Oct 2026): the farmer who acted no longer waits for it.
+ if(writeFarm){const notice=requestNotice(admin,body.action,result,context,player,username,now);globalThis.EdgeRuntime?.waitUntil?.(notice);}
  // A farmer removed from the family shows in the family chat as a card (29 Sep 2026; supabase/family-kick-chat.sql allows the kind).
  // Only farm-api knows a removal from a leave: in family_members both look the same. Beside the reply, and never in its way.
  if(writeFarm&&body.action.type==='family_kick'){

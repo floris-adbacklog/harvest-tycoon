@@ -21,7 +21,7 @@ const tokenFor=(sub,session_id='s-1')=>`${part({alg:'HS256'})}.${part({sub,role:
 const user=id=>({id,email:`${id.slice(-2)}@example.com`,app_metadata:{provider:'google'},user_metadata:{}});
 const tick=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
-function farmApi({verified=user(A),authError=null,sessionActive=true,timing=false,consoleLog=true}={}){
+function farmApi({verified=user(A),authError=null,sessionActive=true,timing=false,consoleLog=true,donations=[],emailChecked=false}={}){
  const farms=new Map(),profiles=new Map(),events=[],logs=[],commits=[];let handler;
  for(const [id,coins,revision] of [[A,500,3],[B,9999,40]]){
   const state=rules.createFarm(NOW);state.coins=coins;
@@ -32,7 +32,9 @@ function farmApi({verified=user(A),authError=null,sessionActive=true,timing=fals
   auth:{async getUser(){events.push('getUser asked');await tick(15);events.push('getUser answered');return authError?{data:{user:null},error:authError}:{data:{user:structuredClone(verified)},error:null};},admin:{async updateUserById(){return {};}}},
   from(table){
    let player=null;
-   const api={select(){return api;},update(){return api;},eq(key,value){if(key==='player_id')player=value;return api;},gt(){return api;},or(){return api;},order(){return api;},limit(){return Promise.resolve({data:[]});},
+   // A list query (the staff's gifts, the invited friends) answers when awaited, a little later, and notes when it went out.
+   const list=async()=>{events.push(`${table} asked`);await tick(10);events.push(`${table} answered`);return {data:table==='staff_donations'?structuredClone(donations):[],error:null};};
+   const api={select(){return api;},update(){return api;},eq(key,value){if(key==='player_id')player=value;return api;},gt(){return api;},or(){return api;},order(){return api;},not(){return api;},in(){return api;},limit:list,then:(resolve,reject)=>list().then(resolve,reject),
     insert:async()=>({}),upsert:async()=>({}),
     async maybeSingle(){events.push(`${table} ${player===A?'A':player===B?'B':player}`);await tick(5);
      return {data:table==='player_farms'?structuredClone(farms.get(player)??null):table==='player_stats'?structuredClone(profiles.get(player)??null):null,error:null};}};
@@ -40,7 +42,7 @@ function farmApi({verified=user(A),authError=null,sessionActive=true,timing=fals
   },
   async rpc(name,args){
    if(name==='harvest_session_active'){events.push(`session ${args.p_player===A?'A':'B'}`);await tick(5);return {data:sessionActive,error:null};}
-   if(name==='harvest_email_checked')return {data:false,error:null};
+   if(name==='harvest_email_checked'){events.push('email asked');await tick(10);events.push('email answered');return {data:emailChecked,error:null};}
    if(name==='harvest_commit_farm'){
     const row=farms.get(args.p_player);commits.push({player:args.p_player,expected:args.p_expected});
     if(!row||row.revision!==args.p_expected)return {data:false,error:null};
@@ -124,6 +126,23 @@ test('a body that is too large, no JSON or no known request is refused after the
  assert.ok(rename.events.indexOf('player_stats A')>rename.events.indexOf('getUser answered'));
 });
 
+test('opening the game: the staff\'s gifts, the invited friends and the email check go out together; the gift and the bonus as before',async()=>{
+ const gift={id:'00000000-0000-4000-8000-00000000d001',coins:150,diamonds:2,message:'Thanks for playing!',per_level:false};
+ const api=farmApi({donations:[gift],emailChecked:true}),r=await api.send({operation:'load'});
+ assert.equal(r.status,200,JSON.stringify(r.data));
+ const asked=['staff_donations asked','referrals asked','email asked'].map(e=>api.events.indexOf(e)),firstAnswer=Math.min(...['staff_donations answered','referrals answered','email answered'].map(e=>api.events.indexOf(e)));
+ assert.ok(asked.every(i=>i>=0&&i<firstAnswer),`all three out before the first answer: ${api.events.join(', ')}`);
+ assert.equal(r.data.gift.coins,150);assert.equal(r.data.gift.diamonds,2,'a Google account gets the email bonus quietly: only the staff\'s diamonds');assert.equal(r.data.gift.message,'Thanks for playing!');
+ assert.ok(r.data.state.emailBonus,'the email bonus paid');
+ // A farm that has its bonus asks no more.
+ const again=farmApi();again.farms.get(A).state.emailBonus=NOW;await again.send({operation:'load'});assert.ok(!again.events.includes('email asked'));
+});
+test('one load in 20 logs its steps too: account, profile, farm and the extras read beside it',async()=>{
+ const timed=farmApi({timing:true});await timed.send({operation:'load'});
+ const line=JSON.parse(timed.logs.find(l=>l.includes('"timing":"load"')));
+ assert.deepEqual(Object.keys(line).filter(k=>['auth','profile','farm','extras'].includes(k)),['auth','profile','farm','extras']);
+ assert.ok(line.extras>=line.farm&&line.farm>=line.auth);assert.doesNotMatch(JSON.stringify(line),/[0-9a-f]{8}-[0-9a-f]{4}-/);
+});
 test('one action in 20 logs its steps in order, in ms from the start, with no player in it; the others log nothing',async()=>{
  const timed=farmApi({timing:true});await timed.send(harvest);
  assert.equal(timed.logs.length,1,timed.logs.join('\n'));

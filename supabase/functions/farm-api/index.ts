@@ -36,8 +36,8 @@ const ask=(query:PromiseLike<any>)=>Promise.resolve().then(()=>query).catch((err
 // The operations that open the player's own farm: their profile and farm row are read beside the account check (26 Oct 2026).
 const FARM_OPERATIONS=new Set(['load','action','family','family_profile','invite']);
 const PROFILE_FIELDS='player_id,username,currency,level,avatar_id,events_finished,look';
-// One action in 20 logs how long each step took (ms from the start: account, profile, farm, apply, commit, reply), to see where a
-// tap's wait goes (26 Oct 2026).
+// One request in 20 logs how long each step took, in ms from the start: an action its account, profile, farm, apply, commit and reply
+// (26 Oct 2026), a load its account, profile, farm and the extras read beside it (the staff's gifts, invited friends, email check).
 const TIMING_SHARE=0.05;
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 // The team's Sign in with Apple key (16 Oct 2026, apple-sign-in-service.js), set by the owner as secrets: without it no Apple token is
@@ -295,8 +295,12 @@ Deno.serve(async(req)=>{
     // in the last 7 days, to everyone (no recipients) or with this farmer among its recipients: added once, shown in the same
     // "Donation!" pop-up.
     const since=new Date(Math.max(now-7*86400000,Date.parse(user.created_at??'')||now)).toISOString();
-    let donated:unknown[]=[];
-    try{const found=await admin.from('staff_donations').select('id,coins,diamonds,message,per_level').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40);if(!found.error)donated=found.data??[];}catch{}
+    // The staff's gifts, the invited friends who reached level 10 and the email check go out together (26 Oct 2026: one after another
+    // they were three waits on every opening of the game); each answer is used below in the same order as before.
+    const donationsRead=Promise.resolve().then(()=>admin.from('staff_donations').select('id,coins,diamonds,message,per_level').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40)).then((found:{error?:unknown,data?:unknown[]})=>found.error?[]:found.data??[],()=>[]);
+    const friendsRead=qualifiedFriends(admin,user.id).catch(()=>[]);
+    const emailRead=state.emailBonus?null:Promise.resolve().then(()=>admin.rpc('harvest_email_checked',{p_player:user.id})).catch(()=>({error:true,data:null}));
+    const donated:unknown[]=await donationsRead;
     const donations=receiveDonations(state,donated),fromStaff={coins:donations.reduce((sum,d)=>sum+d.coins,0),diamonds:donations.reduce((sum,d)=>sum+d.diamonds,0)};
     if(donations.length){
      const coins=donations.reduce((sum,d)=>sum+d.coins,0),diamonds=donations.reduce((sum,d)=>sum+d.diamonds,0),message=donations.findLast(d=>d.message)?.message??null;
@@ -304,19 +308,19 @@ Deno.serve(async(req)=>{
     }
     // Invite a friend: this farm's own reward at level 10 (also when it got there through a family reward), and the
     // rewards for friends it invited who reached level 10 since the last visit.
-    const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await qualifiedFriends(admin,user.id).catch(()=>[]));
+    const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await friendsRead);
     // A confirmed email pays EMAIL_BONUS diamonds once (farm-state.js): Google and Facebook at once, an email sign-up after its code.
     // A problem with this check never stops the farm from opening: the bonus simply waits for the next load. Google and Facebook
     // accounts get it quietly; an email sign-up that just typed its code sees it in the gift pop-up.
     let emailBonusPaid=false;
-    if(!state.emailBonus){
-     const checked=await Promise.resolve().then(()=>admin.rpc('harvest_email_checked',{p_player:user.id})).catch(()=>({error:true,data:null}));
+    if(emailRead){
+     const checked=await emailRead;
      if(!checked.error&&checked.data===true&&grantEmailBonus(state,now)){
       emailBonusPaid=true;
       if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
-    const back=await rejoining;
+    const back=await rejoining;mark('extras');if(timed)try{console.log(JSON.stringify({timing:'load',attempt,...marks}));}catch{}
     if(back?.offer&&welcome)Object.assign(welcome,{family:back.offer});
     // The family flag by the Family Hall goes when the farmer is in no family any more (left for being away, or removed meanwhile).
     if(back&&!back.inFamily&&state.family?.familyId)state.family={familyId:null,unclaimedCount:state.family.unclaimedCount??0};

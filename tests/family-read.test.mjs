@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {createFarm,normalizeFarm,xpForLevel,familyWeek,familyWeekStart,createShowcaseFarm,DAY_MS} from '../supabase/functions/farm-api/farm-state.js';
-import {handleFamily,handleFamilyProfile} from '../supabase/functions/farm-api/family-service.js';
+import {handleFamily,handleFamilyProfile,FAMILY_WHOLE_ACTIONS} from '../supabase/functions/farm-api/family-service.js';
 
 // 13 Oct 2026: a family read (the Family window every 30 seconds, chat's @mention list) and the family profile ask the database for
 // only the rows the rules use for this farmer (supabase/family-read.sql, harvest_family_read) instead of every family's whole history
@@ -52,7 +52,10 @@ function client(db,now,mode='after'){
   if(name==='harvest_family_read'){const data=mode==='before'?fullContext(db,args.p_player,null,now):readContext(db,args.p_player,args.p_family??null,now);sizes.rewards=data.rewards.length;return {data,error:null};}
   if(name==='harvest_family_commit'){commits.push(args);return {data:true,error:null};}
   throw new Error(`unexpected rpc ${name}`);
- },from:()=>({select(){return this;},eq(_,value){this.value=value;return this;},async maybeSingle(){const p=db.players.find(x=>x.player_id===this.value);return {data:p?{player_id:p.player_id,username:p.username,level:p.level}:null,error:null};},insert:async()=>({error:null})})};
+ },from:table=>({filters:{},select(){return this;},eq(key,value){this.filters[key]=value;this.value=value;return this;},async maybeSingle(){
+  // An action's receipt (26 Oct 2026: actions read harvest_family_read and look their receipt up by its key, family_receipts' primary key).
+  if(table==='family_receipts'){calls.push(['family_receipts',{...this.filters}]);const r=db.receipts.find(x=>x.player_id===this.filters.player_id&&x.request_id===this.filters.request_id);return {data:r?{result:r.result,failed:r.failed}:null,error:null};}
+  const p=db.players.find(x=>x.player_id===this.value);return {data:p?{player_id:p.player_id,username:p.username,level:p.level}:null,error:null};},insert:async()=>({error:null})})};
 }
 // What harvest_family_commit does to the rows (the guards that matter here included: a reward is never paid twice, a week is settled once).
 function commit(db,args,now){
@@ -101,6 +104,33 @@ async function compareProfile(db,player,familyId,state,now){
 // A seeded random source, so a failing run can be replayed.
 function rng(seed){return ()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
 const uuidFrom=random=>()=>{const s=Array.from({length:32},()=>Math.floor(random()*16).toString(16)).join('');return `${s.slice(0,8)}-${s.slice(8,12)}-4${s.slice(13,16)}-a${s.slice(17,20)}-${s.slice(20)}`;};
+// One action as the game sends it, with the whole context (as every action read until 26 Oct 2026) and with harvest_family_read plus the
+// receipt by its key: the same answer, the same farm and the same commit. Both runs get the same new ids and random numbers.
+const ACTIONS_SEEN=new Set();
+async function compareAction(db,player,action,state,now,seed,requestId){
+ const runs=[],savedUuid=Object.getOwnPropertyDescriptor(crypto,'randomUUID'),savedValues=Object.getOwnPropertyDescriptor(crypto,'getRandomValues');
+ try{
+  for(const mode of ['before','after']){
+   const random=rng(seed);crypto.randomUUID=uuidFrom(random);crypto.getRandomValues=a=>{for(let i=0;i<a.length;i++)a[i]=Math.floor(random()*4294967296);return a;};
+   const admin=client(db,now,mode),s=structuredClone(state);
+   const response=await handleFamily({admin,body:{operation:'action',action,requestId},row:{revision:7,receipts:[]},state:s,player,username:nameOf(db,player)});
+   runs.push({response,state:s,commits:admin.commits,calls:admin.calls,sizes:admin.sizes});
+  }
+ }finally{
+  if(savedUuid)Object.defineProperty(crypto,'randomUUID',savedUuid);else delete crypto.randomUUID;
+  if(savedValues)Object.defineProperty(crypto,'getRandomValues',savedValues);else delete crypto.getRandomValues;
+ }
+ const [before,after]=runs;
+ if(FAMILY_WHOLE_ACTIONS.has(action.type))assert.deepEqual(after.calls[0],['harvest_family_context',{p_player:player,p_request:requestId}],'a move into another family reads everything');
+ else{
+  assert.deepEqual(after.calls.slice(0,2),[['harvest_family_read',{p_player:player,p_family:null}],['family_receipts',{player_id:player,request_id:requestId}]],'the small read and the receipt, side by side');
+  assert.ok(!after.calls.some(([name])=>name==='harvest_family_context'),'never the whole history');
+ }
+ assert.deepEqual(after.response,before.response,`the same answer (${action.type})`);
+ assert.deepEqual(after.state,before.state,`the same farm (${action.type})`);
+ assert.deepEqual(after.commits,before.commits,`the same commit (${action.type})`);
+ return after;
+}
 
 // Five weeks of families, every four hours: farmers play (the chest trigger), create, join, ask, invite, answer, contribute, claim,
 // leave, remove, change ranks and who can join; every step some farmers (also the admin's showcase farm and one below level 10) read
@@ -175,13 +205,20 @@ async function simulate(seed){
     const mine=db.chestPlayers.find(c=>c.family_id===fam.id&&c.week===week&&c.player_id===p);if(mine)mine.points+=points;else db.chestPlayers.push({family_id:fam.id,week,player_id:p,points});
     db.players.find(x=>x.player_id===p).last_active_at=new Date(now).toISOString();
    }
-   // Actions read the whole context, as before.
+   // Actions (26 Oct 2026): every one with the whole context and with harvest_family_read, compared; now and then the same request again
+   // (a tap sent twice), which answers from its receipt and writes nothing.
    for(let n=0;n<5;n++){
     const p=pick(players),a=action(p,now);if(!a)continue;
-    const admin=client(db,now);
-    const done=await handleFamily({admin,body:{operation:'action',action:a,requestId:uuid()},row:{revision:7,receipts:[]},state:states.get(p),player:p,username:nameOf(db,p)});
-    assert.ok(done);assert.equal(admin.calls[0][0],'harvest_family_context','actions keep the whole context');
-    if(admin.commits[0])commit(db,admin.commits[0],now);
+    const request=uuid(),after=await compareAction(db,p,a,states.get(p),now,Math.floor(random()*2147483647),request);
+    assert.ok(after.response);stats.actions=(stats.actions??0)+1;ACTIONS_SEEN.add(a.type);
+    if(after.sizes.rewards<db.rewards.length)stats.narrowerActions=(stats.narrowerActions??0)+1;
+    states.set(p,after.state);if(after.commits[0])commit(db,after.commits[0],now);
+    if(after.response.status===200&&chance(.15)){
+     const again=await compareAction(db,p,a,states.get(p),now,1,request);
+     assert.deepEqual(again.commits,[],'a request sent twice writes nothing the second time');
+     const {family:_now,...answered}=again.response.data.result??{},{family:_then,...first}=after.response.data.result??{};assert.deepEqual(answered,first,'and answers what it answered (the family view as it is now)');
+     stats.replays=(stats.replays??0)+1;
+    }
     const target=a.memberId?db.members.find(m=>m.id===a.memberId)?.player_id:a.playerId??db.requests.find(r=>r.id===a.requestId)?.player_id;
     if(target&&target!==p)watch.push(target);
    }
@@ -190,7 +227,7 @@ async function simulate(seed){
  }finally{if(savedUuid)Object.defineProperty(crypto,'randomUUID',savedUuid);else delete crypto.randomUUID;}
 }
 
-test('five weeks of families: every read, profile and commit is the same with harvest_family_read as with the whole history',async()=>{
+test('five weeks of families: every read, profile, action and commit is the same with harvest_family_read as with the whole history',async()=>{
  const total={};
  for(const seed of [11,2026]){
   const {db,stats}=await simulate(seed);
@@ -200,6 +237,9 @@ test('five weeks of families: every read, profile and commit is the same with ha
  }
  // The comparison went through every path that reads the rows the new function leaves out (busyDb below has each of them too).
  for(const [k,n] of Object.entries(total))assert.ok(n>0,`no read with ${k} (${JSON.stringify(total)})`);
+ // And every kind of family action the game sends was compared (26 Oct 2026: actions read harvest_family_read too).
+ assert.deepEqual([...ACTIONS_SEEN].sort(),['family_accept_invite','family_cancel_invite','family_claim','family_contribute','family_create','family_decline_invite','family_invite','family_join','family_join_mode','family_kick','family_leave','family_min_level','family_rank','family_request','family_request_accept','family_request_cancel','family_request_decline','family_tournament_goods']);
+ assert.ok(total.narrowerActions>total.actions/2,'most actions got far fewer rewards');assert.ok(total.replays>5);
 });
 
 // Two weeks nobody settled (no read or action since), a partly filled order in each, a whole order already paid, chest tiers this week
@@ -268,14 +308,23 @@ test('a Monday after a week nobody opened: two weeks settle on the first read, c
  }
 });
 
-test('reads and profiles ask harvest_family_read; actions keep the whole context and every rule',async()=>{
+test('reads, profiles and actions ask harvest_family_read (actions with their receipt beside it); a move into another family reads everything',async()=>{
  const now=familyWeekStart(2962)+DAY_MS,{db,P,f2}=busyDb(now);
  const reader=client(db,now);await handleFamily({admin:reader,body:{operation:'family'},row:{revision:1,receipts:[]},state:farm(20,now),player:P[0],username:'A'});
  assert.deepEqual(reader.calls.map(c=>c[0]),['harvest_family_read','harvest_family_commit']);assert.deepEqual(reader.calls[0][1],{p_player:P[0],p_family:null});
  const viewer=client(db,now);await handleFamilyProfile({admin:viewer,body:{familyId:f2},state:farm(20,now),player:P[0]});
  assert.deepEqual(viewer.calls,[['harvest_family_read',{p_player:P[0],p_family:f2}]]);
  const actor=client(db,now);await handleFamily({admin:actor,body:{operation:'action',action:{type:'family_leave'},requestId:'r-1'},row:{revision:1,receipts:[]},state:farm(20,now),player:P[3],username:'D'});
- assert.deepEqual(actor.calls[0],['harvest_family_context',{p_player:P[3],p_request:'r-1'}]);
+ assert.deepEqual(actor.calls.slice(0,2),[['harvest_family_read',{p_player:P[3],p_family:null}],['family_receipts',{player_id:P[3],request_id:'r-1'}]]);
+ assert.deepEqual([...FAMILY_WHOLE_ACTIONS].sort(),['family_accept_invite','family_join']);
+ const mover=client(db,now);await handleFamily({admin:mover,body:{operation:'action',action:{type:'family_join',familyId:f2},requestId:'r-2'},row:{revision:1,receipts:[]},state:farm(20,now),player:P[13],username:'N'});
+ assert.deepEqual(mover.calls[0],['harvest_family_context',{p_player:P[13],p_request:'r-2'}]);
+ // Without family-read.sql (no such function yet) an action takes the whole context, as a read does.
+ const old=client(db,now);const rpc=old.rpc;old.rpc=async(name,args)=>name==='harvest_family_read'?{data:null,error:{code:'PGRST202'}}:rpc(name,args);
+ await handleFamily({admin:old,body:{operation:'action',action:{type:'family_leave'},requestId:'r-3'},row:{revision:1,receipts:[]},state:farm(20,now),player:P[4],username:'E'});
+ assert.ok(old.calls.some(c=>c[0]==='harvest_family_context'&&c[1].p_request==='r-3'));
+ // The other farmer's notice goes beside the reply.
+ assert.match(read('supabase/functions/farm-api/family-service.js'),/if\(writeFarm\)\{const notice=requestNotice\(admin,body\.action,result,context,player,username,now\);globalThis\.EdgeRuntime\?\.waitUntil\?\.\(notice\);\}/);
  // Chat's @mention list reads the same answer's members.
  assert.match(read('src/chat-ui.js'),/bridge\.request\(\{operation:'family'\}\);const list=\(data\?\.family\?\.members\?\?\[\]\)/);
 });
