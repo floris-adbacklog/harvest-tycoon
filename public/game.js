@@ -72,6 +72,7 @@ import { nextGoal, readyAllAt } from './next-goal.js';
 import { createWaitTip } from './wait-tip.js';
 import { createFertilizerTip } from './fertilizer-tip.js';
 import { computerWindow,timerKey,timerGroups,createFullScreenOffer } from './small-window.js';
+import { createRateAsk } from './rate-ask.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -2837,6 +2838,8 @@ async function init(){
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});
+  // Kongregate (26 Oct 2026, the owner): once on this device from level 10, a plain question to rate the game (public/rate-ask.js).
+  if(!adminView&&!visitView)createRateAsk({state,show:(text,options)=>toast(text,options),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});
   // The Fishing pond (11 Oct 2026): farm only (never in the village), never on the admin's showcase farm.
   if(POND_OPEN&&!villageWorld&&!adminView)void import('./pond-ui.js').then(({createPond})=>{pond=createPond({state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:focusFields});positionBuildingLabels();}).catch(error=>console.error('Fishing pond failed',error?.message));
   // The village lake (12 Oct 2026, plan D): the pond's screen for the lake, at the rowboat (village-scene.js VILLAGE_FISHING_SPOT; that

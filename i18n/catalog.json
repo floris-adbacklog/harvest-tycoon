@@ -1697,6 +1697,7 @@
 "Ended events cannot be activated.":"supabase/functions/farm-api/event-service.js",
 "Ends in":"public/family-tournament.js",
 "Ends in {0}":"public/pass-ui.js",
+"Enjoying Harvest Tycoon? Please rate it on Kongregate and help more players discover the game.":"public/rate-ask.js",
 "Enough XP brings a new level. Every level gives coins and diamonds, and opens new crops, buildings or things to do. A message tells you what opened and where to find it.":"public/wiki-content.js",
 "Enter":"public/estate-ui.js",
 "Enter 2–20 characters to find a farmer.":"supabase/functions/farm-api/player-profile-service.js",
