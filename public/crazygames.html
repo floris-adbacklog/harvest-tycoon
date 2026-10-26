@@ -17,7 +17,10 @@
 <noscript><p>Enable JavaScript to play Harvest Tycoon.</p></noscript>
 <script type="module" src="/cloud/crazygames.js"></script>
 <!-- The farm downloads while the account is being checked (7 Oct 2026): farm.html, what it loads and the models, prefetched at the
-     lowest priority after this page's own files (scripts/module-preload.mjs writes the list). -->
+     lowest priority after this page's own files (scripts/module-preload.mjs writes the list). Kept in a template until this page's own
+     script runs (26 Oct 2026, src/crazygames.js startPrefetch): on a slow phone line the 4.5 MB of prefetches shared the line with that
+     script, which then came in after 29 s instead of 3. -->
+<template id="farm-prefetch">
 <!-- farm-prefetch:start -->
 <link rel="prefetch" href="/farm.html">
 <link rel="prefetch" href="/compat.js">
@@ -319,4 +322,5 @@
 <link rel="prefetch" href="/assets/models/house_023.glb">
 <link rel="prefetch" href="/assets/models/dray_003.glb">
 <!-- farm-prefetch:end -->
+</template>
 </body></html>
