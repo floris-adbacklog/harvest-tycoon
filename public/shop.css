@@ -19,6 +19,10 @@
 #boost-dialog .boost-detail[data-state=ready]{background:#e6f1dc;color:#4d6f34}
 #boost-dialog .boost-detail[data-state=active]{background:#dcecf6;color:#2f6a8b}
 #boost-dialog .boost-detail[data-state=need]{background:#f3ece0;color:#8a7443}
+/* A Double XP weekend (27 Oct 2026): Double XP is included (not for sale); the farm's own waits until after it. */
+#boost-dialog .boost-detail[data-state=included]{background:#e6f1dc;color:#4d6f34}
+#boost-dialog .boost-detail[data-state=wait]{background:#dcecf6;color:#2f6a8b}
+#boost-dialog .boost-included{border-color:#bcd9ab;background:#f4faef}
 #boost-dialog .boost-active{border-color:#a9cde0;background:#f0f8fc}
 /* Price button: the same size and layout for every offer (gem and number on one line, the action beneath). */
 #boost-dialog .boost-buy{grid-area:buy;display:grid;grid-template-rows:auto auto;justify-items:center;align-content:center;gap:2px;width:96px;height:62px;min-height:0;padding:6px;flex-wrap:nowrap;border:1px solid #9fc4da;border-radius:14px;background:#e3f3fd;color:#1f5877;box-shadow:0 2px 0 #b8d6e6;font-size:inherit;cursor:pointer;transition:background .15s,transform .15s}

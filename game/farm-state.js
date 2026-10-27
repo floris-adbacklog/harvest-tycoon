@@ -1817,6 +1817,40 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
 export const BOOST_DURATIONS=Object.freeze({'30m':1800000,'1h':3600000,'1d':86400000});
 export const BOOST_LENGTH_NAMES=Object.freeze({'30m':'30 minutes','1h':'1 hour','1d':'1 day'});
 const BOOST_UNTIL=Object.freeze({xp:'xpUntil',harvest:'harvestUntil',coins:'coinsUntil',farmhand:'farmhandUntil'});
+// The Double XP weekend (27 Oct 2026, the owner: "Double XP weekend ... geen Double XP extra kunnen kopen in de shop, je kan niet stacken,
+// ook niet in daily rewards"). The admin starts it from the Admin panel (supabase/xp-weekend.sql, 1 to 72 hours, now or later); farm-api
+// reads it from the database (xp-weekend-service.js, cached) and sets it here before it works out a farm, and every answer carries it, so
+// the game sets the same one and its taps come out as the server's. While it runs every farm, from level 1, earns double XP: once, so a
+// Double XP boost of its own adds nothing on top. The farm's own Double XP waits until the weekend is over (the owner, 1A): the time a
+// bought one had left when the weekend began is added after its end (holdXpBoost, once per weekend: boosts.xpWeekend), and one that comes
+// during the weekend (the daily gift, the comeback chest, a pass reward) starts at its end (addBoostTime). Double XP cannot be bought
+// while it runs (boostStatus). Never from the game: a farm never sets it from its own request.
+let xpWeekendNow=null;
+export const XP_WEEKEND_NAME='Double XP weekend';
+export function setXpWeekend(weekend){
+ const w=weekend&&typeof weekend==='object'?weekend:null,startsAt=Number(w?.startsAt),endsAt=Number(w?.endsAt);
+ xpWeekendNow=w&&typeof w.id==='string'&&w.id&&Number.isFinite(startsAt)&&Number.isFinite(endsAt)&&endsAt>startsAt?Object.freeze({id:w.id,startsAt,endsAt}):null;
+ return xpWeekendNow;
+}
+// The weekend running at now, or null (one that is still to come, or over, is null).
+export function xpWeekend(now=Date.now()){const w=xpWeekendNow;return w&&now>=w.startsAt&&now<w.endsAt?w:null;}
+// Whether this farm's XP is doubled at now: the weekend, or its own Double XP. Never both: always twice, never four times.
+export const xpDoubled=(state,now=Date.now())=>Boolean(xpWeekend(now))||state?.boosts?.xpUntil>now;
+// The farm's own Double XP during a weekend: the time it had left when the weekend began goes after the weekend's end, once per weekend.
+// A Double XP that ran out before the weekend began is left alone.
+function holdXpBoost(state,now){
+ const w=xpWeekend(now),b=state.boosts;if(!w||b.xpWeekend===w.id)return;
+ if(b.xpUntil>w.startsAt)b.xpUntil+=w.endsAt-w.startsAt;
+ b.xpWeekend=w.id;
+}
+// What is left of the farm's own Double XP after the weekend (shown as waiting), 0 outside a weekend or without one.
+export function xpBoostWaiting(state,now=Date.now()){const w=xpWeekend(now);return w?Math.max(0,(state?.boosts?.xpUntil??0)-Math.max(now,w.endsAt)):0;}
+// Time on a timed boost (a gift, a chest, a pass reward, one bought): after the time it has left; Double XP during a weekend after its end.
+function addBoostTime(state,id,ms,now){
+ const key=BOOST_UNTIL[id];let from=Math.max(state.boosts[key]??0,now);
+ if(id==='xp'){const w=xpWeekend(now);if(w)from=Math.max(from,w.endsAt);}
+ state.boosts[key]=from+ms;return state.boosts[key];
+}
 export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:50,duration:1800000,prices:Object.freeze({'30m':50,'1h':90,'1d':300}),art:'double-xp',description:'Earn twice the XP from farm actions.'},
  // Between Double XP and Double earnings: it doubles crops only, not goods or deliveries, and at most one waiting harvest per field.
@@ -1840,20 +1874,21 @@ export function boostOffer(id,length='30m'){
 }
 export function boostStatus(state,id,now=Date.now(),length='30m'){
  const boost=BOOSTS[id],offer=boostOffer(id,length),until=BOOST_UNTIL[id]?state.boosts?.[BOOST_UNTIL[id]]:0;
- const remaining=Math.max(0,(until??0)-now);
+ const weekend=id==='xp'?xpWeekend(now):null,remaining=weekend?0:Math.max(0,(until??0)-now);
  let reason='';
+ if(weekend)reason=`Included in the ${XP_WEEKEND_NAME}`;
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
  if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
  if(id==='production'&&!Object.entries(state.buildings).some(([key,b])=>key!=='factory'&&productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
- return {...boost,...offer,remaining,reason,canBuy:!reason&&state.diamonds>=offer.cost};
+ return {...boost,...offer,remaining,reason,canBuy:!reason&&state.diamonds>=offer.cost,...(weekend?{weekendLeft:weekend.endsAt-now,waiting:xpBoostWaiting(state,now)}:{})};
 }
 export function buyBoost(state,id,now=Date.now(),length='30m'){
  const status=boostStatus(state,id,now,length);
  if(status.reason)throw new Error(status.reason+'.');
  if(state.diamonds<status.cost)throw new Error(`You need ${status.cost} diamonds. Earn more from daily gifts and challenges.`);
  const key=BOOST_UNTIL[id];
- if(key)state.boosts[key]=Math.max(now,state.boosts[key]??0)+status.duration;
+ if(key)addBoostTime(state,id,status.duration,now);
  if(id==='upgrade')state.boosts.upgradeCredits=1;
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
@@ -2879,6 +2914,9 @@ export function normalizeFarm(state,now=Date.now()){
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','farmhandUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
+ // The Double XP weekend this farm's own Double XP already waits for (holdXpBoost): a weekend's id, or nothing.
+ if(typeof state.boosts.xpWeekend!=='string'||state.boosts.xpWeekend.length>64)delete state.boosts.xpWeekend;
+ holdXpBoost(state,now);
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
  state.stats??={};migrateProgression(state);migrateFeatureLevels(state);migrateUnlockSpread(state);migrateGradualUnlocks(state);
@@ -3001,30 +3039,32 @@ export function saveReady(state,now=Date.now()){const saved=state.login?.savedDa
 // The coins of a streak day at a farm level (before VIP): the day's coins × half the level, never less, in fives.
 export function giftCoins(streak,level){return Math.round(DAILY_REWARDS[Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1]*Math.max(1,level/2)/5)*5;}
 export function dailyGift(state,streak,now=Date.now()){
- const index=Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1,multiplier=dailyRewardMultiplier(state,now);
+ const index=Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1,multiplier=dailyRewardMultiplier(state,now),boost=DAILY_BOOSTS[(Math.max(1,streak)-1)%7+1]??null;
  return {coins:giftCoins(streak,levelOf(state))*multiplier,diamonds:DAILY_DIAMONDS[index]*multiplier,xp:10*multiplier,
-  boost:DAILY_BOOSTS[(Math.max(1,streak)-1)%7+1]??null,boostMs:DAILY_BOOST_MS*multiplier};   // VIP doubles the gift: an hour
+  boost,boostMs:DAILY_BOOST_MS*multiplier,...afterWeekend(boost,now)};   // VIP doubles the gift: an hour
 }
+// A Double XP that comes during a Double XP weekend starts when it ends: the gift and the chest say so (afterWeekend: true).
+const afterWeekend=(boost,now)=>boost==='xp'&&xpWeekend(now)?{afterWeekend:true}:{};
 export function checkIn(state,now=Date.now()){
  normalizeFarm(state,now);const day=utcDay(now),today=streakToday(state,now);
  if(today.claimed)throw new Error('Your daily gift is already collected.');
- const {coins,diamonds,xp,boost,boostMs}=dailyGift(state,today.streak,now);   // the level before this gift's XP
+ const {coins,diamonds,xp,boost,boostMs,afterWeekend:later}=dailyGift(state,today.streak,now);   // the level before this gift's XP
  state.login.streak=today.streak;if(today.saved)state.login.savedDay=day;
  state.login.lastDay=day;state.login.best=Math.max(state.login.best,state.login.streak);state.login.visits++;
  state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
- if(boost)state.boosts[BOOST_UNTIL[boost]]=Math.max(state.boosts[BOOST_UNTIL[boost]]??0,now)+boostMs;
+ if(boost)addBoostTime(state,boost,boostMs,now);
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
  // Coming back on a second day: the gift brings 30 minutes of double harvest as well, once (guided farms).
  const returnBoost=guidedFarm(state)&&state.login.visits===2;
  if(returnBoost)state.boosts.harvestUntil=Math.max(state.boosts.harvestUntil??0,now)+RETURN_BOOST_MS;
- return {coins,diamonds,streak:state.login.streak,xp,...(boost?{boost,boostMinutes:boostMs/60000}:{}),...(today.saved?{saved:true}:{}),...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
+ return {coins,diamonds,streak:state.login.streak,xp,...(boost?{boost,boostMinutes:boostMs/60000,...(later?{afterWeekend:true}:{})}:{}),...(today.saved?{saved:true}:{}),...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
 }
 // The comeback chest's coins for the days away (3 to 7) at a farm level, before VIP: like giftCoins, × half the level, in fives.
 export function comebackCoins(days,level){return Math.round(COMEBACK_COINS*Math.min(Math.max(days,COMEBACK_MIN_DAYS),COMEBACK_MAX_DAYS)*Math.max(1,level/2)/5)*5;}
 // The chest waiting on this farm, or null: worked out at the level and VIP of the moment it is opened, like the daily gift.
 export function comebackChest(state,now=Date.now()){
  const p=state.comeback?.pending;if(!p)return null;const m=dailyRewardMultiplier(state,now);
- return {days:p.days,coins:comebackCoins(p.days,levelOf(state))*m,boost:COMEBACK_BOOST,boostMs:DAILY_BOOST_MS*m};
+ return {days:p.days,coins:comebackCoins(p.days,levelOf(state))*m,boost:COMEBACK_BOOST,boostMs:DAILY_BOOST_MS*m,...afterWeekend(COMEBACK_BOOST,now)};
 }
 // Only farm-api calls this, on a load: `away` is the time since player_farms.updated_at, which only the database sets, so the days
 // away never come from the game (3 days away is always a Welcome back too, so that load is saved with the chest). It never stacks
@@ -3036,9 +3076,9 @@ export function offerComeback(state,away,now=Date.now()){
 }
 export function collectComeback(state,now=Date.now()){
  const chest=comebackChest(state,now);if(!chest)throw new Error('No comeback chest is waiting.');
- state.coins+=chest.coins;const key=BOOST_UNTIL[chest.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+chest.boostMs;
+ state.coins+=chest.coins;addBoostTime(state,chest.boost,chest.boostMs,now);
  state.comeback.pending=null;state.comeback.collected++;
- return {coins:chest.coins,days:chest.days,boost:chest.boost,boostMinutes:chest.boostMs/60000};
+ return {coins:chest.coins,days:chest.days,boost:chest.boost,boostMinutes:chest.boostMs/60000,...(chest.afterWeekend?{afterWeekend:true}:{})};
 }
 export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
@@ -3159,7 +3199,7 @@ export function claimPassTier(state,track,tier,now=Date.now()){
  if(reward.coins)state.coins+=reward.coins;   // never stats.earned (see above)
  if(reward.diamonds)state.diamonds+=reward.diamonds;
  for(const [key,n] of Object.entries(reward.items??{}))state.inventory[key]=(state.inventory[key]??0)+n;
- if(reward.boost){const key=BOOST_UNTIL[reward.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+BOOST_DURATIONS[reward.length];}
+ if(reward.boost)addBoostTime(state,reward.boost,BOOST_DURATIONS[reward.length],now);
  // VIP after any VIP still running, and counted like VIP bought (stats.vip_days: the Velvet farmer avatar).
  if(reward.vipDays){state.vipExpiresAt=Math.max(now,state.vipExpiresAt??0)+reward.vipDays*DAY_MS;state.stats.vip_days=(state.stats.vip_days??0)+reward.vipDays;}
  pass[track].push(tier);
@@ -3719,7 +3759,7 @@ export function claimSeasonTier(state,track,tier,now=Date.now(),id){
  if(r.coins)state.coins+=r.coins;   // never stats.earned, as the Halloween Pass
  if(r.diamonds)state.diamonds+=r.diamonds;
  for(const [key,n] of Object.entries(r.items??{}))state.inventory[key]=(state.inventory[key]??0)+n;
- if(r.boost){const key=BOOST_UNTIL[r.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+BOOST_DURATIONS[r.length];}
+ if(r.boost)addBoostTime(state,r.boost,BOOST_DURATIONS[r.length],now);
  if(r.vipDays){state.vipExpiresAt=Math.max(now,state.vipExpiresAt??0)+r.vipDays*DAY_MS;state.stats.vip_days=(state.stats.vip_days??0)+r.vipDays;}
  if(r.farmhand)state.boosts.farmhandUntil=Math.max(now,state.boosts.farmhandUntil??0)+r.farmhand*BOOSTS.farmhand.duration;
  if(r.cart)state.coins+=r.cartCoins;
@@ -4707,7 +4747,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  const spent=beforeCoins-state.coins;if(spent>0&&!NO_EVENT_ACTIONS.has(action.type))state.stats.coins_spent=(state.stats.coins_spent??0)+spent;
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
- if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
+ if(xpDoubled(state,now)&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
  if(state.boosts.coinsUntil>now&&['delivery','depot_load'].includes(action.type)){
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }

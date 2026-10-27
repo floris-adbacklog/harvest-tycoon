@@ -8,6 +8,7 @@ import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare,hand
 import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleAdminReload,readReloadAfter} from './reload-service.js';
+import {readXpWeekend} from './xp-weekend-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner,partnerWelcomeNotice} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
@@ -17,7 +18,7 @@ import {recordLoadStall} from './load-stall-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
-import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
+import {NO_EVENT_ACTIONS,setXpWeekend,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
 // 11 Oct 2026: a browser keeps the answer to its preflight (OPTIONS) for up to 2 hours (Max-Age; Chrome's own cap, Safari keeps it
 // shorter), instead of Chrome's 5 seconds: about 50,800 OPTIONS calls a day were over a third of all the calls, and every tap after a pause paid
 // two round trips. Allow-Headers must name every header the browser sends (supabase-js: authorization, apikey, content-type,
@@ -98,6 +99,9 @@ Deno.serve(async(req)=>{
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
   // beside the farm (cached, never fails), so a load waits no longer for it.
   const reloadAt=body.operation==='load'?readReloadAfter(admin):null;
+  // The Double XP weekend (27 Oct 2026, xp-weekend-service.js): read beside the farm (cached, never fails), set in farm-state.js before
+  // any farm is worked out below, and carried in the answers of a load and an action (xpWeekend) so the game works it out the same way.
+  const weekendAt=readXpWeekend(admin);
   if(body.operation==='admin_reload'){const r=await handleAdminReload({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
@@ -240,6 +244,7 @@ Deno.serve(async(req)=>{
   // since 26 Oct 2026, farm-state.js choreRoll).
   let serverRoll:number|undefined;
   const random=()=>serverRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
+  const xpWeekend=setXpWeekend(await weekendAt);
   for(let attempt=0;attempt<5;attempt++){
    const found=await (attempt===0&&mine?.farm?mine.farm:admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle());if(found.error)throw found.error;
    const row=found.data,now=Date.now();mark('farm');
@@ -335,15 +340,15 @@ Deno.serve(async(req)=>{
      // every family rule applies: leader, room, no family yet). Then the reply carries the farm as it is after that.
      if(friends.length&&await inviteFriendsToFamily(friends)){
       const latest=await admin.from('player_farms').select('state,revision').eq('player_id',user.id).maybeSingle();
-      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now,reloadAfter:await reloadAt});}
+      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now,xpWeekend,reloadAfter:await reloadAt});}
      }
-     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now,reloadAfter:await reloadAt});
+     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now,xpWeekend,reloadAfter:await reloadAt});
     }
     later(writeLog(admin,user.id,logged));
-    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now,reloadAfter:await reloadAt});
+    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now,xpWeekend,reloadAfter:await reloadAt});
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
-   if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
+   if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now,xpWeekend});
    const before=snapshot(state);
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
    mark('apply');
@@ -357,7 +362,7 @@ Deno.serve(async(req)=>{
     mark('commit');
     if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));
     later(writeLog(admin,user.id,farmLog(body.action,before,state,result)));
-    const answer=reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now});
+    const answer=reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now,xpWeekend});
     mark('reply');if(timed)try{console.log(JSON.stringify({timing:'action',type:String(body.action.type).slice(0,40),attempt,...marks}));}catch{}
     return answer;
    }

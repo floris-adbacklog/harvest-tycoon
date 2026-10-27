@@ -85,6 +85,7 @@ import { petRest,petRestText } from './farm-state.js';
 import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
 import { giftPass,giftMessageText } from './farm-state.js';
 import { utcDay } from './farm-state.js';   // the shipping bin's morning note (binPaidNote); without it every farm with a paid bin failed to start (26 Oct 2026)
+import { setXpWeekend } from './farm-state.js';   // the Double XP weekend the load brought (farm-api xp-weekend-service.js)
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
@@ -94,6 +95,7 @@ import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
 // Another language than English: translate the farm's texts as they appear (public/i18n.js).
 startTranslation();
 const $ = id => document.getElementById(id);
+setXpWeekend(window.harvestInitialFarm.xpWeekend??null);
 const state = structuredClone(window.harvestInitialFarm.state);
 // A server that has not learnt about a new building yet must not break the buildings list (farm-client.js does the same on every reload).
 state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};

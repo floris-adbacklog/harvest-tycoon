@@ -139,6 +139,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'<p class="admin-popup-note">The diamond packs of 150, 500, 1,250 and 3,500 give '+SALE.percent+'% more diamonds for the same price (500 + 200). Not the Starter Pack, the special offer, passes, VIP or the coin pack. The shop shows the name, the bonus on each pack and the time left, on the website, Android, iPhone and Kongregate; never on CrazyGames or Discord. The payment screen still names the usual pack; the extra diamonds are added automatically. A purchase started during the Sale keeps its bonus, also when paid after it ends.</p>'
   +'<div class="admin-offer-actions"><button type="submit" class="primary-button">Start sale</button></div>'
   +'<p class="admin-hint" id="admin-sale-status" role="status"></p></form><ul id="admin-sale-list" class="admin-recent-list" hidden></ul></section>'
+  // The Double XP weekend (27 Oct 2026, supabase/xp-weekend.sql, farm-state.js xpWeekend): double XP for every farmer for 1 to 72 hours,
+  // now or later (the start in UTC, as every time here). One at a time: a new one ends or cancels the one there is.
+  +'<section class="admin-card" id="admin-xp-weekend"><h3>'+art('double-xp')+'Double XP weekend</h3><form id="admin-xpw-form" class="admin-news admin-offer">'
+  +'<div class="admin-popup-fields"><label>Start (UTC, empty is now)<input id="admin-xpw-start" type="datetime-local" step="60"></label>'
+  +'<label>Hours (1 to 72)<input id="admin-xpw-hours" type="number" min="1" max="72" step="1" value="48" inputmode="numeric" required></label></div>'
+  +'<p class="admin-popup-note">Every farmer earns double XP, from level 1, on the website, the apps, Kongregate, CrazyGames and Discord. Double XP is not for sale while it runs. A farmer\'s own Double XP never doubles it again: what they have left, or get from the daily gift, the comeback chest or a pass, starts when the weekend is over. The game shows it in the top bar with the time left. It reaches every game within about a minute.</p>'
+  +'<div class="admin-offer-actions"><button type="submit" class="primary-button">Start Double XP weekend</button></div>'
+  +'<p class="admin-hint" id="admin-xpw-status" role="status"></p></form><ul id="admin-xpw-list" class="admin-recent-list" hidden></ul></section>'
   // The partner programme (supabase/partners.sql, /partners): partners, what they brought in, and payout requests to pay by hand.
   +'<section class="admin-card" id="admin-partners"><h3>'+art('invite-friends')+'Partners <span id="admin-partner-count">0</span></h3><div id="admin-partner-totals" class="admin-invite-totals"></div><h4 class="admin-subhead">Payout requests</h4><ul id="admin-payout-list" class="admin-recent-list"></ul><h4 class="admin-subhead">Partners</h4><ul id="admin-partner-list" class="admin-recent-list"></ul><p class="admin-hint">Partners sign up on harvesttycoon.com/partners and earn 25% of what their players spend, without 21% VAT. A payout request comes by email to info@harvesttycoon.com with where to pay: pay it by hand, then mark it paid here. Rejected goes back to what they can ask for.</p></section>'
   // Chat (the admin and the moderators): how to handle a report, the open reports, the log; for the admin also the moderators and the
@@ -378,6 +386,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const part=name=>got[PARTS.findIndex(([operation])=>operation===name)]??null,online=part('admin_online'),players=part('admin_players'),retention=part('admin_retention'),invites=part('admin_invites');
   if(role==='admin')void showOffers();
   if(role==='admin')void showSales();
+  if(role==='admin')void showXpWeekends();
   if(role==='admin')void showPartners();
   if(role==='admin')void loadSources();
   if(role==='admin')newsMail.show();
@@ -769,6 +778,33 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{await bridge.chat.startSale({hours,kind});$s('status').textContent='The sale is running. Farmers see it the next time they open the shop.';}
   catch(error){$s('status').textContent=why(error);}
   void showSales();
+ });
+ // The Double XP weekend: the start (UTC; empty is now), the hours (1 to 72), starting, the list and stopping.
+ const $w=id=>dialog.querySelector(`#admin-xpw-${id}`);
+ const XPW_STATUS={planned:'Planned',running:'Running',over:'Over',cancelled:'Cancelled'};
+ async function showXpWeekends(){
+  const list=$w('list');if(!bridge.chat?.xpWeekendList)return;
+  try{
+   const weekends=await bridge.chat.xpWeekendList();list.hidden=!weekends.length;
+   list.innerHTML=weekends.map(w=>{const live=w.status==='running'||w.status==='planned';
+    return `<li><span class="admin-recent-copy"><strong>${esc(XPW_STATUS[w.status]??w.status)}</strong><small>${fmtDate(w.startsAt)} until ${fmtDate(w.status==='over'&&w.stoppedAt?w.stoppedAt:w.endsAt)} (UTC)${w.status==='cancelled'||(w.stoppedAt&&w.status==='over'&&w.stoppedAt<w.endsAt)?`, stopped ${fmtDate(w.stoppedAt)}`:''}</small></span>${live?`<button type="button" class="small-button" data-xpw-stop="${esc(w.id)}">${w.status==='planned'?'Cancel':'Stop'}</button>`:''}</li>`;}).join('');
+  }catch{list.hidden=true;}
+ }
+ $w('list').addEventListener('click',async event=>{
+  const stop=event.target.closest('[data-xpw-stop]');if(!stop)return;
+  if(!await confirmAction({title:'Stop the Double XP weekend?',description:'XP goes back to normal within about a minute. Farmers keep the XP they earned, and their own Double XP still starts after it.',confirmLabel:'Stop',tone:'danger'}))return;
+  try{await bridge.chat.stopXpWeekend(stop.dataset.xpwStop);$w('status').textContent='The Double XP weekend has stopped.';}catch(error){$w('status').textContent=why(error);}
+  void showXpWeekends();
+ });
+ $w('form').addEventListener('submit',async event=>{
+  event.preventDefault();const hours=Math.round(Number($w('hours').value)),raw=$w('start').value,start=raw?Date.parse(`${raw}:00Z`):null;
+  if(!Number.isInteger(hours)||hours<1||hours>72){$w('status').textContent='Choose 1 to 72 hours.';return;}
+  if(raw&&!Number.isFinite(start)){$w('status').textContent='Choose a start date and time.';return;}
+  const when=start&&start>Date.now()?`from ${fmtDate(new Date(start).toISOString())} (UTC)`:'from now';
+  if(!await confirmAction({title:'Start a Double XP weekend?',description:`Every farmer earns double XP ${when}, for ${hours} hour${hours===1?'':'s'}. It replaces the one there is now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'double-xp'}))return;
+  try{await bridge.chat.startXpWeekend({hours,startsAt:start?new Date(start).toISOString():null});$w('status').textContent=start&&start>Date.now()?'The Double XP weekend is planned.':'The Double XP weekend is running. Every game shows it within about a minute.';}
+  catch(error){$w('status').textContent=why(error);}
+  void showXpWeekends();
  });
  async function showPopups(){
   const list=dialog.querySelector('#admin-popup-list');

@@ -111,8 +111,9 @@ test('Double XP and Double earnings have their own pictures; the pill shows a pi
  assert.equal(BOOSTS.xp.art,'double-xp');assert.equal(BOOSTS.coins.art,'double-coins');
  for(const key of ['double-xp','double-coins']){assert.ok(ART_KEYS.includes(key),key);assert.ok(statSync(new URL(`../public/assets/icons/${key}.webp`,import.meta.url)).size>1000);}
  const ui=read('public/boosts-ui.js');
- assert.match(ui,/pill\.innerHTML=chips\.map\(c=>`<span class="active-boost" data-active-boost="\$\{c\.id\}" title="\$\{c\.label\}">\$\{art\(c\.picture\)\}<b><\/b><\/span>`\)\.join\(''\)/);
- assert.match(ui,/\['xp','2× XP',state\.boosts\.xpUntil,'double-xp'\]/);assert.match(ui,/\['coins','2× coins',state\.boosts\.coinsUntil,'double-coins'\]/);
+ // The Double XP weekend's chip (27 Oct 2026) says its name too (named); every other chip is a picture and its time.
+ assert.match(ui,/pill\.innerHTML=chips\.map\(c=>`<span class="active-boost\$\{c\.named\?' is-named':''\}" data-active-boost="\$\{c\.id\}" title="\$\{c\.label\}">\$\{art\(c\.picture\)\}\$\{c\.named\?`<em>\$\{c\.label\}<\/em>`:''\}<b><\/b><\/span>`\)\.join\(''\)/);
+ assert.match(ui,/\['xp','2× XP',weekend\?0:state\.boosts\.xpUntil,'double-xp'\]/);assert.match(ui,/\['coins','2× coins',state\.boosts\.coinsUntil,'double-coins'\]/);
  assert.match(read('public/desktop-hud.css'),/\.active-boosts\{top:92px;padding:4px 11px;border-radius:999px\}/,'on a computer just under the top-right buttons, clear of the guide card');
 });
 

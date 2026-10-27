@@ -1,4 +1,5 @@
 import {confirmDiamondSpend} from './diamond-confirm.js';
+import {xpWeekend,XP_WEEKEND_NAME} from './farm-state.js';
 import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,boostOffer,BOOST_DURATIONS,BOOST_LENGTH_NAMES,formatDuration,COIN_PACK,coinPackCoins,VILLAGE_SHOP,villageShopStatus,VILLAGER_CALLS_PER_DAY,worldTwoOpen,normalizeFarm} from './farm-state.js';
 import {buyVillage,villageLine,goodsInBarn,untilText,VILLAGE_ASK} from './village-shop-ui.js';
 import {farmNow} from './farm-client.js';
@@ -111,6 +112,10 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false}){
    const verb=active?'Extend':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate';
    const label=`${active?'Extend':'Activate'} ${b.name}${length?` for ${BOOST_LENGTH_NAMES[length]}`:''} for ${status.cost} diamonds`;
    const more=kind==='need'?getMore(status.cost-state.diamonds):'';
+   // A Double XP weekend (27 Oct 2026): Double XP is included, so it is not for sale; the farm's own waits until after it.
+   if(status.weekendLeft)return card({cls:'boost-included',picture:b.art,title:b.name,text:b.description,
+    detail:`<div class="boost-status-row">${chip('included',`Included in the ${XP_WEEKEND_NAME}`)}${status.waiting?chip('wait',`Yours: ${formatDuration(status.waiting)} after the weekend`):''}</div>`,
+    button:`<button class="boost-buy" disabled aria-label="${b.name} is included in the ${XP_WEEKEND_NAME}">${price(status.cost,'Included')}</button>`});
    return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:length?`<div class="boost-status-row">${lengthSelect(id,b,length)}${chip(kind,text,id)}${more}</div>`:`<div class="boost-status-row">${chip(kind,text,id)}${more}</div>`,button:kind==='need'?`<button class="boost-buy is-short" data-get-diamonds="${status.cost-state.diamonds}" aria-label="${label}: get ${number(status.cost-state.diamonds)} more diamonds first">${price(status.cost,verb)}</button>`:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="${label}">${price(status.cost,verb)}</button>`});
   };
   // Pick one or more fields (or batches): each costs the same 10 diamonds, the button shows the total.
@@ -265,7 +270,10 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false}){
   if(isVip)chips.push({id:'vip',picture:'vip',label:'VIP',time:formatDuration(state.vipExpiresAt-now)});
   const vipStatus=document.querySelector('[data-vip-status]');if(vipStatus&&isVip)vipStatus.textContent=`VIP · ${formatDuration(state.vipExpiresAt-now)} left`;
 
-  for(const [id,label,until,picture] of [['xp','2× XP',state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
+  // The Double XP weekend (27 Oct 2026) leads the pill with its name and time left; the farm's own Double XP waits until after it, so
+  // its chip shows again once the weekend is over.
+  const weekend=xpWeekend(now);if(weekend)chips.push({id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration(weekend.endsAt-now),named:true});
+  for(const [id,label,until,picture] of [['xp','2× XP',weekend?0:state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
    if(until>now)chips.push({id,picture,label,time:formatDuration(until-now)});
    // The Farmhand's card is in Power-ups and in the Village tab: each one ticks.
    document.querySelectorAll(`[data-boost-time="${id}"]`).forEach(el=>{if(until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;});
@@ -275,7 +283,7 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false}){
   document.querySelectorAll('[data-shop-until]').forEach(el=>{const left=Number(el.dataset.shopUntil)-now;if(left>0)el.textContent=untilText(el.dataset.shopWait,left);});
   if(state.boosts.upgradeCredits)chips.push({id:'upgrade',picture:'hammer',label:'50% upgrade voucher',time:'50%'});
   const pill=$('active-boosts'),key=chips.map(c=>c.id).join(',');pill.hidden=!chips.length;
-  if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}<b></b></span>`).join('');refreshArt();}
+  if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost${c.named?' is-named':''}" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}${c.named?`<em>${c.label}</em>`:''}<b></b></span>`).join('');refreshArt();}
   for(const c of chips){const time=pill.querySelector(`[data-active-boost="${c.id}"] b`);if(time&&time.textContent!==c.time)time.textContent=c.time;}
   pill.setAttribute('aria-label',chips.length?`Active boosts: ${chips.map(c=>c.id==='upgrade'?c.label:`${c.label}, ${c.time} left`).join('; ')}. Open the shop.`:'View active boosts');
   if($('boost-dialog').open&&signature()!==lastStatus)render();

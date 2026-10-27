@@ -1,4 +1,4 @@
-import {BUILDINGS,EARLY_FIELDS,STARTER_FIELDS,questXp,buildingEligible,buildingUnlocked,buildingCost,constructionNeeds,worldTwoBuilding,levelProgress,levelOf,productionJobs} from './farm-state.js';
+import {BUILDINGS,EARLY_FIELDS,STARTER_FIELDS,questXp,buildingEligible,buildingUnlocked,buildingCost,constructionNeeds,worldTwoBuilding,levelProgress,levelOf,productionJobs,xpDoubled} from './farm-state.js';
 import {questGroups,readyDailies} from './quests-ui.js';
 import {farmNow} from './farm-client.js';
 import {nextUnlock} from './progression-ui.js';
@@ -20,9 +20,9 @@ export const questGuide=stat=>QUEST_GUIDE[stat]??(/^harvest_/.test(stat??'')?'ha
 export function nextGoal(state,now=farmNow()){
  const groups=questGroups(state),ready=groups.ready[0];
  if(ready)return {kind:'quest',id:ready.id,title:ready.quest.title,description:ready.quest.description,stat:ready.quest.stat,coins:ready.quest.reward,xp:questXp(ready.quest),ready:groups.ready.length};
- // Its rewards as Today shows them (XP doubled while an XP boost runs); the card opens Today, where it is claimed.
+ // Its rewards as Today shows them (XP doubled while an XP boost or a Double XP weekend runs); the card opens Today, where it is claimed.
  const dailies=readyDailies(state,now),daily=dailies[0];
- if(daily)return {kind:'daily',id:daily.id,title:daily.title,description:daily.description,stat:daily.stat,coins:daily.reward,diamonds:daily.diamonds,xp:daily.xp*(state.boosts?.xpUntil>now?2:1),ready:dailies.length};
+ if(daily)return {kind:'daily',id:daily.id,title:daily.title,description:daily.description,stat:daily.stat,coins:daily.reward,diamonds:daily.diamonds,xp:daily.xp*(xpDoubled(state,now)?2:1),ready:dailies.length};
  const open=Object.keys(BUILDINGS).filter(key=>!worldTwoBuilding(key)&&buildingEligible(state,key)&&!buildingUnlocked(state,key)&&buildingCost(state,key)>0);
  const build=open.filter(key=>buildingCost(state,key)<=state.coins&&!constructionNeeds(state,key).length).sort((a,b)=>buildingCost(state,a)-buildingCost(state,b)||a.localeCompare(b))[0];
  if(build)return {kind:'build',key:build,name:BUILDINGS[build].name,cost:buildingCost(state,build)};

@@ -1,4 +1,4 @@
-import {BUILDINGS,applyFarmAction,inviteeReward,seedCost} from './farm-state.js';
+import {BUILDINGS,applyFarmAction,inviteeReward,seedCost,setXpWeekend} from './farm-state.js';
 // The parent owns authentication. This disposable frame contains only a view of
 // the most recently committed server state; it never persists game data.
 let clockOffset=0;
@@ -74,6 +74,8 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   // A server that has not learnt about a new building yet must not break the buildings list.
   base.buildings??={};for(const key of Object.keys(BUILDINGS))base.buildings[key]??={level:1,job:null};
   clockOffset=data.serverNow-Date.now();
+  // The Double XP weekend as the server has it (27 Oct 2026, farm-api xp-weekend-service.js): only a load's or an action's answer says.
+  if(data&&'xpWeekend' in data)setXpWeekend(data.xpWeekend);
   rebase();onChange();if(!waiting)onStatus('saved');
   if(data.chapterReward?.chapters?.length)onChapterReward?.(data.chapterReward);
   if(data.levelReward?.levels?.length)onLevelReward?.(data.levelReward);

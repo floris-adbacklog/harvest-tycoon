@@ -711,7 +711,9 @@ const BODIES={
   +section('Finish now',`<p>Finish a growing field for ${SINGLE_CROP_COST} diamonds, or a running batch for ${SINGLE_BATCH_COST} (not in the Factory).</p>`)
   // The coin pack (20 Oct 2026): 1,000 coins for every level of the farm, in Power-ups.
   +section('Coins for diamonds',`<p>In Power-ups: ${number(COIN_PACK.perLevel)} coins for every level of your farm (${number(COIN_PACK.perLevel*10)} at level 10, ${number(COIN_PACK.perLevel*50)} at level 50) for ${COIN_PACK.cost} diamonds, as often as you like.</p>`)
-  +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
+  +section('Boosts',`<p>${h.lvl(FEATURE_LEVELS.boosts)} Boosts in the diamond shop. Buying a timed boost again adds the time after it.</p>`
+   // The Double XP weekend (27 Oct 2026, farm-state.js xpWeekend): the rule in two lines, where the boosts are.
+   +`<p>Now and then there is a Double XP weekend: every farmer earns double XP, from level 1. Double XP is not for sale while it runs. Your own Double XP never adds to it: what you have left, or get from a gift or a chest, starts when the weekend is over.</p>`+dual(table(['Boost','What it does','Diamonds'],boosts),boostCards))
   +section('VIP',`<p>VIP gives 10% faster crops, 10% faster production, 5% more coins at the market and double daily rewards. Buying again adds time; it never gets stronger.</p>`+table(['Plan','Diamonds'],vip))
   // The App Store's sentence is a text of its own (Oct 2026), so the website's and Google Play's keep their translations. On Kongregate
   // (Kreds, 15 Oct 2026) the prices are Kongregate's own, in Kreds: no euro table, and the pass is in its own section.

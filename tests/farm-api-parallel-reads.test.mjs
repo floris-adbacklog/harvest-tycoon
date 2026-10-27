@@ -52,7 +52,7 @@ function farmApi({verified=user(A),authError=null,sessionActive=true,timing=fals
   }
  };
  const source=stripTypeScriptTypes(SOURCE.replace(/^import .*;\n/gm,'')).replace('const TIMING_SHARE=0.05;',`const TIMING_SHARE=${timing?1:0};`);
- vm.runInNewContext(source,{...rules,...invites,...playerLog,welcomeSummary,savePlayerAvatar,isSuperadmin:()=>false,isAdminAccount:()=>false,readReloadAfter:async()=>null,createClient:()=>admin,
+ vm.runInNewContext(source,{...rules,...invites,...playerLog,welcomeSummary,savePlayerAvatar,isSuperadmin:()=>false,isAdminAccount:()=>false,readReloadAfter:async()=>null,readXpWeekend:async()=>null,createClient:()=>admin,
   Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,Uint32Array,console:consoleLog?{error(){},log:(...a)=>logs.push(a.join(' '))}:{error(){}},
   handleFamily:()=>{throw new Error('unexpected');},handlePlayerDirectory:()=>{throw new Error('unexpected');}});
  return {farms,events,logs,commits,

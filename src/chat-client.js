@@ -179,6 +179,10 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   startSale:({hours=24,kind='sale'}={})=>rpc('diamond_sale_start',{p_hours:hours,p_kind:kind}),
   saleList:()=>rpc('diamond_sale_list'),
   stopSale:id=>rpc('diamond_sale_stop',{p_id:id}),
+  // The Double XP weekend (27 Oct 2026, supabase/xp-weekend.sql): double XP for every farmer for 1 to 72 hours, now or later; the admin only.
+  startXpWeekend:({hours=48,startsAt=null}={})=>rpc('xp_weekend_start',{p_hours:hours,p_starts_at:startsAt}),
+  xpWeekendList:()=>rpc('xp_weekend_list'),
+  stopXpWeekend:id=>rpc('xp_weekend_stop',{p_id:id}),
   setLevels:(global,dm)=>rpc('chat_set_levels',{p_global:global,p_dm:dm}),
   // News and offers by email (13 Oct 2026, supabase/news-mail.sql), the admin only: how many it reaches and the last ones, straight from
   // the database; a test, the send and going on with one through the news-mail function (supabase/functions/news-mail), in Frankfurt
