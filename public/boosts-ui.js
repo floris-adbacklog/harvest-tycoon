@@ -34,12 +34,12 @@ export function diamondPackCards({catalog=null,purchasing='',suggestion=0,now=fa
   const best=i===bestAt,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount),sale=forSale(pack);
   const extra=Math.round((perEuro(pack)/base-1)*100);
   // The Sale (27 Oct 2026, public/diamond-sale.js): every pack's tab says the Sale's extra and the pack shows its bonus under the amount
-  // ("500 diamonds" and "+200 extra"); the price stays the same. The pack that covers what is short keeps its green tab.
+  // (the usual amount small and struck through, the total large: ~~500~~ 700 diamonds; 27 Oct 2026, the owner); the price stays the same. The pack that covers what is short keeps its green tab.
   const bonus=sale?shopSaleBonus(catalog,pack.amount,now):0,salePercent=Number(catalog?.sale?.percent)||40;
   const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':bonus?`<span class="pack-ribbon is-sale">+${salePercent}% extra</span>`:best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
   const foot=opening?'Opening…':sale?packPrice(pack):catalog?'Unavailable':packPrice(pack);
   const label=kreds&&!sale?`${number(pack.amount)} diamonds`:bonus?`Buy ${number(pack.amount)} diamonds and ${number(bonus)} extra for ${packPrice(pack)}`:`Buy ${number(pack.amount)} diamonds for ${packPrice(pack)}`;
-  return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}${bonus?' is-sale':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small>${bonus?`<span class="pack-bonus">+${number(bonus)} extra</span>`:''}</span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
+  return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}${bonus?' is-sale':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount">${bonus?`<s class="pack-was">${number(pack.amount)}</s><b>${number(pack.amount+bonus)}</b>`:`<b>${number(pack.amount)}</b>`}<small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
 }
 
 export function createBoostsUI({state,runAction,onChange,notify,village=false}){

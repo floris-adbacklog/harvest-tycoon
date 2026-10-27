@@ -148,7 +148,7 @@ test('the names: a fixed list, checked by the database, the same titles in the A
  assert.equal(saleTitle('bogus'),'Sale');assert.equal(saleTitle('black_friday'),'Black Friday Sale');
  const list=`('${kinds.join("','")}')`;
  assert.ok(sql.includes(`check (kind in ${list})`),'the table');assert.ok(sql.includes(`if what not in ${list} then`),'diamond_sale_start');
- const shopTexts=[...Object.values(SALE.kinds),'+{0} extra','Buy {0} diamonds and {1} extra for {2}','Ends in {0}','{0}% more diamonds in every pack, for the same price',
+ const shopTexts=[...Object.values(SALE.kinds),'Buy {0} diamonds and {1} extra for {2}','Ends in {0}','{0}% more diamonds in every pack, for the same price',
   'The payment screen shows the usual pack. Your {0}% extra diamonds are added automatically after you pay.'];
  const catalog=JSON.parse(read('i18n/catalog.json'));
  const codes=LANGUAGES.map(l=>l.code).filter(c=>c!=='en');
@@ -163,11 +163,13 @@ test('the shop: a banner with the name, the time left and the payment-screen lin
  const catalog={enabled:true,store:'stripe',mode:'live',sale:saleCatalog(running,NOW)};
  assert.equal(shopSale(catalog,NOW).id,SALE_ID);assert.equal(shopSaleBonus(catalog,500,NOW),200);assert.equal(shopSaleBonus(catalog,'3500',NOW),1400);
  const banner=saleBanner(catalog,{now:NOW});
- assert.match(banner,/<strong>Halloween Sale<\/strong>/);assert.match(banner,/40% more diamonds in every pack, for the same price/);assert.match(banner,/data-sale-left>Ends in 1h</);
+ assert.match(banner,/<strong class="shop-sale-badge">Halloween Sale<\/strong>/);assert.match(banner,/40% more diamonds in every pack, for the same price/);assert.match(banner,/data-sale-left>Ends in 1h</);
  assert.match(banner,/The payment screen shows the usual pack\. Your 40% extra diamonds are added automatically after you pay\./);
  assert.doesNotMatch(banner,/·|Stripe|Google|Apple|App Store|Kongregate|Kreds/,'no middle dot, no store named: true in every app');
  const cards=diamondPackCards({catalog,now:NOW});
- for(const [amount,bonus] of [['150','60'],['500','200'],['1,250','500'],['3,500','1,400']])assert.match(cards,new RegExp(`<b>${amount}</b><small>diamonds</small><span class="pack-bonus">\\+${bonus} extra</span>`));
+ // The usual amount small and struck through, the total large where the amount was (the owner, 27 Oct 2026).
+ for(const [was,total] of [['150','210'],['500','700'],['1,250','1,750'],['3,500','4,900']])assert.match(cards,new RegExp(`<span class="pack-amount"><s class="pack-was">${was}</s><b>${total}</b><small>diamonds</small></span>`));
+ assert.doesNotMatch(cards,/pack-bonus|\+\d[\d,]* extra</,'no separate bonus line');
  assert.equal((cards.match(/pack-ribbon is-sale">\+40% extra</g)??[]).length,4);
  assert.match(cards,/aria-label="Buy 500 diamonds and 200 extra for €4\.99"/,'the same price');
  // The pack that covers what is short keeps its green tab.
@@ -175,13 +177,13 @@ test('the shop: a banner with the name, the time left and the payment-screen lin
  // Ended, stopped (no sale in the catalogue), a shop that does not sell, or no catalogue at all (CrazyGames asks none): as before.
  for(const [c,now] of [[catalog,NOW+3600000],[{...catalog,sale:null},NOW],[{...catalog,enabled:false},NOW],[null,NOW]]){
   assert.equal(saleBanner(c,{now}),'');const plain=diamondPackCards({catalog:c,now});
-  assert.doesNotMatch(plain,/pack-bonus|is-sale/);
+  assert.doesNotMatch(plain,/pack-was|<s |is-sale/);assert.match(plain,/<span class="pack-amount"><b>500<\/b><small>diamonds<\/small><\/span>/,'as before');
  }
  // Kreds and the apps' own prices: the bonus shows the same, on the store's price.
  const kong={...catalog,store:'kongregate',prices:{150:{price:'20 Kreds',kreds:20},500:{price:'50 Kreds',kreds:50},1250:{price:'100 Kreds',kreds:100},3500:{price:'250 Kreds',kreds:250}}};
  assert.match(diamondPackCards({catalog:kong,now:NOW}),/aria-label="Buy 500 diamonds and 200 extra for 50 Kreds"/);
  const app={...catalog,store:'app_store',prices:{150:{price:'€1,99',micros:1990000,currency:'EUR'},500:{price:'€4,99',micros:4990000,currency:'EUR'},1250:{price:'€9,99',micros:9990000,currency:'EUR'},3500:{price:'€24,99',micros:24990000,currency:'EUR'}}};
- assert.match(diamondPackCards({catalog:app,now:NOW}),/<span class="pack-bonus">\+200 extra<\/span>/);
+ assert.match(diamondPackCards({catalog:app,now:NOW}),/<s class="pack-was">500<\/s><b>700<\/b>/);
  // The page: the banner sits between the deals and the packs; it ticks and goes away when the Sale ends.
  const farm=read('public/farm.html'),ui=read('public/boosts-ui.js');
  assert.match(farm,/<div class="shop-deals" id="shop-deals"><\/div><div id="shop-sale" class="shop-sale" role="note" hidden><\/div><div id="diamond-packs" class="diamond-packs">/);
@@ -191,7 +193,7 @@ test('the shop: a banner with the name, the time left and the payment-screen lin
  assert.match(ui,/track\('diamond_shop_view'\);if\(portalOff\('payments'\)\)return;try\{catalog=await bridge\(\)\.payments\(\{operation:'catalog'\}\)/);
  // The calm house style: cream card, the buttons.css gold token, 400/700 only, no middle dots.
  const css=read('public/payments.css'),part=css.slice(css.indexOf('/* The Sale (27 Oct 2026'));
- assert.match(part,/\.shop-sale\{[^}]*background:#fff8e6/);assert.match(part,/var\(--btn-gold-line/);
+ assert.match(part,/\.shop-sale\{[^}]*background:#fff8e6/);assert.match(part,/\.diamond-pack\.is-sale \.pack-amount b\{font-size:32px;color:var\(--btn-red/,'the total in the red token');assert.match(part,/\.pack-ribbon\.is-sale\{top:-12px;[^}]*background:var\(--btn-gold/,'a tab on the top edge');assert.match(part,/\.shop-sale-badge\{[^}]*background:var\(--btn-red/);assert.match(part,/\.pack-was\{[^}]*color:#8a7443;text-decoration:line-through/,'struck through in the muted brown of "diamonds"');assert.match(part,/var\(--btn-gold-line/);
  for(const m of part.matchAll(/font:(\d+) (\d+)px/g)){assert.ok(['400','700'].includes(m[1]),m[0]);assert.ok(Number(m[2])>=12,m[0]);}
  assert.doesNotMatch(read('public/diamond-sale.js'),/ · /);
 });
