@@ -15,7 +15,7 @@ function run({portal='kongregate',level=12,quiet=()=>false,storage=memory()}={})
 }
 
 test('the rule: Kongregate only, from level 10, once',()=>{
- assert.equal(RATE_ASK_LEVEL,10);assert.equal(RATE_ASK_KEY,'harvest-tycoon:rate-ask');
+ assert.equal(RATE_ASK_LEVEL,10);assert.equal(RATE_ASK_KEY,'harvest-tycoon:rate-ask-2');
  assert.equal(rateAskDue({portal:'kongregate',level:10,seen:false}),true);
  assert.equal(rateAskDue({portal:'kongregate',level:9,seen:false}),false);
  assert.equal(rateAskDue({portal:'kongregate',level:30,seen:true}),false);

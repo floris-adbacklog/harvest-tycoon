@@ -4,7 +4,9 @@ import {levelOf} from './farm-state.js';
 // device, from level 10, a plain question in the game's toast: no reward, no question first, never again (a reward for a rating, or
 // asking only the happy farmers, is not fair play). Never on the website, in the apps or on another portal.
 export const RATE_ASK='Enjoying Harvest Tycoon? Please rate it on Kongregate and help more players discover the game.';
-export const RATE_ASK_KEY='harvest-tycoon:rate-ask',RATE_ASK_LEVEL=10,RATE_ASK_WAIT_MS=60000,RATE_ASK_SHOW_MS=9000;
+// The owner, 27 Oct 2026: "Stop de oude en vraag opnieuw". A new key, so every Kongregate farmer of level 10+ is asked once more
+// (the first ask, under harvest-tycoon:rate-ask, is no longer read).
+export const RATE_ASK_KEY='harvest-tycoon:rate-ask-2',RATE_ASK_LEVEL=10,RATE_ASK_WAIT_MS=60000,RATE_ASK_SHOW_MS=9000;
 export const rateAskDue=({portal,level,seen})=>portal==='kongregate'&&level>=RATE_ASK_LEVEL&&!seen;
 // show(text,options): the game's toast. storage: localStorage or null. quiet(): true while nothing may show (a window open, the calm
 // start). It waits until the farm has been on screen a minute, then looks every 20 seconds. Nothing here ever throws.
