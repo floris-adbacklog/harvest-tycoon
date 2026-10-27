@@ -22,6 +22,8 @@
 .pretty-select.is-compact .pretty-select-menu{min-width:172px}
 .pretty-select-menu.is-up{top:auto;bottom:calc(100% + 6px)}
 .pretty-select-menu.is-end{inset-inline-start:auto;inset-inline-end:0}
+/* In a box too short for it (Settings › Language on its own) the menu lies over the box, in the window; pretty-select.js sets where. */
+.pretty-select-menu.is-free{position:fixed;inset:auto;min-width:0}
 .pretty-select-group{padding:9px 10px 3px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a8b73}
 .pretty-select-option{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;margin:0;padding:7px 10px;border:0;border-radius:9px;background:none;color:#4d4531;font-family:inherit;font-size:14px;font-weight:700;line-height:1.3;text-align:start;cursor:pointer}
 .pretty-select-option-art{flex:none;display:grid;place-items:center;width:30px;height:30px}
