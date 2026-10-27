@@ -15,7 +15,7 @@ export const FIXED_YARDS=Object.freeze(['farmhouse','pond']);
 // Every yard that moves as one piece (farm-layout.js ANCHORS without the fixed ones; tests/free-layout checks they match).
 export const LAYOUT_YARDS=Object.freeze(['dairy','silo','familyhall','preserves','juicepress','greenhouse','packing','coop','paddock','windmill',
  'tractor','cart','factory','chores','stall','mill','bakery','kitchen','apiary','workshop','beeyard','sheepbarn','glasshouse','weaving',
- 'goatshed','craftshop','ranch','valleymarket','tradedepot','estateworkshop','grandfair','pigfarm','warehouse']);
+ 'goatshed','craftshop','ranch','valleymarket','tradedepot','estateworkshop','grandfair','pigfarm','warehouse','donkeystable']);
 // The land, piece by piece, as world boxes [minX, maxX, minZ, maxZ], each open from its level (the valley by level of 25 Sep 2026:
 // the middle from the start, the west at 25, the east at 50, then the edges beyond).
 export const LAND=Object.freeze([

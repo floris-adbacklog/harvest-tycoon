@@ -54,6 +54,7 @@ import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
 import { createSweepTip } from './sweep-tip.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { createWarehouseUI,isWarehouseFull,warehouseTone,fillText } from './warehouse-ui.js';
+import {createDonkeyCartUI} from './donkey-cart-ui.js';
 import { createNeighboursUI } from './neighbours.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
 import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
@@ -180,7 +181,7 @@ const FARM_FAR=1.15;
 let zoomAt=FARM_STOPS.indexOf(viewMode),farmAxis=null,glide=null;
 let overviewBounds=null;
 let familyFlag=null;
-const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],donkeystable:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 // The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
 const coach=createCoach();
 // The first steps' spotlight (public/spotlight.js): during a calm start's first four steps the farm dims except the place to tap. Made
@@ -200,7 +201,7 @@ function spotTarget(){
 }
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
 guardWheel();
-let warehouse=null,neighbours=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
+let warehouse=null,donkeyCart=null,neighbours=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
@@ -598,6 +599,8 @@ function tapFamilyFarmer(id){const other=familyWalkers.find(w=>w.playerId===id),
 // tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
 // The Sheep Barn's roof: the palette's brown swatch [column 8, row 5] becomes the slate blue-grey one [10, 5] (93,126,142), on its copy only.
 const SHEEP_BARN_ROOF=Object.freeze([[[8,5],[10,5]]]);
+// The Donkey Stable's own colours (27 Oct 2026): the Dairy Barn's red walls honey yellow, its blue-grey roof terracotta.
+const DONKEY_STABLE_PAINT=Object.freeze([[[0,6],[6,2]],[[0,5],[6,1]],[[10,4],[7,6]]]);
 const roadMaterials=new Map();
 function roadMaterial(material){
  let road=roadMaterials.get(material);
@@ -877,6 +880,15 @@ function decorateFarm(){
  yardDecor.goatshed.push(...penned('goatshed',[...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1)]));
  for(const [model,x,z,r] of [['goat_001',29.6,-8.4,2.6],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.9],['goat_001',33.9,-4.9,-1]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
  yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}));
+ // The Donkey Stable (level 64, 27 Oct 2026): the Dairy Barn's barn in colours of its own (the owner: "geef de dak ook en iets andere
+ // kleuren"), honey walls under a terracotta roof, left of the Goat Shed (the owner: "zet hem links goat shed") and built like it: the
+ // barn at the back, its doors facing a small pen down to the trunk road with the two donkeys (a small horse_002 stands in for each until
+ // the pack's donkey takes its place, farm-animals.js), hay and a bucket.
+ zone('donkeystable');
+ addBuilding('donkeystable',23.54,-16.14,{width:4.4,height:3.9,depth:6.6,paint:DONKEY_STABLE_PAINT});
+ yardDecor.donkeystable.push(...penned('donkeystable',[...fenceLine(20.84,-5.14,3),...fenceLine(19.74,-10.64,3,'z'),...fenceLine(26.34,-10.64,3,'z'),...fenceLine(20.84,-11.74,1),...fenceLine(25.24,-11.74,1)]));
+ for(const [name,x,z,r] of [['donkey_001',21.34,-8.94,2.4],['donkey_002',24.84,-7.54,-.8]]){const d=animalAt('horse_002',x,z,{width:1.75,rotation:r},'donkeystable',r);d.userData.model=name;yardDecor.donkeystable.push(d);}
+ yardDecor.donkeystable.push(cloneModel('hay_002',25.34,-10.84,{width:1,rotation:.5}),cloneModel('bucket_003',20.34,-11.04,{height:.5}));
  // The Pig Farm: the pink barn turned side-on, and in front of it a white-fenced pen, closed all round, where the pigs dig for
  // truffles.
  zone('pigfarm');
@@ -982,7 +994,7 @@ function decorateFarm(){
 }
 // Small props from the model pack fill the room between the yards. Spots are taken only where nothing stands: not on a
 // building, road, fence, field or the pond, and with room around every animal, so nothing seems to sit on its back from up here.
-const ANIMAL=/^(cow|horse|pig|sheep|goat|chicken)_/,FLAT_BLOCKS=/^(road|field)_/;
+const ANIMAL=/^(cow|horse|pig|sheep|goat|chicken|donkey)_/,FLAT_BLOCKS=/^(road|field)_/;
 // The pens (22 Oct 2026): the box round each pen's fences (penned() in decorate), [minX, maxX, minZ, maxZ] in the world, by yard.
 function penBoxes(){
  const pens=new Map(),box=new THREE.Box3();
@@ -2157,8 +2169,8 @@ function pointerTarget(event){
  // small props must not lose taps to scenery or nearby utility models.
  const stationHit=raycaster.intersectObjects(farmLife?.targets()??[],true)[0];
  if(stationHit){let node=stationHit.object;while(node){if(node.userData.activity)return {type:'activity',id:node.userData.activity};node=node.parent;}}
- const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).filter(v=>v.object.visible).flatMap(v=>[v.object,v.hit]),...Array.from(utilityViews.values()).filter(v=>v.object.visible).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?.visible?[windmillRotor]:[]),...(farmLife?.targets()??[])];
- for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
+ const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).filter(v=>v.object.visible).flatMap(v=>[v.object,v.hit]),...Array.from(utilityViews.values()).filter(v=>v.object.visible).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?.visible?[windmillRotor]:[]),...(farmLife?.targets()??[]),...(farmLife?.cartTargets?.()??[])];
+ for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.donkeyCart)return {type:'donkeycart'};if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
  // A pet (20 Oct 2026) only when nothing else is there: one standing in front of a building, a field or a pin never takes its tap.
  const pet=pets?.pick(raycaster);if(pet)return {type:'pet',id:pet};
  // Your farmer (20 Oct 2026) last of all: a hop, then your own profile (tapOwnFarmer).
@@ -2213,6 +2225,7 @@ async function addVillageExtras(){
    const v=buildingViews.get('villagefields');if(v){v.object.remove(v.hit);v.object.attach(villageExtras.fields.tap);v.hit=villageExtras.fields.tap;}
   }catch(error){console.warn('The Village Fields were skipped.',error);}
   syncVillageExtras();renderer.shadowMap.needsUpdate=true;
+  import('./village-animals.js').then(m=>m.addVillageAnimals({scene,village:villageGroup,extras:villageExtras,canvas:renderer.domElement,simple:graphicsSimple})).catch(error=>console.warn('The village animals were skipped.',error));
  }catch(error){console.warn('The village extras were skipped.',error);}
 }
 // A place's props show once it is built, and the Fields a strip for every crop they can sow; the landmarks are placeLandmarks's.
@@ -2557,6 +2570,8 @@ function bindUI(){
  // The Warehouse's window and its full note (22 Oct 2026, public/warehouse-ui.js). A refusal because it is full is that note, with the Market
  // and Upgrade, over any open window (the toast sits under a modal window); every other message stays the toast.
  warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI});
+ // The donkey cart's window (27 Oct 2026, donkey-cart-ui.js): a tap on the cart on the trunk road opens it.
+ donkeyCart=createDonkeyCartUI({state,runAction,notify:toast,onChange:updateUI});
  // The neighbours (24 Oct 2026, public/neighbours.js): More › Neighbours. Not on an admin's showcase farm (25 Oct 2026, the owner: "Je moet
  // geen buren kunnen doen als admin"; farm-api refuses an admin's actions anyway).
  if(adminView)document.querySelector('[data-menu-utility="neighbours"]')?.setAttribute('hidden','');
@@ -2811,6 +2826,7 @@ async function init(){
    else if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
    else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · ${target.label&&economy.status(target.id).kind==='ready'&&b.type!=='pier'?'click to collect':'click to open'}</span>`;}
+   else if(target.type==='donkeycart')tooltip.innerHTML='<strong>The donkey cart</strong><span>Goods for diamonds</span>';
    else if(target.type==='landmark'){const l=VILLAGE_LANDMARKS[target.id];tooltip.innerHTML=`<strong>${l.name}</strong><span>${landmarkNote(target.id,landmarkDone(state,target.id))}</span>`;}
    else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestQuantity(state,p,farmNow())} crop${harvestQuantity(state,p,farmNow())>1?'s':''}${canWater(p,farmNow())?` · water now · ${formatDuration(waterUntil(p)-farmNow())} left`:p.tended?' · fully cared for':farmNow()>=p.careAt?' · extra care ready':` · extra care in ${formatDuration(p.careAt-farmNow())}`}`}</span>`;}
    const r=world.getBoundingClientRect();tooltip.style.left=`${Math.min(r.width-130,Math.max(130,e.clientX-r.left))}px`;tooltip.style.top=`${e.clientY-r.top-16}px`;
@@ -2820,7 +2836,7 @@ async function init(){
   // Moving things is for your own farm (layout-edit.js), not the village or a farm an admin looks at.
   if(!villageWorld&&!adminView)createLayoutTools();else for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=true;
   bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,busy:()=>visitView||document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='donkeycart')donkeyCart?.open();else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);

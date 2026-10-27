@@ -5,6 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {POND_LOADING_TIP} from '../public/loading-screen.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
@@ -213,7 +214,7 @@ test('every catch is a line in the farm\'s log; the loading tip says the rules\'
 // pond and fish counts without throwing, keep them, and play on.
 test('a game from before the pond reads a farm with a pond, keeps it and plays on',async t=>{
  let old;try{old=execFileSync('git',['show','04ba9d7:game/farm-state.js'],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  const s=at(12);for(let k=0;k<4;k++)fish(s,now+k*GAP,k!==2,k===0);
  const saved=structuredClone(s);assert.ok(saved.pond&&saved.stats.fish===3&&saved.stats.fish_released===1);
  const copy=structuredClone(saved),tt=now+60000;O.normalizeFarm(copy,tt);

@@ -13,7 +13,7 @@ const now=Date.parse('2026-10-05T12:00:00Z');
 function farm(level,{mode='guided',built=[]}={}){
  const s=createFarm(now);if(mode==='legacy')s.progression={mode:'legacy'};
  s.xp=xpForLevel(level);s.coins=400000;s.onboarding={...s.onboarding,completed:99,rewardClaimed:true};
- for(const [k,b] of Object.entries(s.buildings))if(!worldTwoBuilding(k)||built.includes(k))b.built=true;
+ for(const [k,b] of Object.entries(s.buildings))if(k!=='donkeystable'&&(!worldTwoBuilding(k)||built.includes(k)))b.built=true;   // not the farm's Donkey Stable (level 64, 27 Oct 2026): the pinned cargos predate its soap; tests/donkey-stable.test.mjs sails it
  return normalizeFarm(s,now);
 }
 // The ingredients as economy-ui.js draws them, with the good's key, so the order of the lines can be read back.

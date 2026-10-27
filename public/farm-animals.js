@@ -28,10 +28,13 @@ export const ANIMATED=Object.freeze({
  goat_001:['goat_101','goat_white'],goat_002:['goat_101','goat_grey'],
  pig_002:['pig_101','pig_peach'],pig_003:['pig_101','pig_pink'],pig_005:['pig_101','pig_peach'],
  sheep_001:['sheep_101','sheep_white'],sheep_002:['sheep_101','sheep_grey'],sheep_003:['sheep_101','sheep_cream'],
- horse_002:['horse_101','horse_bay'],horse_003:['horse_101','horse_chestnut'],horse_004:['horse_101','horse_black'],horse_005:['horse_101','horse_bay']
+ horse_002:['horse_101','horse_bay'],horse_003:['horse_101','horse_chestnut'],horse_004:['horse_101','horse_black'],horse_005:['horse_101','horse_bay'],
+ // The Donkey Stable's two (27 Oct 2026): the farm pack has no donkey, so a small horse_002 stands in as the still one (game.js names it
+ // donkey_001 or donkey_002) and the pack's donkey takes its place.
+ donkey_001:['donkey_101','donkey_grey'],donkey_002:['donkey_101','donkey_brown']
 });
 // The order they come in: the kinds round the home view first.
-export const ANIMAL_FILES=Object.freeze(['chicken_101','cow_101','horse_101','sheep_101','goat_101','pig_101','chick_101']);
+export const ANIMAL_FILES=Object.freeze(['chicken_101','cow_101','horse_101','sheep_101','goat_101','pig_101','chick_101','donkey_101']);
 // Each kind: how far from its spot it may wander, in its own body lengths along the screen (roam) and up and down it (depth, a share
 // of that; always inside its pen), its stride (a walk cycle's ground in body lengths, so the feet do not slide), how fast its walk plays, and how often it
 // does what (it picks again after each). The clips it has: the build keeps idle, walk and eat (the goat's gesture instead), and lie
@@ -45,7 +48,9 @@ export const ANIMAL_KINDS=Object.freeze({
  goat_101:{roam:3,depth:1,stride:.4,pace:.75,odds:{idle:.48,gesture:.34,walk:.18}},
  pig_101:{roam:3,depth:1,stride:.36,pace:.7,odds:{eat:.4,idle:.3,walk:.14,lie:.16}},
  sheep_101:{roam:3,depth:1,stride:.34,pace:.7,odds:{eat:.52,idle:.32,walk:.16}},
- horse_101:{roam:3,depth:1,stride:.4,pace:.7,odds:{eat:.48,idle:.38,walk:.14}}
+ horse_101:{roam:3,depth:1,stride:.4,pace:.7,odds:{eat:.48,idle:.38,walk:.14}},
+ // No gesture for the donkeys (27 Oct 2026, the owner: "ze stompen steeds": the pack's donkey gesture stamps a hoof): they stand and walk.
+ donkey_101:{roam:3,depth:1,stride:.4,pace:.75,odds:{idle:.8,walk:.2}}
 });
 // A walk: three fifths of a body length to two body lengths (WALK), within 17 degrees of its line along the screen (SWAY), keeping near the line
 // through its own spot (where its pen is longest). A half turn: a bend of BEND body lengths' radius (a hen's is tighter: kind.bend),

@@ -5,6 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import * as G from '../game/farm-state.js';
 import {FARMER_PASS_PARTS,FARMER_OFFER,FARMER_PARTS,DEFAULT_FARMER,farmerOwned,farmerPassParts,farmerOf,validFarmerConfig,wearPart,rewardOpen} from '../game/farmer-parts.js';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,file)=>{try{return execFileSync('git',['show',`${sha}:${file}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<26,stdio:['ignore','pipe','ignore']});}catch{return null;}};
@@ -45,7 +46,7 @@ test('the running Autumn 2026 pass is untouched (its tiers as live, none gives a
  for(const tier of G.seasonById('autumn-2026').tiers)for(const track of ['free','paid'])assert.equal(tier[track].farmer,undefined);
  // The live rules (main f6c82f75) on a farm with pass parts: the list is kept as it is (a key they do not know), and the farm plays on.
  const old=show('f6c82f75','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  const s=farm(20);G.giveFarmerParts(s,['hat_034']);const copy=structuredClone(s);
  O.normalizeFarm(copy,now+60000);assert.deepEqual(copy.farmerParts,['hat_034']);
  O.farmSummary(copy,now+60000);O.applyFarmAction(copy,{type:'sell',item:'wheat',quantity:1},now+60000);assert.deepEqual(copy.farmerParts,['hat_034']);

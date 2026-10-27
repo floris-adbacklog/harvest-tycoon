@@ -13,7 +13,7 @@ export const YARD_THEME=Object.freeze({
  preserves:'work',juicepress:'work',packing:'work',mill:'work',warehouse:'work',tractor:'work',cart:'work',workshop:'work',factory:'work',
  greenhouse:'green',apiary:'green',pond:'green',
  beeyard:'green',sheepbarn:'farm',glasshouse:'green',weaving:'work',
- goatshed:'farm',pigfarm:'farm',craftshop:'work',ranch:'farm',valleymarket:'road',
+ goatshed:'farm',donkeystable:'farm',pigfarm:'farm',craftshop:'work',ranch:'farm',valleymarket:'road',
  estateworkshop:'home',tradedepot:'work',grandfair:'road'
 });
 // Two props per yard, one every 14 m or so along a road: enough to make the farm lived in without cluttering it (25 Sep 2026).

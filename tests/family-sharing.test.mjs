@@ -6,9 +6,11 @@ import {sharingMessage,maxShare,helpCoins,giveAmounts,requestEnds} from '../publ
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The newest definition of harvest_social; the item-name check on requests was added in family-sharing-all-items.sql.
 const sql=read('supabase/pig-farm.sql'),constraintSql=read('supabase/family-sharing-all-items.sql');
+// The newest items list: the Donkey Stable's two goods (27 Oct 2026) went into the live function's list by supabase/donkey-stable.sql.
+const itemsSql=read('supabase/donkey-stable.sql').replaceAll("''","'");
 
 test('the server accepts exactly the game\'s crops and goods, so a new item needs both lists updated',()=>{
- const list=sql.match(/items constant text\[\]:=array\[([^\]]+)\]/)[1].split(',').map(s=>s.trim().replace(/'/g,''));
+ const list=itemsSql.match(/items constant text\[\]:=array\[([^\]]+)\]/)[1].split(',').map(s=>s.trim().replace(/'/g,''));
  assert.deepEqual(list,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&ITEMS[k].world!==2&&!ITEMS[k].season),'heirlooms (the Seed Lab, 27 Sep 2026), World II goods (30 Sep 2026) and season crops (the Season Pass, Oct 2026) are not shared');
 });
 test('gifts and requests are 1–5 of any of them; the daily limits and the old 3-wheat gift stay',()=>{

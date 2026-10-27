@@ -55,7 +55,7 @@ test('Most building upgrades: every upgrade counts the same, read from the farm 
 
 test('Most quests done: the distinct quests in the farm\'s claimed list, read on every save; the profile tile opens it',async()=>{
  const {readFileSync}=await import('node:fs');const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
- assert.deepEqual(LEADERBOARD_CATEGORIES.quests_done,{label:'Most quests done',heading:'Quests',unit:'quests done',description:'Quests finished and claimed, out of 320.'});
+ assert.deepEqual(LEADERBOARD_CATEGORIES.quests_done,{label:'Most quests done',heading:'Quests',unit:'quests done',description:'Quests finished and claimed, out of 326.'});
  const sql=read('supabase/leaderboard-quests.sql');
  assert.match(sql,/add column if not exists quests_done integer not null default 0;\ngrant select \(quests_done\) on public\.player_stats to authenticated;/);
  assert.match(sql,/select count\(distinct q\.value\) into new\.quests_done from jsonb_array_elements\(farm->'claimed'\) q where q\.value#>>'\{\}' ~ whole;/);

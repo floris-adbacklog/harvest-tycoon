@@ -92,6 +92,12 @@ cherryjam:{"name": "Cherry jam", "sell": 2700, "icon": "amphora", "color": "gold
 cherrypie:{"name": "Cherry pie", "sell": 2900, "icon": "cake-slice", "color": "gold"},
 // Wave 3: the Glasshouse's show basket, for the fair, the export trailers and the best orders.
 prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"},
+// Level 64 (27 Oct 2026, the owner's pick): the Donkey Stable's milk, and the Craft Workshop's soap made with it.
+donkeymilk:{"name": "Donkey milk", "sell": 250, "icon": "milk", "color": "cream"},
+donkeymilksoap:{"name": "Donkey milk soap", "sell": 2200, "icon": "droplets", "color": "cream"},
+// The same day, the owner's two more with the donkeys' milk: a cheese of donkey and goat milk (69) and a bath basket (77).
+donkeycheese:{"name": "Donkey cheese", "sell": 3750, "icon": "sandwich", "color": "cream"},
+bathbasket:{"name": "Bath basket", "sell": 16800, "icon": "package-check", "color": "cream"},
 // World II (level 100+): the farm bakes with the village's heirloom flour (see VILLAGE_GOODS).
 goldenloaf:{"name": "Golden loaf", "sell": 3800, "icon": "croissant", "color": "gold", "world": 2},
 heirloompie:{"name": "Heirloom pie", "sell": 8600, "icon": "cake-slice", "color": "gold", "world": 2}
@@ -215,7 +221,9 @@ export const BUILDINGS = Object.freeze({
  // Wave 2: goats beside the sheep, and a workshop for the Bee Yard's wax and the Weaving Shed's cloth.
  pigfarm:{"name": "Pig Farm", "tagline": "Happy pigs with clever noses, digging up truffles.", "icon": "package-check", "model": "house_019", "type": "production", "upgradeCost": 900, "minLevel": 29, "buildCost": 14000},
  goatshed:{"name": "Goat Shed", "tagline": "Curious goats, creamy milk and a cheese to be proud of.", "icon": "milk", "model": "hangar_015", "type": "production", "upgradeCost": 1400, "minLevel": 54, "buildCost": 72000},
- craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles and warm wool blankets.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
+ craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles, warm wool blankets and donkey milk soap.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
+ // Level 64 (27 Oct 2026, the owner: "echt een nieuwe building met goods", on the farm): two donkeys in a pen by their stable.
+ donkeystable:{"name": "Donkey Stable", "tagline": "Two gentle donkeys and their precious milk.", "icon": "milk", "model": "hangar_004", "type": "production", "upgradeCost": 1600, "minLevel": 64, "buildCost": 90000},
  factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST},
  // World II, The Village: its places work like the farm's buildings (slots, recipes, upgrades to level 10), in the village only.
  // Since Oct 2026 each is built from a golden brief at the market square (VILLAGE_BRIEFS): these coins and the brief's goods.
@@ -294,6 +302,14 @@ goatcheese:{"building": "dairy", "name": "Make goat cheese", "input": {"goatmilk
 goatbrowse:{"building": "goatshed", "name": "Let the goats browse", "input": {"lettuce": 6, "barley": 2}, "output": {"goatmilk": 3}, "duration": 4200000, "xp": 30, "minLevel": 56},
 candles:{"building": "craftshop", "name": "Pour beeswax candles", "input": {"beeswax": 3}, "output": {"candles": 1}, "duration": 6000000, "xp": 40, "minLevel": 58},
 blanket:{"building": "craftshop", "name": "Knot a wool blanket", "input": {"cloth": 2, "wool": 6}, "output": {"blanket": 1}, "duration": 28800000, "xp": 220, "minLevel": 60},
+// Level 64 (27 Oct 2026): the donkeys eat animal feed like the goats; their milk and the Feed Mill's sunflower oil make the Craft
+// Workshop's soap (the owner: soap needs an oil, not honey), four bars a batch. One sunflower a soap, as a candle.
+milkdonkeys:{"building": "donkeystable", "name": "Milk the donkeys", "input": {"feed": 3}, "output": {"donkeymilk": 2}, "duration": 3600000, "xp": 25, "minLevel": 64},
+donkeymilksoap:{"building": "craftshop", "name": "Make donkey milk soap", "input": {"donkeymilk": 12, "oil": 2}, "output": {"donkeymilksoap": 4}, "duration": 21600000, "xp": 120, "minLevel": 64},
+// Donkey cheese as it is really made, about 60% donkey milk and 40% goat milk, and a bath basket of soap, a candle and a cloth towel,
+// for the Trade Depot and the fair (two of each, as every mixed recipe asks; 11 hours, so it pays about what prize produce does).
+donkeycheese:{"building": "dairy", "name": "Make donkey cheese", "input": {"donkeymilk": 6, "goatmilk": 4}, "output": {"donkeycheese": 1}, "duration": 14400000, "xp": 90, "minLevel": 69},
+bathbasket:{"building": "craftshop", "name": "Pack a bath basket", "input": {"donkeymilksoap": 2, "candles": 2, "cloth": 2}, "output": {"bathbasket": 1}, "duration": 39600000, "xp": 240, "minLevel": 77},
 cherryjam:{"building": "preserves", "name": "Cook cherry jam", "input": {"cherries": 6, "honey": 3}, "output": {"cherryjam": 1}, "duration": 14400000, "xp": 85, "minLevel": 67},
 cherrypie:{"building": "bakery", "name": "Bake a cherry pie", "input": {"cherries": 5, "flour": 4, "eggs": 2}, "output": {"cherrypie": 1}, "duration": 18000000, "xp": 95, "minLevel": 68},
 // Wave 3. Prize produce is grown under glass from the best of the vegetable garden; like every Glasshouse batch it is never made in bulk.
@@ -811,7 +827,14 @@ export const QUESTS = Object.freeze([
  {title:'Fifteen varieties',description:'Discover 15 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:15,reward:150000,minLevel:96},
  {title:'Every heirloom',description:'Discover all 20 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:20,reward:250000,minLevel:98},
  {title:'A lab regular',description:'Collect 50 crosses from the Seed Lab.',stat:'lab_crosses',target:50,reward:150000,minLevel:95},
- {title:'Master breeder',description:'Collect 150 crosses from the Seed Lab.',stat:'lab_crosses',target:150,reward:300000,minLevel:100}
+ {title:'Master breeder',description:'Collect 150 crosses from the Seed Lab.',stat:'lab_crosses',target:150,reward:300000,minLevel:100},
+ // Level 64 (27 Oct 2026): the Donkey Stable and the Craft Workshop's donkey milk soap.
+ {title:'Two new friends',description:'Open the Donkey Stable.',stat:'built_donkeystable',target:1,reward:14000,minLevel:64},
+ {title:'Donkey milk',description:'Collect 30 donkey milk.',stat:'made_donkeymilk',target:30,reward:9000,minLevel:64},
+ {title:'A gentle soap',description:'Make 5 donkey milk soap.',stat:'made_donkeymilksoap',target:5,reward:12000,minLevel:64},
+ {title:'Soap for the whole valley',description:'Make 40 donkey milk soap.',stat:'made_donkeymilksoap',target:40,reward:40000,minLevel:64},
+ {title:'A rare cheese',description:'Make 10 donkey cheese.',stat:'made_donkeycheese',target:10,reward:30000,minLevel:69},
+ {title:'A gift to unwrap',description:'Pack 5 bath baskets.',stat:'made_bathbasket',target:5,reward:40000,minLevel:77}
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
@@ -983,13 +1006,13 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:12,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
-export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112,
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,donkeystable:64,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112,
  villagefields:110,canteen:113,kiln:118,linenloft:125,soapmaker:135,pier:144,jeweller:150});
-export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST,
+export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,donkeystable:90000,factory:FACTORY_COST,
  // World II (Oct 2026): built from the golden brief at the market square (VILLAGE_BRIEFS), with these coins and the brief's goods. One
  // number for the brief, the wiki and the upgrade ladder's floor (150k / 150k / 200k / 300k from 30 Sep 2026, when they were built here).
  mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,milkdonkeys:64,donkeymilksoap:64,donkeycheese:69,bathbasket:77,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
  sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158});
 // The Fishing pond (11 Oct 2026, part C): POND_OPEN is its one switch. While it is false the pond is built but hidden: it is in no list
 // (not in FEATURE_LEVELS or FEATURE_NAMES, so no level card, Coming up, wiki or menu names it), the game loads none of it and farm-api
@@ -2689,7 +2712,8 @@ export function villageSquareReady(state){
 // cargo is worth 50,000 at level 144 and 1,000 more a level, up to 106,000 at 200: never more than the Trade Depot's trailer (120,000).
 export const BOAT_PREMIUM=1.6,BOAT_DIAMONDS=3,BOAT_DIAMOND_TRIPS=14,BOAT_XP_SHARE=40,BOAT_RETURN=12*3600000,BOAT_QUAY_RETURN=6*3600000;
 export const BOAT_VALUE_BASE=50000,BOAT_VALUE_STEP=1000,BOAT_VALUE_MAX=106000;
-export const BOAT_GOODS=Object.freeze(['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar']);
+// Donkey milk soap (27 Oct 2026, the owner's pick a): the farm's soap of level 64 sails with the village's goods; always added at the end.
+export const BOAT_GOODS=Object.freeze(['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar','donkeymilksoap']);
 // The refusal when the server's cargo is not the one on the screen: the boat's window loads the farm again when it hears it.
 export const BOAT_GONE='The boat’s cargo has changed. Look at the boat again.';
 // A village landmark is finished (VILLAGE_LANDMARKS below): the Stone quay brings the boat back sooner. Defined once, here.
@@ -4522,6 +4546,35 @@ export function villageCart(state,cart,expectedCost,expectedGoods){
  state.stats.village_carts=(state.stats.village_carts??0)+1;
  return {cart,goods:{...c.goods},cost:c.cost};
 }
+// The donkey cart's goods (27 Oct 2026, the owner: "maak ezel met kar vanaf dat level een manier om af en toe goederen te kopen voor
+// diamanten, voor de prijs van de marktwaarde, max 3 soorten per dag", and "prijs afhankelijk van level, net zoals coins in shop"). Once
+// the Donkey Stable stands, the cart brings three of the farm's goods every day (00:00 UTC), each a load worth about 100 × level coins at
+// its normal price, for that value at the coin pack's rate (10 × level coins a diamond, COIN_PACK), rounded up: about 10 diamonds a load.
+// Each load once a day (state.daily.cartBought, so it resets with the day). Only goods this farm makes already, never the cheap basics
+// (feed, fertilizer, honey) or World II's. Resold at the Market a load brings 0.8 of its price in coins, under the coin pack. The three are
+// picked from the farm's seed and the day, the same in the game and in farm-api.
+export const CART_LOADS=3,CART_LOAD_SHARE=100,CART_COINS_PER_DIAMOND=COIN_PACK.perLevel/COIN_PACK.cost;
+const cartGoods=state=>Object.keys(PRODUCTS).filter(k=>!['feed','fertilizer','honey'].includes(k)&&!worldTwoItem(k)&&ITEMS[k].sell>=100&&itemAvailable(state,k));
+export function cartLoads(state,now=Date.now()){
+ if(!buildingUnlocked(state,'donkeystable'))return [];
+ const day=utcDay(now),level=levelOf(state),pool=cartGoods(state),picked=[],seed=Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0;
+ for(let n=0;picked.length<Math.min(CART_LOADS,pool.length)&&n<200;n++){const k=pool[mixBits(calendarHash(`donkeycart-v1:${day}:${seed}:${n}`))%pool.length];if(!picked.includes(k))picked.push(k);}
+ const bought=state.daily?.date===day&&Array.isArray(state.daily.cartBought)?state.daily.cartBought:[];
+ return picked.map(item=>{const count=Math.max(1,Math.round(CART_LOAD_SHARE*level/ITEMS[item].sell)),value=count*ITEMS[item].sell;
+  return {item,count,value,cost:Math.ceil(value/(CART_COINS_PER_DIAMOND*level)),bought:bought.includes(item)};});
+}
+export function cartBuy(state,item,expectedCount,expectedCost,now=Date.now()){
+ if(!buildingUnlocked(state,'donkeystable'))throw new Error('Build the Donkey Stable first.');
+ const load=cartLoads(state,now).find(l=>l.item===item);
+ if(!load)throw new Error('The donkey cart has brought other goods. Look at the cart again.');
+ if(load.bought)throw new Error('You bought this load today. The cart brings new goods tomorrow.');
+ if(expectedCount!==load.count||expectedCost!==load.cost)throw new Error(PRICES_CHANGED);
+ if(state.diamonds<load.cost)throw new Error(shortOfDiamonds(load.cost));
+ spendDiamonds(state,load.cost);state.inventory[item]=(state.inventory[item]??0)+load.count;
+ state.daily.cartBought=[...(Array.isArray(state.daily.cartBought)?state.daily.cartBought:[]),item];
+ state.stats.cart_loads=(state.stats.cart_loads??0)+1;
+ return {item,count:load.count,cost:load.cost};
+}
 // Boat back now: the boat is back at the pier at once, with the cargo it would have brought (the next running number). Made before the
 // charge, so a boat with nothing to carry costs nothing. trips, week and paid stay as they are: the week's diamond trips still count.
 export function boatNow(state,expectedCost,now=Date.now()){
@@ -4745,6 +4798,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'landmark_finish':return landmarkFinish(state,action.landmark);
   // The Village tab of the diamond shop (20 Oct 2026): no feature gate, each checks its own level (as the market square).
   case 'village_cart':return villageCart(state,action.cart,action.expectedCost,action.expectedGoods);
+  case 'donkey_cart_buy':return cartBuy(state,action.item,action.expectedCount,action.expectedCost,now);
   case 'boat_now':return boatNow(state,action.expectedCost,now);
   case 'villager_now':return villagerNow(state,action.board,action.expectedCost,now);
   case 'lake_casts':return lakeCastsNow(state,action.expectedCost,now);
@@ -5163,10 +5217,13 @@ export function familyLineCap(item){
 const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.round(n/10)*10;
 // Goods added to the game join the Family Order from a later week: the draw picks from the list of goods, so a longer list
 // would give a family that opens its order late in the week a different order than the families before it.
-export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960});   // week 2960 starts Monday 28 September 2026
+export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960,donkeymilk:2966,donkeymilksoap:2966,donkeycheese:2966});   // week 2960 starts Monday 28 September 2026, 2966 Monday 9 November
+// Never in a Family Order: the bath basket (27 Oct 2026) sells for 16,800, so even one would take an order past its value band. It still
+// counts as Tournament goods, like every good.
+export const FAMILY_ORDER_NEVER=Object.freeze(['bathbasket']);
 export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!worldTwoItem(k)&&!seasonItem(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!worldTwoItem(k)&&!seasonItem(k)&&!FAMILY_ORDER_NEVER.includes(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
  const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
  // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
  const dear=k=>ITEMS[k].sell>=5000;

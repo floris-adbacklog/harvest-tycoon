@@ -6,9 +6,9 @@ import {questArt} from '../public/quests-ui.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 test('50 more quests, appended so every quest id stays the same: 300 in all, every title once',()=>{
- assert.equal(QUESTS.length,320);assert.equal(QUESTS[249].title,'Every building at its best','the old last quest keeps its id');assert.equal(QUESTS[299].title,'Stall keeper','the 300th keeps its id too (17 Oct 2026: 20 more after it)');
+ assert.equal(QUESTS.length,326);assert.equal(QUESTS[249].title,'Every building at its best','the old last quest keeps its id');assert.equal(QUESTS[299].title,'Stall keeper','the 300th keeps its id too (17 Oct 2026: 20 more after it)');
  assert.equal(QUESTS[250].title,'A mountain of lettuce');assert.equal(QUESTS[299].title,'Stall keeper');
- assert.equal(new Set(QUESTS.map(q=>q.title)).size,320);
+ assert.equal(new Set(QUESTS.map(q=>q.title)).size,326);
  for(const q of QUESTS.slice(250)){assert.ok(q.reward>0&&q.target>0&&q.description.length<=60,q.title);assert.ok(!questArt(q.stat).includes('data-art="quests"'),`${q.title} has its own picture`);}
 });
 

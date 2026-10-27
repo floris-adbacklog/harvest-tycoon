@@ -8,6 +8,7 @@ import {createFertilizerTip,fertilizerTipDue,fertilizerTipText,FERTILIZER_TIP_KE
 import {wikiArticle} from '../public/wiki-content.js';
 import {LANGUAGES} from '../public/languages.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,9,21,12),HOUR=3600000,MIN=60000;
 
@@ -205,7 +206,7 @@ const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 test('old rules on new saves and new rules on old saves (main eef95f62): no new key, the old rules refuse the job cleanly',async t=>{
  const old=show('eef95f62','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  // New rules worked on it (a tractor Fertilize job), then the old rules load it and play on.
  const s=farm();growing(s,0,'pumpkin');growing(s,1,'sunflower');growing(s,2,'wheat');job(s,fertilizeQuote(s,now).total);
  const saved=structuredClone(s),keys=JSON.stringify(Object.keys(normalizeFarm(structuredClone(saved),now)).sort());

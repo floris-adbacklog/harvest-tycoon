@@ -109,3 +109,16 @@ dialog :is(.seed-yield-line,.gift-note,.orders-lead,.warehouse-lead,.silo-lead,.
 #today-content .daily-list>:is(.daily-card,.daily-order):is(.is-ready,.commission,.village,.completed){margin:0 0 -1px;padding:12px 14px;border:0;border-bottom:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
 #today-content .daily-list>:is(.daily-card,.daily-order).is-ready{background:var(--calm-ready-fill)}
 #today-content .order-replace{border-top:1px solid #eee5d8}
+
+/* The donkey cart's loads in the Donkey Stable's window (27 Oct 2026, donkey-cart-ui.js): calm rows with thin lines, as the Today list. */
+.cart-loads{margin-top:14px}
+.cart-load-list{list-style:none;margin:8px 0 6px;padding:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+.cart-load{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #eee5d8}
+.cart-load:last-child{border-bottom:0}
+.cart-load>.game-art{width:40px;height:40px;flex:none}
+.cart-load-copy{flex:1;min-width:0;display:flex;flex-direction:column}
+.cart-load-copy small{color:#7a6a58}
+.cart-load .is-diamond{display:inline-flex;align-items:center;gap:6px;min-width:76px;justify-content:center}
+.cart-load .is-diamond>.game-art{width:20px;height:20px}
+.cart-load.is-bought{opacity:.62}
+.cart-load-done{font-weight:700;color:#5d7a3a;font-size:.9em}

@@ -9,7 +9,7 @@
 // drawn as one instanced mesh per model, so a hundred of them cost a handful of draw calls.
 import * as THREE from 'three';
 import {seeded,YARD_THEME} from './farm-props.js';
-import {SPREAD,ANCHORS,POND,YARD_EXTENT,FIELD_BLOCK,roadRects,onRoad,anchorAt,placeIn,pondBounds,outsideFields,outsideYardExtents} from './farm-layout.js';
+import {eastRoom,SPREAD,ANCHORS,POND,YARD_EXTENT,FIELD_BLOCK,roadRects,onRoad,anchorAt,placeIn,pondBounds,outsideFields,outsideYardExtents} from './farm-layout.js';
 import {wildflowers} from './scene-polish.js';
 
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
@@ -20,7 +20,7 @@ export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','moun
 // The same ring as the mountains (scene-polish.js): laid out in screen directions around the home view, sides and back only,
 // so nothing stands between the camera and the farm.
 const RING=1+(SPREAD-1)*.85,K=Math.SQRT1_2;
-const ringPoint=(degrees,a,b)=>{const phi=degrees*Math.PI/180,sx=a*Math.cos(phi),sb=b*Math.sin(phi);return {x:1.4+(sx-sb)*K,z:1.5+(-sx-sb)*K,angle:Math.atan2(-((-a*Math.sin(phi))-(b*Math.cos(phi)))*K,((-a*Math.sin(phi))-(b*Math.cos(phi)))*K)};};
+const ringPoint=(degrees,a,b)=>{const phi=degrees*Math.PI/180,far=eastRoom(degrees);a*=far;b*=far;const sx=a*Math.cos(phi),sb=b*Math.sin(phi);return {x:1.4+(sx-sb)*K,z:1.5+(-sx-sb)*K,angle:Math.atan2(-((-a*Math.sin(phi))-(b*Math.cos(phi)))*K,((-a*Math.sin(phi))-(b*Math.cos(phi)))*K)};};
 
 // clear(x, z, reach): true where a piece must not stand (game.js: your farmer's loop, chair and trip spots, farm-farmer.js
 // inFarmerWay, only on a farm where the farmer walks). Asked of the bushes, flowers, tufts and bales once all are chosen, so the rest

@@ -169,6 +169,7 @@ pig, the goat's and the chick's gesture; no run), painted from the farm's palett
 | sheep_101: sheep_white (Sheep_01), sheep_grey (Sheep_02), sheep_cream (Sheep_01, white face and legs) | sheep_001; sheep_002; sheep_003 | 1,292,168 → 103,248 bytes |
 | horse_101: horse_bay (Horse_01), horse_black (Horse_02), horse_chestnut (Horse_05, its mane dark) | horse_002, horse_005; horse_004; horse_003 | 1,805,676 → 127,924 bytes |
 | duck_101: duck_white (Duck_01) | nothing: the duck on the farm's pond (22 Oct 2026), new | 583,964 → 63,952 bytes |
+| donkey_101: donkey_grey (Donkey_01), donkey_brown (Donkey_02) | nothing: the Donkey Stable's two donkeys and the one with the cart (27 Oct 2026), new; horse_002 stands in as the still one | 1,419,068 → 108,684 bytes |
 
 687 KB for all seven files (about 253 KB as the site sends them, brotli-packed). They are not among the models the loading bar waits for,
 not loaded with reduced motion or when the browser asks to save data, and a kind that cannot load keeps its still models.
@@ -177,6 +178,12 @@ The duck (22 Oct 2026, the owner: "zet de eend hier bij, doet verder niks") is t
 (public/farm-duck.js), only to look at (no tap, nothing saved). Built by the same script with `KIND=duck_101`: only its swim and its
 float (swim_idle) are kept; its walk, idle, gesture and run are left out. It loads once the farm is on screen, not with reduced motion,
 simple graphics or Save-Data.
+
+The donkeys (27 Oct 2026, the owner's level-64 Donkey Stable): two in the stable's pen, walking like the farm's other animals
+(public/farm-animals.js), and the grey one pulling the farm's cart (dray_003) up and down the trunk road (public/farm-donkey-cart.js), only
+to look at. Built by the same script with `KIND=donkey_101`: idle and walk only (the pack's donkey gesture stamps a hoof).
+
+The village's animals (27 Oct 2026, public/village-animals.js: pigeons on the square, two roe deer and a fox by the Lumber Camp, a cat with three kittens by the Canteen) come from the same paid pack, rebuilt by scripts/build-village-animals.mjs as above (pigeon_101: Pigeon_01-03; roedeer_101: Roe_Deer_01-02; fox_101: Fox_01; housecat_101: Cat_04; kitten_101: Kitty_03 painted a lighter ginger, Kitty_01, Kitty_02; 6,165,636 → 547,584 bytes for the five files), only to look at.
 
 ## The farmer (20 Oct 2026)
 

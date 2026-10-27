@@ -12,6 +12,7 @@ import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {squareMarkup} from '../public/village-square-ui.js';
 import {boatMarkup} from '../public/boat-ui.js';
 import {villageLine,villageMessage,untilText,waitButton,VILLAGE_ASK} from '../public/village-shop-ui.js';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
@@ -27,7 +28,7 @@ const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 // boat away for 5 hours, the second board empty for 2 hours and the lake at 0 casts (a new one in 19 minutes).
 function world(level,{places=ALL,stock={},done=[],diamonds=5000}={}){
  const s=createFarm(now-DAY);s.xp=xpForLevel(level);s.coins=5000000;s.diamonds=diamonds;s.onboarding={...s.onboarding,completed:99,rewardClaimed:true};
- for(const [k,b] of Object.entries(s.buildings)){if(worldTwoBuilding(k))b.built=places.includes(k)&&BUILDING_LEVELS[k]<=level;else{b.built=true;if(BUILDINGS[k].type==='production')b.level=MAX_BUILDING_LEVEL;}}
+ for(const [k,b] of Object.entries(s.buildings)){if(worldTwoBuilding(k))b.built=places.includes(k)&&BUILDING_LEVELS[k]<=level;else{b.built=k!=='donkeystable';if(BUILDINGS[k].type==='production')b.level=MAX_BUILDING_LEVEL;}}   // not the farm's Donkey Stable (level 64, 27 Oct 2026): the pinned cargos predate its soap; tests/donkey-stable.test.mjs sails it
  normalizeFarm(s,now);for(const k of Object.keys(s.inventory))s.inventory[k]=0;Object.assign(s.inventory,stock);
  s.village={serial:0,boards:[],landmarks:{done,given:{}}};normalizeFarm(s,now);
  if(s.village.boards[1])s.village.boards[1]={request:null,readyAt:now+2*HOUR};
@@ -329,7 +330,7 @@ test('the wiki\'s Village topic says it all, the Wind pump\'s price worked out; 
 // code) must read a farm the new actions touched, keep what they wrote, play on, and refuse the new actions cleanly.
 test('the live game (d99e77c0) reads a farm after every new action, keeps it, plays on and refuses the new actions cleanly',async t=>{
  const old=show('d99e77c0','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  const s=world(165,{stock:{rooftile:10}});
  for(const id of ['supplycart','tilecart','boat','villager','casts','landmark'])act(s,statusAction(s,id));
  const saved=structuredClone(s),copy=structuredClone(saved),t2=now+60000;O.normalizeFarm(copy,t2);

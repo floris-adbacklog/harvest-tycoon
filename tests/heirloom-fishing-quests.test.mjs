@@ -23,10 +23,10 @@ function farm(level,{mode='guided'}={}){
 }
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 const pondOf=best=>({n:200,casts:5,castsAt:0,firstAt:0,lastAt:0,prevAt:0,best,page2At:0});
-const W1=QUESTS.slice(300),W2=VILLAGE_QUESTS.slice(58);
+const W1=QUESTS.slice(300,320),W2=VILLAGE_QUESTS.slice(58);   // (the Donkey Stable's quests follow from 320, 27 Oct 2026)
 
 test('20 quests for the pond and the Seed Lab and 12 for the heirloom bakes and the lake, appended: 320 and 70, every old id where it was',()=>{
- assert.equal(QUESTS.length,320);assert.equal(VILLAGE_QUESTS.length,70);
+ assert.equal(QUESTS.length,326);assert.equal(VILLAGE_QUESTS.length,70);
  assert.equal(QUESTS[299].title,'Stall keeper');assert.equal(VILLAGE_QUESTS[57].title,'The Great Hall');
  assert.deepEqual(W1.map(q=>[q.stat,q.target,q.reward,q.minLevel]),[
   ['fish',1,100,4],['fish_kinds',4,250,4],['fish',25,500,5],['fish_perfect',10,800,6],['fish_kinds',8,1500,8],['caught_whiskers',1,2000,10],['fish',100,3000,12],
