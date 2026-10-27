@@ -476,7 +476,7 @@ async function addAnimals(){
   }
   const penOf=o=>{const p=pens.get(o.userData.pen);return p?{box:p,keepOut:standing.filter(([a,b,c,d])=>b>p[0]&&a<p[1]&&d>p[2]&&c<p[3])}:null;};
   const list=[];scene.traverse(o=>{const name=o.userData.model??o.userData.scenery;if(name&&ANIMATED[name]&&!o.userData.animal){o.userData.animal=true;list.push({obj:o,still:Boolean(o.userData.activity||o.userData.scenery),pen:penOf(o)});}});
-  herd=createHerd({list,relock:o=>{if(o.userData.locked){o.userData.locked=false;setLocked(o,true);}},lite:handheld||mobileLayout.matches,onKind:()=>{renderer.shadowMap.needsUpdate=true;}});
+  herd=createHerd({list,lite:handheld||mobileLayout.matches,onKind:()=>{renderer.shadowMap.needsUpdate=true;}});
   await herd.ready;
  }catch(error){console.warn('The animals were left standing.',error);}
 }
@@ -629,9 +629,19 @@ function greyed(material){
  }
  return grey;
 }
+// The farm's animals stay in colour and keep moving while their yard is still to come (27 Oct 2026, the owner: grey and still they
+// looked dead): only the buildings, fences and props around them go grey, which still says the yard is locked. The locked mark itself
+// is kept on an animal, so a tap on it says what it says now.
+const LIVE_ANIMAL=/^(cow|horse|pig|sheep|goat|chick|chicken)_/;
+const liveAnimal=o=>Boolean(o.userData.animal||LIVE_ANIMAL.test(o.userData.model??o.userData.scenery??''));
 function setLocked(object,locked){
  if(object.userData.locked===locked)return;object.userData.locked=locked;
- object.traverse(mesh=>{if(!mesh.isMesh||mesh.userData.softShadow)return;mesh.userData.original??=mesh.material;const original=mesh.userData.original;mesh.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;});
+ const paint=o=>{
+  if(liveAnimal(o))return;
+  if(o.isMesh&&!o.userData.softShadow){o.userData.original??=o.material;const original=o.userData.original;o.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;}
+  for(const child of o.children)paint(child);
+ };
+ paint(object);
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));

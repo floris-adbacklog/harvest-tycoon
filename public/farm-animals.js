@@ -83,9 +83,9 @@ const pick=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,
 // for one that only stands (the Animal paddock's horse, whose pin and tap box stay where they are, and the white hen and the two chicks
 // of the scenery), and pen its pen (game.js): {box:[minX, maxX, minZ, maxZ] round its fences, keepOut:[[minX, maxX, minZ, maxZ], ...]
 // what stands in it}, or null.
-// relock(obj): greys the new animal with its yard if the yard is still to come (game.js setLocked). lite: phones (their animals move
+// lite: phones (their animals move
 // at half the frame rate). onKind: after a kind took its place (the shadows are drawn again).
-export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=Math.random}){
+export function createHerd({list,lite=false,onKind=()=>{},random=Math.random}){
  const herd=[],frustum=new THREE.Frustum(),matrix=new THREE.Matrix4(),sphere=new THREE.Sphere();let frame=0,stopped=false,seenBy=null;
  const todo=new Map();
  for(const entry of list){const [file]=ANIMATED[entry.obj.userData.model??entry.obj.userData.scenery]??[];if(file)(todo.get(file)??todo.set(file,[]).get(file)).push(entry);}
@@ -114,7 +114,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   body.computeBoundingSphere();body.boundingSphere.radius*=1.3;
   // The still model goes out of sight but stays as the tap target; the animal is drawn in its place.
   obj.traverse(n=>{if(n.isMesh)n.visible=false;});
-  obj.add(rig);{const shade=softShadow(size.x*k/s*1.5,size.z*k/s*1.4,1);shade.position.y=.05/s;obj.add(shade);}relock(obj);
+  obj.add(rig);{const shade=softShadow(size.x*k/s*1.5,size.z*k/s*1.4,1);shade.position.y=.05/s;obj.add(shade);}
   const home=[obj.position.x,obj.position.z];
   // It walks along the screen, the way the layout turned it or the other way (axes).
   const a={obj,rig,mixer,actions,kind,file,still,home,length,pen,axes:[turn,turn+Math.PI],yaw:turn,state:null,timer:0,target:null,bend:0,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
@@ -217,7 +217,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
    const a=herd[i];a.wait=(a.wait??0)+dt;
    if(lite&&(i+frame)%2)continue;
    const t=Math.min(a.wait,.2);a.wait=0;
-   if(a.obj.userData.locked||!shown(a.obj))continue;
+   if(!shown(a.obj))continue;   // a locked yard's animals move too (27 Oct 2026; game.js setLocked keeps them in colour)
    sphere.center.copy(a.obj.position);sphere.radius=a.length;
    if(!frustum.intersectsSphere(sphere))continue;
    step(a,t);a.mixer.update(t);

@@ -175,5 +175,5 @@ test('the sun\'s shadows are drawn when the farm changes, else every 10 s; what 
  for(const file of ['farm-animals.js','farm-farmer.js','farm-pets.js'])assert.match(readFileSync(new URL(`../public/${file}`,import.meta.url),'utf8'),/import \{softShadow\} from '\.\/soft-shadow\.js';/,file);
  assert.match(readFileSync(new URL('../public/farm-animals.js',import.meta.url),'utf8'),/body\.castShadow=false;/);
  assert.match(readFileSync(new URL('../public/farm-farmer.js',import.meta.url),'utf8'),/createFarmer\(config,\{height:walk\.height,family,shadow:false\}\)/);
- assert.match(game,/if\(object\.userData\.locked===locked\)return;object\.userData\.locked=locked;\n object\.traverse\(mesh=>\{if\(!mesh\.isMesh\|\|mesh\.userData\.softShadow\)return;/,'a soft shadow is never greyed');
+ assert.match(game,/if\(object\.userData\.locked===locked\)return;object\.userData\.locked=locked;\n const paint=o=>\{\n  if\(liveAnimal\(o\)\)return;\n  if\(o\.isMesh&&!o\.userData\.softShadow\)\{/,'a soft shadow is never greyed (nor an animal, 27 Oct 2026)');
 });
