@@ -110,3 +110,24 @@ dialog.pay-choice{text-align:center;padding:18px 18px 16px}
 .pay-choice .pay-choice-feedback{margin:8px 0 0;font:700 13px/1.4 'DM Sans',sans-serif;color:#b3402a}
 .pay-choice .pay-choice-feedback:empty{display:none}
 @media(prefers-reduced-motion:reduce){.pay-choice .pay-way{transition:none}}
+/* The Sale (27 Oct 2026, public/diamond-sale.js): a calm cream card over the packs with its name, what it gives and the time left,
+   one quiet line on the payment screen under it, and each pack's bonus under its amount. The same look for every kind of Sale. */
+.shop-sale{margin:14px 0 0;padding:12px 14px;border:2px solid #e6c98a;border-radius:16px;background:#fff8e6;box-shadow:0 2px 0 #ecd9ab;color:#4d3a1c}
+.shop-sale[hidden]{display:none}
+.shop-sale-head{display:flex;align-items:center;gap:10px}
+.shop-sale-head>.game-art{flex:0 0 auto;width:40px;height:40px}
+.shop-sale-copy{display:grid;gap:2px;min-width:0;flex:1}
+.shop-sale-copy strong{font:700 19px/1.15 'Outfit',sans-serif;color:#3b2c12}
+.shop-sale-copy span{font:400 14px/1.35 'DM Sans',sans-serif;color:#6b5530}
+.shop-sale-time{flex:0 0 auto;padding:5px 10px;border:2px solid var(--btn-gold-line,#b07a22);border-radius:999px;background:#fbe7bb;color:#6a4310;font:700 13px/1.2 'DM Sans',sans-serif;white-space:nowrap}
+.shop-sale-note{margin:8px 0 0;font:400 13px/1.4 'DM Sans',sans-serif;color:#7a6a4c}
+.pack-ribbon.is-sale{background:linear-gradient(#f0b85a,#d98f2b);color:#3f2806;text-transform:none;letter-spacing:.02em}
+.pack-bonus{margin-top:5px;padding:2px 8px;border-radius:999px;background:#fbe7bb;color:#7a4a0c;font:700 13px/1.3 'DM Sans',sans-serif;white-space:nowrap}
+@media(max-width:600px){
+ .shop-sale{padding:10px 12px}
+ .shop-sale-head{flex-wrap:wrap}
+ .shop-sale-head>.game-art{width:34px;height:34px}
+ .shop-sale-copy strong{font-size:17px}
+ .shop-sale-copy span{font-size:13px}
+ .shop-sale-time{margin-inline-start:44px}
+}

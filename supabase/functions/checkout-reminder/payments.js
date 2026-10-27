@@ -17,6 +17,41 @@ const LEGACY_PAYMENT_PACKS=Object.freeze({
  '300':{diamonds:300,cents:999,price:'price_1UH5Gv04FdNTUSp4kabIfp0Y'},
  '1000':{diamonds:1000,cents:2499,price:'price_1UH5HL04FdNTUSp41DLz2C1B'}
 });
+// The Sale (27 Oct 2026, the owner): the admin starts one in the Admin panel for 1 to 72 hours (supabase/diamond-sale.sql); while it
+// runs every plain diamond pack gives 40% more diamonds for the same price (150 + 60, 500 + 200, 1250 + 500, 3500 + 1400). Only these
+// four packs: not the Starter Pack, the special offer, a pass, VIP or the coin pack (their contents are deals of their own). The store
+// products stay as they are (the payment screen still names the usual pack); the bonus is decided by diamond-checkout when the purchase
+// row is made, kept on the row (sale_id, sale_bonus) and added by harvest_purchase_grant once; a refund takes it back too.
+// kinds: the name the admin picks (the owner, 27 Oct 2026), stored as its key; only the title changes (public/diamond-sale.js holds the
+// same titles for the shop, translated there).
+export const SALE=Object.freeze({percent:40,minHours:1,maxHours:72,maxBonus:2000,packs:Object.freeze(['150','500','1250','3500']),
+ kinds:Object.freeze({sale:'Sale',halloween:'Halloween Sale',autumn:'Autumn Sale',black_friday:'Black Friday Sale',christmas:'Christmas Sale',
+  winter:'Winter Sale',new_year:'New Year Sale',valentines:'Valentine\'s Sale',easter:'Easter Sale',spring:'Spring Sale',summer:'Summer Sale',weekend:'Weekend Sale'}),
+ defaultKind:'sale'});
+export const saleKind=kind=>typeof kind==='string'&&Object.hasOwn(SALE.kinds,kind);
+// A pack the Sale adds to (the four plain packs, by their current ids).
+export const salePack=id=>typeof id==='string'&&SALE.packs.includes(id);
+// The Sale running at now (diamond_sale_now: {id, kind, percent, endsAt}), or null.
+export const saleRunning=(sale,now=Date.now())=>Boolean(sale)&&typeof sale.id==='string'&&UUID.test(sale.id)&&Number(sale.endsAt)>now?sale:null;
+// The extra diamonds a pack's diamonds get in a Sale: 40%, rounded, at most maxBonus.
+export const bonusFor=diamonds=>Number.isSafeInteger(diamonds)&&diamonds>0?Math.min(SALE.maxBonus,Math.round(diamonds*SALE.percent/100)):0;
+// The extra diamonds for a pack bought now: 0 outside a Sale or for any other pack.
+export const saleBonus=(pack,sale,now=Date.now())=>salePack(pack)&&saleRunning(sale,now)?bonusFor(PAYMENT_PACKS[pack].diamonds):0;
+// What a purchase row gets from the Sale (diamond-checkout newRow / appCreate): nothing, or the Sale's id and the bonus.
+export function saleRow(pack,sale,now=Date.now()){const bonus=saleBonus(pack,sale,now);return bonus>0?{sale_id:sale.id,sale_bonus:bonus}:{};}
+// The Sale as the catalogue gives it to the shop: title key, percent, end, and each pack's bonus; null outside a Sale.
+export function saleCatalog(sale,now=Date.now()){
+ if(!saleRunning(sale,now))return null;
+ return {id:sale.id,kind:saleKind(sale.kind)?sale.kind:SALE.defaultKind,percent:SALE.percent,endsAt:Number(sale.endsAt),bonus:Object.fromEntries(SALE.packs.map(id=>[id,bonusFor(PAYMENT_PACKS[id].diamonds)]))};
+}
+// Why a purchase row's Sale bonus is wrong, or null: none at all, or exactly the bonus of a plain pack with the Sale it came from
+// (the same rule as harvest_purchases_sale_check).
+export function salePurchaseProblem(purchase){
+ const bonus=purchase?.sale_bonus??0,sale=purchase?.sale_id??null;
+ if(bonus===0)return sale==null?null:'Sale mismatch.';
+ if(!salePack(purchase.pack)||typeof sale!=='string'||!UUID.test(sale)||bonus!==bonusFor(purchase.diamonds))return 'Sale mismatch.';
+ return null;
+}
 // The special offer (29 Sep 2026): the admin puts together diamonds, coins and/or VIP time at the shop's own prices, sold once per
 // farmer for €4.99, one offer at a time. Worth: a diamond as in the €4.99 pack (500 for €4.99), coins at 500 for a diamond
 // (coinsPerDiamond; never sold for money on their own), VIP at its price in diamonds (VIP_PLANS in farm-state.js). The server takes the
@@ -174,6 +209,7 @@ export function validatePaidSession(session,purchase,items){
  // A pass carries no diamonds or coins of its own, only the pass it opens.
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
+ if(salePurchaseProblem(purchase))throw new Error('Sale mismatch.');
  if(session.payment_status!=='paid'||session.status!=='complete')throw new Error('Payment is not complete.');
  if(session.mode!=='payment'||session.livemode!==purchase.livemode)throw new Error('Payment mode mismatch.');
  // A purchase of a deleted account (3 Oct 2026, supabase/delete-account.sql) has no farmer left to compare: the checkout and purchase id
@@ -276,6 +312,7 @@ export function checkKongPurchase(purchase,{product,player}){
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
+ if(salePurchaseProblem(purchase))throw new Error('Sale mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {product};
 }
@@ -297,6 +334,7 @@ export function checkPlayPurchase(google,purchase,{product,player}){
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
+ if(salePurchaseProblem(purchase))throw new Error('Sale mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  const state=google.purchaseState===0?'purchased':google.purchaseState===2?'pending':'cancelled';
  return {state,test:google.purchaseType!=null,order:typeof google.orderId==='string'&&google.orderId?google.orderId.slice(0,100):null};
@@ -322,6 +360,7 @@ export function checkApplePurchase(apple,purchase,{product,player}){
  if(pack.offer&&(typeof purchase.offer_id!=='string'||!UUID.test(purchase.offer_id)||paidOfferProblem(purchase)))throw new Error('Offer mismatch.');
  if(pack.pass&&(purchase.pass_id!==PASS.id||purchase.diamonds!==0||(purchase.coins??0)!==0))throw new Error('Pass mismatch.');
  if(pack.season&&seasonMismatch(purchase))throw new Error('Pass mismatch.');
+ if(salePurchaseProblem(purchase))throw new Error('Sale mismatch.');
  if(purchase.amount_cents!==pack.cents||!pack.offer&&purchase.diamonds!==pack.diamonds||!pack.offer&&(purchase.coins??0)!==(pack.coins??0))throw new Error('Payment amount mismatch.');
  return {state:apple.revocationDate!=null?'revoked':'purchased',test:apple.environment==='Sandbox',transaction:apple.transactionId,original:apple.originalTransactionId??apple.transactionId};
 }

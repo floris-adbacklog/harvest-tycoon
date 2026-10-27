@@ -13,7 +13,7 @@ import {refreshArt} from '../public/visual-icons.js';
 import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {POPUP_SCREENS,POPUP_AUDIENCES} from './popup-ui.js';
-import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerShownCents,offerProblem,offerFill,offerDiscountOf,offerVipFits,APPLE_SELLS_OFFER} from '../game/payments.js';
+import {OFFER,OFFER_DISCOUNTS,offerValueCents,offerShownCents,offerProblem,offerFill,offerDiscountOf,offerVipFits,APPLE_SELLS_OFFER,SALE,saleKind} from '../game/payments.js';
 // An offer's worth as players see it (21 Oct 2026, the owner: "€50, €10 of €7.50"): whole euros without cents.
 const offerEuro=cents=>cents%100===0?`€${cents/100}`:`€${(cents/100).toFixed(2)}`;
 import {avatarImage} from '../public/player-avatars.js';
@@ -131,6 +131,14 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +(APPLE_SELLS_OFFER?'':' The iPhone app does not show it until Apple has approved it as an in-app purchase.')+'</p>'
   +'<div class="admin-offer-actions"><button type="button" class="secondary-button" id="admin-offer-preview">Preview</button><button type="submit" class="primary-button">Start offer</button></div>'
   +'<p class="admin-hint" id="admin-offer-status" role="status"></p></form><ul id="admin-offer-list" class="admin-recent-list" hidden></ul></section>'
+  // The Sale (27 Oct 2026, supabase/diamond-sale.sql): every plain diamond pack gives 40% more diamonds for the same price, for 1 to 72
+  // hours, under a name from the list (game/payments.js SALE.kinds). One at a time: a new one ends the one running now.
+  +'<section class="admin-card" id="admin-sales"><h3>'+art('diamonds')+'Sale</h3><form id="admin-sale-form" class="admin-news admin-offer">'
+  +'<div class="admin-popup-fields"><label>Name<select id="admin-sale-kind">'+Object.entries(SALE.kinds).map(([key,title])=>`<option value="${key}"${key===SALE.defaultKind?' selected':''}>${title}</option>`).join('')+'</select></label>'
+  +'<label>Hours (1 to 72)<input id="admin-sale-hours" type="number" min="'+SALE.minHours+'" max="'+SALE.maxHours+'" step="1" value="24" inputmode="numeric" required></label></div>'
+  +'<p class="admin-popup-note">The diamond packs of 150, 500, 1,250 and 3,500 give '+SALE.percent+'% more diamonds for the same price (500 + 200). Not the Starter Pack, the special offer, passes, VIP or the coin pack. The shop shows the name, the bonus on each pack and the time left, on the website, Android, iPhone and Kongregate; never on CrazyGames or Discord. The payment screen still names the usual pack; the extra diamonds are added automatically. A purchase started during the Sale keeps its bonus, also when paid after it ends.</p>'
+  +'<div class="admin-offer-actions"><button type="submit" class="primary-button">Start sale</button></div>'
+  +'<p class="admin-hint" id="admin-sale-status" role="status"></p></form><ul id="admin-sale-list" class="admin-recent-list" hidden></ul></section>'
   // The partner programme (supabase/partners.sql, /partners): partners, what they brought in, and payout requests to pay by hand.
   +'<section class="admin-card" id="admin-partners"><h3>'+art('invite-friends')+'Partners <span id="admin-partner-count">0</span></h3><div id="admin-partner-totals" class="admin-invite-totals"></div><h4 class="admin-subhead">Payout requests</h4><ul id="admin-payout-list" class="admin-recent-list"></ul><h4 class="admin-subhead">Partners</h4><ul id="admin-partner-list" class="admin-recent-list"></ul><p class="admin-hint">Partners sign up on harvesttycoon.com/partners and earn 25% of what their players spend, without 21% VAT. A payout request comes by email to info@harvesttycoon.com with where to pay: pay it by hand, then mark it paid here. Rejected goes back to what they can ask for.</p></section>'
   // Chat (the admin and the moderators): how to handle a report, the open reports, the log; for the admin also the moderators and the
@@ -369,6 +377,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   const got=await Promise.all(PARTS.map(([operation])=>bridge.request(operation==='admin_retention'?{operation,days:Number(view.retention)}:{operation}).catch(()=>null)));
   const part=name=>got[PARTS.findIndex(([operation])=>operation===name)]??null,online=part('admin_online'),players=part('admin_players'),retention=part('admin_retention'),invites=part('admin_invites');
   if(role==='admin')void showOffers();
+  if(role==='admin')void showSales();
   if(role==='admin')void showPartners();
   if(role==='admin')void loadSources();
   if(role==='admin')newsMail.show();
@@ -735,6 +744,31 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{await bridge.chat.postOffer({...o,audience:$o('audience').value,minLevel:Number($o('level').value)||OFFER.defaultLevel,hours});$o('status').textContent='The offer is running. Farmers see it the next time they open the game.';}
   catch(error){$o('status').textContent=why(error);}
   void showOffers();
+ });
+ // The Sale: the name, the hours (1 to 72), starting, the list and stopping.
+ const $s=id=>dialog.querySelector(`#admin-sale-${id}`);
+ const saleName=kind=>SALE.kinds[saleKind(kind)?kind:SALE.defaultKind];
+ const saleHours=()=>{const h=Math.round(Number($s('hours').value));return Number.isInteger(h)&&h>=SALE.minHours&&h<=SALE.maxHours?h:null;};
+ async function showSales(){
+  const list=$s('list');if(!bridge.chat?.saleList)return;
+  try{
+   const sales=await bridge.chat.saleList();list.hidden=!sales.length;
+   list.innerHTML=sales.map(s=>`<li><span class="admin-recent-copy"><strong>${esc(saleName(s.kind))}, ${Number(s.percent)||SALE.percent}% more diamonds</strong><small>Started ${fmtDate(s.createdAt)}, ${s.active?`until ${fmtDate(s.endsAt)}`:s.stoppedAt?`stopped ${fmtDate(s.stoppedAt)}`:`ended ${fmtDate(s.endsAt)}`}. Bought ${number(s.bought)} time${s.bought===1?'':'s'}, ${number(s.bonus)} extra diamonds given</small></span>${s.active?`<button type="button" class="small-button" data-sale-stop="${esc(s.id)}">Stop</button>`:''}</li>`).join('');
+  }catch{list.hidden=true;}
+ }
+ $s('list').addEventListener('click',async event=>{
+  const stop=event.target.closest('[data-sale-stop]');if(!stop)return;
+  if(!await confirmAction({title:'Stop this sale?',description:'The packs go back to their usual amounts. Anyone who started a purchase during the sale keeps the extra diamonds.',confirmLabel:'Stop',tone:'danger'}))return;
+  try{await bridge.chat.stopSale(stop.dataset.saleStop);$s('status').textContent='The sale has stopped.';}catch(error){$s('status').textContent=why(error);}
+  void showSales();
+ });
+ $s('form').addEventListener('submit',async event=>{
+  event.preventDefault();const hours=saleHours(),kind=$s('kind').value;
+  if(!hours){$s('status').textContent=`Choose ${SALE.minHours} to ${SALE.maxHours} hours.`;return;}
+  if(!await confirmAction({title:`Start the ${saleName(kind)}?`,description:`Every diamond pack gives ${SALE.percent}% more diamonds for ${hours} hour${hours===1?'':'s'}. It replaces the sale running now.`,confirmLabel:'Start',cancelLabel:'Cancel',picture:'diamonds'}))return;
+  try{await bridge.chat.startSale({hours,kind});$s('status').textContent='The sale is running. Farmers see it the next time they open the shop.';}
+  catch(error){$s('status').textContent=why(error);}
+  void showSales();
  });
  async function showPopups(){
   const list=dialog.querySelector('#admin-popup-list');

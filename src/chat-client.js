@@ -174,6 +174,11 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // The Admin dashboard's growth charts (23 Oct 2026, supabase/growth-samples.sql): the admin only.
   growthCharts:()=>rpc('admin_growth_charts'),
   stopOffer:id=>rpc('offer_stop',{p_id:id}),
+  // The Sale (27 Oct 2026, supabase/diamond-sale.sql): 40% more diamonds in every plain pack for 1 to 72 hours, a name from the list;
+  // starting, the list and stopping are for the admin only.
+  startSale:({hours=24,kind='sale'}={})=>rpc('diamond_sale_start',{p_hours:hours,p_kind:kind}),
+  saleList:()=>rpc('diamond_sale_list'),
+  stopSale:id=>rpc('diamond_sale_stop',{p_id:id}),
   setLevels:(global,dm)=>rpc('chat_set_levels',{p_global:global,p_dm:dm}),
   // News and offers by email (13 Oct 2026, supabase/news-mail.sql), the admin only: how many it reaches and the last ones, straight from
   // the database; a test, the send and going on with one through the news-mail function (supabase/functions/news-mail), in Frankfurt

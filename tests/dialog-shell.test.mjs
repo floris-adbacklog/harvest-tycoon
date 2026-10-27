@@ -287,7 +287,7 @@ test('the review\'s fixes in windows: a button that is off is flat and faded, Se
  // above the packs on the Diamonds tab only, one small Secure checkout line, Earn daily a row at the bottom of every tab.
  assert.match(farm,/<i class="dialog-badge" data-game-art="boost" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="boost-title">Boosts<\/h2><\/div><span class="shop-balance"><i data-game-art="diamonds" aria-hidden="true"><\/i><strong id="boost-wallet">0<\/strong><span class="sr-only">diamonds to spend<\/span><\/span>/);
  assert.match(farm,/<i data-game-art="diamonds"><\/i><span>Diamonds<\/span><\/button>/);
- assert.match(farm,/<section class="diamond-store" id="diamond-store"[^>]*><h3 id="diamond-store-title">Get diamonds<\/h3><div class="shop-deals" id="shop-deals"><\/div><div id="diamond-packs" class="diamond-packs"><\/div><p class="shop-secure"><i data-lucide="lock"><\/i>Secure checkout<\/p><\/section>/);
+ assert.match(farm,/<section class="diamond-store" id="diamond-store"[^>]*><h3 id="diamond-store-title">Get diamonds<\/h3><div class="shop-deals" id="shop-deals"><\/div><div id="shop-sale" class="shop-sale" role="note" hidden><\/div><div id="diamond-packs" class="diamond-packs"><\/div><p class="shop-secure"><i data-lucide="lock"><\/i>Secure checkout<\/p><\/section>/);
  assert.match(farm,/<div id="boost-catalog"><\/div><button type="button" class="shop-earn" id="boost-daily">/);
  assert.doesNotMatch(farm,/class="boost-wallet"/);
  assert.match(read('public/pass-ui.js'),/deals\.append\(b\);/);

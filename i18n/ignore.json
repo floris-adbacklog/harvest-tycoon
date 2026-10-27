@@ -183,5 +183,12 @@
  "Show countdown",
  "Starting soon",
  "We're live!",
- "Win diamonds in the chat 💎"
+ "Win diamonds in the chat 💎",
+ "Choose 1 to 72 hours.",
+ "Choose a name from the list.",
+ "{0} did not come out as written: nothing of this file is kept",
+ "{0} is missing",
+ "{0} is not the body read on 27 Oct 2026 (md5 {1} instead of {2})",
+ "{0} is not the body read on 27 Oct 2026: read the live definition before running this file",
+ "{0}: the patched body is not the one expected (md5 {1})"
 ]

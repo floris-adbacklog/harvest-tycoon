@@ -39,10 +39,10 @@ test('the unfinished purchase: the latest website one of the last day, pending o
 
 test('diamond-checkout: only the website catalogue reads the last day, in the same round trip, and a failure only leaves the reminder out',()=>{
  const src=read('supabase/functions/diamond-checkout/index.ts');
- assert.match(src,/UNFINISHED_HOURS,unfinishedCheckout\} from '\.\/payments\.js';/);
- assert.match(src,/const \[existingStarter,offerRow,special,recent\]=await Promise\.all\(\[/);
- assert.match(src,/body\.operation==='catalog'&&!play&&!apple&&!kong\?admin\.from\('harvest_purchases'\)\.select\('id,pack,status,store,livemode,created_at,offer_id,pass_id,diamonds'\)\.eq\('player_id',user\.id\)\.gte\('created_at',new Date\(Date\.now\(\)-UNFINISHED_HOURS\*3600000\)\.toISOString\(\)\)\.order\('created_at',\{ascending:false\}\)\.limit\(25\):null\]\);/);
- assert.match(src,/unfinished:recent&&!recent\.error\?unfinishedCheckout\(recent\.data\):null,packs:/);
+ assert.match(src,/UNFINISHED_HOURS,unfinishedCheckout,saleRow,saleCatalog,saleRunning\} from '\.\/payments\.js';/);
+ assert.match(src,/const \[existingStarter,offerRow,special,recent,sale\]=await Promise\.all\(\[/);
+ assert.match(src,/body\.operation==='catalog'&&!play&&!apple&&!kong\?admin\.from\('harvest_purchases'\)\.select\('id,pack,status,store,livemode,created_at,offer_id,pass_id,diamonds'\)\.eq\('player_id',user\.id\)\.gte\('created_at',new Date\(Date\.now\(\)-UNFINISHED_HOURS\*3600000\)\.toISOString\(\)\)\.order\('created_at',\{ascending:false\}\)\.limit\(25\):null,\n   \(body\.operation==='catalog'\|\|body\.operation==='create'\)&&saleHere\?currentSale\(\):null\]\);/);
+ assert.match(src,/unfinished:recent&&!recent\.error\?unfinishedCheckout\(recent\.data\):null,sale:saleCatalog\(sale\),packs:/);
  assert.equal(read('supabase/functions/diamond-checkout/payments.js'),read('game/payments.js'));
  assert.equal(read('supabase/functions/checkout-reminder/payments.js'),read('game/payments.js'));
 });
