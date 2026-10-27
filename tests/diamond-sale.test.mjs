@@ -170,7 +170,7 @@ test('the shop: a banner with the name, the time left and the payment-screen lin
  // The usual amount small and struck through, the total large where the amount was (the owner, 27 Oct 2026).
  for(const [was,total] of [['150','210'],['500','700'],['1,250','1,750'],['3,500','4,900']])assert.match(cards,new RegExp(`<span class="pack-amount"><s class="pack-was">${was}</s><b>${total}</b><small>diamonds</small></span>`));
  assert.doesNotMatch(cards,/pack-bonus|\+\d[\d,]* extra</,'no separate bonus line');
- assert.equal((cards.match(/pack-ribbon is-sale">\+40% extra</g)??[]).length,4);
+ assert.equal((cards.match(/pack-ribbon is-sale">\+\d+% extra</g)??[]).length,3,'the three bigger packs keep their own value as a tab');assert.doesNotMatch(cards,/\+40% extra/,'not 40% on every pack (the owner, 27 Oct)');
  assert.match(cards,/aria-label="Buy 500 diamonds and 200 extra for €4\.99"/,'the same price');
  // The pack that covers what is short keeps its green tab.
  assert.match(diamondPackCards({catalog,now:NOW,suggestion:500}),/data-diamond-pack="500"[^>]*><span class="pack-ribbon is-enough">/);

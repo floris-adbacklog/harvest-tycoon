@@ -35,8 +35,10 @@ export function diamondPackCards({catalog=null,purchasing='',suggestion=0,now=fa
   const extra=Math.round((perEuro(pack)/base-1)*100);
   // The Sale (27 Oct 2026, public/diamond-sale.js): every pack's tab says the Sale's extra and the pack shows its bonus under the amount
   // (the usual amount small and struck through, the total large: ~~500~~ 700 diamonds; 27 Oct 2026, the owner); the price stays the same. The pack that covers what is short keeps its green tab.
-  const bonus=sale?shopSaleBonus(catalog,pack.amount,now):0,salePercent=Number(catalog?.sale?.percent)||40;
-  const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':bonus?`<span class="pack-ribbon is-sale">+${salePercent}% extra</span>`:best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
+  // The tabs keep each pack's own value during a Sale (+33%, +66%, +86%; the owner, 27 Oct 2026: "de standaard %, niet overal 40%"),
+  // as a tab on the card's top edge; the Sale shows in the struck-through amount and the bigger total.
+  const bonus=sale?shopSaleBonus(catalog,pack.amount,now):0;
+  const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best||extra>0?`<span class="pack-ribbon${bonus?' is-sale':best?'':' is-extra'}">+${extra}% extra</span>`:'';
   const foot=opening?'Opening…':sale?packPrice(pack):catalog?'Unavailable':packPrice(pack);
   const label=kreds&&!sale?`${number(pack.amount)} diamonds`:bonus?`Buy ${number(pack.amount)} diamonds and ${number(bonus)} extra for ${packPrice(pack)}`:`Buy ${number(pack.amount)} diamonds for ${packPrice(pack)}`;
   return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}${bonus?' is-sale':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount">${bonus?`<s class="pack-was">${number(pack.amount)}</s><b>${number(pack.amount+bonus)}</b>`:`<b>${number(pack.amount)}</b>`}<small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
