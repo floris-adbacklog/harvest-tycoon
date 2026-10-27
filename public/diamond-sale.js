@@ -26,7 +26,6 @@ export const saleLeft=(catalog,now=Date.now())=>`Ends in ${formatDuration(Number
 // change the store products), so one line says the extra diamonds come by themselves; it names no store, so it is true everywhere.
 export function saleBanner(catalog,{now=Date.now(),art=()=>''}={}){
  const sale=shopSale(catalog,now);if(!sale)return '';
- const percent=Number(sale.percent)||40;
- return `<div class="shop-sale-head">${art('diamonds')}<span class="shop-sale-copy"><strong class="shop-sale-badge">${saleTitle(sale.kind)}</strong><span>${percent}% more diamonds in every pack, for the same price</span></span><span class="shop-sale-time" data-sale-left>${saleLeft(catalog,now)}</span></div>`
-  +`<p class="shop-sale-note">The payment screen shows the usual pack. Your ${percent}% extra diamonds are added automatically after you pay.</p>`;
+ return `<div class="shop-sale-head">${art('diamonds')}<span class="shop-sale-copy"><strong class="shop-sale-badge">${saleTitle(sale.kind)}</strong><span>More diamonds in every pack, for the same price</span></span><span class="shop-sale-time" data-sale-left>${saleLeft(catalog,now)}</span></div>`
+  +`<p class="shop-sale-note">The payment screen shows the usual pack. Your extra diamonds are added automatically after you pay.</p>`;
 }

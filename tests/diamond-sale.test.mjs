@@ -148,8 +148,8 @@ test('the names: a fixed list, checked by the database, the same titles in the A
  assert.equal(saleTitle('bogus'),'Sale');assert.equal(saleTitle('black_friday'),'Black Friday Sale');
  const list=`('${kinds.join("','")}')`;
  assert.ok(sql.includes(`check (kind in ${list})`),'the table');assert.ok(sql.includes(`if what not in ${list} then`),'diamond_sale_start');
- const shopTexts=[...Object.values(SALE.kinds),'Buy {0} diamonds and {1} extra for {2}','Ends in {0}','{0}% more diamonds in every pack, for the same price',
-  'The payment screen shows the usual pack. Your {0}% extra diamonds are added automatically after you pay.'];
+ const shopTexts=[...Object.values(SALE.kinds),'Buy {0} diamonds and {1} extra for {2}','Ends in {0}','More diamonds in every pack, for the same price',
+  'The payment screen shows the usual pack. Your extra diamonds are added automatically after you pay.'];
  const catalog=JSON.parse(read('i18n/catalog.json'));
  const codes=LANGUAGES.map(l=>l.code).filter(c=>c!=='en');
  assert.deepEqual([...codes].sort(),['ar','cs','de','es','fr','hi','hu','id','ja','nl','pt','ru','tr','uk','zh']);
@@ -163,8 +163,8 @@ test('the shop: a banner with the name, the time left and the payment-screen lin
  const catalog={enabled:true,store:'stripe',mode:'live',sale:saleCatalog(running,NOW)};
  assert.equal(shopSale(catalog,NOW).id,SALE_ID);assert.equal(shopSaleBonus(catalog,500,NOW),200);assert.equal(shopSaleBonus(catalog,'3500',NOW),1400);
  const banner=saleBanner(catalog,{now:NOW});
- assert.match(banner,/<strong class="shop-sale-badge">Halloween Sale<\/strong>/);assert.match(banner,/40% more diamonds in every pack, for the same price/);assert.match(banner,/data-sale-left>Ends in 1h</);
- assert.match(banner,/The payment screen shows the usual pack\. Your 40% extra diamonds are added automatically after you pay\./);
+ assert.match(banner,/<strong class="shop-sale-badge">Halloween Sale<\/strong>/);assert.match(banner,/>More diamonds in every pack, for the same price</);assert.doesNotMatch(banner,/\d+%/,'the percentage only on the tabs (the owner, 27 Oct)');assert.match(banner,/data-sale-left>Ends in 1h</);
+ assert.match(banner,/The payment screen shows the usual pack\. Your extra diamonds are added automatically after you pay\./);
  assert.doesNotMatch(banner,/·|Stripe|Google|Apple|App Store|Kongregate|Kreds/,'no middle dot, no store named: true in every app');
  const cards=diamondPackCards({catalog,now:NOW});
  // The usual amount small and struck through, the total large where the amount was (the owner, 27 Oct 2026).
