@@ -264,10 +264,10 @@ test('the log says what each buy was, in the diamonds category (the real calls: 
 
 test('the shop window: a fifth tab from level 100, opened on it in the village; the cards cheap to dear; the carts and supplies ask first',()=>{
  const html=read('public/farm.html'),css=read('public/shop.css'),ui=read('public/boosts-ui.js'),shopUi=read('public/village-shop-ui.js');
- assert.match(html,/data-shop-jump="vip-shop"[^>]*>.*?<\/button><button type="button" data-shop-jump="shop-village" aria-controls="shop-village" aria-pressed="false" hidden><i data-game-art="village-badge"><\/i><span>Village<\/span><\/button><\/nav>/);
+ assert.match(html,/data-shop-jump="vip-shop"[^>]*>.*?<\/button><button type="button" data-shop-jump="shop-village" aria-controls="shop-village" aria-pressed="false" hidden><i data-game-art="village-badge"><\/i><span>Village<\/span><\/button>(<button type="button" data-shop-jump="shop-harbour"[^>]*hidden>.*?<\/button>)?<\/nav>/);
  assert.match(css,/#boost-dialog \.shop-tabs\{[^}]*grid-auto-flow:column;grid-auto-columns:auto/);assert.doesNotMatch(css,/repeat\(4,/);
  assert.match(css,/#boost-dialog\[data-shop-tab\]:not\(\[data-shop-tab="shop-village"\]\) #shop-village/);
- assert.match(read('public/payments.css'),/#vip-shop,#shop-village\{scroll-margin-top/);
+ assert.match(read('public/payments.css'),/#vip-shop,#shop-village(,#shop-harbour)?\{scroll-margin-top/);
  assert.match(ui,/id="shop-boosts"[^]*?<\/section>`\n\s*\+\(worldTwo\?`<section class="shop-section" id="shop-village">/);
  assert.ok(ui.includes("village&&worldTwoOpen(state)?'shop-village':firstShopTab()"));assert.ok(ui.includes("showShopTab(typeof tab==='string'?tab:"));
  assert.ok(ui.includes('querySelectorAll(`[data-boost-time='));assert.ok(ui.includes('data-shop-until'));
@@ -275,7 +275,7 @@ test('the shop window: a fifth tab from level 100, opened on it in the village; 
  assert.ok(ui.includes('always:VILLAGE_ASK.has(id)'));
  assert.ok(shopUi.includes("VILLAGE_ASK=new Set(['supplycart','tilecart','landmark'])"));assert.ok(shopUi.includes('always||s.cost>=150'));assert.ok(shopUi.includes('balance:state.diamonds'));
  assert.deepEqual([...VILLAGE_ASK],['supplycart','tilecart','landmark']);
- assert.match(read('public/game.js'),/boosts=createBoostsUI\(\{state,runAction,[^\n]*,village:villageWorld\}\);/);
+ assert.match(read('public/game.js'),/boosts=createBoostsUI\(\{state,runAction,[^\n]*,village:villageWorld(,harbour:harbourWorld)?\}\);/);
  assert.ok(read('public/game.js').includes("window.harvestShop.packs=()=>boosts.open('diamond-store');"));
  assert.ok(read('src/payment-ui.js').includes('(window.harvestShop?.packs??window.harvestShop?.open)?.()'));
  // The order on the tab (the sort in boosts-ui.js): by price, the Farmhand in at 150, Landmark supplies at its price of the moment.

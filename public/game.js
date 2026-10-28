@@ -2635,7 +2635,7 @@ function bindUI(){
  // for a cargo the server no longer has loads the farm again, as the market square does.
  boat=createBoatUI({state,runAction,onChange:updateUI,notify:toast,refresh:()=>client.refresh()});
  estatePlaces=createEstateUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,itemList:economy.itemList});
- boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,village:villageWorld});
+ boosts=createBoostsUI({state,runAction,onChange:()=>{expandVisuals();updateUI();},notify:toast,village:villageWorld,harbour:harbourWorld});
  // The purchase pop-up after a cancelled or expired checkout (src/payment-ui.js) offers a way straight back to the shop.
  window.harvestShop={open:()=>boosts.open()};
  // A cancelled or expired checkout goes back to the packs, also in the village (where the shop itself opens on the Village tab).

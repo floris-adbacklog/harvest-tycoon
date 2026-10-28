@@ -66,7 +66,8 @@
 #boost-dialog[data-shop-tab]:not([data-shop-tab="shop-finish"]) #shop-finish,
 #boost-dialog[data-shop-tab]:not([data-shop-tab="shop-boosts"]) #shop-boosts,
 #boost-dialog[data-shop-tab]:not([data-shop-tab="vip-shop"]) #vip-shop,
-#boost-dialog[data-shop-tab]:not([data-shop-tab="shop-village"]) #shop-village{display:none}
+#boost-dialog[data-shop-tab]:not([data-shop-tab="shop-village"]) #shop-village,
+#boost-dialog[data-shop-tab]:not([data-shop-tab="shop-harbour"]) #shop-harbour{display:none}
 /* The Village tab (20 Oct 2026): Landmark supplies says when the barn holds some of its goods, in the cream chips' colour. */
 #boost-dialog .shop-note{display:block;margin-top:6px;font-size:12px;color:#7d705b}
 #boost-dialog .shop-heading,#boost-dialog #diamond-store-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}

@@ -63,8 +63,8 @@ test('the coin pack opens with the shop at level 10, on the server too, and show
  assert.throws(()=>act(low,{type:'buy_coins',expectedCost:100,expectedCoins:9000},now),/Reach level 10/);assert.deepEqual(low,before);
  assert.equal(act(farm(10),{type:'buy_coins',expectedCost:100,expectedCoins:10000},now).coins,10000);
  assert.match(read('supabase/functions/farm-api/player-log.js'),/buy_coins:\['diamonds',\(a,s,r\)=>`Bought \$\{number\(r\?\.coins\?\?0\)\} coins with diamonds`\]/);
- assert.match(read('public/farm-client.js'),/\['buy_boost','buy_coins','finish_crop','finish_batch','replace_order','village_cart','boat_now','villager_now','lake_casts','landmark_supplies'\]\.includes\(action\.type\)/);
- assert.match(read('src/analytics.js'),/'coins','farmhand','crops','production','upgrade','replace_order','buy_coins','village_cart','boat_now','villager_now','lake_casts','landmark_supplies'\]/);
+ assert.match(read('public/farm-client.js'),/\['buy_boost','buy_coins','finish_crop','finish_batch','replace_order','village_cart','boat_now','villager_now','lake_casts','landmark_supplies','ship_now','harbour_supplies'\]\.includes\(action\.type\)/);
+ assert.match(read('src/analytics.js'),/'coins','farmhand','crops','production','upgrade','replace_order','buy_coins','village_cart','boat_now','villager_now','lake_casts','landmark_supplies','ship_now','harbour_supplies'\]/);
 });
 test('the coin pack gives 1,000 coins for every level for 100 diamonds, as often as the farmer likes; the coins are not earned',()=>{
  assert.equal(COIN_PACK.cost,100);assert.equal(COIN_PACK.perLevel,1000);

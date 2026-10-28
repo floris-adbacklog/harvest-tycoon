@@ -5093,6 +5093,76 @@ export function landmarkSupplies(state,id,expectedCost,expectedGoods){
  state.stats.landmark_supplies=(state.stats.landmark_supplies??0)+1;
  return {landmark:id,name:l.name,handed:{...q.goods},units,cost:q.cost,ready:state.coins>=l.coins};
 }
+// The Harbour tab of the diamond shop (28 Oct 2026, the owner's choices 1A, 1+2+4, 3a): from level 200 once the harbour is open, as the
+// Village tab. Ship back now (one tap): a quay's next ship docks at once, never the container ship or the world voyage (they bring
+// diamonds of their own). 100 diamonds, not the town boat's 30: what a ship adds over selling its cargo at the Market (200,000 coins at
+// level 200, 600,000 at 300) stays near the coin pack's 100 diamonds. Harbour supplies (asks first): everything the harbour master's work
+// still needs, at Landmark supplies' 1 diamond for every 500 coins of goods; its coins stay its own tap. The Farmhand's card shows there
+// too (it already works in the harbour places). Both count in the harbour's own numbers (HARBOUR_ACTIONS: harbour_diamonds_spent, never
+// the farm's diamonds_spent or boosts_used).
+export const HARBOUR_SHOP=Object.freeze({
+ ship:Object.freeze({name:'Ship back now',level:WORLD_THREE_LEVEL,cost:100,art:'harbour-badge'}),
+ supplies:Object.freeze({name:'Harbour supplies',level:WORLD_THREE_LEVEL,cost:null,art:null})
+});
+// The work's missing goods and their price, as landmarkSuppliesQuote: also before its level, so the tab can say so.
+export function harbourSuppliesQuote(state){
+ const w=harbourWork(state);if(!w)return null;
+ const value=goodsValue(w.missing);
+ return {id:w.id,name:w.name,art:w.art,level:w.level,open:w.open,coins:w.coins,goods:{...w.missing},value,cost:Math.ceil(value/LANDMARK_COINS_PER_DIAMOND)};
+}
+export const harbourSuppliesFullCost=id=>{const w=HARBOUR_WORKS.find(x=>x.id===id);return Math.ceil(goodsValue(w.goods)/LANDMARK_COINS_PER_DIAMOND);};
+// A quay of the quays' own (not the container ship's or the voyage's berth) with no ship yet and its next one still to come.
+const quayWaits=(state,i,now)=>{const q=state.harbour?.quays?.[i];return Boolean(q)&&harbourBerths(state)[i]==='ship'&&!q.ship&&q.readyAt>now;};
+// One card of the Harbour tab (and the small diamond button at a quay's wait), in the shape of villageShopStatus. quay: the one given,
+// otherwise the waiting quay whose ship is furthest off (it saves the most). It never makes a ship: the rare "nothing to ask" is refused
+// by the server without a charge.
+export function harbourShopStatus(state,id,now=Date.now(),quay){
+ const item=HARBOUR_SHOP[id];
+ const s={id,name:item.name,art:item.art,shown:worldThreeOpen(state)&&levelOf(state)>=item.level,cost:item.cost,reason:'',until:0,wait:null,quay:null,work:null,workName:null,coins:null,goods:null,canBuy:false};
+ if(id==='ship'){
+  const quays=state.harbour?.quays??[];let i=Number.isInteger(quay)?quay:null;
+  if(i===null)quays.forEach((q,k)=>{if(quayWaits(state,k,now)&&(i===null||q.readyAt>quays[i].readyAt))i=k;});
+  s.quay=i;if(i!==null&&quayWaits(state,i,now)){s.until=quays[i].readyAt;s.wait='ship';}
+  s.reason=!harbourWorkDone(state,'office')?'Build the Harbour office first':s.wait?'':quays.some((q,k)=>harbourBerths(state)[k]==='ship'&&!q.ship)?'A ship is on its way':'Every quay has a ship';
+ }
+ if(id==='supplies'){
+  const q=harbourSuppliesQuote(state);
+  if(!q)s.shown=false;
+  else{Object.assign(s,{cost:q.cost,goods:q.goods,work:q.id,workName:q.name,coins:q.coins,art:q.art});s.reason=!q.open?`Opens at level ${q.level}`:!q.cost?'Everything is handed in':'';}
+ }
+ s.canBuy=s.shown&&!s.reason&&state.diamonds>=s.cost;
+ return s;
+}
+// The action for what the screen showed (a stale screen gets PRICES_CHANGED, never another charge).
+export function harbourShopAction(s){
+ if(s.id==='ship')return {type:'ship_now',quay:s.quay,expectedCost:s.cost};
+ return {type:'harbour_supplies',work:s.work,expectedCost:s.cost,expectedGoods:{...s.goods}};
+}
+// Ship back now: the quay's next ship docks at once, with the order it would have brought (the next running number). Made before the
+// charge, so a ship with nothing to ask costs nothing. The harbour week counts ships that sail, so it is not touched here.
+export function shipNow(state,quay,expectedCost,now=Date.now()){
+ harbourOpen(state);
+ const h=state.harbour,q=Number.isInteger(quay)?h.quays[quay]:undefined;if(!q)throw new Error('Choose a quay.');
+ if(harbourBerths(state)[quay]!=='ship')throw new Error('Only a quay’s ship can be called back.');
+ if(q.ship)throw new Error('A ship is at this quay.');
+ if(!(q.readyAt>now))throw new Error('A ship is on its way.');
+ const cost=HARBOUR_SHOP.ship.cost;if(expectedCost!==cost)throw new Error(PRICES_CHANGED);
+ const ship=shipOrder(state,h.serial+1,'ship');if(!ship)throw new Error('A ship comes as soon as your farm and village make goods it can ask for.');
+ if(state.diamonds<cost)throw new Error(shortOfDiamonds(cost));
+ spendDiamonds(state,cost);h.serial++;q.ship=ship;q.readyAt=now;
+ state.stats.ship_calls=(state.stats.ship_calls??0)+1;
+ return {quay,ship,cost};
+}
+// Harbour supplies: everything the open work still needs, handed in at once (never the barn's goods). It does not finish it.
+export function harbourSupplies(state,id,expectedCost,expectedGoods){
+ const {w,given}=harbourStep(state,id),q=harbourSuppliesQuote(state);
+ if(!(q?.cost>0))throw new Error('Everything is handed in. Pay the coins to finish it.');
+ if(expectedCost!==q.cost||!sameGoods(expectedGoods,q.goods))throw new Error(PRICES_CHANGED);
+ if(state.diamonds<q.cost)throw new Error(shortOfDiamonds(q.cost));
+ spendDiamonds(state,q.cost);let units=0;for(const [k,n] of Object.entries(q.goods)){given[k]=(given[k]??0)+n;units+=n;}
+ state.stats.harbour_supplies=(state.stats.harbour_supplies??0)+1;
+ return {work:id,name:w.name,handed:{...q.goods},units,cost:q.cost,ready:state.coins>=w.coins};
+}
 // The farm's pets (20 Oct 2026, the owner: "doe wel iets leuks"): Rex the dog and Mimi the cat by the Farmhouse, from the start, and Fawn
 // the deer in the village, from World II (level 100). Each can be patted once an hour (PET_REST_MS, on the server's clock) for a small find
 // and PET_XP: Rex finds PET_DOG_COINS_PER_LEVEL coins for every farm level (about 3 minutes of a steady farmer's income at level 20 and 4 at
@@ -5161,7 +5231,7 @@ export function visitView(source,now=Date.now()){
  return view;
 }
 // The actions of another world (27 Oct 2026): the village's own, and a batch or upgrade in one of its places.
-const HARBOUR_ACTIONS=new Set(['harbour_visit','ship_load','ship_skip','ship_swap','harbour_give','harbour_finish','harbour_quest','seal_pat','harbour_warehouse','flagship_name']);
+const HARBOUR_ACTIONS=new Set(['harbour_visit','ship_load','ship_skip','ship_swap','harbour_give','harbour_finish','harbour_quest','seal_pat','harbour_warehouse','flagship_name','ship_now','harbour_supplies']);
 const VILLAGE_ACTIONS=new Set(['village_quest','village_deliver','village_skip','miller_deliver','village_build','boat_load','boat_skip','landmark_give','landmark_finish','village_cart','boat_now','villager_now','lake_casts','lake_fish','landmark_supplies']);
 const actionBuilding=action=>action.building??RECIPES[action.recipe]?.building;
 // Which world an action belongs to (1 the farm, 2 the village, 3 the harbour): what it spends counts in that world's own numbers.
@@ -5280,6 +5350,8 @@ function dispatchFarmAction(state,action,now,random){
   case 'seal_pat':return sealPat(state,now);
   case 'harbour_warehouse':return upgradeHarbourWarehouse(state,action.expectedCost);
   case 'flagship_name':return nameFlagship(state,action.name);
+  case 'ship_now':return shipNow(state,action.quay,action.expectedCost,now);
+  case 'harbour_supplies':return harbourSupplies(state,action.work,action.expectedCost,action.expectedGoods);
   case 'boat_skip':return boatSkip(state,action.cargo,action.input,now);
   case 'landmark_give':return landmarkGive(state,action.landmark,action.item);
   case 'landmark_finish':return landmarkFinish(state,action.landmark);

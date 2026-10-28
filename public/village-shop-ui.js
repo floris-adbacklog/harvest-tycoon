@@ -7,10 +7,10 @@ const number=n=>n.toLocaleString('en-US');
 // the small diamond button at a wait, the pay step, the line of a card and the message after a buy. The shop (boosts-ui.js), the boat
 // (boat-ui.js), the market square (village-square-ui.js) and the lake (pond-ui.js) all use it.
 
-// The countdowns of the waits, each its own whole text (the languages find them; all three exist already).
-export const untilText=(wait,ms)=>wait==='boat'?`Back in ${formatDuration(ms)}`:wait==='cast'?`Next cast in ${formatDuration(ms)}`:`Next villager in ${formatDuration(ms)}`;
+// The countdowns of the waits, each its own whole text (the languages find them; all four exist already: the harbour's ship since 28 Oct 2026).
+export const untilText=(wait,ms)=>wait==='ship'?`Next ship in ${formatDuration(ms)}`:wait==='boat'?`Back in ${formatDuration(ms)}`:wait==='cast'?`Next cast in ${formatDuration(ms)}`:`Next villager in ${formatDuration(ms)}`;
 // The small diamond button where a wait is shown: the price, then the card's own name (the shop's card title).
-export const waitButton=s=>`<button type="button" class="small-button is-diamond wait-buy" data-wait-buy="${s.id}"${Number.isInteger(s.board)?` data-board="${s.board}"`:''} aria-label="Buy ${s.name} for ${number(s.cost)} diamonds">${art('diamonds')}<b>${number(s.cost)}</b><span>${s.name}</span></button>`;
+export const waitButton=s=>`<button type="button" class="small-button is-diamond wait-buy" data-wait-buy="${s.id}"${Number.isInteger(s.board)?` data-board="${s.board}"`:''}${Number.isInteger(s.quay)?` data-quay="${s.quay}"`:''} aria-label="Buy ${s.name} for ${number(s.cost)} diamonds">${art('diamonds')}<b>${number(s.cost)}</b><span>${s.name}</span></button>`;
 // Goods for diamonds always ask first, like the coin pack (20 Oct 2026, the owner: "kreeg geen confirmatiescherm"); the three time-skips
 // are one tap, in the shop and at the waits (the owner, 20 Oct 2026). 150 diamonds or more always asks.
 export const VILLAGE_ASK=new Set(['supplycart','tilecart','landmark']);

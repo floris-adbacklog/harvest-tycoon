@@ -1,6 +1,8 @@
-import {ITEMS,HARBOUR_WEEK,SHIP_GONE,SHIP_SWAP_LEVEL,harbourBerths,berthReturn,harbourWork,harbourWorkDone,shipReady,shipReturn,shipPremium,shipQuays,worldThreeOpen,levelOf,normalizeFarm,formatDuration,familyWeek} from './farm-state.js';
+import {ITEMS,HARBOUR_WEEK,SHIP_GONE,SHIP_SWAP_LEVEL,harbourShopStatus,harbourBerths,berthReturn,harbourWork,harbourWorkDone,shipReady,shipReturn,shipPremium,shipQuays,worldThreeOpen,levelOf,normalizeFarm,formatDuration,familyWeek} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
+import {waitButton} from './village-shop-ui.js';
+import {buyHarbour} from './harbour-shop-ui.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
@@ -34,7 +36,7 @@ function shipsMarkup(state,now){
  const berthName=(kind,i)=>kind==='container'?'Container ship':kind==='voyage'?`World voyage: ${esc(flagship)}`:`Quay ${i+1}`;
  const cards=quays.map((q,i)=>{
   const s=q.ship,kind=berths[i]??'ship';
-  if(!s)return `<article class="order-card is-waiting"><div class="order-head"><span class="order-icon">${art(kind==='ship'?'harbour-badge':'harbour-crate')}</span><div><small>${berthName(kind,i)}</small><h3>${q.readyAt>now?`${kind==='container'?'Next container ship':kind==='voyage'?`${esc(flagship)} is back`:'Next ship'} in ${formatDuration(q.readyAt-now)}`:'A ship is on its way'}</h3></div></div></article>`;
+  if(!s)return `<article class="order-card is-waiting"><div class="order-head"><span class="order-icon">${art(kind==='ship'?'harbour-badge':'harbour-crate')}</span><div><small>${berthName(kind,i)}</small><h3>${q.readyAt>now?`${kind==='container'?'Next container ship':kind==='voyage'?`${esc(flagship)} is back`:'Next ship'} in ${formatDuration(q.readyAt-now)}`:'A ship is on its way'}</h3></div></div>${kind==='ship'&&q.readyAt>now?`<div class="wait-buy-row">${waitButton(harbourShopStatus(state,'ship',now,i))}</div>`:''}</article>`;
   const loaded=total(s.loaded),needed=total(s.input);
   const rows=Object.entries(s.input).map(([k,n])=>{const have=s.loaded[k],left=n-have,stock=state.inventory[k]??0,load=Math.min(stock,left);
    const swap=!s.swapped&&!have&&levelOf(state)>=SHIP_SWAP_LEVEL;
@@ -88,6 +90,11 @@ export function createHarbourUI({state,runAction,onChange,notify,refresh}){
   const w=harbourWork(state);
   root.querySelectorAll('[data-work-give]').forEach(b=>b.onclick=()=>act(b,{type:'harbour_give',work:w.id,item:b.dataset.workGive},r=>`Handed in ${number(r.units)}.`));
   root.querySelectorAll('[data-work-all]').forEach(b=>b.onclick=()=>act(b,{type:'harbour_give',work:w.id},r=>r.ready?'Everything is handed in. Pay the coins to finish.':`Handed in ${number(r.units)}.`));
+  // Ship back now (28 Oct 2026, the Harbour tab of the diamond shop) under a quay's wait: one tap; short of diamonds the window closes and
+  // the shop opens.
+  root.querySelectorAll('[data-wait-buy]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;
+   try{const done=await buyHarbour({state,id:'ship',quay:Number(b.dataset.quay),now:farmNow(),runAction,close:()=>$('harbour-dialog').close()});if(done)notify(done.message);}
+   catch(error){notify(error.message);}finally{busy=false;onChange();if($('harbour-dialog').open)render();}});
   root.querySelectorAll('[data-flagship-name]').forEach(b=>b.onclick=()=>act(b,{type:'flagship_name',name:root.querySelector('#flagship-name')?.value??''},r=>`Your flagship is called ${r.name}.`));
   root.querySelectorAll('[data-work-finish]').forEach(b=>b.onclick=()=>act(b,{type:'harbour_finish',work:w.id},r=>`${r.name} is built! +${number(r.xp)} XP.${r.diamonds?` +${r.diamonds} diamonds.`:''}`));
  }

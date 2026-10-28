@@ -19,8 +19,11 @@ test('every harbour action counts in the harbour only: no number of the farm or 
  // A refusal (a recipe whose village good this farm has not unlocked, a full slot) changes nothing; the asserts below check enough went through.
  const act=a=>{try{return m.applyFarmAction(s,a,now);}catch{return null;}};
  act({type:'harbour_visit'});
- for(const w of m.HARBOUR_WORKS.filter(w=>w.level<=295)){stock();s.coins=5e8;act({type:'harbour_give',work:w.id});act({type:'harbour_finish',work:w.id});}
+ // The Harbour tab of the diamond shop (28 Oct 2026): the first work's goods bought with Harbour supplies, the rest handed in.
+ s.diamonds=50000;
+ for(const w of m.HARBOUR_WORKS.filter(w=>w.level<=295)){stock();s.coins=5e8;if(w.id==='office')act(m.harbourShopAction(m.harbourShopStatus(s,'supplies',now)));else act({type:'harbour_give',work:w.id});act({type:'harbour_finish',work:w.id});}
  now+=13*H;m.normalizeFarm(s,now);stock();
+ const first=s.harbour.quays[0].ship;act({type:'ship_skip',quay:0,ship:first.id,input:{...first.input}});act({type:'ship_now',quay:0,expectedCost:m.HARBOUR_SHOP.ship.cost});   // Ship back now
  for(const [i,q] of s.harbour.quays.entries())if(q.ship)act({type:'ship_load',quay:i,ship:q.ship.id,input:{...q.ship.input}});
  act({type:'seal_pat'});
  for(const k of Object.keys(m.BUILDINGS).filter(m.worldThreeBuilding)){const id=Object.keys(m.RECIPES).find(r=>m.RECIPES[r].building===k);act({type:'produce',recipe:id});}
@@ -29,7 +32,7 @@ test('every harbour action counts in the harbour only: no number of the farm or 
  act({type:'sell',item:'rope',category:'harbour',day:m.utcDay(now),quantity:s.inventory.rope});
  stock();act({type:'upgrade',building:'ropewalk'});act({type:'harbour_warehouse'});act({type:'harbour_quest',id:0});
  const changed=Object.keys({...before,...s.stats}).filter(k=>JSON.stringify(before[k])!==JSON.stringify(s.stats[k]));
- assert.ok(changed.includes('ships_sent')||changed.includes('ship_loads'),'the ships were loaded');assert.ok(changed.includes('harbour_batches'),'batches were collected');
+ assert.ok(changed.includes('ships_sent')||changed.includes('ship_loads'),'the ships were loaded');assert.ok(changed.includes('ship_calls')&&changed.includes('harbour_supplies'),'the Harbour tab\'s buys went through');assert.ok(changed.includes('harbour_batches'),'batches were collected');
  assert.deepEqual(changed.filter(k=>!HARBOUR_STAT(k)),[],'only the harbour\'s own numbers moved');
  assert.deepEqual(m.QUESTS.map(q=>Math.min(q.target,s.stats[q.stat]??0)),quests,'no farm quest moved');
  assert.equal(JSON.stringify(m.dailyTasks(s,now).map(t=>t.progress)),daily,'no daily challenge moved');
