@@ -7,7 +7,8 @@
 // palette.png (the farm palette's cell nearest to the colour it read in the pack's own palette; nothing of the pack's picture is
 // shipped), carries the farm's baked shade (COLOR_0), and the file is meshopt-compressed and quantized. A clip's channels that only
 // hold a bone at its rest pose are left out (most of a file's JSON).
-// Since 22 Oct 2026 also the duck on the farm's pond (duck_101.glb: Duck_01 with its swim and its float only; public/farm-duck.js).
+// Since 22 Oct 2026 also the duck on the farm's pond (duck_101.glb: Duck_01 with its swim and its float only; public/farm-duck.js), and
+// since 27 Oct 2026 the donkeys (donkey_101.glb: Donkey_01 and Donkey_02).
 // KIND=duck_101 before node builds only that one (the steps below as they are, cp only its file).
 // Run from a folder with @gltf-transform/core, extensions, functions (4.5.1), meshoptimizer (1.3.0) and pngjs (7.0.0) installed (npm i
 // them there, not in the game), <pack> = the pack's Animals_glb/Separate_Assets_glb/Domestic/Animals folder:
@@ -42,10 +43,13 @@ const KINDS=Object.freeze({
  // The duck on the farm's pond (22 Oct 2026, the owner: "zet de eend hier bij, doet verder niks"; public/farm-duck.js): only its
  // swim and its float (swim_idle); it never comes ashore, so its walk, idle, gesture and run are left out.
  duck_101:{variants:{duck_white:['Duck_01']},clips:['swim','swim_idle']},
- // World III, the harbour (27 Oct 2026, the owner: "Doe 1&2&3"): seals on the quays' edge and in the basin, pigeons on the quays
- // (the pack has no gulls). <pack> then holds Polar/Animals' Seal_0* and Domestic/Animals' Pigeon_0* side by side.
+ // World III, the harbour (27 Oct 2026, the owner: "Doe 1&2&3"): seals on the quays' edge and in the basin (Polar/Animals' Seal_0*). Its
+ // pigeons use the village's pigeon_101 (grey, dark, pale; idle and fly), built with the village's animals.
  seal_101:{variants:{seal_grey:['Seal_01'],seal_brown:['Seal_02'],seal_spotted:['Seal_03']},clips:['idle','gesture','swim','idle_swim']},
- pigeon_101:{variants:{pigeon_grey:['Pigeon_01'],pigeon_brown:['Pigeon_02'],pigeon_white:['Pigeon_03']},clips:['idle','gesture','walk','fly']}
+ // The Donkey Stable's two donkeys (27 Oct 2026, the owner's level-64 building) and the one that pulls the cart along the farm's roads
+ // (public/farm-donkey-cart.js): the grey and the brown. Idle and walk only: the pack's donkey has no eat, and its gesture stamps a hoof
+ // (the owner: "ze stompen steeds").
+ donkey_101:{variants:{donkey_grey:['Donkey_01'],donkey_brown:['Donkey_02']},clips:['idle','walk']}
 });
 // KIND=duck_101 (a comma list) builds only those kinds; without it, all of them.
 const ONLY=process.env.KIND?new Set(process.env.KIND.split(',')):null;

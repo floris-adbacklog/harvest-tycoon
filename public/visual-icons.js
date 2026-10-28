@@ -2,7 +2,7 @@ import {HEIRLOOMS,FAMILY_EMBLEMS} from './farm-state.js';
 import {LANGUAGES} from './languages.js';
 // Every item has one explicit image. Square sprite cells cannot reveal neighbouring art.
 const sheets=[
- {file:'crops-v2.webp',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
+ {file:'crops-v2.webp?v=20261025',columns:3,keys:['wheat','lettuce','corn','barley','cabbage','cauliflower','pumpkin','redcabbage','sunflower']},
  {file:'goods-v2.webp',columns:4,keys:['grainmeal','flour','feed','fertilizer','salad','pickles','oil','milk','eggs','cheese','bread','pie','vegetables','tractor','silo','cart']},
  // ?v=: the sheet's address changes when a picture in it changes, so a browser that keeps the sheet a day gets the new one at once
  // (18 Oct 2026: the Care glove lost its leaf).
@@ -31,6 +31,10 @@ for(const id of ESTATE_ITEM_ART)pictures[id]=id;
 Object.assign(pictures,{estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair'});
 // The Pig Farm: truffles and the truffle omelette (painted, WebP) and a render of the building's model (PNG).
 for(const id of ['truffles','truffleomelette','pigfarm'])pictures[id]=id;
+// The Donkey Stable (27 Oct 2026, level 64): a render of its barn in its own colours with a donkey and hay (512 px, like the Goat Shed's),
+// its four goods painted by the owner (256 px), and the donkey with its cart (a render, 512 px, its window's picture), all WebP.
+export const DONKEY_ART=Object.freeze(['donkeystable','donkeymilk','donkeymilksoap','donkeycheese','bathbasket','donkeycart']);
+for(const id of DONKEY_ART)pictures[id]=id;
 // The chat (header button, Notifications tab) and the Settings headings: painted, WebP.
 for(const id of ['chat','bell','sound','cookie','letter','send','admin','guide','settings','alert','block','graphics'])pictures[id]=id;
 // The farm log on a profile (src/player-profiles.js), 26 Sep 2026.
@@ -116,6 +120,7 @@ webpPictures.add('feedback');
 webpPictures.add('warehouse');
 for(const key of TOOL_PICTURES)webpPictures.add(key);
 for(const key of JOB_PICTURES)webpPictures.add(key);
+for(const key of DONKEY_ART)webpPictures.add(key);
 // The farm app (30 Sep 2026, painted by the user): a golden phone with the barn, for installing the game and the admin's devices.
 pictures.farmapp='farmapp';webpPictures.add('farmapp');
 // The four crop medals (6 Oct 2026, painted, WebP): bronze, silver, gold and platinum, one to three stars and a diamond so the tier reads
@@ -152,7 +157,7 @@ const folder=key=>pictureFolder[key]??'icons';
 // A picture that changed under the same name gets a version (/assets/ is kept a day and then served stale for a week while it is
 // checked), so a returning farmer sees the new one at once: the Sheep Barn's slate-blue roof (22 Oct 2026; that morning's render of
 // its new barn still showed the old green-roofed barn to farmers whose browser had kept the picture).
-const PICTURE_VERSIONS=Object.freeze({sheepbarn:'20261022'});
+const PICTURE_VERSIONS=Object.freeze({sheepbarn:'20261022',blackbarley:'20261026'});
 const stamp=key=>PICTURE_VERSIONS[key]?`?v=${PICTURE_VERSIONS[key]}`:'';
 export const pictureFile=name=>`/assets/${folder(name)}/${name}.${webpPictures.has(name)?'webp':'png'}${stamp(name)}`;
 // Where a picture lives, for drawing it on a canvas (the family flag, game.js): a file, and for a sprite its cell in the sheet.

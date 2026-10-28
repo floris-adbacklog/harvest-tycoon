@@ -388,7 +388,7 @@ function farmApi(user,{checked=false}={}){
    if(name==='harvest_commit_farm'){if(args.p_expected!==row.revision)return {data:false};row={...row,state:structuredClone(args.p_state),revision:row.revision+1};return {data:true};}
    return {data:null};
   }};
- vm.runInNewContext(API,{...rules,...invites,...playerLog,welcomeSummary,savePlayerAvatar,isSuperadmin:()=>false,isAdminAccount:()=>false,readReloadAfter:async()=>null,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,
+ vm.runInNewContext(API,{...rules,...invites,...playerLog,welcomeSummary,savePlayerAvatar,isSuperadmin:()=>false,isAdminAccount:()=>false,readReloadAfter:async()=>null,readXpWeekend:async()=>null,createClient:()=>admin,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,atob,crypto,console:{error(){}},Uint32Array,
   handleFamily:()=>{throw new Error('unexpected');},handlePlayerDirectory:()=>{throw new Error('unexpected');}});
  const token=`x.${Buffer.from(JSON.stringify({session_id:'s'})).toString('base64url')}.y`;
  return {get row(){return row;},async send(body){const r=await handler(new Request('https://test.invalid/farm-api',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:JSON.stringify(body)}));return {status:r.status,data:await r.json()};}};

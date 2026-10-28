@@ -67,17 +67,17 @@ test('the price on the tile is the most that is charged: a farm that changed ask
 test('the window, the wiki and the texts say the rule; the night shift and Full care stay diamonds without fuel',()=>{
  const ui=read('public/retention-ui.js');
  // 18 Oct 2026 (the window shell): "By hand is always free." shows, the fuel's formula is one tap away in How it works (a fold that stays open).
- assert.match(ui,/<details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free\.<\/span><span class="fold-more">How it works<\/span><\/summary><p class="tractor-foot">Fuel: \$\{TRACTOR_FUEL_BASE\} coins a job \+ \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of the crop's usual price per field, at least \$\{TRACTOR_FUEL_PER_FIELD\}\.<\/p><\/details>/);
+ assert.match(ui,/<details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free\.<\/span><span class="fold-more">How it works<\/span><\/summary><p class="tractor-foot">Fuel: \$\{TRACTOR_FUEL_BASE\} coins a job \+ \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of the crop's usual price per field, at least \$\{TRACTOR_FUEL_PER_FIELD\}\. Fertilize uses none\.<\/p><\/details>/,'25 Oct 2026: Fertilize is free');
  // 21 Oct 2026: the Fertilize job has its own message (tests/tractor-fertilize.test.mjs); the four others keep theirs.
  assert.match(ui,/:`All done! The tractor worked \$\{r\.count\} fields · \$\{r\.cost\} coins spent\.`;/);
  assert.match(ui,/expectedCost:quotes\[mode\]\.total\},done\)\.then\(r=>\{if\(!r\)renderUtility\(\);\}\);/,'a refused job shows the new price');
  const wiki=read('public/wiki-content.js');
- assert.match(wiki,/Fuel costs \$\{art\('coins'\)\}\$\{TRACTOR_FUEL_BASE\} a job, plus for every field \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of what its crop usually sells for, at least \$\{TRACTOR_FUEL_PER_FIELD\} coins: wheat \$\{fieldFuel\('wheat'\)\}, pumpkin \$\{fieldFuel\('pumpkin'\)\}, sunflower \$\{fieldFuel\('sunflower'\)\}\. Planting also pays the seeds\./);
+ assert.match(wiki,/Fuel costs \$\{art\('coins'\)\}\$\{TRACTOR_FUEL_BASE\} a job, plus for every field \$\{Math\.round\(TRACTOR_FUEL_SHARE\*100\)\}% of what its crop usually sells for, at least \$\{TRACTOR_FUEL_PER_FIELD\} coins: wheat \$\{fieldFuel\('wheat'\)\}, pumpkin \$\{fieldFuel\('pumpkin'\)\}, sunflower \$\{fieldFuel\('sunflower'\)\}\. Planting also pays the seeds\. Fertilize costs no coins, only the fertilizer\./);
  assert.doesNotMatch(ui+wiki,/TRACTOR_FUEL_PER_FIELD\} per field|plus \$\{art\('coins'\)\}\$\{TRACTOR_FUEL_PER_FIELD\} for every field/,'nothing says 2 a field for every crop any more');
  for(const code of ['nl','de','fr','tr','ja','ar','zh']){
   const t=JSON.parse(read(`public/i18n/${code}.json`));
-  const foot=t["Fuel: {0} coins a job + {1}% of the crop's usual price per field, at least {2}."];assert.ok(foot,code);assert.match(foot,/\{0\}[^]*\{1\}[^]*\{2\}/);
-  assert.ok(t['{0} a job, plus for every field {1}% of what its crop usually sells for, at least {2} coins: wheat {3}, pumpkin {4}, sunflower {5}. Planting also pays the seeds.'],code);
+  const foot=t["Fuel: {0} coins a job + {1}% of the crop's usual price per field, at least {2}. Fertilize uses none."];assert.ok(foot,code);assert.match(foot,/\{0\}[^]*\{1\}[^]*\{2\}/);
+  assert.ok(t['{0} a job, plus for every field {1}% of what its crop usually sells for, at least {2} coins: wheat {3}, pumpkin {4}, sunflower {5}. Planting also pays the seeds. Fertilize costs no coins, only the fertilizer.'],code);
  }
  const rules=read('game/farm-state.js'),shiftRound=rules.slice(rules.indexOf('function shiftRound('),rules.indexOf('export function settleShift('));
  assert.doesNotMatch(shiftRound,/fieldFuel|TRACTOR_FUEL/,'the night shift burns no fuel');

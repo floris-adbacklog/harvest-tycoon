@@ -427,7 +427,7 @@ if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHin
   const binBlock=()=>{
    if(!binOn)return '';
    const count=shipBinCount(state),paid=state.shipPaid?.day===utcDay(now)?state.shipPaid:null,items=Object.entries(state.shipBin?.items??{}).filter(([,n])=>n>0);
-   const line=count?`${number(count)} / ${number(shipBinRoom(state))} in the bin, ${number(state.shipBin.coins)} coins at 00:00 UTC`:`Put crops and goods in: paid at 00:00 UTC with ${Math.round(SHIP_BIN_BONUS*100)}% more.`;
+   const line=count?`${number(count)} / ${number(shipBinRoom(state))} in the bin, ${number(state.shipBin.coins)} coins at 00:00 UTC`:`Today's price plus ${Math.round(SHIP_BIN_BONUS*100)}%, paid at 00:00 UTC.`;
    return `<section class="ship-bin">${art('shipping-bin')}<div class="ship-bin-copy"><strong>Shipping bin</strong><small>${line}</small>${paid?`<small class="ship-bin-paid">Paid this morning: +${number(paid.coins)} coins</small>`:''}</div></section>`
     // What is in it, always in view with Take back (24 Oct 2026, the owner: "Hoe haal ik ze nou uit mijn bin": a closed fold hid it).
     +(items.length?`<div class="ship-bin-items">${items.map(([k,n])=>`<div class="ship-bin-row">${itemArt(k)}<span><strong>${ITEMS[k].name}</strong><small>${number(n)} in the bin</small></span><button type="button" class="small-button" data-bin-take="${k}" ${marketSelling?'disabled':''}>Take back</button></div>`).join('')}</div>`:'');

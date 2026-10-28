@@ -90,7 +90,7 @@ function fill(state,q){
 }
 test('new beta quests retain old IDs and each reward can be collected only once',()=>{
  const state=createFarm(now);state.claimed=[0,1,31];const old=state.claimed.slice();
- assert.equal(QUESTS.length,320);assert.equal(QUESTS[31].title,'A lifelong grower');
+ assert.equal(QUESTS.length,326);assert.equal(QUESTS[31].title,'A lifelong grower');
  for(let id=32;id<QUESTS.length;id++){
   const q=QUESTS[id];fill(state,q);const coins=state.coins;
   const result=act(state,{type:'quest',id});assert.equal(state.coins,coins+q.reward+(result.levelReward?.coins??0));assert.throws(()=>act(state,{type:'quest',id}),/already been claimed/);

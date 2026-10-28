@@ -271,8 +271,8 @@ test('farm-api counts the note beside the load, for every account, never in its 
  assert.ok(api.includes(line),'beside the load (later), its failure caught');assert.doesNotMatch(api,/await recordLoadStall/);
  const at=api.indexOf(line);
  assert.ok(api.indexOf("if(!['events','admin_events','social','load'")<at,'a known request only');
- assert.ok(at<api.indexOf("const profileResponse=await admin.from('player_stats')")&&at<api.indexOf("if(body.operation==='load'&&isAdminAccount(user)){"),'before anything that may end the load first, the admin\'s showcase included');
- assert.match(api,/const raw=await req\.text\(\);if\(raw\.length>4096\)/,'the note fits a load under the size limit');
+ assert.ok(at<api.indexOf('const profileResponse=await (mine?.profile')&&at<api.indexOf("if(body.operation==='load'&&isAdminAccount(user)){"),'before anything that may end the load first, the admin\'s showcase included');
+ assert.match(api,/if\(raw\.length>4096\)return reply\(\{error:'Request is too large\.'\},413\);/,'the note fits a load under the size limit');
  assert.ok(JSON.stringify({operation:'load',timeZone:'America/Argentina/ComodRivadavia',language:'nl',platform:'browser',loadStall:{...GOOD,kind:'reload_hung',files:Array(5).fill(`/${'a'.repeat(99)}`)}}).length<1200);
 });
 test('supabase/load-stalls.sql: locked to farm-api, no player id, the same kinds and steps as the service',()=>{

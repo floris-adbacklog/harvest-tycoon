@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 import {createFarm,normalizeFarm,applyFarmAction as act,xpForLevel,levelOf,productionJobs,CROPS,ITEMS,HEIRLOOMS,VILLAGE_GOODS,SEASON_CROPS,MASTER_UPGRADES,
  WAREHOUSE_CAPACITY,WAREHOUSE_COSTS,WAREHOUSE_MASTER,WAREHOUSE_MAX_LEVEL,WAREHOUSE_TOP_LEVEL,storedCount,warehouseCapacity,warehouseFull,warehouseNearFull,warehouseStartLevel,
  warehouseTopFor,warehouseUpgrade,warehouseFullText,nightShiftQuote,settleShift,SHIFT_ROUND_MS,utcDay} from '../game/farm-state.js';
+import {beforeDonkeys,withoutDonkeys} from './helpers/before-donkeys.mjs';
 
 // The Warehouse (22 Oct 2026, the owner's choices on plan-warehouse/voorstel.md): capacity option C, an expensive coin ladder, bringing in
 // waits when it is full (option 1), selling and using never wait, rewards and gifts always arrive, and old farms start where they fit.
@@ -174,7 +175,7 @@ test('differential: the old rules on new saves keep the Warehouse and play on; t
  const oldState=show('562d8a2a','game/farm-state.js'),oldParts=show('562d8a2a','game/farmer-parts.js');
  if(!oldState||!oldParts){t.skip('git history not available');return;}
  const partsUrl='data:text/javascript;base64,'+Buffer.from(oldParts).toString('base64');
- const O=await import('data:text/javascript;base64,'+Buffer.from(oldState.replace("from './farmer-parts.js';",`from '${partsUrl}';`)).toString('base64'));
+ const O=beforeDonkeys(await import('data:text/javascript;base64,'+Buffer.from(oldState.replace("from './farmer-parts.js';",`from '${partsUrl}';`)).toString('base64')));
  // A new save: upgraded once, full, a ripe field and a finished batch.
  const s=farm(40);fill(s,640);s.inventory.feed=10;act(s,{type:'warehouse_upgrade',expectedCost:20000},now);ripe(s,0);
  const saved=JSON.parse(JSON.stringify(s));
@@ -189,7 +190,7 @@ test('differential: the old rules on new saves keep the Warehouse and play on; t
  // The new rules on an old save: the same farm but for state.warehouse.
  const o=O.normalizeFarm(O.createFarm(now-H),now),n=normalizeFarm(JSON.parse(JSON.stringify(o)),now);
  // (One crop a harvest, merged in on 22 Oct 2026, adds mastery.kept too: the medals the old numbers gave, none on a new farm.)
- assert.deepEqual(n.warehouse,{level:1});delete n.warehouse;assert.deepEqual(n.mastery.kept,{});delete n.mastery.kept;assert.deepEqual(n,o);
+ assert.deepEqual(n.warehouse,{level:1});delete n.warehouse;assert.deepEqual(n.mastery.kept,{});delete n.mastery.kept;assert.deepEqual(withoutDonkeys(n),o,'and the Donkey Stable\'s keys (27 Oct 2026)');
 });
 
 // 23 Oct 2026 (the owner): the coin pill looked like a button but was none. It is one now; it opened the Warehouse first, the Market since

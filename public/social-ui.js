@@ -149,7 +149,8 @@ export function createSocialUI({state,notify,refreshFarm,getMembers=()=>[],onBac
   finally{busy=false;}
  }
  return {
-  async open(){embedded=false;root=ownDialog();doc.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});social=null;error='';render();if(!dialog.open)dialog.showModal();await load();},
+  // On its own too (26 Oct 2026): what it last knew at once, then today's fresh list (it showed "Opening daily sharing…" every time).
+  async open(){embedded=false;root=ownDialog();doc.querySelectorAll('dialog[open]').forEach(d=>{if(d!==dialog)d.close();});error='';render();if(!dialog.open)dialog.showModal();await load();},
   // Inside the Farm Family dialog: shows what it last knew at once, then today's fresh list.
   async mount(container){embedded=true;root=container;render();await load();},
   unmount(){if(embedded)root=null;}

@@ -15,7 +15,7 @@ function database(){
 
 test('all 16 crops can be planted, watered and harvested; collection is unique',()=>{
  const s=createFarm(now);s.coins=20000;s.xp=xpForLevel(70);
- assert.equal(Object.keys(CROPS).length,16);assert.equal(QUESTS.length,320);
+ assert.equal(Object.keys(CROPS).length,16);assert.equal(QUESTS.length,326);
  for(const [crop,c] of Object.entries(CROPS)){
   apply(s,{type:'field',id:8,action:'plant',crop});apply(s,{type:'field',id:8,action:'water'},now+1000);
   assert.throws(()=>apply(s,{type:'field',id:8,action:'harvest'},now+1000),/Still growing/);
@@ -26,9 +26,9 @@ test('all 16 crops can be planted, watered and harvested; collection is unique',
  }
  assert.equal(s.stats.varieties,16);assert.equal(s.discovered.length,16);
 });
-test('all 81 recipes require ingredients, persist timed jobs and collect once',()=>{
+test('all 85 recipes require ingredients, persist timed jobs and collect once',()=>{
  const ordinary=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&!worldThreeBuilding(r.building));   // the Factory's bulk versions and the harbour's places (27 Oct 2026) have their own tests
- assert.equal(ordinary.length,81,'wheat feed joined on 26 Sep 2026; World II added 3 farm recipes and 10 in the village (30 Sep 2026), and 14 for levels 110-158 (Oct 2026)');
+ assert.equal(ordinary.length,85,'wheat feed joined on 26 Sep 2026; World II added 3 farm recipes and 10 in the village (30 Sep 2026), 14 for levels 110-158 (Oct 2026), and 4 with the donkeys\' milk (27 Oct 2026)');
  for(const [id,r]of ordinary){
   const s=createFarm(now);s.xp=xpForLevel(Math.max(90,r.minLevel??1));s.coins=100000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
   normalizeFarm(s,now);   // what every load does: at level 90 the Valley Market's stalls, the export trailer and the fair fill up

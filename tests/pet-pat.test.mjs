@@ -7,6 +7,7 @@ import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,cropUnlocked
 import {INSTANT_ACTIONS,instantResult} from '../public/farm-client.js';
 import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {soundForAction} from '../public/farm-audio.js';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
@@ -96,7 +97,7 @@ test('saves: a farm that never patted has no pets key, and a broken one is clean
 // refuses the new action cleanly; its client sends no pet_pat at all.
 test('the live game (f13f4d42) reads a farm after pats, keeps them, plays on and refuses pet_pat cleanly',async t=>{
  const old=show('f13f4d42','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  const s=farm(120);pat(s,'dog');pat(s,'cat',now+MIN);pat(s,'deer',now+2*MIN);
  const saved=structuredClone(s),copy=structuredClone(saved),t2=now+5*MIN;O.normalizeFarm(copy,t2);
  assert.deepEqual(copy.pets,saved.pets,'the times of the pats');assert.equal(copy.stats.pets_patted,3);

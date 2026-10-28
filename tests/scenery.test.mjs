@@ -60,7 +60,7 @@ test('the Pig Farm: level 29, truffles at the pace of the other animal buildings
  assert(perHour('truffleomelette')>200&&perHour('truffleomelette')<240,'like the other Farm Kitchen dishes');
  assert.equal(m.itemUnlockLevel('truffles'),29);assert.equal(m.itemUnlockLevel('truffleomelette'),30);
  // New goods join the Family Order from the week after release, so this week's orders stay the same for every family.
- assert.deepEqual(m.FAMILY_ORDER_FROM_WEEK,{truffles:2960,truffleomelette:2960});
+ assert.deepEqual(m.FAMILY_ORDER_FROM_WEEK,{truffles:2960,truffleomelette:2960,donkeymilk:2966,donkeymilksoap:2966,donkeycheese:2966});
  for(let week=2940;week<2960;week++)for(const k of Object.keys(m.familyOrder('f',week,3).lines))assert(!k.startsWith('truffle'),`week ${week}`);
 });
 // 25 Sep 2026: fewer loose props, none on a road or in a field, room around the animals, and the animals sideways to the camera.
@@ -68,7 +68,7 @@ test('the farm is tidier: fewer props, kept off roads and fields and clear of th
  const {PROPS_PER_YARD,ROAD_STEP,MEADOW_CLUMPS}=await import('../public/farm-props.js');
  assert.deepEqual([PROPS_PER_YARD,ROAD_STEP,MEADOW_CLUMPS],[2,14,18]);
  const game=read('public/game.js');
- assert.match(game,/const ANIMAL=\/\^\(cow\|horse\|pig\|sheep\|goat\|chicken\)_\/,FLAT_BLOCKS=\/\^\(road\|field\)_\/;/);
+ assert.match(game,/const ANIMAL=\/\^\(cow\|horse\|pig\|sheep\|goat\|chicken\|donkey\)_\/,FLAT_BLOCKS=\/\^\(road\|field\)_\/;/,'the Donkey Stable\'s donkeys too (27 Oct 2026)');
  assert.match(game,/blocked\.push\(ANIMAL\.test\(model\)\?box\.expandByScalar\(1\.2\):object\.userData\.utility\|\|object\.userData\.activity\?box\.expandByScalar\(1\.6\):box\);/);
  // every animal faces left (about -0.8) or right (about 2.4) with a small margin, never head-on or from behind (0.8, -2.4)
  const turns=[...game.matchAll(/animalAt\('(?:cow|sheep|goat)_00\d',[-\d.]+,[-\d.]+,\{[^}]*rotation:([-\d.]+)\}/g)].map(m=>Number(m[1]))

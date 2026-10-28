@@ -14,7 +14,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // time."). Live: of 1,225 early farms (level 1-8) that stopped, 10% left with 5+ minutes still to grow, 98% of those with corn or barley on
 // their fields. Three changes: a word in the seed shop when a long crop is chosen, a note after planting long crops, and the seed shop's
 // Quick tab at 5 minutes or less.
-const now=new Date(2026,9,16,12,0).getTime(),later=now+2*86400000;   // later: the first day's beginner boost is over
+const now=new Date(2026,9,16,12,0).getTime(),later=now+8*86400000;   // later: the beginner boost is over (a week since 26 Oct 2026; the first day before)
 const clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 function farmer({level=6,at=now,guide=true}={}){
  const s=createFarm(at);s.xp=xpForLevel(level)+5;s.coins=50000;
@@ -38,7 +38,7 @@ test('1. the seed shop: a crop that is not quick says how long it takes and name
  const nine=farmer({level:9});
  assert.equal(cropChoiceText(nine,'corn',later),'Corn selected. Choose an empty field to plant.');
  assert.equal(cropChoiceText(nine,'cabbage',later),'Cabbage selected. Choose an empty field to plant.');
- // The first day's beginner boost is in both numbers: corn 7.5 minutes (8m), wheat 1 minute.
+ // The beginner boost at its start is in both numbers: corn 7.5 minutes (8m), wheat 1 minute.
  const fresh=farmer({level:5});
  assert.ok(cropDuration(fresh,'corn',false,now)<CROPS.corn.duration,'the boost is on');
  assert.equal(cropChoiceText(fresh,'corn',now),`Corn selected: ready in ${formatDuration(cropDuration(fresh,'corn',false,now))}, good before a break. Playing on? Wheat is ready in ${formatDuration(cropDuration(fresh,'wheat',false,now))}.`);

@@ -35,6 +35,17 @@ test('it works like a dropdown: arrows, Home/End, typing, Escape closes only the
  assert.match(js,/menu\.classList\.toggle\('is-up',up\)/);assert.match(css,/\.pretty-select-menu\.is-up\{top:auto;bottom:calc\(100% \+ 6px\)\}/);assert.match(css,/\.pretty-select-menu\.is-end\{inset-inline-start:auto;inset-inline-end:0\}/);
 });
 
+test('a box too short for the menu (Settings › Language on its own, 26 Oct 2026) does not cut it off: the menu lies over it, in the window',()=>{
+ // Only when the box has no room above or below the button; otherwise it opens inside the box as before.
+ assert.match(js,/const free=clip!==view&&clip\.bottom-box\.bottom-10<need&&box\.top-clip\.top-10<need;if\(free\)clip=view;/);
+ assert.match(js,/menu\.classList\.add\('is-free'\);Object\.assign\(menu\.style,\{width:`\$\{at\.width\}px`,left:`\$\{left\}px`,top:`\$\{top\}px`\}\);/,'as wide and where it stood');
+ assert.match(css,/\.pretty-select-menu\.is-free\{position:fixed;inset:auto;min-width:0\}/);
+ assert.ok(css.indexOf('.pretty-select-menu.is-free{')>css.indexOf('.pretty-select-menu.is-up{top:auto'),'after the up rule, so its top and bottom give way');
+ // It stays where it is, so it closes when the window around the button scrolls, not when its own list scrolls.
+ assert.match(js,/openMenu=\{wrap,close\};document\.addEventListener\('scroll',onScroll,true\);/);assert.match(js,/document\.removeEventListener\('scroll',onScroll,true\);/);
+ assert.match(js,/menu\?\.classList\.contains\('is-free'\)&&event\.target!==menu&&event\.target\.contains\?\.\(wrap\)\)close\(\)/);
+});
+
 test('the look: soft field or small pill, pictures and notes in the menu, the picked option light blue, 44 px to tap',()=>{
  assert.match(css,/\.pretty-select-option\[aria-selected="true"\]\{background:#e3f3fd;color:#1f5877\}/);
  assert.match(css,/\.pretty-select-option\{[^}]*min-height:44px/);

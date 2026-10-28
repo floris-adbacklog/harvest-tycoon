@@ -16,12 +16,12 @@ function labelText(select,labels){
  const copy=label.cloneNode(true);copy.querySelectorAll('select,.pretty-select').forEach(node=>node.remove());
  return copy.textContent.replace(/\s+/g,' ').trim();
 }
-// The nearest box that cuts off what sticks out (a scrolling dialog), or the window.
+// The nearest box that cuts off what sticks out (a scrolling dialog), or null (the window).
 function clipRect(element){
  for(let node=element.parentElement;node&&node!==document.body;node=node.parentElement){
   if(/(auto|scroll|hidden|clip)/.test(getComputedStyle(node).overflowY))return node.getBoundingClientRect();
  }
- return {top:0,bottom:window.innerHeight,left:0,right:window.innerWidth};
+ return null;
 }
 const optionText=option=>option?.textContent.replace(/\s+/g,' ').trim()??'';
 function optionRow(option){
@@ -53,23 +53,33 @@ export function prettySelect(select){
   menu.innerHTML=[...select.children].map(child=>child.tagName==='OPTGROUP'?`<div class="pretty-select-group" role="presentation">${esc(child.label)}</div>${[...child.children].map(optionRow).join('')}`:child.tagName==='OPTION'?optionRow(child):'').join('');
  }
  function place(){
-  menu.classList.remove('is-up','is-end');menu.style.maxHeight='';
-  const box=toggle.getBoundingClientRect(),clip=clipRect(wrap),below=clip.bottom-box.bottom-10,above=box.top-clip.top-10;
-  const up=below<Math.min(menu.scrollHeight,220)&&above>below;
+  menu.classList.remove('is-up','is-end','is-free');menu.removeAttribute('style');
+  const box=toggle.getBoundingClientRect(),need=Math.min(menu.scrollHeight,220),view={top:0,bottom:window.innerHeight,left:0,right:window.innerWidth};
+  // A box too short for the menu above and below the button (Settings › Language on its own, 26 Oct 2026: two languages showed,
+  // the top one cut off) does not hold it: the menu then lies over it, in the window.
+  let clip=clipRect(wrap)??view;
+  const free=clip!==view&&clip.bottom-box.bottom-10<need&&box.top-clip.top-10<need;if(free)clip=view;
+  const below=clip.bottom-box.bottom-10,above=box.top-clip.top-10,up=below<need&&above>below;
   menu.classList.toggle('is-up',up);menu.style.maxHeight=`${Math.max(132,Math.min(340,up?above:below))}px`;
-  if(menu.getBoundingClientRect().right>Math.min(clip.right??window.innerWidth,window.innerWidth)-8)menu.classList.add('is-end');
+  if(menu.getBoundingClientRect().right>Math.min(clip.right,window.innerWidth)-8)menu.classList.add('is-end');
+  if(!free)return;
+  // Fixed in the window where it stood, as wide, 6 px from the button.
+  const at=menu.getBoundingClientRect(),left=Math.max(8,Math.min(at.left,window.innerWidth-8-at.width)),top=up?box.top-6-at.height:box.bottom+6;
+  menu.classList.add('is-free');Object.assign(menu.style,{width:`${at.width}px`,left:`${left}px`,top:`${top}px`});
  }
+ // A free menu stays where it is, so it closes when the window around the button scrolls (not when the menu itself does).
+ const onScroll=event=>{if(menu?.classList.contains('is-free')&&event.target!==menu&&event.target.contains?.(wrap))close();};
  const options=()=>[...menu.querySelectorAll('.pretty-select-option:not(:disabled)')];
  function focusOption(button){if(!button)return;button.focus({preventScroll:true});button.scrollIntoView({block:'nearest'});}
  function open(){
   if(select.disabled||menu)return;openMenu?.close();
   menu=document.createElement('div');menu.className='pretty-select-menu';menu.setAttribute('role','listbox');menu.setAttribute('aria-label',labelText(select,labels)||'Choose');
   wrap.append(menu);fill();place();toggle.setAttribute('aria-expanded','true');wrap.classList.add('is-open');
-  openMenu={wrap,close};
+  openMenu={wrap,close};document.addEventListener('scroll',onScroll,true);
   focusOption(menu.querySelector('.pretty-select-option[aria-selected="true"]:not(:disabled)')??options()[0]);
  }
  function close(){
-  if(!menu)return;menu.remove();menu=null;toggle.setAttribute('aria-expanded','false');wrap.classList.remove('is-open');
+  if(!menu)return;menu.remove();menu=null;toggle.setAttribute('aria-expanded','false');wrap.classList.remove('is-open');document.removeEventListener('scroll',onScroll,true);
   if(openMenu?.wrap===wrap)openMenu=null;
  }
  function choose(index){

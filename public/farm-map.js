@@ -15,7 +15,7 @@ export const FIXED_YARDS=Object.freeze(['farmhouse','pond']);
 // Every yard that moves as one piece (farm-layout.js ANCHORS without the fixed ones; tests/free-layout checks they match).
 export const LAYOUT_YARDS=Object.freeze(['dairy','silo','familyhall','preserves','juicepress','greenhouse','packing','coop','paddock','windmill',
  'tractor','cart','factory','chores','stall','mill','bakery','kitchen','apiary','workshop','beeyard','sheepbarn','glasshouse','weaving',
- 'goatshed','craftshop','ranch','valleymarket','tradedepot','estateworkshop','grandfair','pigfarm','warehouse']);
+ 'goatshed','craftshop','ranch','valleymarket','tradedepot','estateworkshop','grandfair','pigfarm','warehouse','donkeystable']);
 // The land, piece by piece, as world boxes [minX, maxX, minZ, maxZ], each open from its level (the valley by level of 25 Sep 2026:
 // the middle from the start, the west at 25, the east at 50, then the edges beyond).
 export const LAND=Object.freeze([
@@ -63,6 +63,29 @@ export const inWater=(x,z)=>WATER.some(box=>inBox(box,x,z));
 // Every land piece and whether it is open, for the screen.
 export const landPieces=level=>LAND.map(piece=>({...piece,open:level>=piece.level}));
 
+// Where a field stands when it never moved: four in a row, row after row (game.js draws it there).
+export const FIELD_SLOTS=40;
+export const fieldHome=i=>[-2.15+(i%4)*3.15,.25+Math.floor(i/4)*3.2];
+// A field's soil is 2.38 across (game.js). A place is free when no field touches it; a field lies under another when their middles
+// are within half a field (the editor never allows that, so only a field bought later can be there; one moved snugly against
+// another, a little over its edge, is not).
+const FIELD_SIZE=2.38,round2=v=>Math.round(v*100)/100;
+const near=(a,b,d)=>Math.abs(a[0]-b[0])<d&&Math.abs(a[1]-b[1])<d;
+// A new field never lands under a moved one (26 Oct 2026: a farmer bought field 21 and saw nothing; he had moved field 10 onto
+// field 21's place in the grid days before). A field that never moved, whose place is taken by a field that did, gets the first free
+// place in the grid instead (one that no field stands on), saved in state.layout like a move. Buildings are not checked here: the
+// server does not know their shapes. Gives the fields it placed.
+export function settleFields(state){
+ const at=state.layout?.at;if(!at)return [];
+ const n=state.plots?.length??0,spot=i=>at[`field:${i}`]??fieldHome(i),settled=[];
+ for(let i=0;i<n;i++){
+  if(at[`field:${i}`])continue;
+  const home=fieldHome(i),others=[...Array(n).keys()].filter(j=>j!==i);
+  if(!others.some(j=>at[`field:${j}`]&&near(spot(j),home,FIELD_SIZE/2)))continue;
+  for(let k=0;k<FIELD_SLOTS;k++){const free=fieldHome(k);if(others.some(j=>near(spot(j),free,FIELD_SIZE)))continue;at[`field:${i}`]=free.map(round2);settled.push(i);break;}
+ }
+ return settled;
+}
 // A saved state.layout as the rules expect it. A farm that never moved anything has none.
 export function normalizeLayout(state){
  const l=state.layout;if(l===undefined)return;

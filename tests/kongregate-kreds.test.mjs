@@ -392,7 +392,7 @@ test('switched on: create makes this farmer\'s pending Kongregate row (the produ
  const src=read('supabase/functions/diamond-checkout/index.ts');
  assert.match(src,/const kongEnabled=kongPaymentsEnabled\(Deno\.env\.get\('KONG_PAYMENTS_ENABLED'\)\);/);
  assert.match(src,/if\(kongAccount&&!\(kong&&kongEnabled\)\)return reply\(\{error:'Purchases are not available on Kongregate\.'\},403\);/);
- assert.match(src,/if\(play\|\|apple\|\|kong\)\{const r=await appCreate\(play\?'google_play':apple\?'app_store':'kongregate',user\.id,pack,body\.requestId,starter\);/);
+ assert.match(src,/if\(play\|\|apple\|\|kong\)\{const r=await appCreate\(play\?'google_play':apple\?'app_store':'kongregate',user\.id,pack,body\.requestId,starter,sale\);/);
 });
 
 // ---- supabase/kongregate-kreds.sql ----

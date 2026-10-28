@@ -17,7 +17,10 @@
 <noscript><p>Enable JavaScript to play Harvest Tycoon.</p></noscript>
 <script type="module" src="/cloud/crazygames.js"></script>
 <!-- The farm downloads while the account is being checked (7 Oct 2026): farm.html, what it loads and the models, prefetched at the
-     lowest priority after this page's own files (scripts/module-preload.mjs writes the list). -->
+     lowest priority after this page's own files (scripts/module-preload.mjs writes the list). Kept in a template until this page's own
+     script runs (26 Oct 2026, src/crazygames.js startPrefetch): on a slow phone line the 4.5 MB of prefetches shared the line with that
+     script, which then came in after 29 s instead of 3. -->
+<template id="farm-prefetch">
 <!-- farm-prefetch:start -->
 <link rel="prefetch" href="/farm.html">
 <link rel="prefetch" href="/compat.js">
@@ -76,6 +79,8 @@
 <link rel="prefetch" href="/daylight.js">
 <link rel="prefetch" href="/dialog-shell.js">
 <link rel="prefetch" href="/diamond-confirm.js">
+<link rel="prefetch" href="/diamond-sale.js">
+<link rel="prefetch" href="/donkey-cart-ui.js">
 <link rel="prefetch" href="/economy-ui.js?v=familyhall-model-2">
 <link rel="prefetch" href="/email-check-ui.js">
 <link rel="prefetch" href="/emblem-picker.js">
@@ -140,6 +145,7 @@
 <link rel="prefetch" href="/progression-ui.js">
 <link rel="prefetch" href="/quests-ui.js">
 <link rel="prefetch" href="/rank-art.js">
+<link rel="prefetch" href="/rate-ask.js">
 <link rel="prefetch" href="/reminder-nudge.js">
 <link rel="prefetch" href="/render-resources.js">
 <link rel="prefetch" href="/retention-ui.js">
@@ -320,4 +326,5 @@
 <link rel="prefetch" href="/assets/models/house_023.glb">
 <link rel="prefetch" href="/assets/models/dray_003.glb">
 <!-- farm-prefetch:end -->
+</template>
 </body></html>

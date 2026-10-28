@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createFarmer} from './farmer.js';
+import {softShadow} from './soft-shadow.js';
 import {DEFAULT_FARMER} from './farmer-parts.js';
 
 // Your own farmer, walking on your farm and in the village (20 Oct 2026, the owner: "Doe 2"; phase 1: everyone's farmer is the default
@@ -143,13 +144,6 @@ const CHEER_HOPS=2,CHEER_UP=.18;
 const turnOf=(from,to)=>((to-from+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 const turnTowards=(from,to,step)=>{const d=turnOf(from,to);return Math.abs(d)<=step?from+d:from+Math.sign(d)*step;};
 const choose=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,0);for(const [k,w] of Object.entries(odds)){r-=w;if(r<=0)return k;}return 'idle';};
-// The soft round shadow under the farmer (the sun's shadow map is drawn only now and then, so a walker's own would lag).
-function blob(size){
- const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),r=g.createRadialGradient(32,32,4,32,32,31);
- r.addColorStop(0,'rgba(40,52,24,.4)');r.addColorStop(1,'rgba(40,52,24,0)');g.fillStyle=r;g.fillRect(0,0,64,64);
- const m=new THREE.Mesh(new THREE.PlaneGeometry(size,size),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
- m.rotation.x=-Math.PI/2;m.position.y=.02;m.renderOrder=1;return m;
-}
 // For the screenshot harness: every page's walker (where it stands on the screen, to tap it).
 export const FARM_WALKERS=new Set();
 // scene: the farm's or the village's; walk: FARM_WALK or VILLAGE_WALK; ground(x, z): the height there; lite: phones (every other frame).
@@ -160,14 +154,14 @@ export const FARM_WALKERS=new Set();
 // tag: on a touch screen the farmer's name over their head (game.js farmerTag: a span in the pins' layer; with a mouse the name is
 // the hover tooltip instead); blockers(): the pins and names it gives way to.
 export async function createFarmWalker({scene,walk=FARM_WALK,ground=()=>0,lite=false,config=DEFAULT_FARMER,random=Math.random,trips=false,bench=null,clock=()=>new Date(),name='your-farmer',family=null,appear=false,tag=null,blockers=()=>[]}){
- const farmer=await createFarmer(config,{height:walk.height,family});
+ const farmer=await createFarmer(config,{height:walk.height,family,shadow:false});
  const root=farmer.root,{actions,mixer}=farmer;root.name=name;
  for(const name of ['walk','idle','look','relaxed','sit'])actions[name]?.setLoop(THREE.LoopRepeat,Infinity);
  // The walk cycle covers 1.48 m of the pack's 1.83 m farmer: played at the speed that keeps the feet from sliding.
  const walkPace=actions.walk?walk.walk/(1.48*walk.height/1.83/actions.walk.getClip().duration):1;
  if(actions.walk)actions.walk.timeScale=walkPace;
  actions.hop?.setLoop(THREE.LoopOnce,1);if(actions.hop)actions.hop.clampWhenFinished=true;
- root.add(blob(walk.height*.55));
+ root.add(softShadow(walk.height*.55));
  // The tap target: a box round the farmer, a little bigger, so a phone's finger finds them. Never drawn.
  const hit=new THREE.Mesh(new THREE.BoxGeometry(walk.height*.5,walk.height*1.05,walk.height*.5),new THREE.MeshBasicMaterial({visible:false}));
  hit.position.y=walk.height*.52;hit.userData.farmer=true;root.add(hit);

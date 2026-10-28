@@ -16,7 +16,7 @@ import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} fr
 import {worldThreeOpen,harbourWorkDone,buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure,noteOnDevice} from './loading-screen.js';
 import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
-import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE} from './graphics-mode.js';
+import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE,slowPhone,probeGpu,NEW_FARM_LEVEL,lighterStep,setLighter,choseFull,createSpeedCheck,CHECK_AFTER_MS,CHECK_UNTIL_MS} from './graphics-mode.js';
 import {clearCropVisual,loadInBatches} from './render-resources.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -40,7 +40,7 @@ import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
 import { createQuestsUI,villageQuestReady,harbourQuestReady,questGroups,villageQuestGroups,harbourQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
-import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind, OLD_ROADS, PATH_GRID, roadPieces } from './farm-map.js';
+import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind, OLD_ROADS, PATH_GRID, roadPieces, fieldHome } from './farm-map.js';
 import { createLayoutEditor } from './layout-edit.js';
 import { createSpotlight } from './spotlight.js';
 import { createMobileUI,mobileLayout } from './mobile-ui.js';
@@ -54,6 +54,7 @@ import { toolCursor,createSweepTool,createSweepGhost } from './sweep-tools.js';
 import { createSweepTip } from './sweep-tip.js';
 import { createActivitiesUI } from './activities-ui.js';
 import { createWarehouseUI,isWarehouseFull,warehouseTone,fillText } from './warehouse-ui.js';
+import {createDonkeyCartUI} from './donkey-cart-ui.js';
 import { createNeighboursUI } from './neighbours.js';
 import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
 import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
@@ -72,6 +73,7 @@ import { nextGoal, readyAllAt } from './next-goal.js';
 import { createWaitTip } from './wait-tip.js';
 import { createFertilizerTip } from './fertilizer-tip.js';
 import { computerWindow,timerKey,timerGroups,createFullScreenOffer } from './small-window.js';
+import { createRateAsk } from './rate-ask.js';
 import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
@@ -82,6 +84,8 @@ import { LAKE_OPEN } from './farm-state.js';
 import { petRest,petRestText } from './farm-state.js';
 import { warehouseFull,storedCount,warehouseCapacity } from './farm-state.js';
 import { giftPass,giftMessageText } from './farm-state.js';
+import { utcDay } from './farm-state.js';   // the shipping bin's morning note (binPaidNote); without it every farm with a paid bin failed to start (26 Oct 2026)
+import { setXpWeekend } from './farm-state.js';   // the Double XP weekend the load brought (farm-api xp-weekend-service.js)
 // Your own farmer (21 Oct 2026): what they wear (state.farmer, or the default farmer) and the hats and costumes this farm has earned.
 import { farmerOf,farmerOwned,validFarmerConfig,cleanFarmer,FAMILY_SHIRT } from './farmer-parts.js';
 import { LAKE_LOADING_TIP } from './loading-screen.js';
@@ -91,6 +95,7 @@ import { createBack,modalOpen,handheldDevice,farmRests } from './windows.js';
 // Another language than English: translate the farm's texts as they appear (public/i18n.js).
 startTranslation();
 const $ = id => document.getElementById(id);
+setXpWeekend(window.harvestInitialFarm.xpWeekend??null);
 const state = structuredClone(window.harvestInitialFarm.state);
 // A server that has not learnt about a new building yet must not break the buildings list (farm-client.js does the same on every reload).
 state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
@@ -150,10 +155,17 @@ let tractorCrop='wheat';
 let toolPicked=false;
 let emailAccount={needed:false,email:''},emailCheckUI=null;
 // No email on CrazyGames (Oct 2026, public/portal.js): nothing to confirm or change there.
-function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check,needed:false,canChange:false}:check;const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
+// The giveaway (25 Oct 2026, the owner, for the Twitch stream): only for the stream's own account, loaded only there (public/giveaway-ui.js).
+const GIVEAWAY_EMAILS=Object.freeze(['harvesttycoon+twitch@gmail.com']);
+function mountGiveawayFor(email){if(!adminView&&!visitView&&GIVEAWAY_EMAILS.includes(String(email??'').trim().toLowerCase()))import('./giveaway-ui.js').then(m=>m.mountGiveaway()).catch(()=>{});}
+function setEmailCheck(check){if(check)emailAccount=portalOff('email')?{...check,needed:false,canChange:false}:check;mountGiveawayFor(emailAccount.email);const hide=!emailAccount.needed;$('email-button').hidden=hide;$('email-menu-entry').hidden=hide;
  // Settings, Email address (28 Sep 2026): email sign-ups see their address, can change it, and are reminded to confirm it.
  $('email-settings').hidden=!emailAccount.canChange;$('email-settings-address').textContent=emailAccount.email;$('email-settings-note').hidden=!emailAccount.needed;}
 let renderer,scene,camera,zoom=1,pan=0,panDepth=0,hovered=-1,lastTick=0,lastFrame=0,lastDraw=0;
+let lastShadows=0;
+const SHADOWS_EVERY=10000;   // the sun's shadows drawn again at least this often (frame), for the crops that grow
+const CROP_SHADOWS=120;      // while crops hop or are picked, their shadows follow this often (and once more when they stop)
+let cropsMoving=false;
 const handheld=handheldDevice();   // phones, tablets and the apps: the farm rests under a window (frame, public/windows.js)
 // The graphics (21 Oct 2026, public/graphics-mode.js). A phone, a tablet, the apps or an unfolded foldable (a touch screen, even one wider
 // than 900 px) never get the computer's heavy settings; simple graphics after any trouble; no shadows on a PowerVR or Imagination GPU.
@@ -161,6 +173,9 @@ const handheld=handheldDevice();   // phones, tablets and the apps: the farm res
 const gpuHandheld=handheld||mobileLayout.matches||matchMedia('(pointer: coarse)').matches;
 const gfxStore=(()=>{try{return window.localStorage;}catch{return null;}})();
 let graphicsSimple=false,gfxMode='full',runHealthy=false,lastShown=Date.now();
+// Lighter by itself when the farm runs slowly (25 Oct 2026, graphics-mode.js): the step this device is on (-1: the player went back),
+// the measuring while it runs (from checkFrom, a frame time), the sun (its shadows go at step 2) and whether the player was told.
+let lighter=0,speedCheck=null,checkFrom=0,sunLight=null,toldLighter=false;
 addEventListener('pagehide',()=>endRun(gfxStore));
 document.addEventListener('visibilitychange',()=>{lastShown=Date.now();if(!runHealthy&&gfxStore?.getItem?.(RUN_KEY))markRun(gfxStore,{away:document.hidden});});
 const swept=new Set();   // the fields of a swipe in progress keep their ring until the swipe is saved
@@ -185,7 +200,7 @@ const FARM_FAR=1.15;
 let zoomAt=FARM_STOPS.indexOf(viewMode),farmAxis=null,glide=null;
 let overviewBounds=null;
 let familyFlag=null;
-const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
+const familyDecor=[],factoryDecor=[],yardDecor={dairy:[],pigfarm:[],beeyard:[],sheepbarn:[],glasshouse:[],weaving:[],goatshed:[],craftshop:[],donkeystable:[],ranch:[],valleymarket:[],estateworkshop:[],tradedepot:[],grandfair:[]},models=new Map(), plots=[], animals=[], particles=[], buildingViews=new Map();
 // The pointer for Show me (public/coach.js): one at a time, gone after the last tap.
 const coach=createCoach();
 // The first steps' spotlight (public/spotlight.js): during a calm start's first four steps the farm dims except the place to tap. Made
@@ -205,7 +220,7 @@ function spotTarget(){
 }
 // The wheel never scrolls the page around the game (11 Oct 2026, Part A A7, wheel-guard.js).
 guardWheel();
-let warehouse=null,neighbours=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
+let warehouse=null,donkeyCart=null,neighbours=null,liveEvents,familyUI,passUI,seasonUI,lookSettings,progression,economy,retention,growth,valley,villageSquare,boat,estatePlaces,boosts,rookie,quests,beginner,mobileUI,windmillRotor,windmillSpeed=0,atmosphere,cropMotion,farmLife,activities,soundUI,scenePolish;
 const utilityViews=new Map();
 let pond=null;   // the Fishing pond (pond-ui.js), on the farm from POND_OPEN; in the village its village lake, from LAKE_OPEN
 let pets=null;   // the farm's dog and cat, or the village's deer (farm-pets.js, 20 Oct 2026), once they have come
@@ -493,7 +508,7 @@ async function addAnimals(){
   }
   const penOf=o=>{const p=pens.get(o.userData.pen);return p?{box:p,keepOut:standing.filter(([a,b,c,d])=>b>p[0]&&a<p[1]&&d>p[2]&&c<p[3])}:null;};
   const list=[];scene.traverse(o=>{const name=o.userData.model??o.userData.scenery;if(name&&ANIMATED[name]&&!o.userData.animal){o.userData.animal=true;list.push({obj:o,still:Boolean(o.userData.activity||o.userData.scenery),pen:penOf(o)});}});
-  herd=createHerd({list,relock:o=>{if(o.userData.locked){o.userData.locked=false;setLocked(o,true);}},lite:handheld||mobileLayout.matches,onKind:()=>{renderer.shadowMap.needsUpdate=true;}});
+  herd=createHerd({list,lite:handheld||mobileLayout.matches,onKind:()=>{renderer.shadowMap.needsUpdate=true;}});
   await herd.ready;
  }catch(error){console.warn('The animals were left standing.',error);}
 }
@@ -617,6 +632,8 @@ function tapFamilyFarmer(id){const other=familyWalkers.find(w=>w.playerId===id),
 // tinted copy of the material for every road, so the pink pigs and flowers keep the palette as it is.
 // The Sheep Barn's roof: the palette's brown swatch [column 8, row 5] becomes the slate blue-grey one [10, 5] (93,126,142), on its copy only.
 const SHEEP_BARN_ROOF=Object.freeze([[[8,5],[10,5]]]);
+// The Donkey Stable's own colours (27 Oct 2026): the Dairy Barn's red walls honey yellow, its blue-grey roof terracotta.
+const DONKEY_STABLE_PAINT=Object.freeze([[[0,6],[6,2]],[[0,5],[6,1]],[[10,4],[7,6]]]);
 const roadMaterials=new Map();
 function roadMaterial(material){
  let road=roadMaterials.get(material);
@@ -648,9 +665,19 @@ function greyed(material){
  }
  return grey;
 }
+// The farm's animals stay in colour and keep moving while their yard is still to come (27 Oct 2026, the owner: grey and still they
+// looked dead): only the buildings, fences and props around them go grey, which still says the yard is locked. The locked mark itself
+// is kept on an animal, so a tap on it says what it says now.
+const LIVE_ANIMAL=/^(cow|horse|pig|sheep|goat|chick|chicken)_/;
+const liveAnimal=o=>Boolean(o.userData.animal||LIVE_ANIMAL.test(o.userData.model??o.userData.scenery??''));
 function setLocked(object,locked){
  if(object.userData.locked===locked)return;object.userData.locked=locked;
- object.traverse(mesh=>{if(!mesh.isMesh)return;mesh.userData.original??=mesh.material;const original=mesh.userData.original;mesh.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;});
+ const paint=o=>{
+  if(liveAnimal(o))return;
+  if(o.isMesh&&!o.userData.softShadow){o.userData.original??=o.material;const original=o.userData.original;o.material=locked?(Array.isArray(original)?original.map(greyed):greyed(original)):original;}
+  for(const child of o.children)paint(child);
+ };
+ paint(object);
 }
 function patch(x,z,width,depth,color,y=.005){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -886,6 +913,15 @@ function decorateFarm(){
  yardDecor.goatshed.push(...penned('goatshed',[...fenceLine(28.6,-3.8,4),...fenceLine(27.5,-9.3,3,'z'),...fenceLine(36.3,-9.3,3,'z'),...fenceLine(28.6,-10.4,1),...fenceLine(35.2,-10.4,1)]));
  for(const [model,x,z,r] of [['goat_001',29.6,-8.4,2.6],['goat_002',32.2,-6.1,2.2],['goat_001',34.6,-8.7,-.9],['goat_002',30.4,-5.2,1.9],['goat_001',33.9,-4.9,-1]])yardDecor.goatshed.push(animalAt(model,x,z,{width:1.3,rotation:r},'goatshed',r));
  yardDecor.goatshed.push(cloneModel('hay_002',35.3,-5.1,{width:1.1,rotation:.4}));
+ // The Donkey Stable (level 64, 27 Oct 2026): the Dairy Barn's barn in colours of its own (the owner: "geef de dak ook en iets andere
+ // kleuren"), honey walls under a terracotta roof, left of the Goat Shed (the owner: "zet hem links goat shed") and built like it: the
+ // barn at the back, its doors facing a small pen down to the trunk road with the two donkeys (a small horse_002 stands in for each until
+ // the pack's donkey takes its place, farm-animals.js), hay and a bucket.
+ zone('donkeystable');
+ addBuilding('donkeystable',23.54,-16.14,{width:4.4,height:3.9,depth:6.6,paint:DONKEY_STABLE_PAINT});
+ yardDecor.donkeystable.push(...penned('donkeystable',[...fenceLine(20.84,-5.14,3),...fenceLine(19.74,-10.64,3,'z'),...fenceLine(26.34,-10.64,3,'z'),...fenceLine(20.84,-11.74,1),...fenceLine(25.24,-11.74,1)]));
+ for(const [name,x,z,r] of [['donkey_001',21.34,-8.94,2.4],['donkey_002',24.84,-7.54,-.8]]){const d=animalAt('horse_002',x,z,{width:1.75,rotation:r},'donkeystable',r);d.userData.model=name;yardDecor.donkeystable.push(d);}
+ yardDecor.donkeystable.push(cloneModel('hay_002',25.34,-10.84,{width:1,rotation:.5}),cloneModel('bucket_003',20.34,-11.04,{height:.5}));
  // The Pig Farm: the pink barn turned side-on, and in front of it a white-fenced pen, closed all round, where the pigs dig for
  // truffles.
  zone('pigfarm');
@@ -994,7 +1030,7 @@ function decorateFarm(){
 }
 // Small props from the model pack fill the room between the yards. Spots are taken only where nothing stands: not on a
 // building, road, fence, field or the pond, and with room around every animal, so nothing seems to sit on its back from up here.
-const ANIMAL=/^(cow|horse|pig|sheep|goat|chicken)_/,FLAT_BLOCKS=/^(road|field)_/;
+const ANIMAL=/^(cow|horse|pig|sheep|goat|chicken|donkey)_/,FLAT_BLOCKS=/^(road|field)_/;
 // The pens (22 Oct 2026): the box round each pen's fences (penned() in decorate), [minX, maxX, minZ, maxZ] in the world, by yard.
 function penBoxes(){
  const pens=new Map(),box=new THREE.Box3();
@@ -1099,7 +1135,6 @@ function createPlots(){
 // spot: a yard's pieces (userData.yard, from the zone they were made in) move together, with their tap boxes, pins, pens and animals.
 // Loose scenery under something that moved is hidden (a tuft or a flower one by one).
 const yardShift=new Map(),yardTurn=new Map();let layoutKey='{}';
-const fieldHome=i=>[-2.15+(i%4)*3.15,.25+Math.floor(i/4)*3.2];
 const fieldSpot=i=>state.layout?.at?.[`field:${i}`]??fieldHome(i);
 // A yard's pieces that move: the ones on the farm itself (or in a top group: the scenery's, the polish's dirt yards), not a piece inside
 // another (a building's parts, the sails in their rotor), which goes with it.
@@ -1844,7 +1879,7 @@ function hudNumbers(){
  else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent='';market.removeAttribute('aria-label');}
 }
 function updateUI(){
- hudNumbers();warehouse?.refresh();
+ hudNumbers();if(renderer)renderer.shadowMap.needsUpdate=true;warehouse?.refresh();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
  // batch ready, and the market square when the golden brief or a landmark can be built (Oct 2026; no pop-up). Not a villager you could
@@ -1925,7 +1960,7 @@ function resize(){
  if(!renderer||!camera)return;
  measureTools();
  const width=world.clientWidth,height=world.clientHeight;if(width<=0||height<=0)return;const aspect=width/height;
- const ratio=pixelRatioFor({devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple});
+ const ratio=pixelRatioFor({devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple,lighter:lighter>=1});
  if(ratio!==viewportRatio){renderer.setPixelRatio(ratio);viewportRatio=ratio;}
  if(width!==viewportWidth||height!==viewportHeight){renderer.setSize(width,height);viewportWidth=width;viewportHeight=height;lastDraw=0;}   // a new size clears the picture: drawn again at once, under a window too
  const mobile=mobileLayout.matches;
@@ -2174,8 +2209,8 @@ function pointerTarget(event){
  // small props must not lose taps to scenery or nearby utility models.
  const stationHit=raycaster.intersectObjects(farmLife?.targets()??[],true)[0];
  if(stationHit){let node=stationHit.object;while(node){if(node.userData.activity)return {type:'activity',id:node.userData.activity};node=node.parent;}}
- const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).filter(v=>v.object.visible).flatMap(v=>[v.object,v.hit]),...Array.from(utilityViews.values()).filter(v=>v.object.visible).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?.visible?[windmillRotor]:[]),...(farmLife?.targets()??[])];
- for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
+ const targets=[...plots.flatMap(v=>[v.hit,v.cropGroup]),...Array.from(buildingViews.values()).filter(v=>v.object.visible).flatMap(v=>[v.object,v.hit]),...Array.from(utilityViews.values()).filter(v=>v.object.visible).map(v=>v.object),...animals.map(v=>v.obj),...(windmillRotor?.visible?[windmillRotor]:[]),...(farmLife?.targets()??[]),...(farmLife?.cartTargets?.()??[])];
+ for(const hit of raycaster.intersectObjects(targets,true)){let obj=hit.object;while(obj){if(obj.userData.donkeyCart){if(adminView||visitView)break;return {type:'donkeycart'};}if(obj.userData.activity)return {type:'activity',id:obj.userData.activity};if(obj.userData.utility)return {type:'utility',id:obj.userData.utility};if(obj.userData.building)return {type:'building',id:obj.userData.building};if(Number.isInteger(obj.userData.plot))return {type:'plot',id:obj.userData.plot};obj=obj.parent;}}
  // A pet (20 Oct 2026) only when nothing else is there: one standing in front of a building, a field or a pin never takes its tap.
  const pet=pets?.pick(raycaster);if(pet)return {type:'pet',id:pet};
  // Your farmer (20 Oct 2026) last of all: a hop, then your own profile (tapOwnFarmer).
@@ -2231,6 +2266,7 @@ async function addVillageExtras(){
    const v=buildingViews.get('villagefields');if(v){v.object.remove(v.hit);v.object.attach(villageExtras.fields.tap);v.hit=villageExtras.fields.tap;}
   }catch(error){console.warn('The Village Fields were skipped.',error);}
   syncVillageExtras();renderer.shadowMap.needsUpdate=true;
+  import('./village-animals.js').then(m=>m.addVillageAnimals({scene,village:villageGroup,extras:villageExtras,canvas:renderer.domElement,simple:graphicsSimple})).catch(error=>console.warn('The village animals were skipped.',error));
  }catch(error){console.warn('The village extras were skipped.',error);}
 }
 // A place's props show once it is built, and the Fields a strip for every crop they can sow; the landmarks are placeLandmarks's.
@@ -2484,6 +2520,23 @@ function clearRail(){
 function expandVisuals(){if(!ready)return;if(villageWorld){renderer.shadowMap.needsUpdate=true;resize();icons();return;}createPlots();if(layoutKey!==(layoutKey=JSON.stringify(state.layout??{})))applyLayout();scenePolish?.sync();measureFarm();plots.forEach((_,i)=>drawCrop(i));renderer.shadowMap.needsUpdate=true;resize();icons();shootMinimap();}
 // Settings › Graphics (21 Oct 2026, public/graphics-mode.js): Simple graphics on or off, saved on this device, and the farm opens again
 // with it as Try again does (on a portal its page opens the farm again). Its text says it also switches on by itself after trouble.
+// One step lighter, at once (graphics-mode.js): less sharp (skipped where the picture is no sharper already), no shadows (skipped where
+// there were none), then simple graphics from the next start; the player hears it once (not in a calm start) and Settings › Graphics
+// takes it back.
+function runLighter(){
+ speedCheck?.reset();
+ if(lighter===0&&pixelRatioFor({devicePixelRatio,width:world.clientWidth,height:world.clientHeight,handheld:gpuHandheld,lighter:true})>=viewportRatio)lighter=1;
+ if(lighter===1&&gfxMode!=='full')lighter=2;
+ if(lighter<2){lighter++;setLighter(gfxStore,lighter);
+  if(lighter===1)resize();
+  else{renderer.shadowMap.enabled=false;if(sunLight)sunLight.castShadow=false;gfxMode='noshadow';try{if(window.harvestStartup)window.harvestStartup.gfx=gfxMode;}catch{}markRun(gfxStore,{gfx:gfxMode});}
+  if(!toldLighter&&calmStep(state)===null)toast('Your farm runs a little lighter on this device, so it moves more smoothly. Settings › Graphics takes it back.');
+ }else{
+  speedCheck=null;if(choseFull(gfxStore))return;graphicsTrouble(gfxStore);
+  if(calmStep(state)===null)toast('Your farm opens with simple graphics next time, so it runs more smoothly here. Settings › Graphics takes it back.');
+ }
+ toldLighter=true;const box=$('graphics-lighter');if(box)box.checked=lighter>=1;
+}
 function bindGraphicsSetting(){
  // Left-handed fishing (23 Oct 2026, a player): the fish bar stands left of the reel button, or right of it when this is on (public/pond-ui.js).
  const hand=$('pond-bar-right');
@@ -2494,7 +2547,11 @@ function bindGraphicsSetting(){
  const box=$('graphics-simple');if(!box)return;
  box.checked=graphicsSimple;
  box.onchange=()=>{chooseGraphics(gfxStore,box.checked);$('graphics-status').textContent='Opening your farm again…';
-  const again=document.querySelector('#error .primary-button');setTimeout(()=>{if(typeof again?.onclick==='function')again.onclick();else try{window.parent.location.reload();}catch{location.reload();}},300);};
+  reopen();};
+ // Lighter graphics (25 Oct 2026): on by itself when the farm runs slowly (runLighter); off here means never again by itself on this device.
+ const light=$('graphics-lighter');
+ if(light){light.checked=lighter>=1;light.disabled=graphicsSimple;light.onchange=()=>{setLighter(gfxStore,light.checked?2:-1);$('graphics-status').textContent='Opening your farm again…';reopen();};}
+ function reopen(){const again=document.querySelector('#error .primary-button');setTimeout(()=>{if(typeof again?.onclick==='function')again.onclick();else try{window.parent.location.reload();}catch{location.reload();}},300);}
 }
 function bindUI(){
  bindGraphicsSetting();
@@ -2558,6 +2615,8 @@ function bindUI(){
  // The Warehouse's window and its full note (22 Oct 2026, public/warehouse-ui.js). A refusal because it is full is that note, with the Market
  // and Upgrade, over any open window (the toast sits under a modal window); every other message stays the toast.
  warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI,harbour:harbourWorld});
+ // The donkey cart's window (27 Oct 2026, donkey-cart-ui.js): a tap on the cart on the trunk road opens it.
+ donkeyCart=createDonkeyCartUI({state,runAction,notify:toast,onChange:updateUI});
  // The neighbours (24 Oct 2026, public/neighbours.js): More › Neighbours. Not on an admin's showcase farm (25 Oct 2026, the owner: "Je moet
  // geen buren kunnen doen als admin"; farm-api refuses an admin's actions anyway).
  if(adminView)document.querySelector('[data-menu-utility="neighbours"]')?.setAttribute('hidden','');
@@ -2610,14 +2669,20 @@ function frame(now){
  const gliding=Boolean(glide);if(gliding)glide.step(now);
  if(!gliding&&now-lastFrame<32)return;const dt=Math.min((now-lastFrame)/1000,.1);lastFrame=now;
  pond?.tick(now,dt);
- if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();renderer.shadowMap.needsUpdate=true;lastTick=now;}
+ // The sun's shadows (25 Oct 2026, the owner: the game faster on slower phones and computers): drawing the shadow map is about two plain
+ // frames' work, so it is drawn again only when the farm changed (updateUI, a field, a building, the layout, the sun's turn, a crop that
+ // moves) and else every SHADOWS_EVERY for the crops that grow; what walks has a soft shadow of its own (soft-shadow.js).
+ if(renderer.shadowMap.needsUpdate)lastShadows=now;
+ if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();if(now-lastShadows>SHADOWS_EVERY){renderer.shadowMap.needsUpdate=true;lastShadows=now;}lastTick=now;}
  // Phones, tablets and the apps (13 Oct 2026, Android vitals): under a window opened with showModal the farm is drawn once a second,
  // not 30 times (public/windows.js farmRests); the 500 ms tick above still runs, so the windows' own timers keep going.
- if(farmRests(handheld||mobileLayout.matches,now-lastDraw,modalOpen))return;lastDraw=now;
+ const drawGap=now-lastDraw;if(farmRests(handheld||mobileLayout.matches,now-lastDraw,modalOpen))return;lastDraw=now;
+ // Lighter by itself (graphics-mode.js): the gaps between drawn frames in the farm's first minute and a half, in sight, no window open.
+ if(speedCheck&&now>=checkFrom&&!gliding&&!modalOpen()){if(now>checkFrom-CHECK_AFTER_MS+CHECK_UNTIL_MS)speedCheck=null;else if(speedCheck.add(drawGap))runLighter();}
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate())renderer.shadowMap.needsUpdate=true;
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate()){cropsMoving=true;if(now-lastShadows>CROP_SHADOWS){renderer.shadowMap.needsUpdate=true;lastShadows=now;}}else if(cropsMoving){cropsMoving=false;renderer.shadowMap.needsUpdate=true;lastShadows=now;}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -2724,7 +2789,11 @@ async function init(){
   try{gfxStore?.removeItem(OLD_GRAPHICS_KEY);}catch{}
   const crashed=lastRunCrashed(gfxStore),crashes=crashed?(Number(crashed.crashes)||0)+1:0;
   if(crashed){if(crashes>=CRASHES_FOR_SIMPLE)graphicsTrouble(gfxStore);noteOnDevice({kind:'crash',step:crashed.step??'code',percent:crashed.percent??0,stage:crashed.stage==='ready'?'ready':'farm',gpu:crashed.gpu??null,gfx:crashed.gfx??null,error:`[crash] The last start ended at ${crashed.percent??0}% without a minute of play.`});}
-  endRun(gfxStore);graphicsSimple=graphicsChoice({storage:gfxStore,search:location.search}).simple;
+  endRun(gfxStore);
+  // A slower phone starts a new farm in simple graphics (25 Oct 2026, graphics-mode.js slowPhone): only with no graphics choice on this
+  // device yet, so the chip is asked only then.
+  if(gpuHandheld&&graphicsChoice({storage:gfxStore,search:location.search}).from===null&&levelProgress(state).level<NEW_FARM_LEVEL&&slowPhone({memory:navigator.deviceMemory,gpu:probeGpu()}))graphicsTrouble(gfxStore);
+  graphicsSimple=graphicsChoice({storage:gfxStore,search:location.search}).simple;lighter=graphicsSimple?0:lighterStep(gfxStore);
   markRun(gfxStore,{stage:'farm',step:'code',percent:Number($('load-progress')?.value)||0,gfx:graphicsSimple?'simple':'full',crashes,away:document.hidden});
   // Until the renderer names the chip, notes about this start carry the last start's chip and this start's planned mode.
   try{if(window.harvestStartup){window.harvestStartup.gpu=crashed?.gpu??null;window.harvestStartup.gfx=graphicsSimple?'simple':'full';}}catch{}
@@ -2737,7 +2806,7 @@ async function init(){
   renderer.setClearColor(0xdeede6);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.32;
   // The graphics chip and the mode: no shadows in simple graphics or on a PowerVR or Imagination GPU (set before anything is drawn, so no
   // shader ever reads a shadow map there). Both go with every note about this start (src/game-cloud.js harvestStartup, loading-screen.js).
-  const gpu=gpuName(renderer.getContext());gfxMode=graphicsMode({simple:graphicsSimple,gpu});
+  const gpu=gpuName(renderer.getContext());gfxMode=graphicsMode({simple:graphicsSimple,gpu,lighter:Math.max(0,lighter)});
   try{if(window.harvestStartup){window.harvestStartup.gpu=gpu;window.harvestStartup.gfx=gfxMode;}}catch{}
   markRun(gfxStore,{gpu,gfx:gfxMode,step:'models'});
   renderer.shadowMap.enabled=gfxMode==='full';renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
@@ -2749,7 +2818,7 @@ async function init(){
   // (the old warm-yellow sky, sun and haze made the whole valley beige, so the haze stays a light green-white). daylight.js moves it
   // through the day.
   const hemi=new THREE.HemisphereLight(0xdcebff,0x778b40,1.95);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=gfxMode==='full';{const size=shadowSize({handheld:gpuHandheld,simple:graphicsSimple});sun.shadow.mapSize.set(size,size);}sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
+  const sun=sunLight=new THREE.DirectionalLight(0xffe3b7,3.45);sun.position.set(-26,20,14);sun.castShadow=gfxMode==='full';{const size=shadowSize({handheld:gpuHandheld,simple:graphicsSimple});sun.shadow.mapSize.set(size,size);}sun.shadow.camera.left=-52;sun.shadow.camera.right=52;sun.shadow.camera.top=52;sun.shadow.camera.bottom=-52;sun.shadow.camera.near=1;sun.shadow.camera.far=125;sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=3;scene.add(sun);scene.add(sun.target);
   cropMotion=createCropMotion({scene,reducedMotion});
   scene.fog=new THREE.Fog(0xdeede6,60,150);
   let loaded=0;
@@ -2806,6 +2875,7 @@ async function init(){
    else if(target.type==='activity'){const a=ACTIVE_STATIONS[target.id];tooltip.innerHTML=`<strong>${a.name}</strong><span>Hands-on job · coins & XP</span>`;}
    else if(target.type==='utility'){const u=utilityInfo[target.id];tooltip.innerHTML=`<strong>${u.name}</strong><span>${u.hint} · click to open</span>`;}
    else if(target.type==='building'){const b=BUILDINGS[target.id];tooltip.innerHTML=`<strong>${b.name}</strong><span>${economy.status(target.id).text} · ${target.label&&economy.status(target.id).kind==='ready'&&b.type!=='pier'?'click to collect':'click to open'}</span>`;}
+   else if(target.type==='donkeycart')tooltip.innerHTML='<strong>The donkey cart</strong><span>Goods for diamonds</span>';
    else if(target.type==='landmark'){const l=VILLAGE_LANDMARKS[target.id];tooltip.innerHTML=`<strong>${l.name}</strong><span>${landmarkNote(target.id,landmarkDone(state,target.id))}</span>`;}
    else{const p=state.plots[target.id];tooltip.innerHTML=`<strong>${p.crop?CROPS[p.crop].name:'Empty field'}</strong><span>${!p.crop?`Plant ${CROPS[selectedCrop].name.toLowerCase()} · ${seedCost(state,selectedCrop)} coins`:farmNow()>=p.readyAt?'Ready to harvest!':`${formatDuration(p.readyAt-farmNow())} · ${harvestQuantity(state,p,farmNow())} crop${harvestQuantity(state,p,farmNow())>1?'s':''}${canWater(p,farmNow())?` · water now · ${formatDuration(waterUntil(p)-farmNow())} left`:p.tended?' · fully cared for':farmNow()>=p.careAt?' · extra care ready':` · extra care in ${formatDuration(p.careAt-farmNow())}`}`}</span>`;}
    const r=world.getBoundingClientRect();tooltip.style.left=`${Math.min(r.width-130,Math.max(130,e.clientX-r.left))}px`;tooltip.style.top=`${e.clientY-r.top-16}px`;
@@ -2815,7 +2885,7 @@ async function init(){
   // Moving things is for your own farm (layout-edit.js), not the village or a farm an admin looks at.
   if(!villageWorld&&!adminView)createLayoutTools();else for(const id of ['layout-button','layout-menu-entry'])$(id).hidden=true;
   bindFarmInput({canvas,surface:$('game'),isReady:()=>ready,busy:()=>visitView||document.body.classList.contains('farm-waiting'),edit:{active:()=>Boolean(layoutEditor?.active()),grab:e=>layoutEditor.grab(e),drag:e=>layoutEditor.drag(e),drop:e=>layoutEditor.drop(e)},pick:pointerTarget,
-   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
+   open:target=>{if(target.type==='plot')interact(target.id);else if(target.type==='building'){if(target.label)tapBuilding(target.id);else economy.openBuilding(target.id);}else if(target.type==='utility')openUtility(target.id);else if(target.type==='landmark')openLandmark(target.id);else if(target.type==='donkeycart'){if(!adminView&&!visitView)donkeyCart?.open();}else if(target.type==='activity')activities.open(target.id);else if(target.type==='pet')patPet(target.id);else if(target.type==='farmer')tapOwnFarmer();else if(target.type==='familyFarmer')tapFamilyFarmer(target.id);},
    pan:(dx,dy)=>{
     const shift=cameraDragDelta(dx,dy,camera.right-camera.left,camera.top-camera.bottom,world.clientWidth,world.clientHeight);
     panFarm(shift.side,shift.depth);
@@ -2839,10 +2909,12 @@ async function init(){
   showVisitBar();
   ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();arrive();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(harbourWorld)toast('Welcome to the harbour! The ships come soon.');else if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
-  markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
+  markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');if(!graphicsSimple&&lighter>=0){speedCheck=createSpeedCheck();checkFrom=performance.now()+CHECK_AFTER_MS;}registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});
+  // Kongregate (26 Oct 2026, the owner): once on this device from level 10, a plain question to rate the game (public/rate-ask.js).
+  if(!adminView&&!visitView)createRateAsk({state,show:(text,options)=>toast(text,options),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});
   // The Fishing pond (11 Oct 2026): farm only (never in the village), never on the admin's showcase farm.
   if(POND_OPEN&&!villageWorld&&!adminView)void import('./pond-ui.js').then(({createPond})=>{pond=createPond({state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:focusFields});positionBuildingLabels();}).catch(error=>console.error('Fishing pond failed',error?.message));
   // The village lake (12 Oct 2026, plan D): the pond's screen for the lake, at the rowboat (village-scene.js VILLAGE_FISHING_SPOT; that

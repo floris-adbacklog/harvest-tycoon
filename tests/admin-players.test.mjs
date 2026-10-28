@@ -32,6 +32,8 @@ function database(tables={}){
    return q;
   },
   rpc(name,args){const call={rpc:name,args};calls.push(call);
+   // The whole list in one answer (26 Oct 2026, supabase/admin-player-accounts-all.sql), only where the test says the SQL has run.
+   if(name==='admin_player_accounts_all'&&tables.oneAnswer){const names=new Map((tables.player_stats??[]).map(s=>[s.player_id,s.username]));return Promise.resolve({data:(tables.accounts??[]).map(a=>({...a,username:names.get(a.player_id)??null})),error:null});}
    if(name!=='admin_player_accounts')throw new Error(`unexpected rpc ${name}`);
    // The database joins the player name from player_stats; p_player and p_ip narrow it down.
    const names=new Map((tables.player_stats??[]).map(s=>[s.player_id,s.username]));
@@ -269,4 +271,18 @@ test('mobile or desktop: phone and tablet are mobile, everything else a computer
  assert.match(devicesHtml({phone:0,tablet:0,computer:0,total:0,unknown:0},{total:0}),/No devices yet/);
  const dash=readFileSync(new URL('../src/admin-dashboard.js',import.meta.url),'utf8');
  assert.match(dash,/box\.hidden=!view\.owner;if\(view\.owner\)dialog\.querySelector\('#admin-device-box'\)\.innerHTML=devicesHtml\(/,'for the admin only, like the countries');
+});
+
+test('admin_players: once supabase/admin-player-accounts-all.sql has run, every account comes in one answer, never page by page',async()=>{
+ const db=database({...tables,oneAnswer:true}),result=await handleAdminPlayers({admin:db,user:owner,now,page:2});
+ assert.deepEqual(result.data.players.map(p=>p.playerId),[P1,P2,P3]);
+ assert.deepEqual(db.calls.filter(c=>c.rpc).map(c=>c.rpc),['admin_player_accounts_all'],'one call, no pages');
+ const sql=read('supabase/admin-player-accounts-all.sql');
+ assert.match(sql,/jsonb_agg\(to_jsonb\(a\) order by a\.created_at desc, a\.player_id\),'\[\]'::jsonb\) from public\.admin_player_accounts\(\) a/);
+ assert.match(sql,/grant execute on function public\.admin_player_accounts_all\(\) to service_role;/);assert.match(sql,/revoke all on function public\.admin_player_accounts_all\(\) from public, anon, authenticated;/);
+ // The dashboard asks for the list on opening and then every 5 minutes, the rest every minute, nothing in a background tab.
+ const ui=read('src/admin-dashboard.js');
+ assert.match(ui,/const PLAYERS_EVERY=5\*60000;let playersAt=0;/);assert.match(ui,/if\(!all&&document\.hidden\)return;/);
+ assert.match(ui,/partsFor\(role\)\.filter\(\(\[operation\]\)=>freshPlayers\|\|operation!=='admin_players'\)/);
+ assert.match(ui,/void load\(\{all:true\}\);\n  clearInterval\(refreshTimer\);refreshTimer=setInterval\(\(\)=>void load\(\),60000\);/);
 });

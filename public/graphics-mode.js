@@ -19,7 +19,7 @@ export const CRASHES_FOR_SIMPLE=2;                             // starts in a ro
 export const RUN_KEY='harvest-tycoon:graphics-run';    // while a farm start runs: {at, stage, step, percent, gpu, gfx, away, crashes}; gone after 60 s of play or when the page goes
 export const HEALTHY_MS=60000;                         // a start that reached a minute of play was a good one
 export const RUN_MAX_AGE=20*3600000;                   // an older mark is not this player's last start (and farm-api takes a day at most)
-export const PIXEL_RATIO=Object.freeze({simple:1.25,handheld:1.5,desktop:1.75});
+export const PIXEL_RATIO=Object.freeze({simple:1.25,handheld:1.5,desktop:1.75,lighter:1});
 export const HANDHELD_MAX_PIXELS=2.2e6;
 export const GFX_MODES=Object.freeze(['full','noshadow','simple']);
 const POWERVR=/PowerVR|Imagination/i;
@@ -76,12 +76,61 @@ export function rendererOptions({handheld,simple}){
  return {antialias:!light,alpha:false,powerPreference:light?'low-power':'high-performance'};
 }
 export const shadowSize=({handheld,simple})=>handheld||simple?1024:2048;
-export const graphicsMode=({simple,gpu})=>simple?'simple':shadowTrouble(gpu)?'noshadow':'full';
-// The pixel ratio: simple 1.25, a handheld 1.5 and no more than 2.2 megapixels for the whole picture, a computer 1.75. Never above the
-// screen's own ratio, never below 1.
-export function pixelRatioFor({devicePixelRatio=1,width=0,height=0,handheld=false,simple=false}){
+export const graphicsMode=({simple,gpu,lighter=0})=>simple?'simple':shadowTrouble(gpu)||lighter>=2?'noshadow':'full';
+// The pixel ratio: simple 1.25, a handheld 1.5 and no more than 2.2 megapixels for the whole picture, a computer 1.75; lighter graphics
+// (below) 1. Never above the screen's own ratio, never below 1.
+export function pixelRatioFor({devicePixelRatio=1,width=0,height=0,handheld=false,simple=false,lighter=false}){
  const own=Number(devicePixelRatio)>0?Number(devicePixelRatio):1;
  let ratio=Math.min(own,simple?PIXEL_RATIO.simple:handheld?PIXEL_RATIO.handheld:PIXEL_RATIO.desktop);
+ if(lighter)ratio=Math.min(ratio,PIXEL_RATIO.lighter);
  if(handheld||simple){const area=Math.max(1,width*height),fit=Math.sqrt(HANDHELD_MAX_PIXELS/area);ratio=Math.min(ratio,fit);}
  return Math.max(Math.min(1,own),Math.floor(ratio*100+1e-9)/100);   // down, so the cap holds
+}
+
+// Faster on slower phones and computers (25 Oct 2026, the owner picked 2, 3 and 1; the sun's shadows of 2 are in game.js frame).
+// 3. A slower phone starts a new farm in simple graphics: a phone, a tablet or an app with no graphics choice on this device yet, a farm
+// below NEW_FARM_LEVEL, and either at most SLOW_MEMORY GB of memory (navigator.deviceMemory, which only Chrome and Android's WebView tell)
+// or a graphics chip of the low end (SLOW_GPU: Mali 400s, T600 to T800, G31, G51, G52; PowerVR SGX and GE8000s; Adreno 300 to 500, 610
+// to 612). A farm played longer keeps its graphics: it gets 1 when it runs slowly. The choice is stored like the player's own, so
+// Settings › Graphics shows it and switches it back.
+export const SLOW_MEMORY=2;
+export const NEW_FARM_LEVEL=5;
+export const SLOW_GPU=/\bMali-(?:4\d\d|T[678]\d\d|G31|G51|G52)\b|PowerVR (?:SGX|Rogue GE8\d{3}|GE8\d{3})|\bAdreno \(TM\) (?:[345]\d\d|61[0-2])\b/i;
+export function slowPhone({memory,gpu}){
+ const m=Number(memory);
+ return (m>0&&m<=SLOW_MEMORY)||(typeof gpu==='string'&&SLOW_GPU.test(gpu));
+}
+// The chip's name before the farm's own renderer is made (it is made with the simple options or not): from a small canvas of its own,
+// left to the browser to tidy. null when there is none.
+export function probeGpu(doc=globalThis.document){
+ try{const c=doc.createElement('canvas');c.width=c.height=1;const gl=c.getContext('webgl2')||c.getContext('webgl');return gl?gpuName(gl):null;}catch{return null;}
+}
+// 1. Lighter by itself when the farm runs slowly, on any device: from CHECK_AFTER_MS after the farm is on screen until CHECK_UNTIL_MS,
+// the time between drawn frames (in sight, no window open) is measured, CHECK_FRAMES at a time. Is the middle one above SLOW_FRAME_MS
+// (under about 18 a second; the farm draws 30), the farm takes one step lighter at once, and keeps it on the next starts:
+//   step 1: less sharp (pixel ratio 1; skipped where the picture is already that sharp),
+//   step 2: no shadows either,
+//   then:   simple graphics from the next start (unless the player switched simple off themselves).
+// Settings › Graphics says so and goes back to the full graphics ('off': never again by itself on this device).
+export const LIGHTER_KEY='harvest-tycoon:graphics-lighter';   // '1' or '2' (the step), 'off' (the player went back)
+export const SLOW_FRAME_MS=55;
+export const CHECK_FRAMES=90;
+export const CHECK_AFTER_MS=5000;
+export const CHECK_UNTIL_MS=90000;
+export function lighterStep(storage){const v=read(storage,LIGHTER_KEY);return v==='off'?-1:v==='2'?2:v==='1'?1:0;}
+export const setLighter=(storage,step)=>write(storage,LIGHTER_KEY,step<0?'off':step>0?String(Math.min(2,step)):null);
+// Whether this device's graphics choice is the player's own 'full' (simple switched off in Settings): then never simple for slowness.
+export const choseFull=storage=>read(storage,GRAPHICS_KEY)==='full';
+// The measuring: add(ms) for each gap between two drawn frames; null until CHECK_FRAMES are in, then true (slow) or false, and it
+// starts counting again. Gaps over a second (the page was away) are left out.
+export function createSpeedCheck({frames=CHECK_FRAMES,slow=SLOW_FRAME_MS}={}){
+ let gaps=[];
+ return {
+  add(ms){
+   if(!(ms>0)||ms>1000)return null;
+   gaps.push(ms);if(gaps.length<frames)return null;
+   const sorted=gaps.sort((a,b)=>a-b),middle=sorted[sorted.length>>1];gaps=[];return middle>slow;
+  },
+  reset(){gaps=[];}
+ };
 }

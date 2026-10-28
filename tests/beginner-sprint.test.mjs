@@ -10,10 +10,11 @@ const now=Date.UTC(2026,8,22,12),MIN=60000;
 const read=name=>readFileSync(new URL(`../public/${name}`,import.meta.url),'utf8');
 const emptyPlot=s=>s.plots.findIndex(p=>!p.crop);
 
-test('a new farm gets a beginner boost for its first day, in plain clock time, and keeps its starter goods for 30 minutes',()=>{
+test('a new farm gets a beginner boost for its first week, in plain clock time, and keeps its starter goods for 30 minutes',()=>{
  const s=createFarm(now);
- assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,24*60*MIN);assert.equal(ROOKIE_TIMER_BOOST,.5,'50% since 13 Oct 2026 (40% from 9 Oct, 80% before)');assert.equal(s.rookieUntil,now+ROOKIE_MS);
- assert.equal(rookieBoost(s,now),.5);assert(Math.abs(rookieBoost(s,now+12*60*MIN)-.25)<1e-9,'a straight line to 0% after a day (27 Sep 2026)');assert.equal(rookieBoost(s,now+24*60*MIN),0);
+ assert.equal(ROOKIE_MS,30*MIN);assert.equal(ROOKIE_BOOST_MS,7*24*60*MIN,'a week since 26 Oct 2026 (the first day before)');assert.equal(ROOKIE_TIMER_BOOST,.5,'50% since 13 Oct 2026 (40% from 9 Oct, 80% before)');assert.equal(s.rookieUntil,now+ROOKIE_MS);
+ assert.equal(rookieBoost(s,now),.5);assert(Math.abs(rookieBoost(s,now+84*60*MIN)-.25)<1e-9,'a straight line to 0% after a week (27 Sep 2026; a week since 26 Oct 2026)');
+ assert(Math.abs(rookieBoost(s,now+24*60*MIN)-.5*6/7)<1e-9,'the next day still about 43%');assert.equal(rookieBoost(s,now+7*24*60*MIN),0);
  assert.equal(rookieLeft(s,now+10*MIN),20*MIN);assert.equal(rookieLeft(s,now+45*MIN),0);
  // Nothing else moves it: not actions, not pauses, not the level.
  act(s,{type:'field',id:0,action:'harvest'},now+MIN);s.xp=1e6;assert.equal(s.rookieUntil,now+ROOKIE_MS);
@@ -24,8 +25,8 @@ test('a new farm gets a beginner boost for its first day, in plain clock time, a
  assert.equal(cropDuration(legacy,'corn',false,now),CROPS.corn.duration);
 });
 
-test('at the start crops, batches and Care take 50% less time; after the first day everything is normal and running things keep their time',()=>{
- const s=createFarm(now),legacy=createLegacyFarm(now),DAY=24*60*MIN;
+test('at the start crops, batches and Care take 50% less time; after the first week everything is normal and running things keep their time',()=>{
+ const s=createFarm(now),legacy=createLegacyFarm(now),DAY=7*24*60*MIN;   // the boost's whole length: a week since 26 Oct 2026
  assert.equal(cropDuration(s,'corn',false,now),CROPS.corn.duration*.5);assert.equal(cropDuration(s,'corn',false,now+DAY),CROPS.corn.duration);
  assert(Math.abs(recipeDuration(s,'eggs',now)-recipeDuration(legacy,'eggs',now)*.5)<=1);
  assert.equal(recipeDuration(s,'eggs',now+DAY),recipeDuration(legacy,'eggs',now));
@@ -34,7 +35,7 @@ test('at the start crops, batches and Care take 50% less time; after the first d
  assert.equal(s.plots[a].readyAt-now,450000,'corn 15 min -> 7.5 min');assert.equal(s.plots[a].careAt-now,67500,'Care (15% since 22 Oct 2026) 135 s -> 67.5 s');
  assert.equal(s.plots[b].readyAt-now,60000);assert.equal(s.plots[b].careAt-now,9000,'wheat Care comes at 9 s (15% of its 60 s; the 15 s minimum halved is 7.5 s)');
  act(s,{type:'field',id:b,action:'tend'},now+10000);assert.equal(s.plots[b].tended,true);
- // After the first day: the normal 15 minutes and 135 seconds. The corn planted at the start keeps its 7.5 minutes.
+ // After the first week: the normal 15 minutes and 135 seconds. The corn planted at the start keeps its 7.5 minutes.
  const late=now+DAY+MIN;act(s,{type:'field',id:0,action:'harvest'},late);act(s,{type:'field',id:0,action:'plant',crop:'corn'},late);
  assert.equal(s.plots[0].readyAt-late,900000);assert.equal(s.plots[0].careAt-late,135000);
  assert.equal(s.plots[a].readyAt,now+450000);
@@ -81,7 +82,7 @@ test('every level pays at least one diamond, so the first level-ups are never em
 
 test('twenty starter quests are appended after the old ones: small, unique and built on counters the game already keeps',()=>{
  const starters=QUESTS.slice(STARTER_QUESTS.first,STARTER_QUESTS.first+STARTER_QUESTS.count);
- assert.equal(STARTER_QUESTS.first,130);assert.equal(starters.length,STARTER_QUESTS.count);assert.equal(starters.length,20);assert.equal(QUESTS.length,320);
+ assert.equal(STARTER_QUESTS.first,130);assert.equal(starters.length,STARTER_QUESTS.count);assert.equal(starters.length,20);assert.equal(QUESTS.length,326);
  assert.equal(QUESTS[STARTER_QUESTS.first+STARTER_QUESTS.count].title,'A buzzing corner','the midgame quests come after the starters');
  assert.equal(QUESTS[129].title,'Pumpkin master','the old quests did not move');
  assert.equal(new Set(QUESTS.map(q=>q.title)).size,QUESTS.length,'every title is unique');
@@ -137,13 +138,16 @@ test('the hourglass says how long is left and that it is temporary',()=>{
  assert.equal(rookieBadge(24*MIN-1),'24m');assert.equal(rookieBadge(30*MIN),'30m');assert.equal(rookieBadge(30000),'<1m');
  assert.equal(rookieTimeLeft(45000),'45s');assert.equal(rookieTimeLeft(24*MIN-1),'24 min');
  assert.equal(rookieLabel(24*MIN-1),'50% shorter waiting · 24 min left');
- assert.equal(rookieBadge(23*60*MIN),'23h');assert.equal(rookieTimeLeft(90*MIN),'1 h 30 min');assert.equal(rookieTimeLeft(24*60*MIN),'24 h');
+ assert.equal(rookieBadge(23*60*MIN),'23h');assert.equal(rookieTimeLeft(90*MIN),'1 h 30 min');assert.equal(rookieTimeLeft(24*60*MIN-1),'24 h');
+ // A week (26 Oct 2026): from a day on whole days, rounded up; the badge too.
+ assert.equal(rookieTimeLeft(24*60*MIN),'1 day');assert.equal(rookieTimeLeft(24*60*MIN+1),'2 days');assert.equal(rookieTimeLeft(7*24*60*MIN),'7 days');
+ assert.equal(rookieBadge(24*60*MIN),'1d');assert.equal(rookieBadge(6.5*24*60*MIN),'7d');assert.equal(rookieLabel(3*24*60*MIN,.3),'30% shorter waiting · 3 days left');
  assert.match(read('rookie-ui.js'),/ease back to normal over your first/);assert.match(read('rookie-ui.js'),/Beginner boost ended/);
 });
 
 test('the beginner boost screen is short enough for a small phone: one line, the clock and three short notes, Got it in view',()=>{
  const ui=read('rookie-ui.js'),css=read('ui-polish.css');
- assert.match(ui,/% shorter waiting<\/h2><p>Waiting times start \$\{percent\}% shorter and ease back to normal over your first \$\{ROOKIE_BOOST_MS\/3600000\} hours\.<\/p>/);
+ assert.match(ui,/% shorter waiting<\/h2><p>Waiting times start \$\{percent\}% shorter and ease back to normal over your first \$\{ROOKIE_BOOST_MS\/86400000\} days\.<\/p>/);
  assert.match(ui,/<li\$\{corn\(\)===normal\?' hidden':''\}>Corn now takes <b data-rookie-corn>/);assert.match(ui,/<li>Crops and batches already running keep their times\.<\/li>/);
  assert.match(ui,/\$\{rookieLeft\(state,now\(\)\)>0\?`<li>Your starter corn and feed can be sold after \$\{ROOKIE_MS\/60000\} minutes\.<\/li>`:''\}/,'only while the starter goods are still kept');
  assert.doesNotMatch(ui,/Easing over the day|Your first day is a head start/);

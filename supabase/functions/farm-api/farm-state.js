@@ -1,7 +1,7 @@
 // Your own 3D farmer's parts and which go together (21 Oct 2026): the one rule file the farm, the page and farm-api share (game/farmer-parts.js,
 // copied beside each farm-state.js by scripts/sync-game.mjs).
 import {validFarmerConfig,farmerOwned,cleanFarmer,FAMILY_SHIRTS,farmerPassParts} from './farmer-parts.js';
-import {normalizeLayout,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor,giftDecor} from './farm-map.js';
+import {normalizeLayout,settleFields,moveThing,clearObstacle,placeDecor,storeDecor,editDrawn,purchaseDecor,giftDecor} from './farm-map.js';
 export const FAMILY_MIN_LEVEL=10;
 // The season crops (Season Pass, Autumn 2026 on): grown on an ordinary field, but planted only with a seed packet from the pass
 // (state.seasonSeeds) and only while their season runs (seasonCropOpen). No seed price, no medal, no leaderboard, no Starter Pack, no
@@ -92,6 +92,12 @@ cherryjam:{"name": "Cherry jam", "sell": 2700, "icon": "amphora", "color": "gold
 cherrypie:{"name": "Cherry pie", "sell": 2900, "icon": "cake-slice", "color": "gold"},
 // Wave 3: the Glasshouse's show basket, for the fair, the export trailers and the best orders.
 prizeproduce:{"name": "Prize produce", "sell": 9800, "icon": "award", "color": "gold"},
+// Level 64 (27 Oct 2026, the owner's pick): the Donkey Stable's milk, and the Craft Workshop's soap made with it.
+donkeymilk:{"name": "Donkey milk", "sell": 250, "icon": "milk", "color": "cream"},
+donkeymilksoap:{"name": "Donkey milk soap", "sell": 2200, "icon": "droplets", "color": "cream"},
+// The same day, the owner's two more with the donkeys' milk: a cheese of donkey and goat milk (69) and a bath basket (77).
+donkeycheese:{"name": "Donkey cheese", "sell": 3750, "icon": "sandwich", "color": "cream"},
+bathbasket:{"name": "Bath basket", "sell": 16800, "icon": "package-check", "color": "cream"},
 // World II (level 100+): the farm bakes with the village's heirloom flour (see VILLAGE_GOODS).
 goldenloaf:{"name": "Golden loaf", "sell": 3800, "icon": "croissant", "color": "gold", "world": 2},
 heirloompie:{"name": "Heirloom pie", "sell": 8600, "icon": "cake-slice", "color": "gold", "world": 2}
@@ -248,7 +254,9 @@ export const BUILDINGS = Object.freeze({
  // Wave 2: goats beside the sheep, and a workshop for the Bee Yard's wax and the Weaving Shed's cloth.
  pigfarm:{"name": "Pig Farm", "tagline": "Happy pigs with clever noses, digging up truffles.", "icon": "package-check", "model": "house_019", "type": "production", "upgradeCost": 900, "minLevel": 29, "buildCost": 14000},
  goatshed:{"name": "Goat Shed", "tagline": "Curious goats, creamy milk and a cheese to be proud of.", "icon": "milk", "model": "hangar_015", "type": "production", "upgradeCost": 1400, "minLevel": 54, "buildCost": 72000},
- craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles and warm wool blankets.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
+ craftshop:{"name": "Craft Workshop", "tagline": "Hand-poured beeswax candles, warm wool blankets and donkey milk soap.", "icon": "flame", "model": "hangar_019", "type": "production", "upgradeCost": 1500, "minLevel": 58, "buildCost": 90000},
+ // Level 64 (27 Oct 2026, the owner: "echt een nieuwe building met goods", on the farm): two donkeys in a pen by their stable.
+ donkeystable:{"name": "Donkey Stable", "tagline": "Two gentle donkeys and their precious milk.", "icon": "milk", "model": "hangar_004", "type": "production", "upgradeCost": 1600, "minLevel": 64, "buildCost": 90000},
  factory:{"name": "Factory", "tagline": "Every good in huge batches, for the fields and upgrades of a lasting estate.", "icon": "factory", "model": "hangar_007", "type": "production", "upgradeCost": 800, "minLevel": FACTORY_LEVEL, "buildCost": FACTORY_COST},
  // World II, The Village: its places work like the farm's buildings (slots, recipes, upgrades to level 10), in the village only.
  // Since Oct 2026 each is built from a golden brief at the market square (VILLAGE_BRIEFS): these coins and the brief's goods.
@@ -340,6 +348,14 @@ goatcheese:{"building": "dairy", "name": "Make goat cheese", "input": {"goatmilk
 goatbrowse:{"building": "goatshed", "name": "Let the goats browse", "input": {"lettuce": 6, "barley": 2}, "output": {"goatmilk": 3}, "duration": 4200000, "xp": 30, "minLevel": 56},
 candles:{"building": "craftshop", "name": "Pour beeswax candles", "input": {"beeswax": 3}, "output": {"candles": 1}, "duration": 6000000, "xp": 40, "minLevel": 58},
 blanket:{"building": "craftshop", "name": "Knot a wool blanket", "input": {"cloth": 2, "wool": 6}, "output": {"blanket": 1}, "duration": 28800000, "xp": 220, "minLevel": 60},
+// Level 64 (27 Oct 2026): the donkeys eat animal feed like the goats; their milk and the Feed Mill's sunflower oil make the Craft
+// Workshop's soap (the owner: soap needs an oil, not honey), four bars a batch. One sunflower a soap, as a candle.
+milkdonkeys:{"building": "donkeystable", "name": "Milk the donkeys", "input": {"feed": 3}, "output": {"donkeymilk": 2}, "duration": 3600000, "xp": 25, "minLevel": 64},
+donkeymilksoap:{"building": "craftshop", "name": "Make donkey milk soap", "input": {"donkeymilk": 12, "oil": 2}, "output": {"donkeymilksoap": 4}, "duration": 21600000, "xp": 120, "minLevel": 64},
+// Donkey cheese as it is really made, about 60% donkey milk and 40% goat milk, and a bath basket of soap, a candle and a cloth towel,
+// for the Trade Depot and the fair (two of each, as every mixed recipe asks; 11 hours, so it pays about what prize produce does).
+donkeycheese:{"building": "dairy", "name": "Make donkey cheese", "input": {"donkeymilk": 6, "goatmilk": 4}, "output": {"donkeycheese": 1}, "duration": 14400000, "xp": 90, "minLevel": 69},
+bathbasket:{"building": "craftshop", "name": "Pack a bath basket", "input": {"donkeymilksoap": 2, "candles": 2, "cloth": 2}, "output": {"bathbasket": 1}, "duration": 39600000, "xp": 240, "minLevel": 77},
 cherryjam:{"building": "preserves", "name": "Cook cherry jam", "input": {"cherries": 6, "honey": 3}, "output": {"cherryjam": 1}, "duration": 14400000, "xp": 85, "minLevel": 67},
 cherrypie:{"building": "bakery", "name": "Bake a cherry pie", "input": {"cherries": 5, "flour": 4, "eggs": 2}, "output": {"cherrypie": 1}, "duration": 18000000, "xp": 95, "minLevel": 68},
 // Wave 3. Prize produce is grown under glass from the best of the vegetable garden; like every Glasshouse batch it is never made in bulk.
@@ -881,7 +897,14 @@ export const QUESTS = Object.freeze([
  {title:'Fifteen varieties',description:'Discover 15 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:15,reward:150000,minLevel:96},
  {title:'Every heirloom',description:'Discover all 20 heirlooms in the Seed Lab.',stat:'heirlooms_found',target:20,reward:250000,minLevel:98},
  {title:'A lab regular',description:'Collect 50 crosses from the Seed Lab.',stat:'lab_crosses',target:50,reward:150000,minLevel:95},
- {title:'Master breeder',description:'Collect 150 crosses from the Seed Lab.',stat:'lab_crosses',target:150,reward:300000,minLevel:100}
+ {title:'Master breeder',description:'Collect 150 crosses from the Seed Lab.',stat:'lab_crosses',target:150,reward:300000,minLevel:100},
+ // Level 64 (27 Oct 2026): the Donkey Stable and the Craft Workshop's donkey milk soap.
+ {title:'Two new friends',description:'Open the Donkey Stable.',stat:'built_donkeystable',target:1,reward:14000,minLevel:64},
+ {title:'Donkey milk',description:'Collect 30 donkey milk.',stat:'made_donkeymilk',target:30,reward:9000,minLevel:64},
+ {title:'A gentle soap',description:'Make 5 donkey milk soap.',stat:'made_donkeymilksoap',target:5,reward:12000,minLevel:64},
+ {title:'Soap for the whole valley',description:'Make 40 donkey milk soap.',stat:'made_donkeymilksoap',target:40,reward:40000,minLevel:64},
+ {title:'A rare cheese',description:'Make 10 donkey cheese.',stat:'made_donkeycheese',target:10,reward:30000,minLevel:69},
+ {title:'A gift to unwrap',description:'Pack 5 bath baskets.',stat:'made_bathbasket',target:5,reward:40000,minLevel:77}
 ]);
 export const STARTER_QUESTS=Object.freeze({first:130,count:20});
 export const MAX_PLOTS=40;
@@ -1027,18 +1050,20 @@ export function productionJobs(building){return [building?.job,...(building?.ext
 export function recipeValue(id,now,state){const r=state?recipeFor(state,id):RECIPES[id],value=items=>now===undefined?Object.entries(items).reduce((sum,[key,n])=>sum+reducedMarketPrice(ITEMS[key].sell)*n,0):marketValue(items,now);const input=value(r.input)+(r.coins??0),output=value(r.output);return {input,output,added:output-input};}
 export function productionSpeed(level,building){const speed=level<=3?.2*(level-1):level<=BASE_BUILDING_LEVEL?.4+.04*(level-3):Math.min(.8,.68+.012*(level-BASE_BUILDING_LEVEL));return building==='factory'?speed/2:speed;}
 // The beginner boost: when a farm is created, new crops and new batches take 50% less time (corn 15 min -> 7.5 min). It gets smaller
-// evenly, in a straight line, and stops at exactly 0% after the first day (ROOKIE_BOOST_MS): 37.5% after 6 hours, 25% after 12 and
-// 12.5% after 18, so the first session feels quick and a return later that day still gets some help. (Until 27 Sep 2026 it followed the
+// evenly, in a straight line, and stops at exactly 0% after the first week (ROOKIE_BOOST_MS): about 43% on day 2, 29% on day 4 and 7%
+// on day 7, so the first session feels quick and a farmer who comes back the next days still gets help (26 Oct 2026, the owner: "Oke
+// doe 1"; it was the first day only, 37.5% after 6 hours: of the farmers who came back after day 1, 11 in 17 still stopped within
+// the week, at about level 8, and a return the next day found everything twice as slow as the start). (Until 27 Sep 2026 it followed the
 // square of the time left: its last hours read "0% shorter waiting" while it still ran.) It was 80% until 9 Oct 2026 (the owner's
 // call): everything then grew five times as fast in the first hour, a new farmer reached level 10 in about 33 minutes of play, and the
 // first half hour opened 29 new things, about one a minute. 40% from 9 Oct, 50% from 13 Oct 2026 (the owner's call).
 // Separately, for the first 30 minutes (ROOKIE_MS, until state.rookieUntil) the starter corn and animal feed stay in the barn so nothing
 // is sold by accident. Both are plain clock time from creation; the boost counts from the same start (rookieUntil - ROOKIE_MS), so
-// farms made before the boost lasted a day get the whole day too. Crops and batches that are already running keep their times.
+// farms made before the boost lasted a day get the whole day too, and those made in the week before 26 Oct 2026 the rest of their week. Crops and batches that are already running keep their times.
 // Only farms created in the guided flow have it: farms from before this simply have no rookieUntil.
 export const ROOKIE_MS=30*60000;
 export const ROOKIE_TIMER_BOOST=.5;
-export const ROOKIE_BOOST_MS=24*60*60000;
+export const ROOKIE_BOOST_MS=7*24*60*60000;
 export const rookieLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil-now):0;
 export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.isSafeInteger(state.rookieUntil)&&state.rookieUntil>0?Math.max(0,state.rookieUntil-ROOKIE_MS+ROOKIE_BOOST_MS-now):0;
 export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_BOOST_MS);
@@ -1055,20 +1080,20 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 // Version 2 introduces one small step at a time. Old unlocks are saved once,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:12,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
-export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112,
+export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,donkeystable:64,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112,
  villagefields:110,canteen:113,kiln:118,linenloft:125,soapmaker:135,pier:144,jeweller:150,ropewalk:204,cooperage:210,galley:216,harbourforge:240,chandlery:228,paintshop:254,instruments:266,cannery:236,tradinghouse:248,boatyard:276});
-export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST,
+export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,donkeystable:90000,factory:FACTORY_COST,
  // World II (Oct 2026): built from the golden brief at the market square (VILLAGE_BRIEFS), with these coins and the brief's goods. One
  // number for the brief, the wiki and the upgrade ladder's floor (150k / 150k / 200k / 300k from 30 Sep 2026, when they were built here).
  mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000,
  // World III (28 Oct 2026): the harbour's places, at their work's coins. Built only by that work (harbourFinish), never bought; listed here
  // so a place stays closed until its work is done (buildingUnlocked asks for built) and its upgrades follow the same floor as the village's.
  ropewalk:4000000,cooperage:5000000,galley:6000000,chandlery:7000000,cannery:8000000,harbourforge:8000000,tradinghouse:10000000,paintshop:9000000,instruments:12000000,boatyard:14000000});
-export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
+export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,milkdonkeys:64,donkeymilksoap:64,donkeycheese:69,bathbasket:77,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
  sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158,
- twistrope:204,makebarrels:210,bakebiscuits:216,weavesailcloth:222,packprovisions:224,forgeanchor:240,tienet:250,forgechain:262,
- makelantern:228,boiltar:246,mixpaint:254,carvefigurehead:272,makecompass:266,castbell:284,
- tinstew:236,tinfruit:258,packspices:248,packperfume:262,carveoars:276,buildrowboat:288});
+  twistrope:204,makebarrels:210,bakebiscuits:216,weavesailcloth:222,packprovisions:224,forgeanchor:240,tienet:250,forgechain:262,
+  makelantern:228,boiltar:246,mixpaint:254,carvefigurehead:272,makecompass:266,castbell:284,
+  tinstew:236,tinfruit:258,packspices:248,packperfume:262,carveoars:276,buildrowboat:288});
 // The Fishing pond (11 Oct 2026, part C): POND_OPEN is its one switch. While it is false the pond is built but hidden: it is in no list
 // (not in FEATURE_LEVELS or FEATURE_NAMES, so no level card, Coming up, wiki or menu names it), the game loads none of it and farm-api
 // refuses every 'fish', so no save gets a pond. Release: closed first (site, about 40 minutes, then farm-api), then POND_OPEN true with
@@ -1690,6 +1715,7 @@ export function expandFarm(state){
  state.coins-=cost;for(const [key,n] of Object.entries(materials))state.inventory[key]-=n;
  state.plots.push({id:state.plots.length,crop:null,plantedAt:0,readyAt:0,careAt:0,watered:false,tended:false,fertilized:false});
  state.xp+=20;if(!early){state.stats.expansions++;state.buildings.farmhouse.level++;}
+ settleFields(state);   // never under a field that was moved onto its place (farm-map.js)
  return {fields:state.plots.length,cost,materials};
 }
 // Every quest pays 15 XP unless it says otherwise; the starter quests pay coins only (xp:0).
@@ -1886,6 +1912,40 @@ export function finishSingleCrop(state,id,expectedCost,now=Date.now()){
 export const BOOST_DURATIONS=Object.freeze({'30m':1800000,'1h':3600000,'1d':86400000});
 export const BOOST_LENGTH_NAMES=Object.freeze({'30m':'30 minutes','1h':'1 hour','1d':'1 day'});
 const BOOST_UNTIL=Object.freeze({xp:'xpUntil',harvest:'harvestUntil',coins:'coinsUntil',farmhand:'farmhandUntil'});
+// The Double XP weekend (27 Oct 2026, the owner: "Double XP weekend ... geen Double XP extra kunnen kopen in de shop, je kan niet stacken,
+// ook niet in daily rewards"). The admin starts it from the Admin panel (supabase/xp-weekend.sql, 1 to 72 hours, now or later); farm-api
+// reads it from the database (xp-weekend-service.js, cached) and sets it here before it works out a farm, and every answer carries it, so
+// the game sets the same one and its taps come out as the server's. While it runs every farm, from level 1, earns double XP: once, so a
+// Double XP boost of its own adds nothing on top. The farm's own Double XP waits until the weekend is over (the owner, 1A): the time a
+// bought one had left when the weekend began is added after its end (holdXpBoost, once per weekend: boosts.xpWeekend), and one that comes
+// during the weekend (the daily gift, the comeback chest, a pass reward) starts at its end (addBoostTime). Double XP cannot be bought
+// while it runs (boostStatus). Never from the game: a farm never sets it from its own request.
+let xpWeekendNow=null;
+export const XP_WEEKEND_NAME='Double XP weekend';
+export function setXpWeekend(weekend){
+ const w=weekend&&typeof weekend==='object'?weekend:null,startsAt=Number(w?.startsAt),endsAt=Number(w?.endsAt);
+ xpWeekendNow=w&&typeof w.id==='string'&&w.id&&Number.isFinite(startsAt)&&Number.isFinite(endsAt)&&endsAt>startsAt?Object.freeze({id:w.id,startsAt,endsAt}):null;
+ return xpWeekendNow;
+}
+// The weekend running at now, or null (one that is still to come, or over, is null).
+export function xpWeekend(now=Date.now()){const w=xpWeekendNow;return w&&now>=w.startsAt&&now<w.endsAt?w:null;}
+// Whether this farm's XP is doubled at now: the weekend, or its own Double XP. Never both: always twice, never four times.
+export const xpDoubled=(state,now=Date.now())=>Boolean(xpWeekend(now))||state?.boosts?.xpUntil>now;
+// The farm's own Double XP during a weekend: the time it had left when the weekend began goes after the weekend's end, once per weekend.
+// A Double XP that ran out before the weekend began is left alone.
+function holdXpBoost(state,now){
+ const w=xpWeekend(now),b=state.boosts;if(!w||b.xpWeekend===w.id)return;
+ if(b.xpUntil>w.startsAt)b.xpUntil+=w.endsAt-w.startsAt;
+ b.xpWeekend=w.id;
+}
+// What is left of the farm's own Double XP after the weekend (shown as waiting), 0 outside a weekend or without one.
+export function xpBoostWaiting(state,now=Date.now()){const w=xpWeekend(now);return w?Math.max(0,(state?.boosts?.xpUntil??0)-Math.max(now,w.endsAt)):0;}
+// Time on a timed boost (a gift, a chest, a pass reward, one bought): after the time it has left; Double XP during a weekend after its end.
+function addBoostTime(state,id,ms,now){
+ const key=BOOST_UNTIL[id];let from=Math.max(state.boosts[key]??0,now);
+ if(id==='xp'){const w=xpWeekend(now);if(w)from=Math.max(from,w.endsAt);}
+ state.boosts[key]=from+ms;return state.boosts[key];
+}
 export const BOOSTS=Object.freeze({
  xp:{name:'Double XP',cost:50,duration:1800000,prices:Object.freeze({'30m':50,'1h':90,'1d':300}),art:'double-xp',description:'Earn twice the XP from farm actions.'},
  // Between Double XP and Double earnings: it doubles crops only, not goods or deliveries, and at most one waiting harvest per field.
@@ -1909,21 +1969,22 @@ export function boostOffer(id,length='30m'){
 }
 export function boostStatus(state,id,now=Date.now(),length='30m'){
  const boost=BOOSTS[id],offer=boostOffer(id,length),until=BOOST_UNTIL[id]?state.boosts?.[BOOST_UNTIL[id]]:0;
- const remaining=Math.max(0,(until??0)-now);
+ const weekend=id==='xp'?xpWeekend(now):null,remaining=weekend?0:Math.max(0,(until??0)-now);
  let reason='';
+ if(weekend)reason=`Included in the ${XP_WEEKEND_NAME}`;
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
  // The farm's power-ups stay out of the harbour (28 Oct 2026): its places neither keep 'All buildings at maximum level' away nor get finished.
  if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&!worldThreeBuilding(key)&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
  if(id==='production'&&!Object.entries(state.buildings).some(([key,b])=>key!=='factory'&&!worldThreeBuilding(key)&&productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
- return {...boost,...offer,remaining,reason,canBuy:!reason&&state.diamonds>=offer.cost};
+ return {...boost,...offer,remaining,reason,canBuy:!reason&&state.diamonds>=offer.cost,...(weekend?{weekendLeft:weekend.endsAt-now,waiting:xpBoostWaiting(state,now)}:{})};
 }
 export function buyBoost(state,id,now=Date.now(),length='30m'){
  const status=boostStatus(state,id,now,length);
  if(status.reason)throw new Error(status.reason+'.');
  if(state.diamonds<status.cost)throw new Error(`You need ${status.cost} diamonds. Earn more from daily gifts and challenges.`);
  const key=BOOST_UNTIL[id];
- if(key)state.boosts[key]=Math.max(now,state.boosts[key]??0)+status.duration;
+ if(key)addBoostTime(state,id,status.duration,now);
  if(id==='upgrade')state.boosts.upgradeCredits=1;
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
@@ -2782,7 +2843,8 @@ export function villageSquareReady(state){
 // cargo is worth 50,000 at level 144 and 1,000 more a level, up to 106,000 at 200: never more than the Trade Depot's trailer (120,000).
 export const BOAT_PREMIUM=1.6,BOAT_DIAMONDS=3,BOAT_DIAMOND_TRIPS=14,BOAT_XP_SHARE=40,BOAT_RETURN=12*3600000,BOAT_QUAY_RETURN=6*3600000;
 export const BOAT_VALUE_BASE=50000,BOAT_VALUE_STEP=1000,BOAT_VALUE_MAX=106000;
-export const BOAT_GOODS=Object.freeze(['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar']);
+// Donkey milk soap (27 Oct 2026, the owner's pick a): the farm's soap of level 64 sails with the village's goods; always added at the end.
+export const BOAT_GOODS=Object.freeze(['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar','donkeymilksoap']);
 // The refusal when the server's cargo is not the one on the screen: the boat's window loads the farm again when it hears it.
 export const BOAT_GONE='The boat’s cargo has changed. Look at the boat again.';
 // A village landmark is finished (VILLAGE_LANDMARKS below): the Stone quay brings the boat back sooner. Defined once, here.
@@ -2867,9 +2929,9 @@ export const VILLAGE_LANDMARKS=Object.freeze(Object.fromEntries(Object.entries({
  longhouse:{name:'Longhouse',level:172,coins:2000000,materials:{linen:300,scentedsachet:200,rooftile:400},effect:'Batches in every village place take 10% less time.',villager:12,title:'A hall for the workers',line:'A longhouse where the workers rest, and every workshop goes faster.',art:'landmark-longhouse'},
  stonequay:{name:'Stone quay',level:185,coins:2500000,materials:{stone:2000,plank:400,scentedsachet:200},effect:'The town boat comes back after 6 hours instead of 12.',villager:10,title:'A quay of stone',line:'A stone quay, and my boat is loaded and back in half the time.',art:'landmark-stonequay'},
  lookout:{name:'Lookout tower',level:192,coins:3000000,materials:{silvercandlestick:20,rubyring:20,saffronbun:150},effect:'A fourth villager comes to the market square.',villager:4,title:'A tower above the square',line:'A lookout tower, and travellers will see the market from afar.',art:'landmark-lookout'},
- greathall:{name:'Great Hall',level:WORLD_TWO_TOP,coins:3000000,materials:{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100},effect:'Villagers pay 1.6 times what their goods are worth. The Hall gives 200 diamonds once.',villager:12,title:'The heart of the village',line:'One last hall for the whole village, with a bell for every villager who comes.',art:'landmark-greathall'}
+ greathall:{name:'Great Hall',level:WORLD_TWO_TOP,coins:3000000,materials:{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100},effect:'Villagers pay 1.6 times what their goods are worth. The Hall gives 500 diamonds once.',villager:12,title:'The heart of the village',line:'One last hall for the whole village, with a bell for every villager who comes.',art:'landmark-greathall'}
 }).map(([k,l])=>[k,Object.freeze({...l,materials:Object.freeze(l.materials)})])));
-export const VILLAGE_LANDMARK_XP=5000,VILLAGE_HALL_PREMIUM=1.6,GREAT_HALL_DIAMONDS=200;
+export const VILLAGE_LANDMARK_XP=5000,VILLAGE_HALL_PREMIUM=1.6,GREAT_HALL_DIAMONDS=500;   // 500 since 28 Oct 2026 (the owner; was 200)
 export const VILLAGE_LANDMARK_BONUS=Object.freeze({windpump:.25,longhouse:.1});   // less batch time: the Village Fields', every village place's
 export const landmarkBonus=(state,id)=>landmarkDone(state,id)?VILLAGE_LANDMARK_BONUS[id]??0:0;
 // What a villager pays for a request made now: half again, 1.6 times with the Great Hall. A request already waiting keeps its coins.
@@ -2907,7 +2969,7 @@ export function landmarkGive(state,id,item){
  if(!units)throw new Error(item===undefined?'You have none of the goods this landmark still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to give.`);
  return {handed,units,ready:Object.entries(l.materials).every(([k,n])=>(given[k]??0)>=n)};
 }
-// Pays the coins and finishes it: 5,000 XP, its bonus for good, and the Great Hall's 200 diamonds, which can come only once (done never
+// Pays the coins and finishes it: 5,000 XP, its bonus for good, and the Great Hall's 500 diamonds, which can come only once (done never
 // loses an id and a finished landmark is refused). Spent coins count for the events through applyFarmAction, as for the briefs; never
 // sold, earned or produced.
 export function landmarkFinish(state,id){
@@ -3274,6 +3336,9 @@ export function normalizeFarm(state,now=Date.now()){
  state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))if(!worldThreeItem(k))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','farmhandUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
+ // The Double XP weekend this farm's own Double XP already waits for (holdXpBoost): a weekend's id, or nothing.
+ if(typeof state.boosts.xpWeekend!=='string'||state.boosts.xpWeekend.length>64)delete state.boosts.xpWeekend;
+ holdXpBoost(state,now);
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
  // World III's goods and places join a save only once the harbour opens (level 200 and the Great Hall, 28 Oct 2026): any other farm keeps the shape the live game reads.
  state.buildings??={};for(const key of Object.keys(BUILDINGS))if(!worldThreeBuilding(key))state.buildings[key]??={level:1,job:null};addHarbourKeys(state);
@@ -3329,7 +3394,7 @@ export function normalizeFarm(state,now=Date.now()){
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
  normalizeEndgame(state);normalizeVillage(state);normalizeHarbour(state);
- normalizeShift(state);settleShift(state,now);payShipBin(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);countCollections(state);
+ normalizeShift(state);settleShift(state,now);payShipBin(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);settleFields(state);countCollections(state);
  refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshHarbour(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
@@ -3397,30 +3462,32 @@ export function saveReady(state,now=Date.now()){const saved=state.login?.savedDa
 // The coins of a streak day at a farm level (before VIP): the day's coins × half the level, never less, in fives.
 export function giftCoins(streak,level){return Math.round(DAILY_REWARDS[Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1]*Math.max(1,level/2)/5)*5;}
 export function dailyGift(state,streak,now=Date.now()){
- const index=Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1,multiplier=dailyRewardMultiplier(state,now);
+ const index=Math.min(Math.max(1,streak),DAILY_REWARDS.length)-1,multiplier=dailyRewardMultiplier(state,now),boost=DAILY_BOOSTS[(Math.max(1,streak)-1)%7+1]??null;
  return {coins:giftCoins(streak,levelOf(state))*multiplier,diamonds:DAILY_DIAMONDS[index]*multiplier,xp:10*multiplier,
-  boost:DAILY_BOOSTS[(Math.max(1,streak)-1)%7+1]??null,boostMs:DAILY_BOOST_MS*multiplier};   // VIP doubles the gift: an hour
+  boost,boostMs:DAILY_BOOST_MS*multiplier,...afterWeekend(boost,now)};   // VIP doubles the gift: an hour
 }
+// A Double XP that comes during a Double XP weekend starts when it ends: the gift and the chest say so (afterWeekend: true).
+const afterWeekend=(boost,now)=>boost==='xp'&&xpWeekend(now)?{afterWeekend:true}:{};
 export function checkIn(state,now=Date.now()){
  normalizeFarm(state,now);const day=utcDay(now),today=streakToday(state,now);
  if(today.claimed)throw new Error('Your daily gift is already collected.');
- const {coins,diamonds,xp,boost,boostMs}=dailyGift(state,today.streak,now);   // the level before this gift's XP
+ const {coins,diamonds,xp,boost,boostMs,afterWeekend:later}=dailyGift(state,today.streak,now);   // the level before this gift's XP
  state.login.streak=today.streak;if(today.saved)state.login.savedDay=day;
  state.login.lastDay=day;state.login.best=Math.max(state.login.best,state.login.streak);state.login.visits++;
  state.coins+=coins;state.diamonds+=diamonds;state.xp+=xp;
- if(boost)state.boosts[BOOST_UNTIL[boost]]=Math.max(state.boosts[BOOST_UNTIL[boost]]??0,now)+boostMs;
+ if(boost)addBoostTime(state,boost,boostMs,now);
  state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
  // Coming back on a second day: the gift brings 30 minutes of double harvest as well, once (guided farms).
  const returnBoost=guidedFarm(state)&&state.login.visits===2;
  if(returnBoost)state.boosts.harvestUntil=Math.max(state.boosts.harvestUntil??0,now)+RETURN_BOOST_MS;
- return {coins,diamonds,streak:state.login.streak,xp,...(boost?{boost,boostMinutes:boostMs/60000}:{}),...(today.saved?{saved:true}:{}),...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
+ return {coins,diamonds,streak:state.login.streak,xp,...(boost?{boost,boostMinutes:boostMs/60000,...(later?{afterWeekend:true}:{})}:{}),...(today.saved?{saved:true}:{}),...(returnBoost?{returnBoost:RETURN_BOOST_MS/60000}:{})};
 }
 // The comeback chest's coins for the days away (3 to 7) at a farm level, before VIP: like giftCoins, × half the level, in fives.
 export function comebackCoins(days,level){return Math.round(COMEBACK_COINS*Math.min(Math.max(days,COMEBACK_MIN_DAYS),COMEBACK_MAX_DAYS)*Math.max(1,level/2)/5)*5;}
 // The chest waiting on this farm, or null: worked out at the level and VIP of the moment it is opened, like the daily gift.
 export function comebackChest(state,now=Date.now()){
  const p=state.comeback?.pending;if(!p)return null;const m=dailyRewardMultiplier(state,now);
- return {days:p.days,coins:comebackCoins(p.days,levelOf(state))*m,boost:COMEBACK_BOOST,boostMs:DAILY_BOOST_MS*m};
+ return {days:p.days,coins:comebackCoins(p.days,levelOf(state))*m,boost:COMEBACK_BOOST,boostMs:DAILY_BOOST_MS*m,...afterWeekend(COMEBACK_BOOST,now)};
 }
 // Only farm-api calls this, on a load: `away` is the time since player_farms.updated_at, which only the database sets, so the days
 // away never come from the game (3 days away is always a Welcome back too, so that load is saved with the chest). It never stacks
@@ -3432,9 +3499,9 @@ export function offerComeback(state,away,now=Date.now()){
 }
 export function collectComeback(state,now=Date.now()){
  const chest=comebackChest(state,now);if(!chest)throw new Error('No comeback chest is waiting.');
- state.coins+=chest.coins;const key=BOOST_UNTIL[chest.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+chest.boostMs;
+ state.coins+=chest.coins;addBoostTime(state,chest.boost,chest.boostMs,now);
  state.comeback.pending=null;state.comeback.collected++;
- return {coins:chest.coins,days:chest.days,boost:chest.boost,boostMinutes:chest.boostMs/60000};
+ return {coins:chest.coins,days:chest.days,boost:chest.boost,boostMinutes:chest.boostMs/60000,...(chest.afterWeekend?{afterWeekend:true}:{})};
 }
 export function deliverOrder(state,id,day,now=Date.now(),revision=0){
  normalizeFarm(state,now);if(day!==utcDay(now))throw new Error('The order board has refreshed. Pick a new order.');
@@ -3555,7 +3622,7 @@ export function claimPassTier(state,track,tier,now=Date.now()){
  if(reward.coins)state.coins+=reward.coins;   // never stats.earned (see above)
  if(reward.diamonds)state.diamonds+=reward.diamonds;
  for(const [key,n] of Object.entries(reward.items??{}))state.inventory[key]=(state.inventory[key]??0)+n;
- if(reward.boost){const key=BOOST_UNTIL[reward.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+BOOST_DURATIONS[reward.length];}
+ if(reward.boost)addBoostTime(state,reward.boost,BOOST_DURATIONS[reward.length],now);
  // VIP after any VIP still running, and counted like VIP bought (stats.vip_days: the Velvet farmer avatar).
  if(reward.vipDays){state.vipExpiresAt=Math.max(now,state.vipExpiresAt??0)+reward.vipDays*DAY_MS;state.stats.vip_days=(state.stats.vip_days??0)+reward.vipDays;}
  pass[track].push(tier);
@@ -4115,7 +4182,7 @@ export function claimSeasonTier(state,track,tier,now=Date.now(),id){
  if(r.coins)state.coins+=r.coins;   // never stats.earned, as the Halloween Pass
  if(r.diamonds)state.diamonds+=r.diamonds;
  for(const [key,n] of Object.entries(r.items??{}))state.inventory[key]=(state.inventory[key]??0)+n;
- if(r.boost){const key=BOOST_UNTIL[r.boost];state.boosts[key]=Math.max(state.boosts[key]??0,now)+BOOST_DURATIONS[r.length];}
+ if(r.boost)addBoostTime(state,r.boost,BOOST_DURATIONS[r.length],now);
  if(r.vipDays){state.vipExpiresAt=Math.max(now,state.vipExpiresAt??0)+r.vipDays*DAY_MS;state.stats.vip_days=(state.stats.vip_days??0)+r.vipDays;}
  if(r.farmhand)state.boosts.farmhandUntil=Math.max(now,state.boosts.farmhandUntil??0)+r.farmhand*BOOSTS.farmhand.duration;
  if(r.cart)state.coins+=r.cartCoins;
@@ -4288,8 +4355,9 @@ export function tractorQuote(state,mode,crop='corn',now=Date.now(),ids){
 // Windmill's "Give a field a head start" does by hand (fertilizeField: 1 natural fertilizer a field, 35% off the time left, once per
 // growing cycle, 5 XP and stats.fertilized, so it counts for the same quests, challenges and events), on every growing crop that has
 // none yet. With less fertilizer in storage than such fields it does as many as there is fertilizer for, the longest time left first
-// (the most time saved). Fuel as Water: TRACTOR_FUEL_BASE a job + each field's crop fuel (fieldFuel). No diamonds. fields: every field it
-// could do; count: the ones it will do; fertilizer: what it uses (= count).
+// (the most time saved). No coins (25 Oct 2026, the owner: "ook mag bemesten gratis, het kost alleen mest"; it burned fuel as Water
+// before): it only uses the fertilizer, so fuel and total stay 0. No diamonds. fields: every field it could do; count: the ones it will
+// do; fertilizer: what it uses (= count).
 // ids (24 Oct 2026, the owner: "Laat bij tractor kiezen welk veld je wilt fertilizen"): the fields the farmer picked. Only those that can
 // still take fertilizer count; more picked than there is fertilizer for is refused (the window never lets that happen). Without ids
 // (the tile's own line, and an older page) it picks the longest waits first, as before.
@@ -4300,12 +4368,10 @@ export function fertilizeQuote(state,now=Date.now(),ids){
   if(!Array.isArray(ids)||ids.length>state.plots.length||!ids.every(Number.isInteger))throw new Error('Choose the fields to fertilize.');
   const picked=new Set(ids),chosen=eligible.filter(p=>picked.has(p.id));
   if(chosen.length>have)throw new Error(have===1?'You have 1 natural fertilizer.':`You have ${have} natural fertilizer.`);
-  const fuel=chosen.length?TRACTOR_FUEL_BASE+chosen.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
-  return {count:chosen.length,fuel,seeds:0,total:fuel,ids:chosen.map(p=>p.id),fields:eligible.length,fertilizer:chosen.length};
+  return {count:chosen.length,fuel:0,seeds:0,total:0,ids:chosen.map(p=>p.id),fields:eligible.length,fertilizer:chosen.length};
  }
  const count=Math.min(eligible.length,have),worked=eligible.slice(0,count);
- const fuel=count?TRACTOR_FUEL_BASE+worked.reduce((sum,p)=>sum+fieldFuel(p.crop),0):0;
- return {count,fuel,seeds:0,total:fuel,ids:worked.map(p=>p.id),fields:eligible.length,fertilizer:count};
+ return {count,fuel:0,seeds:0,total:0,ids:worked.map(p=>p.id),fields:eligible.length,fertilizer:count};
 }
 // expectedCost (17 Oct 2026): the price the tile showed. Never more is charged; a farm that changed in between asks to look again. An
 // older page sends none and pays the rules' price.
@@ -4943,6 +5009,35 @@ export function villageCart(state,cart,expectedCost,expectedGoods){
  state.stats.village_carts=(state.stats.village_carts??0)+1;
  return {cart,goods:{...c.goods},cost:c.cost};
 }
+// The donkey cart's goods (27 Oct 2026, the owner: "maak ezel met kar vanaf dat level een manier om af en toe goederen te kopen voor
+// diamanten, voor de prijs van de marktwaarde, max 3 soorten per dag", and "prijs afhankelijk van level, net zoals coins in shop"). Once
+// the Donkey Stable stands, the cart brings three of the farm's goods every day (00:00 UTC), each a load worth about 100 × level coins at
+// its normal price, for that value at the coin pack's rate (10 × level coins a diamond, COIN_PACK), rounded up: about 10 diamonds a load.
+// Each load once a day (state.daily.cartBought, so it resets with the day). Only goods this farm makes already, never the cheap basics
+// (feed, fertilizer, honey) or World II's. Resold at the Market a load brings 0.8 of its price in coins, under the coin pack. The three are
+// picked from the farm's seed and the day, the same in the game and in farm-api.
+export const CART_LOADS=3,CART_LOAD_SHARE=100,CART_COINS_PER_DIAMOND=COIN_PACK.perLevel/COIN_PACK.cost;
+const cartGoods=state=>Object.keys(PRODUCTS).filter(k=>!['feed','fertilizer','honey'].includes(k)&&!worldTwoItem(k)&&ITEMS[k].sell>=100&&itemAvailable(state,k));
+export function cartLoads(state,now=Date.now()){
+ if(!buildingUnlocked(state,'donkeystable'))return [];
+ const day=utcDay(now),level=levelOf(state),pool=cartGoods(state),picked=[],seed=Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0;
+ for(let n=0;picked.length<Math.min(CART_LOADS,pool.length)&&n<200;n++){const k=pool[mixBits(calendarHash(`donkeycart-v1:${day}:${seed}:${n}`))%pool.length];if(!picked.includes(k))picked.push(k);}
+ const bought=state.daily?.date===day&&Array.isArray(state.daily.cartBought)?state.daily.cartBought:[];
+ return picked.map(item=>{const count=Math.max(1,Math.round(CART_LOAD_SHARE*level/ITEMS[item].sell)),value=count*ITEMS[item].sell;
+  return {item,count,value,cost:Math.ceil(value/(CART_COINS_PER_DIAMOND*level)),bought:bought.includes(item)};});
+}
+export function cartBuy(state,item,expectedCount,expectedCost,now=Date.now()){
+ if(!buildingUnlocked(state,'donkeystable'))throw new Error('Build the Donkey Stable first.');
+ const load=cartLoads(state,now).find(l=>l.item===item);
+ if(!load)throw new Error('The donkey cart has brought other goods. Look at the cart again.');
+ if(load.bought)throw new Error('You bought this load today. The cart brings new goods tomorrow.');
+ if(expectedCount!==load.count||expectedCost!==load.cost)throw new Error(PRICES_CHANGED);
+ if(state.diamonds<load.cost)throw new Error(shortOfDiamonds(load.cost));
+ spendDiamonds(state,load.cost);state.inventory[item]=(state.inventory[item]??0)+load.count;
+ state.daily.cartBought=[...(Array.isArray(state.daily.cartBought)?state.daily.cartBought:[]),item];
+ state.stats.cart_loads=(state.stats.cart_loads??0)+1;
+ return {item,count:load.count,cost:load.cost};
+}
 // Boat back now: the boat is back at the pier at once, with the cargo it would have brought (the next running number). Made before the
 // charge, so a boat with nothing to carry costs nothing. trips, week and paid stay as they are: the week's diamond trips still count.
 export function boatNow(state,expectedCost,now=Date.now()){
@@ -5088,7 +5183,7 @@ export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRa
  const gems=(state.stats.diamonds_spent??0)-beforeDiamondsSpent;if(own&&gems>0){state.stats.diamonds_spent-=gems;state.stats[own+'diamonds_spent']=(state.stats[own+'diamonds_spent']??0)+gems;}
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
- if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
+ if(xpDoubled(state,now)&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
  if(state.boosts.coinsUntil>now&&['delivery','depot_load'].includes(action.type)){
   const bonus=state.coins-beforeCoins;if(bonus>0){state.coins+=bonus;state.stats.earned+=bonus;result.coins+=bonus;}
  }
@@ -5126,7 +5221,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'fertilize':return action.ids===undefined?fertilizeField(state,action.id,now):fertilizeFields(state,action.ids,now);
   case 'stall_collect':return collectStall(state,now);
   case 'stall_upgrade':return upgradeStall(state,now);
-  case 'chore':return doChore(state,action.id,now,random);
+  case 'chore':return doChore(state,action.id,now);
   case 'activity_start':return startActivity(state,action.station,now);
   case 'activity_work':return workActivity(state,action,now);
   case 'mastery':return claimMastery(state,action.crop,action.tier);
@@ -5190,6 +5285,7 @@ function dispatchFarmAction(state,action,now,random){
   case 'landmark_finish':return landmarkFinish(state,action.landmark);
   // The Village tab of the diamond shop (20 Oct 2026): no feature gate, each checks its own level (as the market square).
   case 'village_cart':return villageCart(state,action.cart,action.expectedCost,action.expectedGoods);
+  case 'donkey_cart_buy':return cartBuy(state,action.item,action.expectedCount,action.expectedCost,now);
   case 'boat_now':return boatNow(state,action.expectedCost,now);
   case 'villager_now':return villagerNow(state,action.board,action.expectedCost,now);
   case 'lake_casts':return lakeCastsNow(state,action.expectedCost,now);
@@ -5276,6 +5372,15 @@ export function choreStatus(state,id,now=Date.now()){
  return {...c,attempts,chance,mastered:chance===c.maxChance,locked:!!previous&&(previous.locked||!previous.mastered),remaining:Math.max(0,(state.chores[id]??0)-now)};
 }
 function secureChoreRandom(){return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;}
+// A chore's lucky find (26 Oct 2026, the owner: "chores take long after the tap"): fixed by the farm itself, as a fish is (waterRandom):
+// mulberry32 over the farm's seed, the chore and the number of the attempt. The same in the browser and in farm-api, so a chore shows at
+// once, find and all; it waited about a second for the server's roll. The chance of each attempt is as before. Farms without a seed
+// share one sequence per chore, as on the pond (harmless).
+export function choreRoll(state,id,attempt){
+ let a=(calendarHash(`chore:${id}:${Number.isSafeInteger(state.rookieUntil)?state.rookieUntil:0}`)^Math.imul(attempt+1,0x9E3779B1))>>>0;
+ a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;
+}
+export const choreFinds=(roll,chance)=>roll<chance/100;
 // Half since 7 Oct 2026 (was 10/20/35/50/75/100/125/150/175/200, 940 in all; now 470). A chapter paid before keeps what it paid.
 export const CHAPTER_DIAMONDS=Object.freeze([5,10,18,25,37,50,63,75,87,100]);
 export const PROJECTS=Object.freeze([
@@ -5328,11 +5433,11 @@ export function upgradeStall(state,now=Date.now()){
  const cost=stallStatus(state,now).upgradeCost;if(cost===null)throw new Error('Your farm stall is fully upgraded.');if(state.coins<cost)throw new Error(`You need ${cost} coins to upgrade the stall.`);
  settleStall(state,now);state.coins-=cost;state.stall.level++;return {level:state.stall.level,cost};
 }
-export function doChore(state,id,now=Date.now(),random=secureChoreRandom){
+export function doChore(state,id,now=Date.now()){
  const chore=choreStatus(state,id,now);
  if(chore.locked)throw new Error(`Master ${CHORES[chore.requires].name} first.`);
  if(chore.remaining)throw new Error(`This chore returns in ${formatDuration(chore.remaining)}.`);
- const bonus=random()<chore.chance/100;
+ const bonus=choreFinds(choreRoll(state,id,chore.attempts),chore.chance);
  state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
  state.chores[id]=now+chore.cooldown;
  const rewards=choreRewards(chore,bonus),{coins,xp,items}=rewards;
@@ -5609,10 +5714,13 @@ export function familyLineCap(item){
 const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.round(n/10)*10;
 // Goods added to the game join the Family Order from a later week: the draw picks from the list of goods, so a longer list
 // would give a family that opens its order late in the week a different order than the families before it.
-export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960});   // week 2960 starts Monday 28 September 2026
+export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960,donkeymilk:2966,donkeymilksoap:2966,donkeycheese:2966});   // week 2960 starts Monday 28 September 2026, 2966 Monday 9 November
+// Never in a Family Order: the bath basket (27 Oct 2026) sells for 16,800, so even one would take an order past its value band. It still
+// counts as Tournament goods, like every good.
+export const FAMILY_ORDER_NEVER=Object.freeze(['bathbasket']);
 export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!otherWorldItem(k)&&!seasonItem(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!otherWorldItem(k)&&!seasonItem(k)&&!FAMILY_ORDER_NEVER.includes(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
  const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
  // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
  const dear=k=>ITEMS[k].sell>=5000;

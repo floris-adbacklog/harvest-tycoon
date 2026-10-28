@@ -36,7 +36,9 @@ export function avatarSettingsMarkup(id,farm=1,{owner=false}={}){
  const current=playerAvatar(id),known=asFarm(farm);
  // A face that comes with a purchase (the Halloween Pass) is shown only where it can be bought, or once it is yours: our apps and
  // CrazyGames sell nothing of our own (public/portal.js), so there it would only point at a shop that is not there (4 Oct 2026).
- const offered=PLAYER_AVATARS.filter(a=>!avatarGoal(a.id)?.pass||!portalOff('payments')||!locked(a.id,known));
+ // The face earned with invited friends (the wiki leaves it out the same way): not where there are no invites (CrazyGames, 26 Oct
+ // 2026), unless it is already yours.
+ const offered=PLAYER_AVATARS.filter(a=>(!avatarGoal(a.id)?.pass||!portalOff('payments')||!locked(a.id,known))&&(!/invite/i.test(avatarGoal(a.id)?.text??'')||!portalOff('invite')||!locked(a.id,known)));
  // The Season Pass's faces (Oct 2026): the ones you have, and the running season's (its paid ones only where the pass is sold: not in
  // the iPhone app while Apple does not sell it). A past season's face you do not have is not shown.
  const running=currentSeason(Date.now()),noApple=globalThis.document?.documentElement?.getAttribute?.('data-app-os')==='ios'&&!APPLE_SELLS_SEASON_PASS;

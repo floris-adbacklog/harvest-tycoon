@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // farm-state.js imports the farmer's parts beside it (21 Oct 2026): a copy made into a data: module finds them by their file.
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
@@ -289,7 +290,7 @@ test('the save: loading never makes state.lake; a garbled one is cleaned without
 // exactly those of the live rules (fe636fc, v208), for farms of every kind.
 test('the farm pond is unchanged: every pond fish, its coins, Today\'s fish and whole days of fishing are those of fe636fc',async t=>{
  const old=show('fe636fc','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  for(const key of ['FISH','FISH_PAGES','POND_FIRST_FISH','POND_START_CASTS','POND_MAX_CASTS','POND_REFILL_MS','POND_MIN_GAP_MS','POND_PERFECT','POND_DAY_FACTOR','POND_NEW_FISH_COINS','POND_NEW_FISH_XP','POND_LEGEND_BY','POND_BOOK_DIAMONDS','POND_PAGE_TWO_LEVEL','POND_BOOK2_DIAMONDS','POND_STURGEON_BY','POND_OPEN','POND_LEVEL'])
   assert.deepEqual(G[key],O[key],key);
  for(const key of Object.keys(O).filter(k=>/pond|fish/i.test(k)))assert.equal(typeof G[key],typeof O[key],`${key}: still exported`);
@@ -312,8 +313,8 @@ test('the farm pond is unchanged: every pond fish, its coins, Today\'s fish and 
    const full=G.pondBook2Done(s),a=G.applyFarmAction(s,action,tt),b=O.applyFarmAction(o,action,tt);
    if(!G.pondBook2Done(s))assert.deepEqual(a,b,`level ${level}, fish ${k}`);
    else{assert.deepEqual({...a,casts:null},{...b,casts:null},`level ${level}, fish ${k}`);if(full)assert.equal(G.waterRefill(G.POND_WATER,s),G.POND_BOOK_REFILL_MS);}}
-  // The quests' collection counts (17 Oct 2026) are the only stats more: they follow the book.
-  const counts=['fish_kinds','caught_whiskers','lake_fish_kinds','caught_oldgranite','heirlooms_found','lab_crosses'],rest=x=>Object.fromEntries(Object.entries(x).filter(([k])=>!counts.includes(k)));
+  // The quests' collection counts (17 Oct 2026) are the only stats more: they follow the book; and the Donkey Stable's five (27 Oct 2026).
+  const counts=['fish_kinds','caught_whiskers','lake_fish_kinds','caught_oldgranite','heirlooms_found','lab_crosses','built_donkeystable','made_donkeymilk','made_donkeymilksoap','made_donkeycheese','made_bathbasket'],rest=x=>Object.fromEntries(Object.entries(x).filter(([k])=>!counts.includes(k)));
   assert.deepEqual(s.pond,o.pond);assert.deepEqual([s.coins,s.xp,s.diamonds,rest(s.stats)],[o.coins,o.xp,o.diamonds,rest(o.stats)],`level ${level}`);
   assert.equal(s.stats.fish_kinds,Object.keys(s.pond?.best??{}).length);assert.equal(s.stats.caught_whiskers,s.pond?.best?.whiskers>0?1:0);
   if(!G.pondBook2Done(s))for(const tt of [now,now+LATER*200])assert.deepEqual(G.pondCasts(s,tt),O.pondCasts(o,tt));
@@ -332,7 +333,7 @@ test('the farm pond is unchanged: every pond fish, its coins, Today\'s fish and 
 // lake's stats without throwing, keep them and pond.best, play on, and refuse a lake fish cleanly: the lake opens with farm-api first.
 test('the live game (21e4e5a) reads a farm with a lake, keeps it, plays on and refuses a lake fish cleanly',async t=>{
  const old=show('21e4e5a','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  const s=at(125);s.rookieUntil=99;for(let k=0;k<8;k++){lake(s,now+k*LATER,k!==2,k===0);pond(s,now+k*LATER+1,true,false);}
  const saved=structuredClone(s);assert.ok(saved.lake.page2At===0&&saved.stats.lake_fish===7&&saved.stats.lake_fish_released===1&&Object.keys(saved.pond.best).length);
  saved.lake.bookPaid=true;

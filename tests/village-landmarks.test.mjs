@@ -130,14 +130,14 @@ test('the Lookout tower brings a fourth villager, who never says what another ca
  }
 });
 
-test('the Great Hall: new requests pay 1.6 times, 200 diamonds once, a waiting request keeps its coins',()=>{
+test('the Great Hall: new requests pay 1.6 times, 500 diamonds once, a waiting request keeps its coins',()=>{
  for(const mode of ['guided','legacy']){
   const s=fixture(200,ALL,{},{mode,done:IDS.slice(0,4)});assert.equal(villagePremium(s),1.5);
   const waiting=structuredClone(s.village.boards[0].request);assert.equal(waiting.coins,30023);
   const diamonds=s.diamonds,earned=s.stats.village_diamonds_earned??0,xp=s.xp;   // the village's own count (28 Oct 2026)
   give(s,'greathall',{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100});
   assert.deepEqual(act(s,{type:'landmark_finish',landmark:'greathall'}),{landmark:'greathall',name:'Great Hall',coins:3000000,xp:5000,diamonds:GREAT_HALL_DIAMONDS});
-  assert.deepEqual([s.diamonds-diamonds,s.stats.village_diamonds_earned-earned,s.xp-xp,s.stats.village_landmarks],[200,200,5000,1],mode);
+  assert.deepEqual([s.diamonds-diamonds,s.stats.village_diamonds_earned-earned,s.xp-xp,s.stats.village_landmarks],[500,500,5000,1],mode);
   assert.equal(villagePremium(s),VILLAGE_HALL_PREMIUM);assert.deepEqual(s.village.boards[0].request,waiting,'a waiting request keeps its coins');
   // Help, and 3 hours later the next villager pays 1.6 times.
   Object.assign(s.inventory,waiting.input);act(s,{type:'village_deliver',board:0,request:waiting.id,input:waiting.input});
@@ -155,7 +155,7 @@ test('all five landmarks at level 200, guided and legacy: their effects, one Hal
   const s=quiet(fixture(200,ALL,{},{mode}));s.coins=20000000;const diamonds=s.diamonds,xp=s.xp;
   for(const id of IDS){Object.assign(s.inventory,VILLAGE_LANDMARKS[id].materials);assert.equal(act(s,{type:'landmark_give',landmark:id}).ready,true,id);act(s,{type:'landmark_finish',landmark:id});}
   assert.deepEqual(s.village.landmarks,{done:IDS,given:{}});assert.equal(s.coins,20000000-12000000);
-  assert.deepEqual([s.diamonds-diamonds,s.xp-xp,s.stats.village_landmarks],[200,25000,5],mode);
+  assert.deepEqual([s.diamonds-diamonds,s.xp-xp,s.stats.village_landmarks],[500,25000,5],mode);
   normalizeFarm(s,now+24*HOUR);
   assert.deepEqual([villageBoards(s),s.village.boards.length,villagePremium(s),boatReturn(s),villageLandmark(s)],[4,4,1.6,BOAT_QUAY_RETURN,null]);
   const saved=JSON.parse(JSON.stringify(s));normalizeFarm(saved,now+24*HOUR);assert.deepEqual(saved,s,'a JSON round trip loads the same');

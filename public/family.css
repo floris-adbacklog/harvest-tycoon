@@ -839,3 +839,52 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-profile-dialog .family-member:first-child{border-top:0}
 #family-profile-dialog .family-role,#family-profile-dialog .family-top{padding:0;border-radius:0;background:none;font-weight:700;font-size:12px;color:#7a5410}
 #family-profile-dialog .family-role .game-art,#family-profile-dialog .family-top .game-art{width:14px;height:14px}
+/* A calmer This week (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards"): the chest, the Family Order and its lines as rows in one frame with thin lines between them instead of a card each,
+   thin progress lines instead of bars, pictures without a tile behind them, what is delivered as quiet text. A line you can deliver to
+   keeps its light green and its Deliver. The four chests in the fold, the tournament's families and the members are rows the same way. */
+#family-dialog #family-content>.family-chest{margin:0;padding:12px 14px;border:2px solid #e6ddd1;border-bottom:0;border-radius:16px 16px 0 0;background:#fffdf4;box-shadow:none}
+#family-dialog #family-content>.family-order-card{margin:0 0 12px;padding:12px 14px;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;box-shadow:none}
+#family-dialog #family-content>.family-chest+.family-order-card{border-top:1px solid #eee5d8;border-radius:0 0 16px 16px}
+#family-dialog #family-content>.family-order-card:has(+.family-order){margin-bottom:0;border-bottom:0;border-end-start-radius:0;border-end-end-radius:0}
+#family-dialog #family-content>.family-order-card+.family-order{gap:0;margin:0 0 12px;border:2px solid #e6ddd1;border-top:0;border-radius:0 0 16px 16px;background:#fffdf4;overflow:hidden}
+#family-dialog .family-order>.family-order-line,#family-dialog .family-order>.family-order-line.is-waiting{padding:10px 14px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+#family-dialog .family-order>.family-order-line.is-ready{background:#eef7e3}
+#family-dialog .family-later .family-order{padding:0}
+#family-dialog .family-later .family-order>.family-order-line:first-child{border-top:0}
+#family-dialog .family-line-art,#family-dialog .family-order-line.is-ready .family-line-art{background:none}
+#family-dialog .family-line-art>.game-art{width:38px;height:38px}
+#family-dialog :is(.family-chest-copy,.family-line-meter)>progress{height:4px}
+#family-dialog :is(.family-chest-copy,.family-line-meter)>progress::-webkit-progress-value{background:#d9a53c}
+#family-dialog .family-order-pieces>i{height:4px}
+#family-dialog .family-order-pieces>i>i{background:#d9a53c}
+#family-dialog .family-order-pieces>i.is-full>i{background:#7c9a5c}
+#family-dialog .family-chest-fold{border-top-color:#eee5d8}
+#family-dialog .family-order-card>.family-rewards-fold{border-top-color:#eee5d8}
+#family-dialog .family-chest-tiers{gap:0;margin:6px 0}
+#family-dialog .family-chest-tiers li,#family-dialog .family-chest-tiers li.is-reached{grid-template-columns:40px minmax(0,1fr) auto auto;padding:6px 2px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none}
+#family-dialog .family-chest-tiers li:first-child{border-top:0}
+#family-dialog .family-chest-check{position:static;width:auto;height:auto;background:none;color:#42632e;font-size:14px}
+#family-dialog .family-done-chips{gap:4px 14px}
+#family-dialog .family-done-chip{padding:0;border:0;border-radius:0;background:none;color:#42632e}
+#family-dialog .family-done-chip>.game-art{width:20px;height:20px}
+#family-dialog .family-gives-fold,#family-dialog .family-later{border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;box-shadow:none}
+/* Tournament: the heading and your place on the window's cream with a 2 px edge, the families as rows in one frame, the diamonds as plain numbers. */
+#family-dialog .family-tournament-banner{border:2px solid #e6ddd1;background:#fffdf4}
+#family-dialog .family-your-place{border:2px solid #e8cf86;box-shadow:none}
+#family-dialog .family-podium{gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4;overflow:hidden}
+#family-dialog .family-podium-row,#family-dialog .family-podium-row:is(.family-place-1,.family-place-2,.family-place-3,.is-empty){padding:6px 12px;border:0;border-top:1px solid #eee5d8;border-radius:0;background:none;box-shadow:none}
+#family-dialog .family-podium-row:first-child{border-top:0}
+#family-dialog .family-podium-row.is-yours{background:#fff8e1;box-shadow:none}
+#family-dialog .family-podium-prize{padding:0;border:0;border-radius:0;background:none}
+/* Members: rows in one frame (no overflow:hidden: a farmer's ⋯ menu opens below its row), your own row in light gold. */
+#family-dialog .family-member-list{gap:0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4}
+#family-dialog .family-member,#family-dialog .family-member.is-self{border:0;border-top:1px solid #eee5d8;border-radius:0;box-shadow:none;background:none}
+#family-dialog .family-member.is-self{background:#fff8e1}
+#family-dialog .family-member:first-child{border-top:0;border-radius:14px 14px 0 0}
+#family-dialog .family-member:last-child{border-radius:0 0 14px 14px}
+#family-dialog .family-member:only-child{border-radius:14px}
+#family-dialog .family-line-copy .family-line-stock.has-stock{padding:0;border:0;border-radius:0;background:none}
+#family-dialog .family-tournament-title>span:last-child{padding:0;border:0;border-radius:0;background:none}
+#family-dialog .family-member .family-role,#family-dialog .family-member .family-top{padding:0;border-radius:0;background:none;font-weight:700;font-size:12px;color:#7a5410}
+#family-dialog .family-member-bar{height:4px}

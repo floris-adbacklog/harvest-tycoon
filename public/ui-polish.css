@@ -103,6 +103,8 @@
 .active-boost{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .active-boost .game-art{flex:none;width:20px;height:20px}
 .active-boost b{font-weight:700;font-variant-numeric:tabular-nums}
+/* The Double XP weekend (27 Oct 2026) says its name in the pill, beside its time left. */
+.active-boost em{font-style:normal;font-weight:700}
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.active-boosts:not([hidden]){gap:7px}.active-boost{gap:3px}.active-boost .game-art{width:16px;height:16px}}
 
 /* The harvest flying from a field to the Market button (harvest-fly.js). */

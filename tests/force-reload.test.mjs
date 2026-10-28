@@ -56,8 +56,8 @@ test('farm loads carry reloadAfter: read at most every 30 seconds, never failing
  assert.match(api,/'admin_email','invite','player_log','admin_reload'\]\.includes\(body\?\.operation\)/);
  assert.match(api,/const reloadAt=body\.operation==='load'\?readReloadAfter\(admin\):null;/);
  assert.match(api,/if\(body\.operation==='admin_reload'\)\{const r=await handleAdminReload\(\{admin,body,user\}\);return reply\(r\.data,r\.status\);\}/);
- assert.equal(api.match(/serverNow:now,reloadAfter:await reloadAt\}\)/g)?.length,4,'every load answer: the admin view, a new or changed farm, an unchanged one');
- assert.ok(api.indexOf('const reloadAt=')<api.indexOf("from('player_stats').select('player_id,username"),'read beside the farm, not after it');
+ assert.equal(api.match(/serverNow:now,(?:xpWeekend,)?reloadAfter:await reloadAt\}\)/g)?.length,4,'every load answer: the admin view, a new or changed farm, an unchanged one');
+ assert.ok(api.indexOf('const reloadAt=')<api.indexOf('const profileResponse=await (mine?.profile'),'read beside the farm, not after it');
 });
 
 test('the table: one row, only farm-api, an after-check; no function',()=>{

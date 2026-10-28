@@ -64,9 +64,8 @@ test('they come after the farm is on screen, never in the loading bar\'s models,
 
 test('a tap on an animal opens what it opened before: the still model stays as its unseen tap target and walks with it',()=>{
  const game=read('public/game.js'),animals=read('public/farm-animals.js');
- assert.match(animals,/obj\.traverse\(n=>\{if\(n\.isMesh\)n\.visible=false;\}\);\n  obj\.add\(rig\);relock\(obj\);/,'drawn inside the still model, greyed with its yard');
+ assert.match(animals,/obj\.traverse\(n=>\{if\(n\.isMesh\)n\.visible=false;\}\);\n  obj\.add\(rig\);\{const shade=softShadow\(size\.x\*k\/s\*1\.5,size\.z\*k\/s\*1\.4,1\);shade\.position\.y=\.05\/s;obj\.add\(shade\);\}/,'drawn inside the still model with a soft shadow under it (25 Oct 2026)');
  assert.match(game,/\.\.\.animals\.map\(v=>v\.obj\)/,'the still models are still the tap targets');
- assert.match(game,/relock:o=>\{if\(o\.userData\.locked\)\{o\.userData\.locked=false;setLocked\(o,true\);\}\}/);
  // The Animal paddock's horse (a stop with a pin and a tap box of its own) and the scenery's hen and chicks stay on their spots.
  assert.match(game,/still:Boolean\(o\.userData\.activity\|\|o\.userData\.scenery\)/);
  assert.match(animals,/if\(a\.still\)return null;/);
@@ -124,4 +123,13 @@ test('the Dairy Barn stands one segment further back, its cows\' pasture four se
  assert.match(game,/function addExtraProps\(\)\{\n const props=asBefore\(placeExtraProps\),off=keptOff\(\),dairyOff=keptOff\(true\),/);
  assert.match(game,/\[\[-2\.6,-8\.2\],\[2\.2,-8\],\[-\.3,-5\.4\]\]\.forEach/,'the cows\' spots of before');
  assert.match(scenery,/list=list\.filter\(\(\[x,z\]\)=>!keptOff\(x,z,\.3\)\);/);
+});
+
+test('a locked yard keeps its animals alive: in colour and moving, only the buildings and fences go grey (27 Oct 2026)',()=>{
+ const game=read('public/game.js'),animals=read('public/farm-animals.js');
+ assert.match(game,/const LIVE_ANIMAL=\/\^\(cow\|horse\|pig\|sheep\|goat\|chick\|chicken\)_\//);
+ assert.match(game,/const paint=o=>\{\n  if\(liveAnimal\(o\)\)return;/,'setLocked never greys an animal or anything under it');
+ assert.match(game,/object\.userData\.locked=locked;/,'the locked mark stays, so a tap says what it said');
+ assert.doesNotMatch(animals,/userData\.locked/,'the herd moves whatever the yard');
+ assert.doesNotMatch(animals+game,/relock/);
 });

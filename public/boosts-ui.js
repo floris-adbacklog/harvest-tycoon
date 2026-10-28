@@ -1,4 +1,5 @@
 import {confirmDiamondSpend} from './diamond-confirm.js';
+import {xpWeekend,XP_WEEKEND_NAME} from './farm-state.js';
 import {VIP_PLANS,vipActive,BUILDINGS,RECIPES,productionJobs,SINGLE_BATCH_COST,featureUnlocked,featureUnlockHint,BOOSTS,DIAMOND_PACKS,SINGLE_CROP_COST,CROPS,boostStatus,boostOffer,BOOST_DURATIONS,BOOST_LENGTH_NAMES,formatDuration,COIN_PACK,coinPackCoins,VILLAGE_SHOP,villageShopStatus,VILLAGER_CALLS_PER_DAY,worldTwoOpen,normalizeFarm} from './farm-state.js';
 import {buyVillage,villageLine,goodsInBarn,untilText,VILLAGE_ASK} from './village-shop-ui.js';
 import {farmNow} from './farm-client.js';
@@ -8,6 +9,7 @@ import {prettifySelects} from './pretty-select.js';
 import {portalOff} from './portal.js';
 import {fieldPicker,batchPicker,bindFieldPicker} from './field-picker.js';
 import {keepFolds} from './keep-folds.js';
+import {saleBanner,shopSale,shopSaleBonus,saleLeft} from './diamond-sale.js';
 const $=id=>document.getElementById(id);
 const number=n=>n.toLocaleString('en-US');
 const LENGTH_LABELS={'30m':'30 min','1h':'1 hour','1d':'1 day'};
@@ -16,7 +18,7 @@ const PACK_ART=['pack-nest','pack-sack','pack-chest','pack-gold'];
 
 // The diamond packs as tappable cards (the shop's render below; 15 Oct 2026: on its own, so the tests run it): purchasing, the pack
 // being opened; suggestion, the pack that covers what the farmer is short of.
-export function diamondPackCards({catalog=null,purchasing='',suggestion=0}={}){
+export function diamondPackCards({catalog=null,purchasing='',suggestion=0,now=farmNow()}={}){
  // Kreds on Kongregate (15 Oct 2026, off until Kongregate says yes): a pack Kongregate gives no price is not for sale there (Unavailable),
  // and with a price for every pack the extra is worked out from Kongregate's own prices, so the tabs stay true whatever the owner sets.
  const kreds=catalog?.store==='kongregate',kredsAll=kreds&&DIAMOND_PACKS.every(p=>catalog.prices?.[p.amount]?.kreds>0);
@@ -32,14 +34,19 @@ export function diamondPackCards({catalog=null,purchasing='',suggestion=0}={}){
  return DIAMOND_PACKS.map((pack,i)=>{
   const best=i===bestAt,suggested=suggestion===pack.amount,opening=purchasing===String(pack.amount),sale=forSale(pack);
   const extra=Math.round((perEuro(pack)/base-1)*100);
-  const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best?`<span class="pack-ribbon">+${extra}% extra</span>`:extra>0?`<span class="pack-ribbon is-extra">+${extra}% extra</span>`:'';
+  // The Sale (27 Oct 2026, public/diamond-sale.js): every pack's tab says the Sale's extra and the pack shows its bonus under the amount
+  // (the usual amount small and struck through, the total large: ~~500~~ 700 diamonds; 27 Oct 2026, the owner); the price stays the same. The pack that covers what is short keeps its green tab.
+  // The tabs keep each pack's own value during a Sale (+33%, +66%, +86%; the owner, 27 Oct 2026: "de standaard %, niet overal 40%"),
+  // as a tab on the card's top edge; the Sale shows in the struck-through amount and the bigger total.
+  const bonus=sale?shopSaleBonus(catalog,pack.amount,now):0;
+  const tag=suggested?'<span class="pack-ribbon is-enough">✓ Enough for this</span>':best||extra>0?`<span class="pack-ribbon${bonus?' is-sale':best?'':' is-extra'}">+${extra}% extra</span>`:'';
   const foot=opening?'Opening…':sale?packPrice(pack):catalog?'Unavailable':packPrice(pack);
-  const label=kreds&&!sale?`${number(pack.amount)} diamonds`:`Buy ${number(pack.amount)} diamonds for ${packPrice(pack)}`;
-  return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount"><b>${number(pack.amount)}</b><small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
+  const label=kreds&&!sale?`${number(pack.amount)} diamonds`:bonus?`Buy ${number(pack.amount)} diamonds and ${number(bonus)} extra for ${packPrice(pack)}`:`Buy ${number(pack.amount)} diamonds for ${packPrice(pack)}`;
+  return `<button type="button" class="diamond-pack${best?' is-best':''}${suggested?' is-suggested':''}${bonus?' is-sale':''}" data-diamond-pack="${pack.amount}" data-state="${opening?'opening':sale?'available':'unavailable'}" aria-label="${label}" ${open&&sale?'':'disabled'}>${tag}<span class="pack-amount">${bonus?`<s class="pack-was">${number(pack.amount)}</s><b>${number(pack.amount+bonus)}</b>`:`<b>${number(pack.amount)}</b>`}<small>diamonds</small></span>${art(PACK_ART[i]??'diamonds')}${best?'<span class="pack-best">Best value</span>':''}<span class="pack-price">${foot}</span></button>`;}).join('');
 }
 
 export function createBoostsUI({state,runAction,onChange,notify,village=false}){
- let lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
+ let saleShown=false,lastStatus='',catalog=null,purchasing='',requests={},selectedFields=[],selectedBatches=[],finishing=false;
  // The length picked on each timed boost: 30 minutes every time the shop opens and after each purchase.
  let lengths={};const lengthOf=id=>BOOSTS[id].prices?lengths[id]??'30m':undefined;
  const bridge=()=>window.parent.harvestBridge;
@@ -105,6 +112,10 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false}){
    const verb=active?'Extend':id==='upgrade'&&state.boosts.upgradeCredits?'Ready':'Activate';
    const label=`${active?'Extend':'Activate'} ${b.name}${length?` for ${BOOST_LENGTH_NAMES[length]}`:''} for ${status.cost} diamonds`;
    const more=kind==='need'?getMore(status.cost-state.diamonds):'';
+   // A Double XP weekend (27 Oct 2026): Double XP is included, so it is not for sale; the farm's own waits until after it.
+   if(status.weekendLeft)return card({cls:'boost-included',picture:b.art,title:b.name,text:b.description,
+    detail:`<div class="boost-status-row">${chip('included',`Included in the ${XP_WEEKEND_NAME}`)}${status.waiting?chip('wait',`Yours: ${formatDuration(status.waiting)} after the weekend`):''}</div>`,
+    button:`<button class="boost-buy" disabled aria-label="${b.name} is included in the ${XP_WEEKEND_NAME}">${price(status.cost,'Included')}</button>`});
    return card({cls:active?'boost-active':'',picture:id==='crops'?'instant-harvest':b.art,title:b.name,text:b.description,detail:length?`<div class="boost-status-row">${lengthSelect(id,b,length)}${chip(kind,text,id)}${more}</div>`:`<div class="boost-status-row">${chip(kind,text,id)}${more}</div>`,button:kind==='need'?`<button class="boost-buy is-short" data-get-diamonds="${status.cost-state.diamonds}" aria-label="${label}: get ${number(status.cost-state.diamonds)} more diamonds first">${price(status.cost,verb)}</button>`:`<button class="boost-buy" data-buy-boost="${id}" ${status.canBuy&&!finishing?'':'disabled'} aria-label="${label}">${price(status.cost,verb)}</button>`});
   };
   // Pick one or more fields (or batches): each costs the same 10 diamonds, the button shows the total.
@@ -155,7 +166,9 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false}){
   // Short of diamonds for something here: the smallest pack that covers it gets a green tab.
   // Each bigger pack's tab says how many more diamonds per euro it gives than the smallest pack, rounded. The biggest has a gold tab
   // and "Best value" above its price (1 Oct 2026: "Best value · +86%" did not fit on one tab and was cut off).
-  $('diamond-packs').innerHTML=diamondPackCards({catalog,purchasing,suggestion})
+  // The Sale's banner over the packs (public/diamond-sale.js), only while one runs where the shop sells.
+  const saleBox=$('shop-sale');if(saleBox){const banner=saleBanner(catalog,{now:farmNow(),art});saleBox.hidden=!banner;saleBox.innerHTML=banner;saleShown=Boolean(banner);}
+  $('diamond-packs').innerHTML=diamondPackCards({catalog,purchasing,suggestion,now:farmNow()})
    +(catalog?.mode==='test'?'<p class="pack-note">Test checkout: no real payment.</p>':'')
    +(packError?`<p class="pack-error" role="alert">${packError.message}</p>`:'');
   $('diamond-packs').querySelectorAll('[data-diamond-pack]').forEach(button=>button.onclick=async()=>{
@@ -257,15 +270,20 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false}){
   if(isVip)chips.push({id:'vip',picture:'vip',label:'VIP',time:formatDuration(state.vipExpiresAt-now)});
   const vipStatus=document.querySelector('[data-vip-status]');if(vipStatus&&isVip)vipStatus.textContent=`VIP · ${formatDuration(state.vipExpiresAt-now)} left`;
 
-  for(const [id,label,until,picture] of [['xp','2× XP',state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
+  // The Double XP weekend (27 Oct 2026) leads the pill with its name and time left; the farm's own Double XP waits until after it, so
+  // its chip shows again once the weekend is over.
+  const weekend=xpWeekend(now);if(weekend)chips.push({id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration(weekend.endsAt-now),named:true});
+  for(const [id,label,until,picture] of [['xp','2× XP',weekend?0:state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
    if(until>now)chips.push({id,picture,label,time:formatDuration(until-now)});
    // The Farmhand's card is in Power-ups and in the Village tab: each one ticks.
    document.querySelectorAll(`[data-boost-time="${id}"]`).forEach(el=>{if(until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;});
   }
+  // The Sale's time left ticks; when it ends the shop shows the packs as they are again.
+  if($('boost-dialog').open&&saleShown){if(shopSale(catalog,now)){const left=document.querySelector('[data-sale-left]');const text=saleLeft(catalog,now);if(left&&left.textContent!==text)left.textContent=text;}else render();}
   document.querySelectorAll('[data-shop-until]').forEach(el=>{const left=Number(el.dataset.shopUntil)-now;if(left>0)el.textContent=untilText(el.dataset.shopWait,left);});
   if(state.boosts.upgradeCredits)chips.push({id:'upgrade',picture:'hammer',label:'50% upgrade voucher',time:'50%'});
   const pill=$('active-boosts'),key=chips.map(c=>c.id).join(',');pill.hidden=!chips.length;
-  if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}<b></b></span>`).join('');refreshArt();}
+  if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost${c.named?' is-named':''}" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}${c.named?`<em>${c.label}</em>`:''}<b></b></span>`).join('');refreshArt();}
   for(const c of chips){const time=pill.querySelector(`[data-active-boost="${c.id}"] b`);if(time&&time.textContent!==c.time)time.textContent=c.time;}
   pill.setAttribute('aria-label',chips.length?`Active boosts: ${chips.map(c=>c.id==='upgrade'?c.label:`${c.label}, ${c.time} left`).join('; ')}. Open the shop.`:'View active boosts');
   if($('boost-dialog').open&&signature()!==lastStatus)render();

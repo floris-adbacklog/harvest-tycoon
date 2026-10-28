@@ -21,7 +21,7 @@ const plenty=n=>Object.fromEntries([...Object.keys(VILLAGE_GOODS),...VILLAGE_FAR
 function fixture(level,places,stock={},mode='guided'){
  const s=createFarm(now);s.xp=xpForLevel(level);s.coins=50000000;s.onboarding={...s.onboarding,completed:99,rewardClaimed:true};
  if(mode==='legacy')s.progression={mode:'legacy'};
- for(const [k,b] of Object.entries(s.buildings)){if(worldTwoBuilding(k))b.built=places.includes(k);else{b.built=true;if(BUILDINGS[k].type==='production')b.level=MAX_BUILDING_LEVEL;}}
+ for(const [k,b] of Object.entries(s.buildings)){if(worldTwoBuilding(k))b.built=places.includes(k);else{b.built=k!=='donkeystable';if(BUILDINGS[k].type==='production')b.level=MAX_BUILDING_LEVEL;}}   // not the farm's Donkey Stable (level 64, 27 Oct 2026): the pinned cargos predate its soap; tests/donkey-stable.test.mjs sails it
  normalizeFarm(s,now);for(const k of Object.keys(s.inventory))s.inventory[k]=0;Object.assign(s.inventory,stock);
  s.village={serial:0,boards:[]};return normalizeFarm(s,now);
 }
@@ -292,7 +292,7 @@ test('a builder\'s crate is worth about 1.54 times its market price, never more 
  for(const key of Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].type==='production'&&k!=='factory'&&!otherWorldBuilding(k))){
   count++;for(let level=1;level<MAX_BUILDING_LEVEL;level++){s.buildings[key].level=level;coins+=upgradeCost(s,key);crates+=builderCrates(s,key);}
  }
- assert.deepEqual([count,coins,crates,crates*BUILDER_CRATE_COINS],[16,20490263,1225,9800000]);
+ assert.deepEqual([count,coins,crates,crates*BUILDER_CRATE_COINS],[17,22125364,1324,10592000]);
  assert.ok(crates*BUILDER_CRATE_COINS/coins<.48,'47.8% off at most');
 });
 

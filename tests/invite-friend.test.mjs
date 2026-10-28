@@ -91,7 +91,7 @@ test('farm-api: links a brand-new farm only, pays the friend in the level-10 sav
  assert.match(api,/else\{const invite=await linkInvite\(\{admin,player:user\.id,code:body\.inviteCode\?\?user\.user_metadata\?\.invite,now\}\)/,'only when no earlier progress exists (no profile)');
  assert.match(api,/const inviteReward=inviteeReward\(state,now\);if\(inviteReward\)result\.inviteReward=inviteReward;/);
  assert.match(api,/if\(inviteReward\)await qualifyInvite\(admin,user\.id,now\)/);
- assert.match(api,/friends=inviterRewards\(state,await qualifiedFriends\(admin,user\.id\)\.catch\(\(\)=>\[\]\)\)/,'a problem with invites never stops a farm from loading');
+ assert.match(api,/const friendsRead=qualifiedFriends\(admin,user\.id\)\.catch\(\(\)=>\[\]\);[\s\S]*friends=inviterRewards\(state,await friendsRead\)/,'a problem with invites never stops a farm from loading');
  assert.match(api,/action:\{type:'family_invite',playerId:friend\.playerId\}/,'the leader\'s own family action, so every family rule applies');
  const sql=read('supabase/invite-a-friend.sql');
  assert.match(sql,/enable row level security/);assert.match(sql,/revoke all on public\.player_invite_codes,public\.referrals from anon,authenticated;/);

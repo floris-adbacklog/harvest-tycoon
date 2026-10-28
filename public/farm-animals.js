@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {sharePalette,shareAtlas,download} from './model-atlas.js';
+import {softShadow} from './soft-shadow.js';
 
 // The farm's animals move (20 Oct 2026, the owner: "voeg (nog) niks toe, alleen de 6 bestaande"): the chickens, cows, goats, pigs,
 // sheep and horses that stood still get animated twins from ithappy Studios' Animals pack (scripts/build-farm-animals.mjs,
@@ -27,10 +28,13 @@ export const ANIMATED=Object.freeze({
  goat_001:['goat_101','goat_white'],goat_002:['goat_101','goat_grey'],
  pig_002:['pig_101','pig_peach'],pig_003:['pig_101','pig_pink'],pig_005:['pig_101','pig_peach'],
  sheep_001:['sheep_101','sheep_white'],sheep_002:['sheep_101','sheep_grey'],sheep_003:['sheep_101','sheep_cream'],
- horse_002:['horse_101','horse_bay'],horse_003:['horse_101','horse_chestnut'],horse_004:['horse_101','horse_black'],horse_005:['horse_101','horse_bay']
+ horse_002:['horse_101','horse_bay'],horse_003:['horse_101','horse_chestnut'],horse_004:['horse_101','horse_black'],horse_005:['horse_101','horse_bay'],
+ // The Donkey Stable's two (27 Oct 2026): the farm pack has no donkey, so a small horse_002 stands in as the still one (game.js names it
+ // donkey_001 or donkey_002) and the pack's donkey takes its place.
+ donkey_001:['donkey_101','donkey_grey'],donkey_002:['donkey_101','donkey_brown']
 });
 // The order they come in: the kinds round the home view first.
-export const ANIMAL_FILES=Object.freeze(['chicken_101','cow_101','horse_101','sheep_101','goat_101','pig_101','chick_101']);
+export const ANIMAL_FILES=Object.freeze(['chicken_101','cow_101','horse_101','sheep_101','goat_101','pig_101','chick_101','donkey_101']);
 // Each kind: how far from its spot it may wander, in its own body lengths along the screen (roam) and up and down it (depth, a share
 // of that; always inside its pen), its stride (a walk cycle's ground in body lengths, so the feet do not slide), how fast its walk plays, and how often it
 // does what (it picks again after each). The clips it has: the build keeps idle, walk and eat (the goat's gesture instead), and lie
@@ -44,7 +48,9 @@ export const ANIMAL_KINDS=Object.freeze({
  goat_101:{roam:3,depth:1,stride:.4,pace:.75,odds:{idle:.48,gesture:.34,walk:.18}},
  pig_101:{roam:3,depth:1,stride:.36,pace:.7,odds:{eat:.4,idle:.3,walk:.14,lie:.16}},
  sheep_101:{roam:3,depth:1,stride:.34,pace:.7,odds:{eat:.52,idle:.32,walk:.16}},
- horse_101:{roam:3,depth:1,stride:.4,pace:.7,odds:{eat:.48,idle:.38,walk:.14}}
+ horse_101:{roam:3,depth:1,stride:.4,pace:.7,odds:{eat:.48,idle:.38,walk:.14}},
+ // No gesture for the donkeys (27 Oct 2026, the owner: "ze stompen steeds": the pack's donkey gesture stamps a hoof): they stand and walk.
+ donkey_101:{roam:3,depth:1,stride:.4,pace:.75,odds:{idle:.8,walk:.2}}
 });
 // A walk: three fifths of a body length to two body lengths (WALK), within 17 degrees of its line along the screen (SWAY), keeping near the line
 // through its own spot (where its pen is longest). A half turn: a bend of BEND body lengths' radius (a hen's is tighter: kind.bend),
@@ -82,9 +88,9 @@ const pick=(odds,random)=>{let r=random()*Object.values(odds).reduce((a,b)=>a+b,
 // for one that only stands (the Animal paddock's horse, whose pin and tap box stay where they are, and the white hen and the two chicks
 // of the scenery), and pen its pen (game.js): {box:[minX, maxX, minZ, maxZ] round its fences, keepOut:[[minX, maxX, minZ, maxZ], ...]
 // what stands in it}, or null.
-// relock(obj): greys the new animal with its yard if the yard is still to come (game.js setLocked). lite: phones (their animals move
+// lite: phones (their animals move
 // at half the frame rate). onKind: after a kind took its place (the shadows are drawn again).
-export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=Math.random}){
+export function createHerd({list,lite=false,onKind=()=>{},random=Math.random}){
  const herd=[],frustum=new THREE.Frustum(),matrix=new THREE.Matrix4(),sphere=new THREE.Sphere();let frame=0,stopped=false,seenBy=null;
  const todo=new Map();
  for(const entry of list){const [file]=ANIMATED[entry.obj.userData.model??entry.obj.userData.scenery]??[];if(file)(todo.get(file)??todo.set(file,[]).get(file)).push(entry);}
@@ -95,7 +101,8 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   const others=[];rig.traverse(n=>{if(n.isSkinnedMesh&&n.name!==variant)others.push(n);});
   for(const n of others)n.removeFromParent();
   let body=null;rig.traverse(n=>{if(n.isSkinnedMesh&&n.name===variant)body=n;});if(!body)return null;
-  body.castShadow=true;body.receiveShadow=true;body.material.roughness=1;body.material.metalness=0;
+  // No shadow of its own in the sun's shadow map (drawn again only when the farm changes, game.js): a soft one under it (soft-shadow.js).
+  body.castShadow=false;body.receiveShadow=true;body.material.roughness=1;body.material.metalness=0;
   shareAtlas(rig,file);
   const mixer=new THREE.AnimationMixer(rig),actions={};
   for(const clip of gltf.animations)if(clip.name==='walk'||kind.odds[clip.name]||clip.name==='idle')actions[clip.name]=mixer.clipAction(clip);
@@ -112,7 +119,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
   body.computeBoundingSphere();body.boundingSphere.radius*=1.3;
   // The still model goes out of sight but stays as the tap target; the animal is drawn in its place.
   obj.traverse(n=>{if(n.isMesh)n.visible=false;});
-  obj.add(rig);relock(obj);
+  obj.add(rig);{const shade=softShadow(size.x*k/s*1.5,size.z*k/s*1.4,1);shade.position.y=.05/s;obj.add(shade);}
   const home=[obj.position.x,obj.position.z];
   // It walks along the screen, the way the layout turned it or the other way (axes).
   const a={obj,rig,mixer,actions,kind,file,still,home,length,pen,axes:[turn,turn+Math.PI],yaw:turn,state:null,timer:0,target:null,bend:0,speed:kind.stride*length/actions.walk.getClip().duration*kind.pace,since:0};
@@ -215,7 +222,7 @@ export function createHerd({list,relock=()=>{},lite=false,onKind=()=>{},random=M
    const a=herd[i];a.wait=(a.wait??0)+dt;
    if(lite&&(i+frame)%2)continue;
    const t=Math.min(a.wait,.2);a.wait=0;
-   if(a.obj.userData.locked||!shown(a.obj))continue;
+   if(!shown(a.obj))continue;   // a locked yard's animals move too (27 Oct 2026; game.js setLocked keeps them in colour)
    sphere.center.copy(a.obj.position);sphere.radius=a.length;
    if(!frustum.intersectsSphere(sphere))continue;
    step(a,t);a.mixer.update(t);

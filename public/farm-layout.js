@@ -21,7 +21,8 @@ const ANCHORS_BEFORE=Object.freeze({
 });
 // The Warehouse (22 Oct 2026, the owner): the Sheep Barn's old barn where the Feed Mill stood, so its yard is the Feed Mill's old one
 // (the same design point, and the mill's ground and props round it); the Feed Mill moved across the road (HOMES below).
-const ANCHORS_NOW=Object.freeze({...ANCHORS_BEFORE,warehouse:[-12.5,4]});
+// The Donkey Stable (27 Oct 2026, level 64) left of the Goat Shed, between it and the chickens' pen, its pen down to the trunk road.
+const ANCHORS_NOW=Object.freeze({...ANCHORS_BEFORE,warehouse:[-12.5,4],donkeystable:[23.54,-11.54]});
 // Where a yard stands when that is not where it was designed (same compact grid; everything inside a yard moves along with it).
 // The apiary and the family hall have swapped places (the hall stands east of the crops, far enough out not to hide them), the
 // market waits by the road out at the front, the delivery cart stands at the open end of the farmhouse fence where it can be seen,
@@ -47,6 +48,11 @@ const HOMES_NOW=Object.freeze({...HOMES_BEFORE,mill:[8.1/SPREAD,-10.6/SPREAD],si
 // depending on all the ones before it, so they are placed with the yards where they stood then (game.js asBefore) and what then
 // stands on something new is left out. ANCHORS, HOMES and YARD_EXTENT are the farm as it stands now, except while that runs.
 export let ANCHORS=ANCHORS_NOW,HOMES=HOMES_NOW;
+// Room on the valley's east side (27 Oct 2026, the owner: "maak een beetje ruimte in de map bij oostzijde", for the Donkey Stable):
+// the mountain ring and its forest hem stand up to a quarter further out round the ring's first peak (the screen's right, its angle -8
+// in scenery.js and scene-polish.js), fading to nothing 40 degrees either side. Every seeded draw stays: only the distance changes.
+export const EAST_ROOM=Object.freeze({at:-8,reach:40,push:.25});
+export const eastRoom=degrees=>{const t=(degrees-EAST_ROOM.at)/EAST_ROOM.reach;return Math.abs(t)<1?1+EAST_ROOM.push*Math.cos(t*Math.PI/2)**2:1;};
 // Trees, bushes and other loose pieces keep this far from the middle of a yard.
 export const YARD_CLEARANCE=5.4;
 
@@ -94,7 +100,7 @@ const YARD_EXTENT_BEFORE=Object.freeze({coop:[-7.9,7.9,-5.8,5.8],windmill:[-4.6,
  tradedepot:[-7,7.5,-4.5,5],estateworkshop:[-5.5,5.5,-3.5,4.5],grandfair:[-13.8,13.8,-5.4,5]});
 // 22 Oct 2026: the chickens' pen is a rail segment narrower on its west side (the owner: "maak de chicken coop ruimte iets kleiner zodat er
 // meer ruimte is voor de feed mill"); the Warehouse (its barn, 8.5 long, east of its yard's middle) and the Feed Mill have their own.
-const YARD_EXTENT_NOW=Object.freeze({...YARD_EXTENT_BEFORE,coop:[-5.7,7.9,-5.8,5.8],warehouse:[-3.3,5.2,-1.8,3],mill:[-2,2,-3.2,3.2]});
+const YARD_EXTENT_NOW=Object.freeze({...YARD_EXTENT_BEFORE,coop:[-5.7,7.9,-5.8,5.8],warehouse:[-3.3,5.2,-1.8,3],mill:[-2,2,-3.2,3.2],donkeystable:[-4.2,3.4,-8.2,6.8]});
 export let YARD_EXTENT=YARD_EXTENT_NOW;
 const EXTENT_MARGIN=3;
 const extentBoxes=()=>Object.entries(YARD_EXTENT).map(([id,[west,east,north,south]])=>{const [x,z]=anchorAt(id);return [x+west,x+east,z+north,z+south];});

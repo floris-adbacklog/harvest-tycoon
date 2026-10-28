@@ -16,7 +16,7 @@ grant select on public.player_stats to authenticated;
 grant all on public.player_stats to service_role;
 drop policy if exists "Players can read leaderboard" on public.player_stats;
 create policy "Players can read leaderboard" on public.player_stats for select to authenticated
-using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+using (coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false) = false);
 drop policy if exists "Players can insert own stats" on public.player_stats;
 drop policy if exists "Players can update own stats" on public.player_stats;
 create or replace function public.stamp_player_stats() returns trigger language plpgsql set search_path = '' as $$

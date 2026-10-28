@@ -10,6 +10,7 @@ import * as P from '../game/payments.js';
 import * as F from '../game/farmer-parts.js';
 import {WINTER_SQL,WINTER_LIVE_MD5,SQL as ENGINE_SQL} from '../scripts/season-pass-sql.mjs';
 import {seasonCheckoutText} from '../supabase/functions/diamond-checkout/checkout-session.js';
+import {beforeDonkeys,withoutDonkeys} from './helpers/before-donkeys.mjs';
 
 const {createFarm,normalizeFarm,applyFarmAction,xpForLevel,seasonById,seasonView,seasonPhase,seasonTotals,currentSeason,seasonUpcoming,seasonComing,SEASON_LOOKS,CROPS,ITEMS}=G;
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -266,7 +267,7 @@ test('differential: the live rules on new saves (a Winter pre-sale) and the new 
  const oldState=show('7f92bdb2','game/farm-state.js'),oldParts=show('7f92bdb2','game/farmer-parts.js');
  if(!oldState||!oldParts){t.skip('git history not available');return;}
  const partsUrl='data:text/javascript;base64,'+Buffer.from(oldParts).toString('base64');
- const O=await import('data:text/javascript;base64,'+Buffer.from(oldState.replace("from './farmer-parts.js';",`from '${partsUrl}';`)).toString('base64'));
+ const O=beforeDonkeys(await import('data:text/javascript;base64,'+Buffer.from(oldState.replace("from './farmer-parts.js';",`from '${partsUrl}';`)).toString('base64')));
  assert.equal(O.SEASON_IDS.join(),A,'the live rules know Autumn only');
  const now=at(11,10);
  const make=(M)=>{const s=M.createFarm(now-3*D);s.xp=M.xpForLevel(40)+5;s.passPremium=['autumn-2026','winter-2026'];return M.normalizeFarm(s,now);};
@@ -283,13 +284,13 @@ test('differential: the live rules on new saves (a Winter pre-sale) and the new 
  assert.ok(b.warehouse);delete b.warehouse;
  // One crop a harvest (22 Oct 2026) adds mastery.kept: the medals the old numbers gave (none on this young save).
  assert.deepEqual(b.mastery.kept,{});delete b.mastery.kept;
- assert.deepEqual(b,a,'new rules on a live save: identical but for that count');
+ assert.deepEqual(withoutDonkeys(b),a,'new rules on a live save: identical but for that count (and the Donkey Stable\'s keys, 27 Oct 2026)');
  const kept=JSON.parse(JSON.stringify(b));kept.inventory.sprouts=0;O.normalizeFarm(kept,now+2*H);assert.equal(kept.inventory.sprouts,0,'the live rules keep it');
  // And the other way round on a new save at the same moment.
  const c=make(G),d=JSON.parse(JSON.stringify(c));G.normalizeFarm(c,now+H);O.normalizeFarm(d,now+H);
- assert.deepEqual(d,c,'live rules on a new save: identical');
+ assert.deepEqual(d,withoutDonkeys(c),'live rules on a new save: identical (they never see the Donkey Stable: its release goes site first)');
  // A claim on Autumn gives the same under both.
  const e=make(O),f=JSON.parse(JSON.stringify(e));e.season.points=65*12;f.season.points=65*12;O.normalizeFarm(e,now);normalizeFarm(f,now);
  assert.deepEqual(O.applyFarmAction(e,{type:'season_claim',track:'paid',tier:3},now+H),applyFarmAction(f,{type:'season_claim',track:'paid',tier:3},now+H));
- delete f.inventory.sprouts;delete f.warehouse;delete f.mastery.kept;assert.deepEqual(f,e);
+ delete f.inventory.sprouts;delete f.warehouse;delete f.mastery.kept;assert.deepEqual(withoutDonkeys(f),e);
 });

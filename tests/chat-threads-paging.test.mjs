@@ -223,3 +223,27 @@ test('Show more reuses a text every language has, and the chat\'s own button loo
  for(const code of ['ar','cs','de','es','fr','hi','hu','id','ja','nl','pt','ru','tr','uk','zh']){const words=JSON.parse(read(`public/i18n/${code}.json`));for(const key of ['Show more','Loading…','A farmer'])assert.ok(words[key],`${code}: ${key}`);}
  assert.match(read('public/chat.css'),/\.chat-earlier\{display:flex;justify-content:center;padding:12px 0 4px\}/);
 });
+
+test('a chat opened before shows its messages at once while the fresh page comes; a message deleted meanwhile stays gone (26 Oct 2026)',async()=>{
+ let gate=null;const pages=[];
+ const msg=(id,body)=>({id,channel:'global',sender:DAISY,sender_name:'Daisy',body,created_at:'2026-10-26T20:00:00Z',kind:'chat'});
+ const chat=baseChat({overview:async()=>overview([]),notices:async()=>[],messages:()=>new Promise(resolve=>{gate=()=>resolve(pages.shift()??[]);})});
+ await withPage(chat,async({ui,list,emit})=>{
+  pages.push([msg('00000000-0000-4000-8000-00000000a001','Hello valley'),msg('00000000-0000-4000-8000-00000000a002','Nice harvest')]);
+  await ui.open({tab:'global'});await settle();
+  assert.match(list.innerHTML,/Opening the chat/,'the first time the chat is on its way');
+  gate();await settle();assert.match(list.innerHTML,/Hello valley/);assert.match(list.innerHTML,/Nice harvest/);
+  await ui.open({tab:'notices'});await settle();
+  emit({type:'deleted',id:'00000000-0000-4000-8000-00000000a002'});   // removed by the staff while this farmer looks elsewhere
+  pages.push([msg('00000000-0000-4000-8000-00000000a003','Fresh one'),msg('00000000-0000-4000-8000-00000000a001','Hello valley')]);
+  await ui.open({tab:'global'});await settle();
+  assert.match(list.innerHTML,/Hello valley/,'at once: what it showed last time');assert.doesNotMatch(list.innerHTML,/Opening the chat/);
+  assert.doesNotMatch(list.innerHTML,/Nice harvest/,'a message deleted meanwhile stays gone');
+  gate();await settle();assert.match(list.innerHTML,/Fresh one/,'then the fresh page takes over');
+  // Notifications read once show at once too.
+  await ui.open({tab:'notices'});await settle();assert.doesNotMatch(list.innerHTML,/Opening the chat/);
+ });
+ const src=readFileSync(new URL('../src/chat-ui.js',import.meta.url),'utf8');
+ assert.match(src,/const RECENT_CHATS=8,recent=new Map\(\);/,'only the last few chats of this visit');
+ assert.match(readFileSync(new URL('../public/social-ui.js',import.meta.url),'utf8'),/async open\(\)\{embedded=false;root=ownDialog\(\);doc\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>\{if\(d!==dialog\)d\.close\(\);\}\);error='';render\(\);/,'daily sharing on its own keeps what it last knew too');
+});

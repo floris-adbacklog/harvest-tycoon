@@ -32,7 +32,16 @@ else void boot();
 // page's own clock. The farm page adds its own steps to the same object (src/game-cloud.js, public/game.js) and sends them with its
 // first look. Each step keeps its first time: a second start (a log-in during play) does not move it.
 const chain=window.harvestChain??={},mark=key=>{chain[key]??=Math.round(performance.now());};
+// The farm's files start downloading once this script runs (26 Oct 2026, public/crazygames.html keeps them in a template until then):
+// with the page they shared a slow phone line with this script, which came in after 29 s on a 1.6 Mbit/s line instead of 3 s. They
+// still come in while CrazyGames answers and the account is checked.
+function startPrefetch(doc=document){
+ const template=doc.getElementById('farm-prefetch');if(!template?.content)return 0;
+ const links=[...template.content.querySelectorAll('link[rel="prefetch"]')];
+ doc.head.append(...links.map(link=>link.cloneNode()));template.remove();return links.length;
+}
 async function boot(){
+ startPrefetch();
  const link=framed?createWrapperLink({win:window,parent:window.parent,local}):localStandIn();
  stopPageZoom(document);
  // Nor does the wheel scroll CrazyGames' page from ours (11 Oct 2026, Part A A7): over the loading screen, the pause, the edges.

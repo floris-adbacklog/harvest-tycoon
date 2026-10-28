@@ -1,4 +1,4 @@
-import {SPREAD,pondBounds} from './farm-layout.js';
+import {SPREAD,pondBounds,eastRoom} from './farm-layout.js';
 import * as THREE from 'three';
 
 // Purely decorative layer for the 3D farm. It never reads or writes game state,
@@ -168,7 +168,7 @@ function mountainRing({cloneModel,group,rand,mobile}){
  const names=['mountain_001','mountain_007','mountain_001','mountain_008','mountain_007'],k=Math.SQRT1_2;
  const step=mobile?22:14;let i=0;
  for(let a=-8;a<=196;a+=step){
-  const phi=(a+(rand()-.5)*7)*Math.PI/180,A=(50+rand()*5)*RING,B=(46+rand()*5)*RING;
+  const deg=a+(rand()-.5)*7,phi=deg*Math.PI/180,far=eastRoom(deg),A=(50+rand()*5)*RING*far,B=(46+rand()*5)*RING*far;
   const sx=A*Math.cos(phi),sb=B*Math.sin(phi);
   // Screen axes to world: right = (1,0,-1)/sqrt2, back = (-1,0,-1)/sqrt2, around the home focus.
   const x=1.4+(sx-sb)*k,z=1.5+(-sx-sb)*k;

@@ -31,6 +31,13 @@ test('every crop has its own board; only public metrics can be selected',async()
   assert(calls.filter(c=>c[0]==='select').every(c=>!c[1].includes('diamonds')&&!c[1].includes('*')));
  }
 });
+test('the leaderboard\'s read rule reads the sign-in token once per request, not once per farmer (26 Oct 2026: 300 ms, now 7 ms)',async()=>{
+ const {readFileSync}=await import('node:fs');const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+ assert.match(read('supabase/leaderboard-policy-fast.sql'),/alter policy "Players can read leaderboard" on public\.player_stats\n using \(coalesce\(\(\(select auth\.jwt\(\)\)->>'is_anonymous'\)::boolean,false\)=false\);/);
+ const base=read('supabase/player_stats.sql');
+ assert.match(base,/using \(coalesce\(\(\(select auth\.jwt\(\)\) ->> 'is_anonymous'\)::boolean, false\) = false\);/,'running the base file again keeps it fast');
+ assert.doesNotMatch(base,/coalesce\(\(auth\.jwt\(\)/);
+});
 test('tied scores receive distinct ordinal places in the stable server order',()=>{
  const rows=[{badges:4,harvested_wheat:50},{badges:4,harvested_wheat:20},{badges:1,harvested_wheat:20}];
  assert.deepEqual(rankedRows(rows,'badges').map(r=>r.rank),[1,2,3]);
@@ -48,7 +55,7 @@ test('Most building upgrades: every upgrade counts the same, read from the farm 
 
 test('Most quests done: the distinct quests in the farm\'s claimed list, read on every save; the profile tile opens it',async()=>{
  const {readFileSync}=await import('node:fs');const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
- assert.deepEqual(LEADERBOARD_CATEGORIES.quests_done,{label:'Most quests done',heading:'Quests',unit:'quests done',description:'Quests finished and claimed, out of 320.'});
+ assert.deepEqual(LEADERBOARD_CATEGORIES.quests_done,{label:'Most quests done',heading:'Quests',unit:'quests done',description:'Quests finished and claimed, out of 326.'});
  const sql=read('supabase/leaderboard-quests.sql');
  assert.match(sql,/add column if not exists quests_done integer not null default 0;\ngrant select \(quests_done\) on public\.player_stats to authenticated;/);
  assert.match(sql,/select count\(distinct q\.value\) into new\.quests_done from jsonb_array_elements\(farm->'claimed'\) q where q\.value#>>'\{\}' ~ whole;/);

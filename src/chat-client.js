@@ -6,7 +6,7 @@ const MESSAGE_COLUMNS='id,channel,sender,sender_name,sender_avatar,sender_staff,
 // A family request card (supabase/family-request-chat.sql) carries its kind and details; until that is in the database the chat
 // reads the columns it always had.
 const CARD_COLUMNS=`${MESSAGE_COLUMNS},kind,meta`;let cards=true;
-// The database says why in plain words ("Write 1–200 characters."); a lost connection gets a sentence of its own.
+// The database says why in plain words ("Write 1–300 characters."); a lost connection gets a sentence of its own.
 // Oct 2026: a request that was cut off or timed out ("AbortError: …", "TimeoutError: …") is no connection either, and a sign-in
 // that ran out ("JWT expired") says so. The pace limit names itself: "Slow down a little." told 8 farmers in a week nothing about
 // the 2 seconds (supabase/chat.sql; the 12 a minute it also keeps is never reached by players, at most 6 so far).
@@ -174,6 +174,15 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   // The Admin dashboard's growth charts (23 Oct 2026, supabase/growth-samples.sql): the admin only.
   growthCharts:()=>rpc('admin_growth_charts'),
   stopOffer:id=>rpc('offer_stop',{p_id:id}),
+  // The Sale (27 Oct 2026, supabase/diamond-sale.sql): 40% more diamonds in every plain pack for 1 to 72 hours, a name from the list;
+  // starting, the list and stopping are for the admin only.
+  startSale:({hours=24,kind='sale'}={})=>rpc('diamond_sale_start',{p_hours:hours,p_kind:kind}),
+  saleList:()=>rpc('diamond_sale_list'),
+  stopSale:id=>rpc('diamond_sale_stop',{p_id:id}),
+  // The Double XP weekend (27 Oct 2026, supabase/xp-weekend.sql): double XP for every farmer for 1 to 72 hours, now or later; the admin only.
+  startXpWeekend:({hours=48,startsAt=null}={})=>rpc('xp_weekend_start',{p_hours:hours,p_starts_at:startsAt}),
+  xpWeekendList:()=>rpc('xp_weekend_list'),
+  stopXpWeekend:id=>rpc('xp_weekend_stop',{p_id:id}),
   setLevels:(global,dm)=>rpc('chat_set_levels',{p_global:global,p_dm:dm}),
   // News and offers by email (13 Oct 2026, supabase/news-mail.sql), the admin only: how many it reaches and the last ones, straight from
   // the database; a test, the send and going on with one through the news-mail function (supabase/functions/news-mail), in Frankfurt

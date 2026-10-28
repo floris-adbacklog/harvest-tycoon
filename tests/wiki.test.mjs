@@ -88,11 +88,11 @@ test('topic pages have a coloured header and a jump bar; phones get cards; the h
  assert.match(css,/\.wiki-jump-wrap\{position:sticky;top:var\(--wiki-sticky,0px\)/);
 });
 
-test('the wiki states the current rules: the Starter Pack window and the day-long beginner boost',async()=>{
+test('the wiki states the current rules: the Starter Pack window and the week-long beginner boost',async()=>{
  const {STARTER_WINDOW}=await import('../game/payments.js');const {STARTER_DAYS}=await import('../public/wiki-content.js');
  assert.equal(STARTER_DAYS*24*60*60*1000,STARTER_WINDOW);
  assert.match(wikiArticle('diamonds').html,/there is also a Starter Pack for 7 days\./);
- assert.match(wikiArticle('getting-started').html,/gets smaller evenly, hour by hour, and stops after your first 24 hours\./);
+ assert.match(wikiArticle('getting-started').html,/gets smaller evenly, day by day, and stops after your first 7 days\./);
 });
 
 test('the wiki matches the rules it explains: family payouts, invites, events and building needs',()=>{
@@ -271,7 +271,7 @@ test('the Village topic from level 100: crops, the market week, builder\'s crate
  for(const n of ['50,000','106,000','169,600'])assert.ok(village.includes(n),n);assert.match(village,/A cargo is worth about/);
  // Phase 5: the landmarks, the Hall's 1.6 times and the Lookout tower's fourth villager; the requests table never says 4.
  for(const l of Object.values(R.VILLAGE_LANDMARKS)){assert.ok(text.includes(l.name)&&text.includes(l.effect),l.name);assert.ok(village.includes(l.coins.toLocaleString('en-US')),l.name);}
- assert.match(text,/Each landmark gives 5,000 XP; the Great Hall also gives 200 diamonds once/);assert.match(text,/\(1\.6 times once the Great Hall is built\)/);assert.match(text,/three villagers at a time, and a fourth with the Lookout tower\./);
+ assert.match(text,/Each landmark gives 5,000 XP; the Great Hall also gives 500 diamonds once/);assert.match(text,/\(1\.6 times once the Great Hall is built\)/);assert.match(text,/three villagers at a time, and a fourth with the Lookout tower\./);
  assert.match(text,/After the last place, the golden brief builds the landmarks\./);assert.doesNotMatch(text,/builders draw/);
  const cells=[...village.matchAll(/<tr[^>]*><td>(\d+\+?)<\/td><td>(\d)<\/td><td>([^<]+)<\/td>/g)].map(m=>[m[1],m[2],m[3]]);
  assert.deepEqual(cells.slice(0,4),[['100','2','2'],['104','3','2'],['110','3','2'],['120','3','2 or 3']]);assert.ok(cells.every(c=>c[1]!=='4'));

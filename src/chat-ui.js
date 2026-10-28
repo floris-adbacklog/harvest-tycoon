@@ -15,7 +15,7 @@ import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
 import {setAppBadge} from '../public/app-badge.js';
 import {chosenLanguage,ownWords,ownLine,ownText,setOwnText,translateText} from '../public/i18n.js';
-import {portalChat,portalOff} from '../public/portal.js';
+import {portal,portalChat,portalOff} from '../public/portal.js';
 import {chatParts,mentionsMe,mentionAt,insertMention,appendMention,mentionIds,mentionMatches,MAX_MENTIONS} from './chat-rich.js';
 import {wikiSectionTitle} from '../public/wiki-content.js';
 import {SITE,appPath,settingsPart} from '../public/game-links.js';
@@ -116,6 +116,12 @@ export const byLast=(a,b)=>(Date.parse(b.lastAt)||0)-(Date.parse(a.lastAt)||0)||
 export function mergeThreads(first,older){const seen=new Set();return [...(first??[]),...(older??[])].filter(t=>t?.channel&&!seen.has(t.channel)&&seen.add(t.channel));}
 // The header button counts news and notes, your family and your private messages. Global's own messages do not count: with the whole
 // valley talking, a number on the button would never go away. A mention of you there does (3 Oct 2026): it is meant for you.
+// No News inside CrazyGames (26 Oct 2026, the final Basic Launch): News goes to every farmer and often points elsewhere (a live stream, a
+// review in the App Store, a pass for sale), which CrazyGames does not allow; the links were already plain text there, now the News
+// itself stays away. Gifts, family notes and the rest still come. The count from our server includes News, so it is counted again here
+// from the newest notices: of the unread ones (always the newest), only those that are not News.
+export const newsShown=(found=portal())=>found?.name!=='crazygames';
+export const unreadWithoutNews=(rows,unread)=>(rows??[]).slice(0,Math.max(0,unread|0)).filter(n=>n.kind!=='news').length;
 export const headerCount=unread=>(unread?.notices??0)+(unread?.family??0)+(unread?.dm??0)+(unread?.mentions??0);
 const NOTICES={news:'News',moderation:'From the moderators',gift:'A gift for you',donation:'A gift for you',purchase:'In-game purchase',family:'Farm Family'};
 const TITLES={notices:'Notifications',global:'Global chat',private:'Private chats'};
@@ -156,7 +162,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   <button type="button" role="tab" data-chat-tab="private">Private<b class="chat-count" hidden></b></button>
  </div><button type="button" class="icon-button chat-close" aria-label="Close chat"><i data-lucide="x"></i></button></div>
  <div class="chat-head"><button type="button" class="chat-back" aria-label="All private chats" hidden>${ICON.back}</button><h2 id="chat-title">Global chat</h2><button type="button" class="chat-report" hidden>${art('alert')}</button><button type="button" class="chat-block" hidden>${art('block')}</button></div>
- <form class="chat-compose" hidden><input type="text" maxlength="200" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button><ul class="chat-mentions" role="listbox" aria-label="Mention a farmer" hidden></ul></form>
+ <form class="chat-compose" hidden><input type="text" maxlength="300" autocomplete="off" enterkeyhint="send" aria-label="Your message"><select class="chat-hours" aria-label="Show the news for" title="How long everyone sees it" hidden><option value="6">6 h</option><option value="12">12 h</option><option value="24" selected>24 h</option><option value="48">48 h</option><option value="72">3 days</option><option value="168">7 days</option><option value="0">Always</option></select><button type="submit" class="chat-send" aria-label="Send">${art('send')}</button><ul class="chat-mentions" role="listbox" aria-label="Mention a farmer" hidden></ul></form>
  <div class="chat-find" hidden><input type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Find a farmer to message…" aria-label="Find a farmer to message"></div>
  <p class="chat-note" role="status" hidden></p>
  <ol class="chat-list"></ol>`;
@@ -168,6 +174,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
  let found=null,findTimer=null,findTicket=0;
 
  let overview=null,tab='global',thread=null,messages=[],notices=[],freshNotices=0,loading=0,busy=false,sending=false,connected=false,disposed=false,switchedOff=false;
+// A chat opened before shows what it showed last time at once, and the fresh page replaces it quietly when it comes (26 Oct 2026, the
+// owner: windows that show the last state feel faster). Kept for the last few chats of this visit only; a message deleted meanwhile
+// leaves the kept copy too. noticesRead: the Notifications were read once, so they show at once as well.
+const RECENT_CHATS=8,recent=new Map();let noticesRead=false;
+const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);recent.set(name,{rows:messages,more});while(recent.size>RECENT_CHATS)recent.delete(recent.keys().next().value);};
  // Earlier messages (5 Oct 2026, a farmer's feedback: an old conversation could not be read back): the newest PAGE come first, and a button
  // at the end of the list fetches the PAGE before them, as long as there are more.
  const PAGE=50;let more=false,loadingMore=false;
@@ -230,6 +241,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    // fall between the new 30th and the pages already there.
    // Below 99 rows the overview lists every chat with something unread, so a kept chat it no longer lists has nothing unread.
    if(olderMore!==null||loadingThreads){const listed=new Set((next?.threads??[]).map(t=>t.channel)),full=(next?.threads?.length??0)>=99;olderThreads=mergeThreads(overview?.threads,olderThreads).map(t=>full||listed.has(t.channel)||!t.unread?t:{...t,unread:0});}
+   if(!newsShown()&&next?.unread?.notices>0){const rows=await chat.notices().catch(()=>null);if(disposed)return;if(rows){const joined=Date.parse(next.joined??'')||0;next.unread.notices=unreadWithoutNews(rows.filter(n=>n.player_id||Date.parse(n.created_at)>joined),next.unread.notices);}}
    overview=next;button.hidden=switchedOff;settings();
    // What is on screen right now is read, even if the count raced ahead of it.
    if(dialog.open){const name=channelOf();if(tab==='notices')overview.unread.notices=0;else if(name==='global')overview.unread.global=overview.unread.mentions=0;else if(name&&name===overview.family?.channel)overview.unread.family=0;else if(name)clearThread(name);}
@@ -432,19 +444,20 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   busy=false;
   if(tab==='private'&&!thread){messages=[];paint();return;}
   if(tab==='notices'){
-   busy=true;paint();const fresh=unread().notices;
+   busy=!noticesRead;paint();const fresh=unread().notices;
    // News from before you signed up (and a gift for everyone you could not have received) is not yours to read.
-   try{const rows=await chat.notices(),joined=Date.parse(overview?.joined??'')||0;if(ticket!==loading)return;notices=rows.filter(n=>n.player_id||Date.parse(n.created_at)>joined);freshNotices=fresh;}catch(error){if(ticket===loading)note(error.message);}
-   if(ticket!==loading)return;busy=false;paint();markRead('notices');return;
+   try{const rows=await chat.notices(),joined=Date.parse(overview?.joined??'')||0;if(ticket!==loading)return;notices=rows.filter(n=>(n.player_id||Date.parse(n.created_at)>joined)&&(n.kind!=='news'||newsShown()));freshNotices=fresh;}catch(error){if(ticket===loading)note(error.message);}
+   if(ticket!==loading)return;busy=false;noticesRead=true;paint();markRead('notices');return;
   }
   const name=channelOf();if(!name){messages=[];paint();return;}
-  busy=true;paint();
-  more=false;
-  try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){messages=[];note(error.message);}}
-  if(ticket!==loading)return;busy=false;paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');
+  const kept=recent.get(name);
+  if(kept){messages=kept.rows;more=kept.more;busy=false;}else{busy=true;more=false;}
+  paint();
+  try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){if(!kept)messages=[];note(error.message);}}
+  if(ticket!==loading)return;busy=false;keepRecent(name);paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');
  }
  function show(next,{keepThread=false}={}){
-  tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
+  keepRecent(channelOf());tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
   if(!matchMedia('(pointer:coarse)').matches&&!form.hidden)input.focus({preventScroll:true});
  }
  // 8 Oct 2026: a push for a private chat that is not in the list (the welcome sender has 1,500+ of them) opens it all the same, as
@@ -481,9 +494,11 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(disposed)return;
   if(event.type==='connected'){if(connected){void refreshOverview();if(dialog.open)void load();}connected=true;return;}
   if(!overview)return;
-  if(event.type==='deleted'){if(messages.some(m=>m.id===event.id)){messages=messages.filter(m=>m.id!==event.id);if(dialog.open)paint();}return;}
+  if(event.type==='deleted'){for(const [name,kept] of recent)if(kept.rows.some(m=>m.id===event.id))recent.set(name,{...kept,rows:kept.rows.filter(m=>m.id!==event.id)});
+   if(messages.some(m=>m.id===event.id)){messages=messages.filter(m=>m.id!==event.id);if(dialog.open)paint();}return;}
   if(event.type==='edited'){const changed=event.message;if(changed&&messages.some(m=>m.id===changed.id)){messages=withEdit(messages,changed);if(dialog.open)paint();}return;}
   if(event.type==='notice'){
+   if(event.notice?.kind==='news'&&!newsShown())return;
    // A gift for everyone: an open game fetches it now (the farm adds it on load), a few seconds apart so not everyone asks at once.
    // A gift from the admin's Edit for this farmer alone (kind 'gift', 22 Oct 2026, the owner: it only showed after a refresh): it is
    // already in the farm, and the load shows its window (pendingGift), so fetch it at once.
@@ -592,7 +607,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
 
  // Mentions (3 Oct 2026, src/chat-rich.js): an "@" in Global or Family opens a list under the box, never in a private chat. Global: the
  // farmers who spoke there lately, and from 2 letters every farmer by name (the same search as Private); Family: its members only, as
- // the database only lets those through. A tap puts "@Full Name" in the text, and the message takes their ids along (at most 3).
+ // the database only lets those through. A tap puts "@Full Name" in the text, and the message takes their ids along (at most 5,
+ // 26 Oct 2026). A farmer already in the message is not offered again.
  const pickList=form.querySelector('.chat-mentions'),picked=new Map();
  let picks=[],pickAt=null,pickActive=0,pickTimer=null,pickTicket=0,familyPeople=null,recentPeople=null;
  const canMention=()=>(tab==='global'||(tab==='family'&&Boolean(overview?.family)))&&!composeState().blocked;
@@ -622,14 +638,14 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   const at=canMention()?mentionAt(input.value,input.selectionStart??input.value.length,picked.values()):null;
   if(!at){closePicks();return;}
   clearTimeout(pickTimer);pickAt=at;const ticket=++pickTicket,query=at.query.trim(),family=tab==='family';
-  if(mentionIds(input.value,picked,me).length>=MAX_MENTIONS){picks=[];drawPicks('Mention up to 3 farmers in one message.');return;}
+  if(mentionIds(input.value,picked,me).length>=MAX_MENTIONS){picks=[];drawPicks('Mention up to 5 farmers in one message.');return;}
   const run=async()=>{
    let people=[];
    if(family)people=await members();
    else if(query.length>=2){try{people=(await bridge.request({operation:'player_search',query}))?.players??[];}catch{people=[];}}
    else people=await speakers();
    if(ticket!==pickTicket||!dialog.open)return;
-   picks=mentionMatches(people,query,{me,blocked:blocked()});pickActive=0;
+   picks=mentionMatches(people,query,{me,blocked:new Set([...blocked(),...mentionIds(input.value,picked,me)])});pickActive=0;
    drawPicks(!picks.length&&query.length>=2?'No farmers found. Try another name.':'');refreshArt();
   };
   if(!family&&query.length>=2)pickTimer=setTimeout(run,300);else void run();
@@ -640,8 +656,8 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
   if(!canMention())return;
   const card=(await chat.cards?.([m.sender]).catch(()=>[])??[]).find(c=>c?.playerId===m.sender),name=card?.username??m.sender_name;
   if(!name||!canMention())return;
-  if(!picked.has(m.sender)&&mentionIds(input.value,picked,me).length>=MAX_MENTIONS){note('Mention up to 3 farmers in one message.');return;}
-  const next=appendMention(input.value,name,input.maxLength>0?input.maxLength:200);if(!next)return;
+  if(!picked.has(m.sender)&&mentionIds(input.value,picked,me).length>=MAX_MENTIONS){note('Mention up to 5 farmers in one message.');return;}
+  const next=appendMention(input.value,name,input.maxLength>0?input.maxLength:300);if(!next)return;
   input.value=next.text;picked.set(m.sender,name);closePicks();input.focus({preventScroll:true});input.setSelectionRange(next.caret,next.caret);
  }
  function pick(i){
@@ -743,7 +759,7 @@ export function createChatUI({bridge,profiles,doc=document,win=window}){
    else if(key==='block')await setBlock(m.sender,m.sender_name,true);
    else if(key==='edit'){
     // The staff can change a message (to take out a phone number, say) instead of deleting it; the chat rules still apply.
-    const body=await promptText({title:'Edit this message',description:m.sender===me?'Everyone sees the new text, marked “edited”.':`Everyone sees the new text, marked “edited by a moderator”.`,value:m.body,maxLength:200,confirmLabel:'Save',picture:'admin'});
+    const body=await promptText({title:'Edit this message',description:m.sender===me?'Everyone sees the new text, marked “edited”.':`Everyone sees the new text, marked “edited by a moderator”.`,value:m.body,maxLength:300,confirmLabel:'Save',picture:'admin'});
     if(body==null||body.trim()===m.body)return;
     messages=withEdit(messages,await chat.editMessage(m.id,body));paint();
    }else if(key==='delete'){

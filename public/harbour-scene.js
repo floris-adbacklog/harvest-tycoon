@@ -158,7 +158,7 @@ async function addAnimals(world){
   model.traverse(o=>{if(o.isSkinnedMesh){o.visible=o.name===show;o.castShadow=false;o.receiveShadow=true;o.frustumCulled=false;o.material.roughness=1;o.material.metalness=0;o.raycast=()=>{};}});
   const box=new THREE.Box3().setFromObject(gltf.scene),size=box.getSize(new THREE.Vector3()),k=long/Math.max(size.x,size.z);
   const root=new THREE.Group();model.scale.setScalar(k);model.position.y=-box.min.y*k;root.add(model);root.position.set(x,y,z);root.rotation.y=turn;group.add(root);
-  const mixer=new THREE.AnimationMixer(model),find=n=>gltf.animations.find(a=>a.name===n)??gltf.animations[0];
+  const mixer=new THREE.AnimationMixer(model),find=n=>gltf.animations.find(a=>a.name===n)??gltf.animations.find(a=>a.name==='idle')??gltf.animations[0];   // the village's pigeons have no gesture: they stand
   const action=mixer.clipAction(find(clip));action.play();mixer.update(Math.random()*3);
   return {mixer,find,action,clip,next:2+Math.random()*6};
  };

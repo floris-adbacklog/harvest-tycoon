@@ -37,7 +37,7 @@ test('Every family gets the same weekly order: four random crops or goods from t
    assert.ok(hours<=72,`${key}: ${hours} hours`);
   }
  }
- assert.equal(seen.size,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&(ITEMS[k].world??1)===1&&!ITEMS[k].season).length,'over time every crop and good turns up (never an heirloom, a World II or III good or a season crop)');
+ assert.equal(seen.size,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&(ITEMS[k].world??1)===1&&!ITEMS[k].season&&k!=='bathbasket').length,'over time every crop and good turns up (never an heirloom, a World II or III good, a season crop or the bath basket, 27 Oct 2026)');
 });
 test('Create and join enforce names, emblems, member limit and code privacy',()=>{
  let c=create();assert.equal(c.families[0].is_open,true,'a new family is open (27 Sep 2026)');assert.match(c.families[0].invite_code,/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
@@ -189,10 +189,17 @@ test('Old saves normalize safely and shared copies and existing presence rule ma
  assert.equal(readFileSync('src/presence.js','utf8'),readFileSync('supabase/functions/farm-api/presence.js','utf8'));
 });
 test('Service replay uses permanent receipt without deducting inventory or another commit',async()=>{
- const s=farm(),c=create();c.now=now;c.receipt={result:{points:100,message:'Saved'},failed:false};let calls=0;
- const admin={rpc:async name=>{calls++;assert.equal(name,'harvest_family_context');return {data:c};}};
+ // Since 26 Oct 2026 an action reads harvest_family_read and its receipt by its key (family_receipts), side by side.
+ const s=farm(),c=create();c.now=now;let calls=0;const looked=[];
+ const admin={rpc:async name=>{calls++;assert.equal(name,'harvest_family_read');return {data:c,error:null};},
+  from(table){assert.equal(table,'family_receipts');const q={select(){return q;},eq(key,value){looked.push([key,value]);return q;},async maybeSingle(){return {data:{result:{points:100,message:'Saved'},failed:false},error:null};}};return q;}};
  const r=await handleFamily({admin,body:{operation:'action',requestId:'old',action:{type:'family_contribute'}},row:{revision:4,receipts:[]},state:s,player:'alice',username:'Alice'});
- assert.equal(calls,1);assert.equal(r.status,200);assert.equal(r.data.revision,4);assert.equal(r.data.result.points,100);
+ assert.equal(calls,1);assert.deepEqual(looked,[['player_id','alice'],['request_id','old']]);assert.equal(r.status,200);assert.equal(r.data.revision,4);assert.equal(r.data.result.points,100);
+ // Before family-read.sql (no such function): the whole context, with its receipt, as before.
+ const whole=create();whole.now=now;whole.receipt={result:{points:100,message:'Saved'},failed:false};const asked=[];
+ const before={rpc:async(name,args)=>{asked.push(name);return name==='harvest_family_read'?{data:null,error:{code:'PGRST202'}}:{data:whole,error:null};},from(){return {select(){return this;},eq(){return this;},async maybeSingle(){return {data:null,error:null};}};}};
+ const old=await handleFamily({admin:before,body:{operation:'action',requestId:'old',action:{type:'family_contribute'}},row:{revision:4,receipts:[]},state:farm(),player:'alice',username:'Alice'});
+ assert.deepEqual(asked,['harvest_family_read','harvest_family_context']);assert.equal(old.data.result.points,100);
 });
 test('Service CAS failure retries; failed joins commit rate limits without marking online',async()=>{
  const c=emptyFamilyContext();c.now=now;let saved;

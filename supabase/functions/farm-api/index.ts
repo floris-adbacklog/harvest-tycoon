@@ -8,6 +8,7 @@ import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare,hand
 import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleAdminReload,readReloadAfter} from './reload-service.js';
+import {readXpWeekend} from './xp-weekend-service.js';
 import {handleInvite,linkInvite,qualifyInvite,qualifiedFriends} from './invite-service.js';
 import {linkPartner,partnerWelcomeNotice} from './partner-service.js';
 import {handleDeleteAccount} from './account-delete-service.js';
@@ -17,7 +18,7 @@ import {recordLoadStall} from './load-stall-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
-import {NO_EVENT_ACTIONS,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
+import {NO_EVENT_ACTIONS,setXpWeekend,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
 // 11 Oct 2026: a browser keeps the answer to its preflight (OPTIONS) for up to 2 hours (Max-Age; Chrome's own cap, Safari keeps it
 // shorter), instead of Chrome's 5 seconds: about 50,800 OPTIONS calls a day were over a third of all the calls, and every tap after a pause paid
 // two round trips. Allow-Headers must name every header the browser sends (supabase-js: authorization, apikey, content-type,
@@ -31,6 +32,14 @@ const nameFree=async(admin:any,name:string)=>{const {data,error}=await admin.rpc
 const freeName=(admin:any,name:string)=>firstFreeName(name,(candidate:string)=>nameFree(admin,candidate));
 // Work that may finish after the reply (the log, where the farm was opened): the game never waits for it.
 const later=(work:Promise<unknown>)=>(globalThis as unknown as {EdgeRuntime?:{waitUntil?:(p:Promise<unknown>)=>void}}).EdgeRuntime?.waitUntil?.(work);
+// Asks the database now (a supabase-js query only goes out when it is awaited) and never rejects: a failure comes back as {error}.
+const ask=(query:PromiseLike<any>)=>Promise.resolve().then(()=>query).catch((error:unknown)=>({data:null,error}));
+// The operations that open the player's own farm: their profile and farm row are read beside the account check (26 Oct 2026).
+const FARM_OPERATIONS=new Set(['load','action','family','family_profile','invite']);
+const PROFILE_FIELDS='player_id,username,currency,level,avatar_id,events_finished,look';
+// One request in 20 logs how long each step took, in ms from the start: an action its account, profile, farm, apply, commit and reply
+// (26 Oct 2026), a load its account, profile, farm and the extras read beside it (the staff's gifts, invited friends, email check).
+const TIMING_SHARE=0.05;
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 // The team's Sign in with Apple key (16 Oct 2026, apple-sign-in-service.js), set by the owner as secrets: without it no Apple token is
 // kept or revoked, and nothing else changes.
@@ -52,14 +61,28 @@ Deno.serve(async(req)=>{
  try{
   const token=req.headers.get('Authorization')?.replace(/^Bearer /,'');
   if(!token)return reply({error:'Please sign in.'},401);
+  // 26 Oct 2026 (the owner: "chores take long after the tap"): every answer from the database takes about 70 ms on its way through the
+  // API, and a tap asked four in a row before it could start: the account, the session, the profile and the farm. Now the last three go
+  // out beside the account check, for the player the token names. Nothing read this way is used before the account is verified and is
+  // that same player; otherwise everything is asked again for the verified account, as before.
+  const started=Date.now(),timed=Math.random()<TIMING_SHARE,marks:Record<string,number>={},mark=(name:string)=>{if(timed)marks[name]=Date.now()-started;};
+  const raw=await req.text();
+  let body:any,parsed=false;if(raw.length<=4096){try{body=JSON.parse(raw);parsed=true;}catch{}}
+  let claims:any={};try{claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))??{};}catch{}
+  const named=typeof claims.sub==='string'&&/^[0-9a-f-]{36}$/i.test(claims.sub)?claims.sub:null;
+  const early=named&&claims.session_id?{
+   session:ask(admin.rpc('harvest_session_active',{p_player:named,p_session:claims.session_id})),
+   ...(parsed&&FARM_OPERATIONS.has(body?.operation)?{profile:ask(admin.from('player_stats').select(PROFILE_FIELDS).eq('player_id',named).maybeSingle()),farm:ask(admin.from('player_farms').select('*').eq('player_id',named).maybeSingle())}:{})
+  }:null;
   const {data:{user},error:authError}=await admin.auth.getUser(token);
   if(authError||!user||user.is_anonymous)return reply({error:'Please sign in with your account.'},401);
-  const claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
   if(!claims.session_id)return reply({error:'Your session has ended. Please sign in again.'},401);
+  const mine=early&&user.id===named?early:null;
   // How this session was signed in (password, oauth, otp…): the admin's powers need Google (admin-service.js isSuperadmin).
   (user as {signInMethods?:string[]}).signInMethods=Array.isArray(claims.amr)?claims.amr.map((a:{method?:string})=>String(a?.method??'')).filter(Boolean):[];
-  const active=await admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id});
+  const active=await (mine?.session??admin.rpc('harvest_session_active',{p_player:user.id,p_session:claims.session_id}));
   if(active.error)throw active.error;
+  mark('auth');
   if(!active.data)return reply({error:'Your session has ended. Please sign in again.'},401);
   // A CrazyGames account (Oct 2026, crazygames-auth, portal.js) signs in through CrazyGames, and its address on players.harvesttycoon.com
   // is made up and never read: here its provider is CrazyGames, so every "email sign-up" rule below leaves it out (no confirm-your-email
@@ -70,12 +93,15 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='kongregate')user.app_metadata={...user.app_metadata,provider:'kongregate'};
   // And for a Discord account (Oct 2026, discord-auth): signed in through Discord, a made-up address, the bonus quietly.
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
-  const raw=await req.text();if(raw.length>4096)return reply({error:'Request is too large.'},413);
-  let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request.'},400);}
+  if(raw.length>4096)return reply({error:'Request is too large.'},413);
+  if(!parsed)return reply({error:'Invalid request.'},400);
   if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
   // beside the farm (cached, never fails), so a load waits no longer for it.
   const reloadAt=body.operation==='load'?readReloadAfter(admin):null;
+  // The Double XP weekend (27 Oct 2026, xp-weekend-service.js): read beside the farm (cached, never fails), set in farm-state.js before
+  // any farm is worked out below, and carried in the answers of a load and an action (xpWeekend) so the game works it out the same way.
+  const weekendAt=readXpWeekend(admin);
   if(body.operation==='admin_reload'){const r=await handleAdminReload({admin,body,user});return reply(r.data,r.status);}
   if(body.operation==='events'||body.operation==='admin_events'){const r=await handleEvents({admin,body,user,passwordOk});return reply(r.data,r.status);}
   if(body.operation==='admin_email'){
@@ -155,8 +181,9 @@ Deno.serve(async(req)=>{
   if(body.operation==='apple_token'){
    const kept=await handleAppleToken({admin,body,user,...appleKey()});return reply(kept.data,kept.status);
   }
-  const profileResponse=await admin.from('player_stats').select('player_id,username,currency,level,avatar_id,events_finished,look').eq('player_id',user.id).maybeSingle();
+  const profileResponse=await (mine?.profile??admin.from('player_stats').select(PROFILE_FIELDS).eq('player_id',user.id).maybeSingle());
   if(profileResponse.error)throw profileResponse.error;
+  mark('profile');
   let profile=profileResponse.data;
   // A farmer who signed in with Facebook or Google brings no name: they get a friendly one ("Sunny Acres 4821"), as an email
   // sign-up without a name does, and go straight to their farm. Settings invites them to make it their own.
@@ -213,12 +240,14 @@ Deno.serve(async(req)=>{
    const family=!own.error&&own.data?.family&&typeof own.data.family==='object'?own.data.family:null;
    return reply({state:createShowcaseFarm(now,{family}),profile:{player_id:user.id,username,currency:0,level:SHOWCASE_LEVEL,avatar_id:profile?.avatar_id??'default'},adminView:true,emailCheck:{needed:false,email:user.email??'',canChange:false},serverNow:now,reloadAfter:await reloadAt});
   }
-  // Keep one server-owned roll across optimistic concurrency retries.
-  let choreRoll:number|undefined;
-  const random=()=>choreRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
+  // Keep one server-owned roll across optimistic concurrency retries (a lucky double batch; a chore's find is fixed by the farm itself
+  // since 26 Oct 2026, farm-state.js choreRoll).
+  let serverRoll:number|undefined;
+  const random=()=>serverRoll??=(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296);
+  const xpWeekend=setXpWeekend(await weekendAt);
   for(let attempt=0;attempt<5;attempt++){
-   const found=await admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle();if(found.error)throw found.error;
-   const row=found.data,now=Date.now();
+   const found=await (attempt===0&&mine?.farm?mine.farm:admin.from('player_farms').select('*').eq('player_id',user.id).maybeSingle());if(found.error)throw found.error;
+   const row=found.data,now=Date.now();mark('farm');
    if(!row){
     const initial=createFarm(now);let partner:{diamonds:number,label:string|null}|null=null;
     // Preserve only progress already stored on the server. Never import browser saves.
@@ -271,8 +300,12 @@ Deno.serve(async(req)=>{
     // in the last 7 days, to everyone (no recipients) or with this farmer among its recipients: added once, shown in the same
     // "Donation!" pop-up.
     const since=new Date(Math.max(now-7*86400000,Date.parse(user.created_at??'')||now)).toISOString();
-    let donated:unknown[]=[];
-    try{const found=await admin.from('staff_donations').select('id,coins,diamonds,message,per_level').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40);if(!found.error)donated=found.data??[];}catch{}
+    // The staff's gifts, the invited friends who reached level 10 and the email check go out together (26 Oct 2026: one after another
+    // they were three waits on every opening of the game); each answer is used below in the same order as before.
+    const donationsRead=Promise.resolve().then(()=>admin.from('staff_donations').select('id,coins,diamonds,message,per_level').gt('created_at',since).or(`recipients.is.null,recipients.cs.{${user.id}}`).order('created_at').limit(40)).then((found:{error?:unknown,data?:unknown[]})=>found.error?[]:found.data??[],()=>[]);
+    const friendsRead=qualifiedFriends(admin,user.id).catch(()=>[]);
+    const emailRead=state.emailBonus?null:Promise.resolve().then(()=>admin.rpc('harvest_email_checked',{p_player:user.id})).catch(()=>({error:true,data:null}));
+    const donated:unknown[]=await donationsRead;
     const donations=receiveDonations(state,donated),fromStaff={coins:donations.reduce((sum,d)=>sum+d.coins,0),diamonds:donations.reduce((sum,d)=>sum+d.diamonds,0)};
     if(donations.length){
      const coins=donations.reduce((sum,d)=>sum+d.coins,0),diamonds=donations.reduce((sum,d)=>sum+d.diamonds,0),message=donations.findLast(d=>d.message)?.message??null;
@@ -280,19 +313,19 @@ Deno.serve(async(req)=>{
     }
     // Invite a friend: this farm's own reward at level 10 (also when it got there through a family reward), and the
     // rewards for friends it invited who reached level 10 since the last visit.
-    const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await qualifiedFriends(admin,user.id).catch(()=>[]));
+    const inviteReward=inviteeReward(state,now),friends=inviterRewards(state,await friendsRead);
     // A confirmed email pays EMAIL_BONUS diamonds once (farm-state.js): Google and Facebook at once, an email sign-up after its code.
     // A problem with this check never stops the farm from opening: the bonus simply waits for the next load. Google and Facebook
     // accounts get it quietly; an email sign-up that just typed its code sees it in the gift pop-up.
     let emailBonusPaid=false;
-    if(!state.emailBonus){
-     const checked=await Promise.resolve().then(()=>admin.rpc('harvest_email_checked',{p_player:user.id})).catch(()=>({error:true,data:null}));
+    if(emailRead){
+     const checked=await emailRead;
      if(!checked.error&&checked.data===true&&grantEmailBonus(state,now)){
       emailBonusPaid=true;
       if((user.app_metadata?.provider??'email')==='email'){const message='Thanks for confirming your email!';gift=gift?{...gift,diamonds:(gift.diamonds??0)+EMAIL_BONUS,message:gift.message??message}:{coins:0,xp:0,diamonds:EMAIL_BONUS,item:null,itemCount:0,message,at:now};}
      }
     }
-    const back=await rejoining;
+    const back=await rejoining;mark('extras');if(timed)try{console.log(JSON.stringify({timing:'load',attempt,...marks}));}catch{}
     if(back?.offer&&welcome)Object.assign(welcome,{family:back.offer});
     // The family flag by the Family Hall goes when the farmer is in no family any more (left for being away, or removed meanwhile).
     if(back&&!back.inFamily&&state.family?.familyId)state.family={familyId:null,unclaimedCount:state.family.unclaimedCount??0};
@@ -307,17 +340,18 @@ Deno.serve(async(req)=>{
      // every family rule applies: leader, room, no family yet). Then the reply carries the farm as it is after that.
      if(friends.length&&await inviteFriendsToFamily(friends)){
       const latest=await admin.from('player_farms').select('state,revision').eq('player_id',user.id).maybeSingle();
-      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now,reloadAfter:await reloadAt});}
+      if(!latest.error&&latest.data){const fresh=normalizeFarm(latest.data.state,now);return reply({state:fresh,profile:{...profile,currency:fresh.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(fresh),revision:latest.data.revision,serverNow:now,xpWeekend,reloadAfter:await reloadAt});}
      }
-     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now,reloadAfter:await reloadAt});
+     return reply({state,profile:{...profile,currency:state.coins},levelReward,chapterReward,gift,welcome,invite,emailCheck:emailCheck(state),revision:row.revision+1,serverNow:now,xpWeekend,reloadAfter:await reloadAt});
     }
     later(writeLog(admin,user.id,logged));
-    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now,reloadAfter:await reloadAt});
+    return reply({state,profile,emailCheck:emailCheck(state),revision:row.revision,serverNow:now,xpWeekend,reloadAfter:await reloadAt});
    }
    const previous=row.receipts.find((r:{id:string})=>r.id===body.requestId);
-   if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now});
+   if(previous)return reply({state,profile,result:previous.result,revision:row.revision,serverNow:now,xpWeekend});
    const before=snapshot(state);
    let result;try{result=applyFarmAction(state,body.action,now,random);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
+   mark('apply');
    // Invite a friend: the action that brings an invited farm to level 10 pays its reward in the same save.
    const inviteReward=inviteeReward(state,now);if(inviteReward)result.inviteReward=inviteReward;
    // The tractor's diamond work counts for no event (NO_EVENT_ACTIONS): saved as no event action, so its stats only move the baselines.
@@ -325,9 +359,12 @@ Deno.serve(async(req)=>{
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
    if(saved.error)throw saved.error;
    if(saved.data){
+    mark('commit');
     if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));
     later(writeLog(admin,user.id,farmLog(body.action,before,state,result)));
-    return reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now});
+    const answer=reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now,xpWeekend});
+    mark('reply');if(timed)try{console.log(JSON.stringify({timing:'action',type:String(body.action.type).slice(0,40),attempt,...marks}));}catch{}
+    return answer;
    }
   }
   return reply({error:'Your farm changed in another tab. Please try again.'},409);

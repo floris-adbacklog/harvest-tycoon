@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,NO_EVENT_ACTIONS} from '../game/farm-state.js';
 import {FARMER_PARTS,FARMER_REWARDS,FARMER_GOALS,FARMER_OFFER,FARMER_FREE,FARMER_SLOTS,DEFAULT_FARMER,farmerOwned,farmerOf,rewardOpen,rewardProgress,farmerOffered,creatorParts,farmerPart,validFarmerConfig} from '../game/farmer-parts.js';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const asModule=source=>'data:text/javascript;base64,'+Buffer.from(source.replace("from './farmer-parts.js';",`from '${new URL('../game/farmer-parts.js',import.meta.url).href}';`).replace("from './farm-map.js';",`from '${new URL('../game/farm-map.js',import.meta.url).href}';`)).toString('base64');
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<26,stdio:['ignore','pipe','ignore']});}catch{return null;}};
@@ -95,7 +96,7 @@ test('saves: a farm that never dressed its farmer has no farmer key and shows th
 // know), plays on with it and refuses the new action cleanly, so a site rolled back, or a page still open from before, is safe.
 test('old rules on new saves and new rules on old saves (main f6c82f75): the key survives, nothing breaks',async t=>{
  const old=show('f6c82f75','game/farm-state.js');if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old));
+ const O=beforeDonkeys(await import(asModule(old)));
  const s=farm(45);s.stats.harvested=10;wear(s,{...DEFAULT_FARMER,hat:'hat_009'});
  const saved=structuredClone(s),copy=structuredClone(saved),t2=now+5*60000;O.normalizeFarm(copy,t2);
  assert.deepEqual(copy.farmer,saved.farmer,'the old rules keep the farmer');

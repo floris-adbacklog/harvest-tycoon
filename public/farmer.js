@@ -89,14 +89,14 @@ function chestPatch(root,bones,height){
  bone.add(mesh);return mesh;
 }
 // One part's meshes for a farmer: the file's meshes, sharing its geometry, bound to the farmer's bones of the same names.
-function wear(source,bones,parent,file){
+function wear(source,bones,parent,file,shadow=true){
  const meshes=[];
  source.scene.traverse(n=>{
   if(!n.isSkinnedMesh)return;
   const mesh=new THREE.SkinnedMesh(n.geometry,farmerMaterial(n.material.name,Boolean(n.geometry.attributes.color)));
   mesh.name=n.name;mesh.userData.file=file;mesh.matrix.copy(n.matrixWorld);mesh.matrix.decompose(mesh.position,mesh.quaternion,mesh.scale);
   mesh.bind(new THREE.Skeleton(n.skeleton.bones.map(b=>bones.get(b.name)),n.skeleton.boneInverses),n.bindMatrix);
-  mesh.castShadow=true;mesh.receiveShadow=true;
+  mesh.castShadow=shadow;mesh.receiveShadow=true;
   // The pose moves the mesh a little round its rest shape (an arm up in the hop): a roomier sphere for the culling.
   mesh.frustumCulled=false;
   parent.add(mesh);meshes.push(mesh);
@@ -106,8 +106,9 @@ function wear(source,bones,parent,file){
 // A farmer: root (a Group to place and turn; it faces +z) with the skeleton and the parts in it, a mixer with the clips, and
 // dress(config) to change what it wears (the parts that stay are kept; a part's file loads once). height: world units, the head's top
 // (without a hat) at that height. Never throws for a bad config: it wears the default farmer instead.
-// family: the family shirt's {shirt, emblem} (item 6), or null.
-export async function createFarmer(config=DEFAULT_FARMER,{height=FARMER_HEIGHT,family=null}={}){
+// family: the family shirt's {shirt, emblem} (item 6), or null. shadow: false for one that walks on the farm (25 Oct 2026): it casts
+// nothing into the sun's shadow map, which is drawn again only when the farm changes; soft-shadow.js lies under it instead.
+export async function createFarmer(config=DEFAULT_FARMER,{height=FARMER_HEIGHT,family=null,shadow=true}={}){
  const [{scene,animations}]=await Promise.all([loadRig(),farmerReady()]);
  const root=new THREE.Group();root.name='farmer';
  const body=scene.clone(true);body.scale.setScalar(height/1.83);root.add(body);
@@ -136,7 +137,7 @@ export async function createFarmer(config=DEFAULT_FARMER,{height=FARMER_HEIGHT,f
   const loaded=await Promise.all(want.map(file=>worn.has(file)?null:loadPart(file).then(g=>[file,g],error=>{console.warn('A part of the farmer could not load.',file,error);return null;})));
   if(mine!==token)return false;
   for(const [file,meshes] of worn)if(!want.includes(file)){for(const m of meshes){m.removeFromParent();m.skeleton.dispose();}worn.delete(file);}
-  for(const entry of loaded)if(entry){const [file,g]=entry;worn.set(file,wear(g,bones,body,file));}
+  for(const entry of loaded)if(entry){const [file,g]=entry;worn.set(file,wear(g,bones,body,file,shadow));}
   // A part kept from before gets its own colours back (it may have been the family shirt).
   for(const [file,meshes] of worn)if(!loaded.some(e=>e?.[0]===file))for(const m of meshes)if(m.material.name==='farmer-family-shirt')m.material=farmerMaterial('farmer',true);
   return true;

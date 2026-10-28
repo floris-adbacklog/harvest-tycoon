@@ -77,7 +77,7 @@ test('public/game.js: the mode before anything is drawn, shadows only in full, t
  assert.equal(CRASHES_FOR_SIMPLE,2);assert.match(init,/,crashes,away:document\.hidden\}\);/,'the count rides on the new mark');
  assert.ok(init.indexOf('gfxStore?.removeItem(OLD_GRAPHICS_KEY)')>=0&&init.indexOf('gfxStore?.removeItem(OLD_GRAPHICS_KEY)')<init.indexOf('graphicsChoice({storage:gfxStore'),'the first afternoon\'s choice is gone before it could be read');
  assert.notEqual(GRAPHICS_KEY,OLD_GRAPHICS_KEY);
- assert.match(init,/const gpu=gpuName\(renderer\.getContext\(\)\);gfxMode=graphicsMode\(\{simple:graphicsSimple,gpu\}\);/);
+ assert.match(init,/const gpu=gpuName\(renderer\.getContext\(\)\);gfxMode=graphicsMode\(\{simple:graphicsSimple,gpu,lighter:Math\.max\(0,lighter\)\}\);/);
  assert.match(init,/renderer\.shadowMap\.enabled=gfxMode==='full';/);assert.match(init,/sun\.castShadow=gfxMode==='full';/);
  assert.ok(init.indexOf("renderer.shadowMap.enabled=gfxMode==='full';")<init.indexOf('renderer.render('),'set before the first picture');
  assert.match(init,/window\.harvestStartup\.gpu=gpu;window\.harvestStartup\.gfx=gfxMode;/,'with every note about this start');
@@ -91,13 +91,14 @@ test('public/game.js: the mode before anything is drawn, shadows only in full, t
  assert.match(game,/if\(!away\|\|losses>1\)graphicsTrouble\(gfxStore\);\n  noteOnDevice\(\{kind:'lost',[^\n]*hidden:away,/);
  assert.match(game,/restoreTimer=setTimeout\(\(\)=>\{if\(!document\.hidden\)graphicsTrouble\(gfxStore\);/,'a view that does not come back in sight');
  assert.match(game,/if\(losses===1&&Date\.now\(\)-lostAt<=CONTEXT_RESTORE_MS\)\{if\(before==='simple'\|\|before==='full'\)chooseGraphics\(gfxStore,before==='simple'\);else try\{gfxStore\?\.removeItem\(GRAPHICS_KEY\);\}catch\{\}\}/,'back at once: as it was');
- assert.match(game,/const ratio=pixelRatioFor\(\{devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple\}\);/);
+ assert.match(game,/const ratio=pixelRatioFor\(\{devicePixelRatio,width,height,handheld:gpuHandheld,simple:graphicsSimple,lighter:lighter>=1\}\);/);
  assert.match(game,/async function addPets\(\)\{\n try\{\n  if\(graphicsSimple\)return;/);
  assert.doesNotMatch(game,/mobileLayout\.matches\?1\.5:1\.75|antialias:!mobileLayout\.matches/,'no GPU setting by width alone');
  assert.match(game,/function bindUI\(\)\{\n bindGraphicsSetting\(\);/);
  const html=read('public/farm.html');
  assert.match(html,/<section id="graphics-settings" class="settings-section"[^>]*><h3 class="settings-heading" id="graphics-settings-title"><i data-game-art="graphics"><\/i>Graphics<\/h3>.*<input id="graphics-simple" type="checkbox" role="switch">.*<p id="graphics-status"/s,'a painted picture, as every other part has');
- assert.match(html,/It switches on by itself after the 3D view of your farm stopped\./,'the rule on the screen that shows it');
+ assert.match(html,/It switches on by itself on slower phones, and after the 3D view of your farm stopped\./,'the rule on the screen that shows it');
+ assert.match(html,/<strong>Lighter graphics<\/strong><small>A little less sharp and no shadows, so the farm moves more smoothly\. It switches on by itself when your farm runs slowly\./,'lighter graphics, its rule on the screen (25 Oct 2026)');
  assert.ok(html.indexOf('id="sound-settings"')<html.indexOf('id="graphics-settings"')&&html.indexOf('id="graphics-settings"')<html.indexOf('id="chat-settings"'));
 });
 
@@ -126,4 +127,53 @@ test('supabase/load-stalls-gpu.sql: the two columns and the kinds, run before fa
  assert.match(sql,/add column if not exists gfx text check \(gfx in \('full','noshadow','simple'\)\);/);
  assert.match(sql,/drop constraint if exists load_stalls_kind_check;\nalter table public\.load_stalls add constraint load_stalls_kind_check check \(kind in \('auto','card','reload_hung','left','refresh','part','lost','crash'\)\);/);
  assert.match(sql,/Release: this file first, then farm-api/);
+});
+
+// Faster on slower phones and computers (25 Oct 2026, the owner picked 2, 3 and 1).
+test('a slower phone: little memory or a low-end chip, never a mid-range or newer one', async()=>{
+ const {slowPhone}=await import('../public/graphics-mode.js');
+ for(const gpu of ['ANGLE (ARM, Mali-G52 MC2, OpenGL ES 3.2)','Mali-T830','Mali-G51','Mali-450 MP','ANGLE (Qualcomm, Adreno (TM) 610, OpenGL ES 3.2)','Adreno (TM) 506','PowerVR Rogue GE8320','ANGLE (Imagination Technologies, PowerVR SGX Auckland, OpenGL ES 3.2)'])assert.equal(slowPhone({gpu}),true,gpu);
+ for(const gpu of ['Mali-G57','Mali-G615 MC2','Mali-G510','Adreno (TM) 619','Adreno (TM) 740','Apple GPU','PowerVR D-Series DXT-48-1536','ANGLE (Intel, Intel(R) UHD Graphics (0x00009A78) Direct3D11 vs_5_0 ps_5_0, D3D11)',null])assert.equal(slowPhone({gpu}),false,String(gpu));
+ assert.equal(slowPhone({memory:2,gpu:'Adreno (TM) 740'}),true);
+ assert.equal(slowPhone({memory:4,gpu:'Adreno (TM) 740'}),false);
+ assert.equal(slowPhone({memory:undefined,gpu:null}),false,'Safari tells no memory');
+});
+test('a slower phone starts only a new farm in simple graphics, and only with no choice on the device yet', ()=>{
+ const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.match(game,/if\(gpuHandheld&&graphicsChoice\(\{storage:gfxStore,search:location\.search\}\)\.from===null&&levelProgress\(state\)\.level<NEW_FARM_LEVEL&&slowPhone\(\{memory:navigator\.deviceMemory,gpu:probeGpu\(\)\}\)\)graphicsTrouble\(gfxStore\);/);
+});
+test('lighter graphics: less sharp at step 1, no shadows at step 2, kept on the device, off when the player went back', async()=>{
+ const {lighterStep,setLighter,LIGHTER_KEY,pixelRatioFor,graphicsMode,choseFull,GRAPHICS_KEY}=await import('../public/graphics-mode.js');
+ const box=new Map(),store={getItem:k=>box.get(k)??null,setItem:(k,v)=>box.set(k,String(v)),removeItem:k=>box.delete(k)};
+ assert.equal(lighterStep(store),0);
+ setLighter(store,1);assert.equal(lighterStep(store),1);
+ setLighter(store,5);assert.equal(box.get(LIGHTER_KEY),'2');assert.equal(lighterStep(store),2);
+ setLighter(store,-1);assert.equal(lighterStep(store),-1);
+ setLighter(store,0);assert.equal(box.has(LIGHTER_KEY),false);
+ assert.equal(pixelRatioFor({devicePixelRatio:3,width:412,height:915,handheld:true,lighter:true}),1);
+ assert.equal(pixelRatioFor({devicePixelRatio:2,width:1440,height:900,lighter:true}),1);
+ assert.equal(pixelRatioFor({devicePixelRatio:2,width:1440,height:900}),1.75);
+ assert.equal(graphicsMode({simple:false,gpu:'Mali-G78',lighter:2}),'noshadow');
+ assert.equal(graphicsMode({simple:false,gpu:'Mali-G78',lighter:1}),'full');
+ assert.equal(graphicsMode({simple:true,gpu:'Mali-G78',lighter:2}),'simple');
+ assert.equal(choseFull(store),false);box.set(GRAPHICS_KEY,'full');assert.equal(choseFull(store),true);
+});
+test('the speed check: the middle gap of each run of frames, page-away gaps left out', async()=>{
+ const {createSpeedCheck}=await import('../public/graphics-mode.js');
+ const fast=createSpeedCheck({frames:5,slow:55});
+ assert.deepEqual([33,34,5000,33,90,33].map(ms=>fast.add(ms)),[null,null,null,null,null,false],'a long gap is the page away; one slow frame is not slow');
+ const slow=createSpeedCheck({frames:5,slow:55});
+ assert.deepEqual([70,60,33,80,66].map(ms=>slow.add(ms)),[null,null,null,null,true]);
+ assert.equal(slow.add(70),null,'counting again');
+});
+test('the sun\'s shadows are drawn when the farm changes, else every 10 s; what walks has a soft shadow instead', ()=>{
+ const game=readFileSync(new URL('../public/game.js',import.meta.url),'utf8');
+ assert.doesNotMatch(game,/icons\(\);renderer\.shadowMap\.needsUpdate=true;lastTick=now;/,'no longer twice a second');
+ assert.match(game,/if\(now-lastShadows>SHADOWS_EVERY\)\{renderer\.shadowMap\.needsUpdate=true;lastShadows=now;\}/);
+ assert.match(game,/const SHADOWS_EVERY=10000;/);
+ assert.match(game,/function updateUI\(\)\{\n hudNumbers\(\);if\(renderer\)renderer\.shadowMap\.needsUpdate=true;/);
+ for(const file of ['farm-animals.js','farm-farmer.js','farm-pets.js'])assert.match(readFileSync(new URL(`../public/${file}`,import.meta.url),'utf8'),/import \{softShadow\} from '\.\/soft-shadow\.js';/,file);
+ assert.match(readFileSync(new URL('../public/farm-animals.js',import.meta.url),'utf8'),/body\.castShadow=false;/);
+ assert.match(readFileSync(new URL('../public/farm-farmer.js',import.meta.url),'utf8'),/createFarmer\(config,\{height:walk\.height,family,shadow:false\}\)/);
+ assert.match(game,/if\(object\.userData\.locked===locked\)return;object\.userData\.locked=locked;\n const paint=o=>\{\n  if\(liveAnimal\(o\)\)return;\n  if\(o\.isMesh&&!o\.userData\.softShadow\)\{/,'a soft shadow is never greyed (nor an animal, 27 Oct 2026)');
 });

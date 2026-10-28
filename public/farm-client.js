@@ -1,4 +1,4 @@
-import {BUILDINGS,applyFarmAction,inviteeReward,seedCost} from './farm-state.js';
+import {BUILDINGS,applyFarmAction,inviteeReward,seedCost,setXpWeekend} from './farm-state.js';
 // The parent owns authentication. This disposable frame contains only a view of
 // the most recently committed server state; it never persists game data.
 let clockOffset=0;
@@ -11,14 +11,15 @@ export const bridgeClock=bridge=>Number.isFinite(bridge?.serverNow)?bridge.serve
 // Taps that show at once (1 Oct 2026, "a harvest took over five seconds"): the frame works the action out with the same rules as
 // the server (farm-state.js), shows it straight away and sends it; the server's answer then takes over. The everyday taps (fields,
 // selling, batches), and since the same day the claims, building, helping hands and the daily gift (and the comeback chest, Oct 2026:
-// it spends nothing and only opens what the server put there). Purchases, the family, chores
-// (their lucky bonus is the server's roll) and anything that spends diamonds wait for the server as before. A Halloween Pass reward
+// it spends nothing and only opens what the server put there). Purchases, the family and anything that spends diamonds wait for
+// the server as before. Farm chores show at once since 26 Oct 2026 (they waited about a second for the server's roll of their lucky
+// find): the find is fixed by the farm itself now (farm-state.js choreRoll), as a fish is. A Halloween Pass reward
 // (Oct 2026) shows at once too: a claim like the others, worked out from the farm alone. So does a fish (11 Oct 2026, the Fishing pond):
 // every fish is fixed in advance from the farm itself (farm-state.js pondFish), so the catch shows the fish the server pays. A fish at the
 // village lake too (12 Oct 2026, lake_fish): fixed the same way, from the farm's seed with the lake's own salt.
 // Your own farm layout (24 Oct 2026, game/farm-map.js): moving, clearing a tree or bush, buying, placing and storing show at once too
 // (coins only, worked out from the farm alone).
-export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','warehouse_upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish','layout_move','layout_clear','layout_buy','layout_place','layout_store','layout_draw','layout_purchase']));
+export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','warehouse_upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish','layout_move','layout_clear','layout_buy','layout_place','layout_store','layout_draw','layout_purchase','chore']));
 // No lucky double batch on the screen before the server has rolled for it (its answer shows it when it comes).
 const noLuck=()=>1;
 // Whether a tap can show at once: an everyday action that the rules accept. A level-up shows at once too (the rules pay its reward
@@ -73,6 +74,8 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   // A server that has not learnt about a new building yet must not break the buildings list.
   base.buildings??={};for(const key of Object.keys(BUILDINGS))base.buildings[key]??={level:1,job:null};
   clockOffset=data.serverNow-Date.now();
+  // The Double XP weekend as the server has it (27 Oct 2026, farm-api xp-weekend-service.js): only a load's or an action's answer says.
+  if(data&&'xpWeekend' in data)setXpWeekend(data.xpWeekend);
   rebase();onChange();if(!waiting)onStatus('saved');
   if(data.chapterReward?.chapters?.length)onChapterReward?.(data.chapterReward);
   if(data.levelReward?.levels?.length)onLevelReward?.(data.levelReward);

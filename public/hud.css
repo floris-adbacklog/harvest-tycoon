@@ -290,3 +290,20 @@ html[data-visit-view] :is(.building-label,.utility-label,.activity-label,.pond-l
 #market-items .ship-bin-row .product-art,#market-items .ship-bin-row>.game-art{flex:none;width:36px!important;height:36px!important;max-width:36px;object-fit:contain;grid-area:auto}
 #market-items .ship-bin{grid-column:1/-1}
 #neighbours-dialog .neighbour-sign{margin:8px 0 0;text-align:end;font:700 14px/1.2 "Outfit",sans-serif;color:#7a5410}
+/* Calmer neighbours (25 Oct 2026, the owner: "Wat kunnen we qua UX/UI nog meer zo clean maken als wiki en player profiles en
+   leaderboards"): the four neighbours as one list of rows with thin lines between them instead of a card each (the first row carries the
+   frame's top edge, the last its bottom), the face a little smaller, today's Give buttons at the end of the row (under it on a phone), a
+   letter on the window's cream with a thin edge instead of a gold box. */
+#neighbours-dialog .neighbour{grid-template-columns:52px minmax(0,1fr) auto;gap:4px 12px;margin:0;padding:10px 12px;border:2px solid #e6ddd1;border-block:0;border-top:1px solid #eee5d8;border-radius:0;background:#fffdf4;box-shadow:none}
+#neighbours-dialog .neighbour:first-of-type{border-top:2px solid #e6ddd1;border-radius:16px 16px 0 0}
+#neighbours-dialog .neighbour:last-of-type{border-bottom:2px solid #e6ddd1;border-radius:0 0 16px 16px}
+#neighbours-dialog .neighbour:only-of-type{border-radius:16px}
+#neighbours-dialog .neighbour-face{width:52px;height:52px}
+#neighbours-dialog .neighbour-gifts{grid-column:auto;justify-content:flex-end;margin-top:0}
+#neighbours-dialog :is(.neighbour-letters,.neighbour-letter){grid-column:2/-1}
+#neighbours-dialog .neighbour-letter{border:2px solid #e6ddd1;border-radius:14px;background:#fbf8f3}
+@media(max-width:600px){
+ #neighbours-dialog .neighbour{grid-template-columns:44px minmax(0,1fr);gap:4px 10px;padding:10px}
+ #neighbours-dialog .neighbour-face{width:44px;height:44px}
+ #neighbours-dialog .neighbour-gifts{grid-column:2/-1;justify-content:flex-start;margin-top:4px}
+}

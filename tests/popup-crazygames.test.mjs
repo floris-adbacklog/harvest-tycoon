@@ -57,7 +57,9 @@ test('the CrazyGames group: its name, and only a real crazygames flag shows it; 
  assert.deepEqual([cg,web,app,other].map(d=>fitsDevice('crazygames',d)),[true,false,false,false]);
  assert.equal(fitsDevice('crazygames',{installed:false,phone:false,crazygames:'yes'}),false,'only a real true');
  assert.equal(fitsDevice('crazygames',{installed:false,phone:false}),false,'the special offer passes no crazygames: never there');
- assert.deepEqual(['all','browser','web','android_app'].map(a=>fitsDevice(a,cg)),[true,true,false,false],'on CrazyGames the other groups are as before');
+ // 26 Oct 2026 (the final Basic Launch): inside CrazyGames only its own group; a pop-up for everyone often points elsewhere.
+ assert.deepEqual(['all','browser','phone','desktop','phone_browser','web','android_app','phone_web'].map(a=>fitsDevice(a,cg)),[false,false,false,false,false,false,false,false],'on CrazyGames no other group');
+ assert.deepEqual(['all','browser','desktop'].map(a=>fitsDevice(a,other)),[true,true,true],'elsewhere the other groups are as before');
 });
 
 test('the leaving notice opens on CrazyGames (phone and computer), once, and nowhere else',async()=>{
@@ -75,7 +77,7 @@ test('the leaving notice opens on CrazyGames (phone and computer), once, and now
 test('a game from before the CrazyGames group never shows it (left unseen until the site is pushed)',()=>{
  const before=new Function('audience','{installed,phone,playApp=false,web=false}',"return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);");
  for(const device of [{installed:false,phone:true},{installed:false,phone:false},{installed:true,phone:true,playApp:true}])assert.equal(before('crazygames',device),false);
- const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false,crazygames=false\}\)\{\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1];
+ const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false,crazygames=false\}\)\{\n if\(crazygames===true\)return audience==='crazygames';\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1];
  assert.equal(today.replace("||(audience==='crazygames'&&crazygames===true)",'').replace("||(audience==='phone_web'&&phone&&web===true&&!installed)",''),"return audience==='all'||(audience==='browser'&&!installed)||(audience==='phone_browser'&&phone&&!installed)||(audience==='phone'&&phone)||(audience==='desktop'&&!phone)||(audience==='android_app'&&playApp===true)||(audience==='web'&&web===true);",'today\'s rule is the 9 Oct one plus the CrazyGames group');
  assert.match(read('src/popup-ui.js'),/crazygames:portal\(win\)\?\.name==='crazygames'\}\);/,'decided by the portal around the farm');
 });

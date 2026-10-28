@@ -8,7 +8,7 @@
 import {wikiLinksIn} from '../public/wiki-link.js';
 import {gameLinksIn} from '../public/game-links.js';
 
-export const MAX_LINKS=2,MAX_WIKI_LINKS=MAX_LINKS,MAX_MENTIONS=3;
+export const MAX_LINKS=2,MAX_WIKI_LINKS=MAX_LINKS,MAX_MENTIONS=5;
 
 // The message as parts, in order: {text}, {wiki:{topic,section,url}}, {app:{url}}, {settings:{slug,url}}, {feedback:{url}} and {mention:{id,name}}. A mention counts where its "@Full Name" is
 // still in the words (a moderator's edit may have taken it out); the longest name first, so "@Ann Lee" is never read as "@Ann".
@@ -44,13 +44,13 @@ export function insertMention(text,caret,start,name){
 }
 // "Mention" in a message's menu (3 Oct 2026): "@Full Name " at the end of what is typed already, after a space; a name that is in it
 // already is not added twice. Null when it would not fit the box.
-export function appendMention(text,name,max=200){
+export function appendMention(text,name,max=300){
  const value=String(text??''),tag=`@${name}`;
  if(new RegExp(`(^|\\s)${tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(\\s|$)`).test(value))return {text:value,caret:value.length};
  const next=value+(value&&!/\s$/.test(value)?' ':'')+tag+' ';
  return next.length>max?null:{text:next,caret:next.length};
 }
-// The farmers a message mentions: the picked ones (id → name) whose "@Full Name" is still in it, never yourself, at most 3.
+// The farmers a message mentions: the picked ones (id → name) whose "@Full Name" is still in it, never yourself, at most 5 (3 until 26 Oct 2026).
 export function mentionIds(text,picked,me=null){
  const ids=[];for(const [id,name] of picked??[])if(id!==me&&!ids.includes(id)&&String(text??'').includes(`@${name}`))ids.push(id);
  return ids.slice(0,MAX_MENTIONS);

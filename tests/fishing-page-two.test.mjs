@@ -4,6 +4,7 @@ import {readFileSync,existsSync,statSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {FISH_PICTURES} from '../public/visual-icons.js';
 import {wikiArticle} from '../public/wiki-content.js';
+import {beforeDonkeys} from './helpers/before-donkeys.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 // The 3D fish's looks (pond-scene.js needs three.js, so its table is read from the file).
 const FISH_LOOK=new Function(`return ${read('public/pond-scene.js').match(/export const FISH_LOOK=Object\.freeze\((\{[\s\S]*?\})\);/)[1]};`)();
@@ -25,7 +26,7 @@ const allOne=()=>Object.fromEntries(ONE_KINDS.map(k=>[k,G.FISH[k].kg[0]]));
 // The game before page two (this branch's base 01ff2cd and the closed pond fd1cf29), for the differential tests; null without git.
 const show=(sha,path)=>{try{return execFileSync('git',['show',`${sha}:${path}`],{cwd:new URL('..',import.meta.url),encoding:'utf8',maxBuffer:1<<24,stdio:['ignore','pipe','ignore']});}catch{return null;}};
 const before=sha=>show(sha,'game/farm-state.js');
-const OLD_SOURCE=before('01ff2cd'),OLD_URL=OLD_SOURCE&&asModule(OLD_SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=true,')),OLD=OLD_URL&&await import(OLD_URL);
+const OLD_SOURCE=before('01ff2cd'),OLD_URL=OLD_SOURCE&&asModule(OLD_SOURCE.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=true,')),OLD=OLD_URL&&beforeDonkeys(await import(OLD_URL));
 
 test('16 kinds on two pages: the first 8 as before, page two\'s 8 only from level 20, each table adding up to 100%',()=>{
  assert.deepEqual(ONE_KINDS,['minnow','perch','roach','carp','tench','pike','goldencarp','whiskers']);
@@ -198,7 +199,7 @@ test('the save: page two adds kinds to pond.best, pond.book2Paid and pond.page2A
 // paid flags and the mark without throwing, play on, and show no broken screen: its own rules only ever name its own 8 kinds.
 for(const [sha,label] of [['01ff2cd','this branch\'s base'],['fd1cf29','the closed pond']])test(`the game at ${sha} (${label}) reads a farm with page two, plays on and shows only its own fish`,async t=>{
  const old=before(sha);if(!old){t.skip('no git history here');return;}
- const O=await import(asModule(old.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=true,')));
+ const O=beforeDonkeys(await import(asModule(old.replace(/export const POND_OPEN=(true|false),/,'export const POND_OPEN=true,'))));
  const s=at(30);s.rookieUntil=99;s.pond=pond(70,{...allOne(),rudd:.4,koi:2.5,sturgeon:15},{bookPaid:true});G.normalizeFarm(s,now);
  let tt=now;for(let k=0;k<6;k++){tt+=LATER;fish(s,tt);}
  const saved=structuredClone(s);assert.ok(saved.pond.page2At===70&&saved.pond.best.koi>0);
@@ -295,7 +296,7 @@ test('the wiki below level 20 is the pond section of 01ff2cd, word for word; pag
  const here=file=>new URL(`../public/${file}`,import.meta.url).href;
  // The old article took the 6-hour prizes from the event screen, which reads them from each event since 20 Oct 2026 (hourly events).
  const oldPrizes="import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';\nconst PODIUM_PRIZES=[{coins:2000,diamonds:25},{coins:1000,diamonds:15},{coins:500,diamonds:10}],FINISHER_PRIZE={coins:100,diamonds:3};";
- const O=await import(asModule(old.replace("import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';",oldPrizes).replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`)));
+ const O=beforeDonkeys(await import(asModule(old.replace("import {EVENTS_LEVEL,PODIUM_PRIZES,FINISHER_PRIZE,EVENT_GOALS} from './live-events-ui.js';",oldPrizes).replace(/from '\.\/([\w-]+\.js)';/g,(all,file)=>`from '${file==='farm-state.js'?OLD_URL:here(file)}';`))));
  // One sentence more since 17 Oct 2026: the pond has its own quests.
  const quests=html=>html.replace('<li>Fishing counts for no events, challenges or Family Chest.</li>','<li>The pond has its own quests, from your first fish to a thousand. Fishing counts for no events, challenges or Family Chest.</li>');
  // Since 22 Oct 2026 a heading has a painted icon in front of its words (wiki-content.js wikiIcon); the words are the same.

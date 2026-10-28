@@ -208,7 +208,7 @@ test('checkout: for sale already before the season (the pre-sale) until it ends,
  assert.match(fn,/\.eq\('pack','pass'\)\.eq\('pass_id',PASS\.id\)\.in\('status',\['credited','test_paid'\]\)/);
  assert.match(fn,/pack=\{id:'pass',cents:PASS\.cents,price:PASS\.price,product:PASS\.product,diamonds:0,coins:0,passId:PASS\.id\};/,'the price must belong to the Halloween Pass product');
  assert.match(fn,/\(live&&pack\.product&&price\.product!==pack\.product\)/);
- assert.match(fn,/const purchaseReply=\(p:any\)=>\(\{id:p\.id,pack:p\.pack,coins:p\.coins,diamonds:p\.diamonds,status:p\.status,livemode:p\.livemode,vipDays:p\.vip_days\?\?0,passId:p\.pass_id\?\?null,serverNow:Date\.now\(\)\}\);/,'the purchase status carries the server clock (the return text)');
+ assert.match(fn,/const purchaseReply=\(p:any\)=>\(\{id:p\.id,pack:p\.pack,coins:p\.coins,diamonds:p\.diamonds,status:p\.status,livemode:p\.livemode,vipDays:p\.vip_days\?\?0,passId:p\.pass_id\?\?null,saleBonus:p\.sale_bonus\?\?0,serverNow:Date\.now\(\)\}\);/,'the purchase status carries the server clock (the return text)');
  assert.match(fn,/if\(body\.operation==='status'\)\{[^]*?return reply\(purchaseReply\(r\.data\)\);\n  \}/);
  assert.match(fn,/\.\.\.\(packId==='pass'\|\|packId==='season'\?\{pass_id:pack\.passId\}:\{\}\)/,'the purchase row names the pass (or the season, Oct 2026)');
  assert.match(fn,/packId==='pass'\|\|packId==='season'\?query\.eq\('pack',packId\)\.eq\('pass_id',pack\.passId\)\.neq\('status','expired'\)/,'a second tap reuses the checkout (a Season Pass too, Oct 2026)');

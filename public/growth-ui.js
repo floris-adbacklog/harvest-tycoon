@@ -38,7 +38,21 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   const tabDot=document.querySelector('[data-estate-tab="mastery"] .estate-tab-dot');if(tabDot)tabDot.hidden=!medals;
   if(waiting!==stallWaiting||medals!==medalWaiting){stallWaiting=waiting;medalWaiting=medals;onNotice?.();}
  }
- async function act(action,message){try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}}
+ // While the farm waits for the server's answer (about a second, 26 Oct 2026: "chores take long after the tap"), the tapped chore turns its
+ // hourglass at once ("One moment…" for screen readers and on hover; the button keeps its width, so nothing beside it moves), and the
+ // window's other buttons are off, so nothing is tapped twice. A render meanwhile keeps it. A chore itself shows at once since the same
+ // evening (farm-client.js INSTANT_ACTIONS), so this is for what still waits; with an answer at once it never shows.
+ let acting=null;
+ function markBusy(){
+  const box=$('estate-content');box.setAttribute('aria-busy','true');
+  box.querySelectorAll('button').forEach(b=>{if(b.dataset.chore===acting.chore){b.disabled=false;b.setAttribute('aria-disabled','true');b.classList.add('is-busy');b.classList.remove('is-waiting');b.textContent='';b.title='One moment…';b.setAttribute('aria-label','One moment…');}else b.disabled=true;});
+ }
+ async function act(action,message){
+  if(acting)return;acting={chore:action.type==='chore'?action.id:null};markBusy();
+  try{const result=await runAction(action);onChange();render();$('estate-feedback').textContent=typeof message==='function'?message(result):message;notify($('estate-feedback').textContent);}
+  catch(error){$('estate-feedback').textContent=error.message;notify(error.message);}
+  finally{acting=null;const said=$('estate-feedback').textContent;render();$('estate-feedback').textContent=said;$('estate-content').removeAttribute('aria-busy');}
+ }
  function open(section='projects'){
   if(!featureUnlocked(state,gate(section))){notify(featureUnlockHint(gate(section)));return;}
   tab=section;document.querySelectorAll('dialog[open]').forEach(d=>d.close());render();$('estate-dialog').showModal();icons();
@@ -50,7 +64,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
   const alone={stall:'Farm stall',chores:'Farm chores'}[tab],dlg=$('estate-dialog');for(const el of [dlg.querySelector?.('.estate-tabs'),dlg.querySelector?.('.dialog-heading .eyebrow')])if(el)el.hidden=!!alone;$('estate-title').textContent=alone??'Estate';setDialogBadge(dlg,{stall:'stall',chores:'chores'}[tab]??'estate');
   $('estate-feedback').textContent='';
   if(tab==='projects')renderProjects();if(tab==='stall')renderStall();if(tab==='chores')renderChores();if(tab==='mastery')renderMastery();if(tab==='master')renderMaster();if(tab==='bonuses')renderBonuses(true);
-  lastReadiness=readiness();icons();
+  lastReadiness=readiness();icons();if(acting)markBusy();
  }
  function renderProjects(){
   const p=currentProject(state),job=state.estate.job,levelOk=!p.level||levelOf(state)>=p.level,can=levelOk&&state.coins>=p.coins&&state.mastery.claimed.length>=p.medals&&Object.entries(p.input).every(([k,n])=>state.inventory[k]>=n),isReady=job&&farmNow()>=job.readyAt;
@@ -144,7 +158,7 @@ export function createGrowthUI({state,runAction,onChange,notify,itemList,onNotic
  }
  function tick(){
   notices();const s=stallStatus(state,farmNow());
-  if(!$('estate-dialog').open)return;
+  if(!$('estate-dialog').open||acting)return;
   if(lastReadiness!==readiness()){render();return;}
   if(tab==='stall'){$('stall-balance').innerHTML=`${art('coins')}${number(s.available)}`;$('stall-meter').value=s.balance;$('stall-capacity').textContent=stallNote(s);$('stall-collect').disabled=s.available<1;document.querySelector('.stall-hero')?.classList.toggle('is-full',s.balance>=s.capacity);}
   if(tab==='chores')document.querySelectorAll('[data-chore]').forEach(b=>{const s=choreStatus(state,b.dataset.chore,farmNow()),shown=choreButton(s);b.textContent=shown.text;b.classList.toggle('is-waiting',shown.waiting);b.disabled=s.locked||s.remaining>0;});

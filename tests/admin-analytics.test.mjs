@@ -189,9 +189,9 @@ test('retention percentages are colour-coded so a pattern is visible at a glance
 test('the dashboard fetches all three admin operations through the same bridge every other request uses',()=>{
  const js=read('src/admin-dashboard.js');
  // The parts live with the tab rules since 22 Oct 2026 (src/admin-overview.js): a moderator loads only what Players shows.
- assert.match(read('src/admin-overview.js'),/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/const PARTS=partsFor\(role\);/);assert.match(js,/bridge\.request\(operation==='admin_retention'\?\{operation,days:Number\(view\.retention\)\}:\{operation\}\)/);
- assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);load\(\);/,'closes whatever else is open first, like every other dialog');
- assert.match(js,/refreshTimer=setInterval\(load,60000\);/);
+ assert.match(read('src/admin-overview.js'),/\[\['admin_online','Online now'\],\['admin_players','All players'\],\['admin_retention','Retention'\],\['admin_invites','Invites'\]\]/);assert.match(js,/PARTS=partsFor\(role\)\.filter\(\(\[operation\]\)=>freshPlayers\|\|operation!=='admin_players'\);/);assert.match(js,/bridge\.request\(operation==='admin_retention'\?\{operation,days:Number\(view\.retention\)\}:\{operation\}\)/);
+ assert.match(js,/document\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);refreshArt\(\);dialog\.showModal\(\);void load\(\{all:true\}\);/,'closes whatever else is open first, like every other dialog');
+ assert.match(js,/refreshTimer=setInterval\(\(\)=>void load\(\),60000\);/);
  assert.match(js,/dialog\.addEventListener\('close',\(\)=>clearInterval\(refreshTimer\)\);/,'stops polling once closed');
 });
 test('game-cloud.js creates the dashboard once, alongside the player-profile/gift panel it shares checkAdmin with',()=>{

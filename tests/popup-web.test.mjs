@@ -76,11 +76,14 @@ test('never in our apps (Google Play, iPhone, Galaxy Store) or on CrazyGames, Ko
   const run=await play({ua,portal,coarse:ua===CHROME});assert.deepEqual([run.shown.length,run.seen],[0,[]],`${portal} ${ua}`);
  }
  // A portal farmer with the review first in the list still gets the next one that is for them.
- for(const portal of ['crazygames','discord']){const run=await play({portal,list:[REVIEW,{id:'all',title:'Hi',body:'Hello',audience:'all',texts:{}}]});assert.deepEqual(run.seen,['all'],portal);}
+ for(const portal of ['discord']){const run=await play({portal,list:[REVIEW,{id:'all',title:'Hi',body:'Hello',audience:'all',texts:{}}]});assert.deepEqual(run.seen,['all'],portal);}
+ // Inside CrazyGames only the CrazyGames group (26 Oct 2026): a pop-up for everyone is not shown there and not marked as seen.
+ {const run=await play({portal:'crazygames',list:[REVIEW,{id:'all',title:'Hi',body:'Hello',audience:'all',texts:{}}]});assert.deepEqual([run.shown.length,run.seen],[0,[]],'crazygames');}
 });
 
 test('why a new group: on a portal "In the browser" shows, without its button (a review ask with no way to it)',async()=>{
- for(const portal of ['crazygames','kongregate','discord']){
+ {const run=await play({portal:'crazygames',list:[{...REVIEW,audience:'browser'}]});assert.equal(run.shown.length,0,'not inside CrazyGames since 26 Oct 2026');}
+ for(const portal of ['kongregate','discord']){
   const run=await play({portal,list:[{...REVIEW,audience:'browser'}]});
   assert.equal(run.shown.length,1,portal);assert.doesNotMatch(run.shown[0],/data-popup-go|trustpilot\.com"/,portal);
   assert.match(run.shown[0],/<button type="button" class="primary-button" data-popup-close>Got it<\/button>$/,portal);
@@ -101,7 +104,7 @@ test('a game from before the website group (a portal or an app left open) never 
   assert.equal(old('all',{installed:false,phone:false}),true,'the old rule itself, as it was');
  }
  assert.match(read('src/popup-ui.js'),/const popup=\(list\?\?\[\]\)\.find\(p=>fitsDevice\(p\.audience,device\(\)\)\);if\(!popup\)return;/,'skipped, so never marked as seen: the farmer gets it after the update');
- const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false(?:,crazygames=false)?\}\)\{\n (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1].replace("||(audience==='crazygames'&&crazygames===true)",'').replace("||(audience==='phone_web'&&phone&&web===true&&!installed)",'');  // 12 Oct 2026: the CrazyGames group follows it
+ const today=/export function fitsDevice\(audience,\{installed,phone,playApp=false,web=false(?:,crazygames=false)?\}\)\{\n(?: if\(crazygames===true\)return audience==='crazygames';\n)? (return [^\n]+)\n\}/.exec(read('src/popup-ui.js'))[1].replace("||(audience==='crazygames'&&crazygames===true)",'').replace("||(audience==='phone_web'&&phone&&web===true&&!installed)",'');  // 12 Oct 2026: the CrazyGames group follows it
  assert.equal(today.replace("||(audience==='web'&&web===true)",''),OLD[2][1],'the rule of 9 Oct 2026 is today\'s without the website group');
 });
 

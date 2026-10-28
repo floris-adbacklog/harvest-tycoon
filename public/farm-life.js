@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {featureUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
+import {featureUnlocked,buildingUnlocked,ACTIVE_STATIONS,activityStatus,productionJobs} from './farm-state.js';
 import {art} from './visual-icons.js';
 import {SPREAD,zone,place,placeIn,wide,ROADS,roadSize,onRoad,roadRects,POND} from './farm-layout.js';
 export const LIFE_MODELS=['mountain_008','field_004','field_005','village_pier_001','village_boat_001','village_rowboat_001','village_stones_001','horse_002','lawn_mower_001','fir_tree_003','tree_008','stone_fence_001','trailer_001','tree_002','tree_005','tree_007','fir_tree_001','fir_tree_006','bush_002','bush_004','stone_fence_003'];
@@ -124,6 +124,15 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
    .then(()=>import('./farm-duck.js')).then(({createDuck})=>createDuck({scene,water:{x:cx,z:cz,rx:POND.rx,rz:POND.rz},boxes,lines:[line]}))
    .then(made=>{duck=made;}).catch(error=>console.warn('The duck was skipped.',error));
  }
+ // The donkey with the cart (27 Oct 2026, public/farm-donkey-cart.js): asked for like the duck, and only seen once the Donkey Stable stands.
+ let cart=null,cartAsked=false;
+ function askCart(){
+  if(cartAsked)return;cartAsked=true;
+  const connection=navigator.connection;if(reducedMotion||simple||connection?.saveData||/2g/.test(connection?.effectiveType??''))return;
+  new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:8000}):setTimeout(done,3500))
+   .then(()=>import('./farm-donkey-cart.js')).then(({createDonkeyCart,CART_MODEL})=>createDonkeyCart({scene,cart:cloneModel(CART_MODEL,0,0,{width:2.3}),shown:()=>buildingUnlocked(state,'donkeystable')}))
+   .then(made=>{cart=made;}).catch(error=>console.warn('The donkey cart was skipped.',error));
+ }
  // A pin is seen when nothing covers the farm and it is the topmost thing at its own middle (not under the top bar or a card).
  const seen=label=>{if(label.hidden)return false;const r=label.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return Boolean(hit&&label.contains(hit));};
  function position(camera,width,height,now){
@@ -149,7 +158,7 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
  }
  function animate(t,dt,now){
   if(reducedMotion)return;
-  askDuck();duck?.animate(dt);
+  askDuck();duck?.animate(dt);askCart();cart?.animate(dt);
   for(const m of moving){
    if(m.kind==='bee')m.obj.position.set(beeHome[0]+Math.sin(t*1.2+m.phase)*.7,1.2+Math.sin(t*2+m.phase)*.25,beeHome[1]+Math.cos(t+m.phase)*.6);
   }
@@ -161,5 +170,6 @@ export function createFarmLife({scene,cloneModel,patch,state,onOpen,reducedMotio
   if(reducedMotion)return;const v=views.get(id);if(!v)return;
   for(let i=0;i<7;i++){const o=new THREE.Mesh(new THREE.SphereGeometry(.1,4,3),new THREE.MeshBasicMaterial({color:i%2?0xffd458:0xd0e79d,transparent:true}));o.position.set(v.x+Math.cos(i)*.7,.8,v.z+Math.sin(i)*.7);scene.add(o);effects.push({obj:o,life:1.4});}
  }
- return {views,attach,position,animate,celebrate,watchProduction,targets:()=>!featureUnlocked(state,'activities')?[]:hitAreas.concat([...views.values()].map(v=>v.object).concat(moving.filter(m=>m.kind!=='bee').map(m=>m.obj)))};
+ // The donkey cart opens the Donkey Stable's window (its loads of the day) when tapped (27 Oct 2026); game.js pointerTarget asks for it.
+ return {views,attach,position,animate,celebrate,watchProduction,cartTargets:()=>cart?.targets()??[],targets:()=>!featureUnlocked(state,'activities')?[]:hitAreas.concat([...views.values()].map(v=>v.object).concat(moving.filter(m=>m.kind!=='bee').map(m=>m.obj)))};
 }

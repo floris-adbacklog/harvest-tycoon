@@ -13,7 +13,7 @@ const now=Date.parse('2026-10-05T12:00:00Z');
 function farm(level,{mode='guided',built=[]}={}){
  const s=createFarm(now);if(mode==='legacy')s.progression={mode:'legacy'};
  s.xp=xpForLevel(level);s.coins=400000;s.onboarding={...s.onboarding,completed:99,rewardClaimed:true};
- for(const [k,b] of Object.entries(s.buildings))if(!worldTwoBuilding(k)||built.includes(k))b.built=true;
+ for(const [k,b] of Object.entries(s.buildings))if(k!=='donkeystable'&&(!worldTwoBuilding(k)||built.includes(k)))b.built=true;   // not the farm's Donkey Stable (level 64, 27 Oct 2026): the pinned cargos predate its soap; tests/donkey-stable.test.mjs sails it
  return normalizeFarm(s,now);
 }
 // The ingredients as economy-ui.js draws them, with the good's key, so the order of the lines can be read back.
@@ -510,7 +510,7 @@ test('the landmark card: the villager\'s line, what it builds, a row per good, G
   t.coins=1600000;card=briefCard(t,itemList);assert.match(card,/village-landmark is-ready/);assert.match(card,/data-landmark-finish="windpump" >Finish/);
   assert.deepEqual(squareStatus(t,now),{text:'Landmark ready to finish',kind:'ready'});
   const hall=farm(200,{mode,built:ALL});hall.village.landmarks={done:['windpump','longhouse','stonequay','lookout'],given:{}};
-  assert.match(briefCard(hall,itemList),/<small>LANDMARK 5 OF 5<\/small><h3>The heart of the village<\/h3>[^]*<b class="is-diamonds">[^]*200<\/b>/);
+  assert.match(briefCard(hall,itemList),/<small>LANDMARK 5 OF 5<\/small><h3>The heart of the village<\/h3>[^]*<b class="is-diamonds">[^]*500<\/b>/);
  }
 });
 
@@ -539,8 +539,8 @@ test('Give, Give all you can and Finish send what the screen shows; Show me find
   s.village.landmarks.given={rooftile:600,plank:300,ironbar:60};s.coins=1600000;ui.open();
   content().querySelectorAll('[data-landmark-finish]')[0].onclick();await tick();
   assert.deepEqual(calls[2],{type:'landmark_finish',landmark:'windpump'});assert.equal(notes[2],'The Wind pump is finished! +5,000 XP.');
-  answers.landmark_finish={landmark:'greathall',name:'Great Hall',coins:3000000,xp:5000,diamonds:200};content().querySelectorAll('[data-landmark-finish]')[0].onclick();await tick();
-  assert.equal(notes[3],'The Great Hall is finished! +5,000 XP and +200 diamonds.');
+  answers.landmark_finish={landmark:'greathall',name:'Great Hall',coins:3000000,xp:5000,diamonds:500};content().querySelectorAll('[data-landmark-finish]')[0].onclick();await tick();
+  assert.equal(notes[3],'The Great Hall is finished! +5,000 XP and +500 diamonds.');
   content().querySelectorAll('[data-village-show]')[0].onclick();assert.deepEqual(shown,['windpump']);
  });
 });

@@ -18,7 +18,7 @@ import {EVENT_LEAGUES} from '../public/farm-state.js';
 const now=Date.parse('2026-10-05T12:00:00Z');
 function farm(level){
  const s=createFarm(now);s.xp=xpForLevel(level);s.coins=50000000;s.onboarding={...s.onboarding,completed:99,rewardClaimed:true};
- for(const [k,b] of Object.entries(s.buildings)){b.built=true;if(BUILDINGS[k].type==='production'&&!worldTwoBuilding(k))b.level=MAX_BUILDING_LEVEL;}
+ for(const [k,b] of Object.entries(s.buildings)){b.built=k!=='donkeystable';if(BUILDINGS[k].type==='production'&&!worldTwoBuilding(k))b.level=MAX_BUILDING_LEVEL;}   // not the farm's Donkey Stable (level 64, 27 Oct 2026): the pinned cargos predate its soap; tests/donkey-stable.test.mjs sails it
  normalizeFarm(s,now);return s;
 }
 const act=(s,a,t=now,random)=>applyFarmAction(s,a,t,random);
@@ -181,7 +181,7 @@ test('the village keeps its own count and its own quests: batches, sales and que
 // (rank 2 at level 108 is one). The wiki and the Market screen read these rules (buildingRecipes, marketItems).
 function legacyFarm(level){
  const s=createFarm(now);s.progression={mode:'legacy'};s.xp=xpForLevel(level);s.coins=50000000;s.onboarding={...s.onboarding,completed:99,rewardClaimed:true};
- for(const [k,b] of Object.entries(s.buildings)){b.built=true;if(BUILDINGS[k].type==='production'&&!worldTwoBuilding(k))b.level=MAX_BUILDING_LEVEL;}
+ for(const [k,b] of Object.entries(s.buildings)){b.built=k!=='donkeystable';if(BUILDINGS[k].type==='production'&&!worldTwoBuilding(k))b.level=MAX_BUILDING_LEVEL;}   // not the farm's Donkey Stable (level 64, 27 Oct 2026): the pinned cargos predate its soap; tests/donkey-stable.test.mjs sails it
  return normalizeFarm(s,now);
 }
 // What every farm's market square starts with (Oct 2026): no boards, an empty market week, no boat and no landmark.
@@ -731,7 +731,7 @@ test('the goods of levels 110-200 never reach World I: no stall, trailer, fair c
 test('the town boat\'s numbers and the five landmarks, as the owner chose them',()=>{
  assert.deepEqual([BOAT_PREMIUM,BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,BOAT_XP_SHARE,BOAT_RETURN/3600000,BOAT_QUAY_RETURN/3600000],[1.6,3,14,40,12,6]);
  assert.ok(BOAT_DIAMONDS<DEPOT_DIAMONDS);assert.ok(BOAT_DIAMOND_TRIPS*BOAT_DIAMONDS+VILLAGE_CRATE_DIAMONDS<=52,'at most 52 diamonds a week, also with the Stone quay');
- assert.deepEqual(BOAT_GOODS,['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar']);
+ assert.deepEqual(BOAT_GOODS,['rooftile','linen','lavendersoap','scentedsachet','silvercandlestick','rubyring','saffronbun','silverbar','donkeymilksoap']);
  assert.deepEqual([144,145,150,200,250].map(boatValue),[50000,51000,56000,106000,106000]);
  for(let level=144;level<=200;level++)assert.ok(boatValue(level)<=exportValue(level),`${level}: never more than the Trade Depot's trailer`);
  const ids=Object.keys(VILLAGE_LANDMARKS),l=VILLAGE_LANDMARKS;
@@ -741,7 +741,7 @@ test('the town boat\'s numbers and the five landmarks, as the owner chose them',
  assert.deepEqual(l.longhouse.materials,{linen:300,scentedsachet:200,rooftile:400},'sachets, not lavender soap (10 Oct 2026)');
  assert.ok(Object.isFrozen(l)&&ids.every(k=>Object.isFrozen(l[k])&&Object.isFrozen(l[k].materials)));
  for(const k of ids){assert.ok(Object.keys(l[k].materials).every(villageGood),k);assert.ok(VILLAGERS[l[k].villager],k);}
- assert.deepEqual([VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS],[5000,1.6,200]);
+ assert.deepEqual([VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS],[5000,1.6,500]);
  assert.match(l.windpump.effect,new RegExp(`${VILLAGE_LANDMARK_BONUS.windpump*100}%`));assert.match(l.longhouse.effect,new RegExp(`${VILLAGE_LANDMARK_BONUS.longhouse*100}%`));
  assert.match(l.stonequay.effect,new RegExp(`${BOAT_QUAY_RETURN/3600000} hours instead of ${BOAT_RETURN/3600000}`));
  assert.ok(l.greathall.effect.includes(`${VILLAGE_HALL_PREMIUM} times`)&&l.greathall.effect.includes(`${GREAT_HALL_DIAMONDS} diamonds`));

@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt,dailyWait} from './quests-ui.js';
-import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,otherWorldItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {xpDoubled,cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,otherWorldItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
@@ -24,13 +24,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  // Today's place in the streak (farm-state.js streakToday: yesterday, or one missed day with the weekly save) and its gift, or null
  // once collected. The Today window and the Welcome back card (welcome-ui.js) both show it and collect it through collectGift.
  function giftOffer(now=farmNow()){const today=streakToday(state,now);return today.claimed?null:{...dailyGift(state,today.streak,now),day:today.streak,saved:today.saved};}
- const boostName=(kind,ms)=>`${ms>=3600000?`${ms/3600000} h`:`${ms/60000} min`} ${BOOSTS[kind].name.toLowerCase()}`;
- const boostChip=(kind,ms)=>`<b class="is-boost">${art(BOOSTS[kind].art)}${boostName(kind,ms)}</b>`;
+ // A Double XP that comes during a Double XP weekend starts when the weekend is over (farm-state.js afterWeekend): it says so.
+ const boostName=(kind,ms,after=false)=>`${ms>=3600000?`${ms/3600000} h`:`${ms/60000} min`} ${BOOSTS[kind].name.toLowerCase()}${after?' after the weekend':''}`;
+ const boostChip=(kind,ms,after=false)=>after?`<b class="is-boost is-later">${art(BOOSTS[kind].art)}<span>${boostName(kind,ms,after)}</span></b>`:`<b class="is-boost">${art(BOOSTS[kind].art)}${boostName(kind,ms)}</b>`;
  // While the Halloween Pass counts (Oct 2026), today's gift, each challenge and each order also show the lanterns they bring (public/pass-ui.js).
- const giftChips=g=>rewardChips({diamonds:g.diamonds,coins:g.coins},(g.boost?boostChip(g.boost,g.boostMs):'')+(g.day?lanternChip(state,'gift',farmNow())+leafChip(state,'gift',farmNow()):''));
+ const giftChips=g=>rewardChips({diamonds:g.diamonds,coins:g.coins},(g.boost?boostChip(g.boost,g.boostMs,g.afterWeekend):'')+(g.day?lanternChip(state,'gift',farmNow())+leafChip(state,'gift',farmNow()):''));
  async function collectGift(){
   // Day 1 (7 Oct 2026): no "Welcome back!" in a new farmer's first minute, and a reason to come back tomorrow.
-  const r=await act({type:'checkin'},r=>r.streak===1?`Day 1 gift! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins.${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''} Come back tomorrow for day 2.`:`Welcome back! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins · ${r.streak}-day streak${r.saved?' (saved)':''}.${r.boost?` Plus ${boostName(r.boost,r.boostMinutes*60000)}!`:''}${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
+  const r=await act({type:'checkin'},r=>r.streak===1?`Day 1 gift! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins.${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''} Come back tomorrow for day 2.`:`Welcome back! +${r.diamonds} diamonds and +${r.coins.toLocaleString('en-US')} coins · ${r.streak}-day streak${r.saved?' (saved)':''}.${r.boost?` Plus ${boostName(r.boost,r.boostMinutes*60000,r.afterWeekend)}!`:''}${r.returnBoost?` Plus ${r.returnBoost} minutes of double harvest!`:''}`);
   // Every seventh day of a streak (7, 14, 21 ...) gets its own little celebration.
   if(r&&r.streak%7===0)celebrate(r);
   return r;
@@ -38,8 +39,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
  // The comeback chest (Oct 2026, farm-state.js comebackChest): after 3 days or more away, waiting until it is collected. Welcome back
  // shows it first; the top of the Today window keeps it for a farmer who closed that card (or came back in the village).
  const chestOffer=(now=farmNow())=>comebackChest(state,now);
- const chestChips=c=>rewardChips({coins:c.coins},boostChip(c.boost,c.boostMs));
- const collectChest=()=>act({type:'comeback'},r=>`Comeback chest: +${r.coins.toLocaleString('en-US')} coins. Plus ${boostName(r.boost,r.boostMinutes*60000)}!`);
+ const chestChips=c=>rewardChips({coins:c.coins},boostChip(c.boost,c.boostMs,c.afterWeekend));
+ const collectChest=()=>act({type:'comeback'},r=>`Comeback chest: +${r.coins.toLocaleString('en-US')} coins. Plus ${boostName(r.boost,r.boostMinutes*60000,r.afterWeekend)}!`);
  // Here, unlike in Welcome back (which says how long you were away), the row says why it is there: the rule in one line.
  const chestRow=c=>c?`<div class="welcome-gift welcome-chest"><span class="welcome-gift-art">${art('family-chest-wood')}</span><span class="welcome-gift-copy"><strong>Comeback chest</strong>${chestChips(c)}<small class="welcome-chest-note">For coming back after ${COMEBACK_MIN_DAYS} days or more. One every ${COMEBACK_EVERY_DAYS} days.</small></span><button type="button" id="comeback-chest" class="small-button">Collect</button></div>`:'';
  function gift(){
@@ -50,7 +51,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const streak=claimed?today.streak:today.streak-1,week=Math.floor((today.streak-1)/7)*7;
   const days=Array.from({length:7},(_,i)=>{const n=week+i+1,g=dailyGift(state,n,now),got=n<today.streak||claimed&&n===today.streak,current=n===today.streak&&!claimed;
    const mark=n===today.streak?' is-today':claimed&&n===today.streak+1?' is-next':'';
-   return `<li class="streak-day ${current?'current':''} ${got?'collected':''}${mark}"${g.boost?` title="${BOOSTS[g.boost].name} for ${g.boostMs/60000} minutes"`:''}><small>Day ${n}</small>${got?'<i data-lucide="check"></i>':art(n%7===0?'gift':'diamonds')}<b>${g.diamonds}</b>${g.boost?`<span class="streak-boost">${art(BOOSTS[g.boost].art)}</span>`:''}</li>`;}).join('');
+   return `<li class="streak-day ${current?'current':''} ${got?'collected':''}${mark}"${g.boost?` title="${BOOSTS[g.boost].name} for ${g.boostMs/60000} minutes${g.afterWeekend?' after the weekend':''}"`:''}><small>Day ${n}</small>${got?'<i data-lucide="check"></i>':art(n%7===0?'gift':'diamonds')}<b>${g.diamonds}</b>${g.boost?`<span class="streak-boost">${art(BOOSTS[g.boost].art)}</span>`:''}</li>`;}).join('');
   const rule=saveReady(state,now)?'Coins grow with your level. Miss one day and your streak is kept, once a week.':'Coins grow with your level. Your streak was saved this week: miss another day and it starts over.';
   // Collected: tomorrow's gift instead of an empty "come back", and (where reminders can work but are off) one tap to be reminded.
   const offer=giftOffer(now),next=claimed?dailyGift(state,today.streak+1,now+DAY_MS):null;
@@ -89,12 +90,12 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    $('today-content').innerHTML=`<p class="section-copy">Your daily gift is ready from the start. ${featureUnlockHint('challenges')}</p>`;
   }else if(tab==='challenges'){
    // Plan F (13 Oct 2026): a challenge that waits for a helping hand stop that is resting says when that stop is ready again.
-   const tasks=dailyTasks(state,farmNow()),xpBoost=state.boosts.xpUntil>farmNow()?2:1;lastWaits=waitKey(tasks);const wait=q=>{const w=dailyWait(state,q,farmNow());return w?`<small class="daily-wait">${art('hourglass')}<span>${w.name} ready at ${clock(w.at)}</span></small>`:'';},multiplier=dailyRewardMultiplier(state,farmNow()),done=tasks.filter(q=>q.claimed).length;
+   const tasks=dailyTasks(state,farmNow()),xpBoost=xpDoubled(state,farmNow())?2:1;lastWaits=waitKey(tasks);const wait=q=>{const w=dailyWait(state,q,farmNow());return w?`<small class="daily-wait">${art('hourglass')}<span>${w.name} ready at ${clock(w.at)}</span></small>`:'';},multiplier=dailyRewardMultiplier(state,farmNow()),done=tasks.filter(q=>q.claimed).length;
    // Same cards as the quest list: picture, goal, a bar with the count and the reward as chips; Claim only when done.
    $('today-content').innerHTML=`<div class="daily-bonus-card ${done===3?'is-done':''}"><span class="daily-bonus-art">${art('gift')}</span><span><strong>${done===3?'Daily bonus collected':'Finish all three for a bonus'}</strong>${rewardChips({coins:DAILY_BONUS.coins*multiplier,xp:DAILY_BONUS.xp*multiplier*xpBoost})}</span><b>${done}/3</b></div><div class="daily-list">`+tasks.map(q=>{const ready=!q.claimed&&q.progress>=q.target;return `<article class="daily-task daily-card ${q.claimed?'completed':ready?'is-ready':''}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><h3>${q.title}</h3><p>${q.description}</p>${q.claimed?'':`<div class="quest-meter"><progress max="${q.target}" value="${q.progress}" aria-label="${q.title} progress"></progress><span>${q.progress} / ${q.target}</span></div>${wait(q)}`}<div class="task-bottom">${rewardChips({coins:q.reward,diamonds:q.diamonds,xp:q.xp*xpBoost},lanternChip(state,'daily',farmNow())+leafChip(state,'daily',farmNow()))}${q.claimed?'<span class="quest-state">Collected ✓</span>':ready?`<button class="primary-button" data-daily="${q.id}">Claim</button>`:''}</div></div></article>`;}).join('')+'</div>';
    document.querySelectorAll('[data-daily]').forEach(b=>b.onclick=()=>act({type:'daily',id:Number(b.dataset.daily),day},r=>`Challenge complete! +${r.coins} coins and +${r.diamonds} diamond${r.diamonds===1?'':'s'}${r.bonus?' including your daily bonus!':'.'}`));
   }else{
-   const now=farmNow(),orders=dailyOrders(state,now),coinBoost=state.boosts.coinsUntil>now?2:1,xpBoost=state.boosts.xpUntil>now?2:1;
+   const now=farmNow(),orders=dailyOrders(state,now),coinBoost=state.boosts.coinsUntil>now?2:1,xpBoost=xpDoubled(state,now)?2:1;
    const ready=orders.filter(o=>!o.done&&Object.entries(o.input).every(([k,n])=>state.inventory[k]>=n)).length;
    // Plan F (13 Oct 2026, proposal 4): the tab says in one line what delivery orders are (the rule on the screen that shows it).
    // A Replace this order the player opened stays open when a farm update draws the orders anew; a replaced order is a new one, closed
@@ -126,11 +127,12 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
    // small line, then the diamond work (5 Oct 2026: everything on one phone screen, in the game's own colours).
    const empty={plant:state.plots.some(p=>!p.crop)?'Not enough coins':'No empty fields',water:'Nothing to water · water right after planting',tend:'Nothing ready for care yet · it opens after 15% of the growing time',harvest:'Nothing ready yet'};
    // The fuel's formula in a fold (18 Oct 2026, the window shell); the rule that matters shows: by hand is free. The fold stays open.
-   keepFolds($('utility-content'),`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant',crop,`Plant ${CROPS[crop].name}`],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];if(mode==='plant'&&asking)return askTile(crop,CROPS[crop].name,q);return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}${fertilizeTile(quotes.fertilize)}</div><details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free.</span><span class="fold-more">How it works</span></summary><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${Math.round(TRACTOR_FUEL_SHARE*100)}% of the crop's usual price per field, at least ${TRACTOR_FUEL_PER_FIELD}.</p></details>${diamondWork(crop)}`);
+   keepFolds($('utility-content'),`<button type="button" class="tractor-seed" data-tractor-crop>${art(crop)}<span><small>Planting</small><strong>${CROPS[crop].name}</strong></span><em>${art('coins')}${seedCost(state,crop)} per field</em><i data-lucide="chevron-right" data-line-icon></i></button><div class="tractor-tiles">${[['plant',crop,`Plant ${CROPS[crop].name}`],['water','water','Water'],['tend','care','Extra care'],['harvest','harvest','Harvest']].map(([mode,icon,label])=>{const q=quotes[mode];if(mode==='plant'&&asking)return askTile(crop,CROPS[crop].name,q);return `<button class="tractor-tile" data-tractor="${mode}" ${!q.count||state.coins<q.total?'disabled':''}><span class="tractor-tile-art">${art(icon)}</span>${q.count?`<span class="tractor-job-cost">${art('coins')}${q.total}</span>`:''}<strong>${label}</strong><small>${q.count?`${q.count} ${q.count===1?'field':'fields'}${q.seeds?` · ${q.fuel} fuel + ${q.seeds} seeds`:''}${mode==='water'?` · ${waterLeft(q)} left to water`:''}`:empty[mode]}</small></button>`;}).join('')}${fertilizeTile(quotes.fertilize)}</div><details class="fold tractor-fuel" data-fold="tractor-fuel"><summary><span>By hand is always free.</span><span class="fold-more">How it works</span></summary><p class="tractor-foot">Fuel: ${TRACTOR_FUEL_BASE} coins a job + ${Math.round(TRACTOR_FUEL_SHARE*100)}% of the crop's usual price per field, at least ${TRACTOR_FUEL_PER_FIELD}. Fertilize uses none.</p></details>${diamondWork(crop)}`);
    document.querySelector('[data-tractor-crop]').onclick=()=>toSeeds(false);
    // The price on the tile goes along (17 Oct 2026: fuel follows each field's crop): never more is charged, and a refused job shows the new price.
    // The Fertilize job's toast in whole words, no middle dot: a translated toast is not undotted (21 Oct 2026).
-   const done=r=>r.mode==='fertilize'?(r.count===1?`The tractor fertilized 1 field with 1 fertilizer for ${r.cost} coins! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer for ${r.cost} coins! +${r.xp} XP.`):`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`;
+   // Fertilize costs no coins (25 Oct 2026, the owner: "ook mag bemesten gratis, het kost alleen mest"), so its toast names none.
+   const done=r=>r.mode==='fertilize'?(r.count===1?`The tractor fertilized 1 field with 1 fertilizer! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer! +${r.xp} XP.`):`All done! The tractor worked ${r.count} fields · ${r.cost} coins spent.`;
    const work=mode=>act({type:'tractor',mode,crop:getCrop(),expectedCost:quotes[mode].total},done).then(r=>{if(!r)renderUtility();});
    // Fertilize opens its own page (24 Oct 2026, the owner: "Laat bij tractor kiezen welk veld je wilt fertilizen, zoals het was bij de
    // Windmill, maar dan cleanere ux"): the farmer picks the fields, and its button says what it uses, so it asks before it spends (the
@@ -239,8 +241,8 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   return q.low?`${name} brings in about ${Math.round(q.forecast.value).toLocaleString('en-US')} coins in this shift, less than the lowest price (1 diamond a field). A crop that sells for more is a better deal.`:'';
  }
  // The Fertilize page: one row a growing field without fertilizer (its crop, the field, how much sooner it is ready and the time left),
- // a tick to pick it, at most as many as there is fertilizer for. One green button fertilizes the picked fields for the fuel on it;
- // Back returns to the tractor. A field that ripens or is fertilized meanwhile drops out of the pick.
+ // a tick to pick it, at most as many as there is fertilizer for. One green button fertilizes the picked fields; it costs no coins
+ // (25 Oct 2026, the owner: "ook mag bemesten gratis, het kost alleen mest"), only the fertilizer. Back returns to the tractor. A field that ripens or is fertilized meanwhile drops out of the pick.
  function renderFertilize(){
   lastFieldStatus=fieldStatus();
   const now=farmNow(),fields=fertilizeChoices(state,now),have=Math.max(0,Math.floor(state.inventory?.fertilizer??0));
@@ -255,15 +257,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const others=state.plots.filter(p=>CROPS[p?.crop]&&!fields.includes(p)).sort((a,b)=>a.id-b.id);
   const otherRow=p=>`<div class="fert-row is-done"><span class="fert-art">${art(p.crop)}</span><span class="fert-name"><strong>${CROPS[p.crop].name}</strong><small>Field ${p.id+1}</small></span><span class="fert-time"><small>${p.readyAt<=now?'Ready to harvest':'Already fertilized'}</small></span></div>`;
   const go=!n?'Choose fields':n===1?'Fertilize 1 field':`Fertilize ${n} fields`;
-  $('utility-content').innerHTML=`<div class="fert-page"><div class="fert-head">${art('fertilizer')}<p><strong>${have===1?'1 natural fertilizer':`${have} natural fertilizer`}</strong><small>1 a field, 35% off its time left</small></p>${fields.length>1?`<button type="button" class="small-button" data-fert-${n?'clear':'all'}>${n?'Clear':`Pick ${Math.min(have,fields.length)}`}</button>`:''}</div>`
+  $('utility-content').innerHTML=`<div class="fert-page"><div class="fert-head">${art('fertilizer')}<p><strong>${have===1?'1 natural fertilizer':`${have} natural fertilizer`}</strong><small>1 a field, no coins, 35% off its time left</small></p>${fields.length>1?`<button type="button" class="small-button" data-fert-${n?'clear':'all'}>${n?'Clear':`Pick ${Math.min(have,fields.length)}`}</button>`:''}</div>`
    +(fields.length||others.length?`<div class="fert-list">${fields.map(row).join('')}${others.map(otherRow).join('')}</div>`:`<p class="fert-empty">No growing crops need fertilizer.</p>`)
-   +`<div class="fert-foot"><button type="button" class="secondary-button" data-fert-back>Back</button><button type="button" class="primary-button" data-fert-go ${!n||state.coins<q.total?'disabled':''}>${go}${n?`<span class="fert-cost">${art('coins')}${q.total}</span>`:''}</button></div>`
-   +(n&&state.coins<q.total?`<p class="fert-short">You need ${q.total} coins for tractor fuel.</p>`:'')+`</div>`;
+   +`<div class="fert-foot"><button type="button" class="secondary-button" data-fert-back>Back</button><button type="button" class="primary-button" data-fert-go ${!n?'disabled':''}>${go}</button></div></div>`;
   document.querySelectorAll('[data-fert]').forEach(box=>box.onchange=()=>{const id=Number(box.dataset.fert);box.checked?fertPick.add(id):fertPick.delete(id);renderFertilize();document.querySelector(`[data-fert="${id}"]`)?.focus({preventScroll:true});});
   const all=document.querySelector('[data-fert-all]');if(all)all.onclick=()=>{fertPick=new Set(fields.slice(0,have).map(p=>p.id));renderFertilize();};
   const clear=document.querySelector('[data-fert-clear]');if(clear)clear.onclick=()=>{fertPick.clear();renderFertilize();};
   document.querySelector('[data-fert-back]').onclick=()=>{fertPick=null;renderUtility();};
-  const done=r=>r.count===1?`The tractor fertilized 1 field with 1 fertilizer for ${r.cost} coins! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer for ${r.cost} coins! +${r.xp} XP.`;
+  const done=r=>r.count===1?`The tractor fertilized 1 field with 1 fertilizer! +${r.xp} XP.`:`The tractor fertilized ${r.count} fields with ${r.fertilizer} fertilizer! +${r.xp} XP.`;
   document.querySelector('[data-fert-go]').onclick=()=>{const ids=[...fertPick];act({type:'tractor',mode:'fertilize',crop:getCrop(),ids,expectedCost:q.total},done).then(r=>{if(r)fertPick=null;renderUtility();});};
   icons();
  }
@@ -307,7 +308,7 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   // A night shift round that came due while the game is open: worked out here too, as the server will (settleShift is pure).
   const shift=state.tractorShift;if(shift&&shift.done<=SHIFT_ROUNDS&&shift.startedAt+shift.done*SHIFT_ROUND_MS<=farmNow()){settleShift(state,farmNow());onChange();refresh();}
   const coinBoost=`${state.boosts.coinsUntil>farmNow()}:${vipActive(state,farmNow())}`;if(lastCoinBoost!==coinBoost){lastCoinBoost=coinBoost;if($('today-dialog').open)renderToday();}
-  const xpBoost=state.boosts.xpUntil>farmNow();if(lastXPBoost!==xpBoost){lastXPBoost=xpBoost;if($('today-dialog').open)renderToday();}
+  const xpBoost=xpDoubled(state,farmNow());if(lastXPBoost!==xpBoost){lastXPBoost=xpBoost;if($('today-dialog').open)renderToday();}
   const day=utcDay(farmNow());if(day!==lastDay){lastDay=day;refresh();}countdown();streakDanger();
   // A helping hand stop a challenge waits for is ready again: its time goes (Plan F, 13 Oct 2026).
   if($('today-dialog').open&&tab==='challenges'&&featureUnlocked(state,'challenges')&&waitKey(dailyTasks(state,farmNow()))!==lastWaits)renderToday();

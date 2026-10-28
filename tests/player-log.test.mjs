@@ -103,7 +103,7 @@ test('farm-api writes the lines after the reply, for actions, opening the game, 
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/const later=\(work:Promise<unknown>\)=>\(globalThis as unknown as \{EdgeRuntime\?:\{waitUntil\?:\(p:Promise<unknown>\)=>void\}\}\)\.EdgeRuntime\?\.waitUntil\?\.\(work\);/);
  assert.match(api,/const before=snapshot\(state\);\n   let result;try\{result=applyFarmAction/);
- assert.match(api,/later\(writeLog\(admin,user\.id,farmLog\(body\.action,before,state,result\)\)\);\n    return reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
+ assert.match(api,/if\(saved\.data\)\{\n    mark\('commit'\);\n    if\(inviteReward\)[^\n]*\n    later\(writeLog\(admin,user\.id,farmLog\(body\.action,before,state,result\)\)\);\n    const answer=reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
  assert.match(api,/const logged=loadLog\(\{away:now-\(Date\.parse\(row\.updated_at\)\|\|now\),gift:donations\.length\?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback,from:body\.opened\}\);/,'13 Oct 2026: with the reminder that opened the game');
  assert.equal((api.match(/later\(writeLog\(admin,user\.id,logged\)\);/g)??[]).length,2,'both ways a load can answer');
  assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('rename',/);assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('avatar','Picked a new face'\)\)\)/);
@@ -200,5 +200,5 @@ test('the town boat and the landmarks log what the actions really gave or took',
  applyFarmAction(s,{type:'first_look'},t);before=snapshot(s);got=applyFarmAction(s,{type:'landmark_give',landmark:'greathall',item:'rooftile'},t);
  assert.deepEqual(farmLog({type:'landmark_give',landmark:'greathall',item:'rooftile'},before,s,got).map(l=>[l.category,l.text]),[['farm','Handed in goods for the Great Hall · −100 Roof tile']]);
  applyFarmAction(s,{type:'landmark_give',landmark:'greathall'},t);before=snapshot(s);got=applyFarmAction(s,{type:'landmark_finish',landmark:'greathall'},t);
- assert.match(farmLog({type:'landmark_finish',landmark:'greathall'},before,s,got)[0].text,/^Finished the Great Hall in the village · −3,000,000 coins · \+200 diamonds · \+5,000 XP/);
+ assert.match(farmLog({type:'landmark_finish',landmark:'greathall'},before,s,got)[0].text,/^Finished the Great Hall in the village · −3,000,000 coins · \+500 diamonds · \+5,000 XP/);
 });
