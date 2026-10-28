@@ -2644,6 +2644,7 @@
 "Harvest rush":"public/event-goals.js",
 "Harvest shield":"public/family-ui.js",
 "Harvest the ripe corn":"public/beginner-ui.js",
+"Harvest the ripe corn first: tap or sweep over the golden fields.":"public/game.js",
 "Harvest the same crop often for a reward at every tier.":"public/wiki-content.js",
 "Harvest tycoon":"public/farm-state.js",
 "Harvest wheat":"public/live-events-ui.js",
