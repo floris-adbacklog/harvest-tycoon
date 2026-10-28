@@ -5802,7 +5802,7 @@
 "Villagers helped":"src/leaderboard.js",
 "Villagers helped at the market square in the village.":"src/leaderboard.js",
 "Villagers helped this week":"public/village-square-ui.js",
-"Villagers pay 1.6 times what their goods are worth. The Hall gives 200 diamonds once.":"public/farm-state.js",
+"Villagers pay 1.6 times what their goods are worth. The Hall gives 500 diamonds once.":"public/farm-state.js",
 "Villagers pay half again at the market square.":"public/economy-ui.js",
 "Villagers pay half again what their goods are worth ({0} times once the {1} is built), and a {2}th of it in XP. A request pays what it shows: coin boosts and VIP do not add to it. They ask for two kinds of goods: packed lunches and village goods from places you have built, at most one of the farm’s late goods, and something you have at least half of in stock when you can. From level {3} they often ask for three kinds of goods. They never ask for master tools, heirloom flour or builder’s crates. A new villager comes {4} hours after you help or say no. From level {5}, three villagers at a time, and a fourth with the {6}.":"public/wiki-content.js",
 "Villagers pay half again what their goods are worth.":"public/village-square-ui.js",

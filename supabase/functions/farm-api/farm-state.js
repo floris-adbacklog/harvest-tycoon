@@ -2833,9 +2833,9 @@ export const VILLAGE_LANDMARKS=Object.freeze(Object.fromEntries(Object.entries({
  longhouse:{name:'Longhouse',level:172,coins:2000000,materials:{linen:300,scentedsachet:200,rooftile:400},effect:'Batches in every village place take 10% less time.',villager:12,title:'A hall for the workers',line:'A longhouse where the workers rest, and every workshop goes faster.',art:'landmark-longhouse'},
  stonequay:{name:'Stone quay',level:185,coins:2500000,materials:{stone:2000,plank:400,scentedsachet:200},effect:'The town boat comes back after 6 hours instead of 12.',villager:10,title:'A quay of stone',line:'A stone quay, and my boat is loaded and back in half the time.',art:'landmark-stonequay'},
  lookout:{name:'Lookout tower',level:192,coins:3000000,materials:{silvercandlestick:20,rubyring:20,saffronbun:150},effect:'A fourth villager comes to the market square.',villager:4,title:'A tower above the square',line:'A lookout tower, and travellers will see the market from afar.',art:'landmark-lookout'},
- greathall:{name:'Great Hall',level:WORLD_TWO_TOP,coins:3000000,materials:{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100},effect:'Villagers pay 1.6 times what their goods are worth. The Hall gives 200 diamonds once.',villager:12,title:'The heart of the village',line:'One last hall for the whole village, with a bell for every villager who comes.',art:'landmark-greathall'}
+ greathall:{name:'Great Hall',level:WORLD_TWO_TOP,coins:3000000,materials:{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100},effect:'Villagers pay 1.6 times what their goods are worth. The Hall gives 500 diamonds once.',villager:12,title:'The heart of the village',line:'One last hall for the whole village, with a bell for every villager who comes.',art:'landmark-greathall'}
 }).map(([k,l])=>[k,Object.freeze({...l,materials:Object.freeze(l.materials)})])));
-export const VILLAGE_LANDMARK_XP=5000,VILLAGE_HALL_PREMIUM=1.6,GREAT_HALL_DIAMONDS=200;
+export const VILLAGE_LANDMARK_XP=5000,VILLAGE_HALL_PREMIUM=1.6,GREAT_HALL_DIAMONDS=500;   // 500 since 28 Oct 2026 (the owner; was 200)
 export const VILLAGE_LANDMARK_BONUS=Object.freeze({windpump:.25,longhouse:.1});   // less batch time: the Village Fields', every village place's
 export const landmarkBonus=(state,id)=>landmarkDone(state,id)?VILLAGE_LANDMARK_BONUS[id]??0:0;
 // What a villager pays for a request made now: half again, 1.6 times with the Great Hall. A request already waiting keeps its coins.
@@ -2873,7 +2873,7 @@ export function landmarkGive(state,id,item){
  if(!units)throw new Error(item===undefined?'You have none of the goods this landmark still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to give.`);
  return {handed,units,ready:Object.entries(l.materials).every(([k,n])=>(given[k]??0)>=n)};
 }
-// Pays the coins and finishes it: 5,000 XP, its bonus for good, and the Great Hall's 200 diamonds, which can come only once (done never
+// Pays the coins and finishes it: 5,000 XP, its bonus for good, and the Great Hall's 500 diamonds, which can come only once (done never
 // loses an id and a finished landmark is refused). Spent coins count for the events through applyFarmAction, as for the briefs; never
 // sold, earned or produced.
 export function landmarkFinish(state,id){

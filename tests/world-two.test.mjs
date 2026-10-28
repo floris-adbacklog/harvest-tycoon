@@ -739,7 +739,7 @@ test('the town boat\'s numbers and the five landmarks, as the owner chose them',
  assert.deepEqual(l.longhouse.materials,{linen:300,scentedsachet:200,rooftile:400},'sachets, not lavender soap (10 Oct 2026)');
  assert.ok(Object.isFrozen(l)&&ids.every(k=>Object.isFrozen(l[k])&&Object.isFrozen(l[k].materials)));
  for(const k of ids){assert.ok(Object.keys(l[k].materials).every(villageGood),k);assert.ok(VILLAGERS[l[k].villager],k);}
- assert.deepEqual([VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS],[5000,1.6,200]);
+ assert.deepEqual([VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS],[5000,1.6,500]);
  assert.match(l.windpump.effect,new RegExp(`${VILLAGE_LANDMARK_BONUS.windpump*100}%`));assert.match(l.longhouse.effect,new RegExp(`${VILLAGE_LANDMARK_BONUS.longhouse*100}%`));
  assert.match(l.stonequay.effect,new RegExp(`${BOAT_QUAY_RETURN/3600000} hours instead of ${BOAT_RETURN/3600000}`));
  assert.ok(l.greathall.effect.includes(`${VILLAGE_HALL_PREMIUM} times`)&&l.greathall.effect.includes(`${GREAT_HALL_DIAMONDS} diamonds`));

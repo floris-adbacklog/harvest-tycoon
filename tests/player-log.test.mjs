@@ -200,5 +200,5 @@ test('the town boat and the landmarks log what the actions really gave or took',
  applyFarmAction(s,{type:'first_look'},t);before=snapshot(s);got=applyFarmAction(s,{type:'landmark_give',landmark:'greathall',item:'rooftile'},t);
  assert.deepEqual(farmLog({type:'landmark_give',landmark:'greathall',item:'rooftile'},before,s,got).map(l=>[l.category,l.text]),[['farm','Handed in goods for the Great Hall · −100 Roof tile']]);
  applyFarmAction(s,{type:'landmark_give',landmark:'greathall'},t);before=snapshot(s);got=applyFarmAction(s,{type:'landmark_finish',landmark:'greathall'},t);
- assert.match(farmLog({type:'landmark_finish',landmark:'greathall'},before,s,got)[0].text,/^Finished the Great Hall in the village · −3,000,000 coins · \+200 diamonds · \+5,000 XP/);
+ assert.match(farmLog({type:'landmark_finish',landmark:'greathall'},before,s,got)[0].text,/^Finished the Great Hall in the village · −3,000,000 coins · \+500 diamonds · \+5,000 XP/);
 });
