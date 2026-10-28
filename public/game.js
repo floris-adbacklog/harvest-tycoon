@@ -2220,10 +2220,11 @@ function measureVillage(spots,margin=26){
 }
 // World II's props, landmarks and the Village Fields (Oct 2026, village-scene.js) arrive after the village is on screen, like the farm's
 // extra scenery: the trip is not slower, and if any of it fails the village simply shows without it.
-let villageGroup=null,villageExtras=null,fieldStatus=null;
+let villageGroup=null,villageExtras=null,fieldStatus=null,villageMillRotor=null,villageMillSpeed=0;
 async function addVillageExtras(){
  try{
-  const {loadVillageExtras,createVillageFields,villageFieldStatus}=await import('./village-scene.js');fieldStatus=villageFieldStatus;
+  const {loadVillageExtras,createVillageFields,villageFieldStatus,villageMillSails}=await import('./village-scene.js');fieldStatus=villageFieldStatus;
+  try{villageMillRotor=villageMillSails(villageGroup);}catch(error){console.warn('The Village Windmill\'s sails stay still.',error);}
   villageExtras=await loadVillageExtras(villageGroup);scene.add(villageExtras.group);
   // The Fields' lid (11 Oct 2026, the owner's review: only a tap by their name, at the plot's south-west corner, opened them) takes the
   // place of their block on their place: a tap anywhere on the plot finds the place as a tap on the block did, and it shows, greys and
@@ -2650,6 +2651,8 @@ function frame(now){
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
+  // The Village Windmill's sails the same way (28 Oct 2026, village-scene.js villageMillSails); they face along x, so they turn about it.
+  if(villageMillRotor){const busy=buildingBusy('villagemill');villageMillSpeed+=((busy?.28:0)-villageMillSpeed)*Math.min(1,dt*.8);villageMillRotor.rotation.x-=dt*villageMillSpeed;}
   const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(villageExtras?.fields?.animate?.())renderer.shadowMap.needsUpdate=true;if(cropMotion?.animate()){cropsMoving=true;if(now-lastShadows>CROP_SHADOWS){renderer.shadowMap.needsUpdate=true;lastShadows=now;}}else if(cropsMoving){cropsMoving=false;renderer.shadowMap.needsUpdate=true;lastShadows=now;}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }

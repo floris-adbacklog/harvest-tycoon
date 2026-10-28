@@ -540,6 +540,27 @@ export async function createVillageFields(village){
  const bare=village.getObjectByName('landscape_004');if(bare)bare.visible=false;
  return {group,show:open=>{for(const [crop,rows] of strips)rows.visible=open(crop);},tap,grow,animate};
 }
+// The Village Windmill's sails (28 Oct 2026, the owner: they turn while it makes something, as the farm's Windmill's do). The pack's mill
+// (Building_016, one model) has its sails in the same mesh as its tower: they are the triangles in the thin plane at its front (the
+// last 4.5% of its length along x), so they are cut out into a mesh of their own (the same vertices, its own index) that turns about the
+// middle of the sails. Null when the mill is not there.
+export function villageMillSails(village){
+ let mill=null;village.traverse(o=>{if(!mill&&o.isInstancedMesh&&o.name==='Building_016')mill=o;});
+ if(!mill||mill.count<1||!mill.geometry.index)return null;
+ const g=mill.geometry,pos=g.getAttribute('position'),index=g.index;g.computeBoundingBox();
+ const b=g.boundingBox,front=b.max.x-.045*(b.max.x-b.min.x),keep=[],sails=[];
+ for(let i=0;i<index.count;i+=3){const tri=[index.getX(i),index.getX(i+1),index.getX(i+2)];(tri.every(v=>pos.getX(v)>=front)?sails:keep).push(...tri);}
+ if(!sails.length||!keep.length)return null;
+ const box=new THREE.Box3(),v=new THREE.Vector3();for(const k of sails)box.expandByPoint(v.fromBufferAttribute(pos,k));
+ const hub=box.getCenter(new THREE.Vector3()),cut=new THREE.BufferGeometry();
+ for(const [name,attribute] of Object.entries(g.attributes))cut.setAttribute(name,attribute);
+ cut.setIndex(sails);g.setIndex(keep);
+ const blades=new THREE.Mesh(cut,mill.material);blades.position.copy(hub).negate();blades.castShadow=mill.castShadow;blades.receiveShadow=mill.receiveShadow;blades.name='villagemill-sails';
+ const rotor=new THREE.Group();rotor.position.copy(hub);rotor.add(blades);
+ const at=new THREE.Matrix4();mill.getMatrixAt(0,at);
+ const holder=new THREE.Group();holder.matrixAutoUpdate=false;holder.matrix.copy(mill.matrix).multiply(at);holder.add(rotor);mill.parent.add(holder);
+ return rotor;
+}
 // How each crop of the Village Fields stands (28 Oct 2026): its batches (productionJobs of the Fields) at now. A ready batch shows the
 // full crop; else the batch furthest along grows (0 to 1 of its time); none: bare soil.
 export function villageFieldStatus(jobs,now){
