@@ -33,7 +33,7 @@ test('a first visit shows the choice and loads nothing until the visitor answers
  const p=page();
  assert.ok(p.shown(),'the banner is shown');assert.equal(p.win.gtm,0,'Tag Manager waits');
  // The purposes on the banner; the tools themselves are named in the privacy policy it links to.
- assert.match(p.shown().html,/We use cookies to see what farmers enjoy and to measure our ads\./);assert.match(p.shown().html,/href="\/privacy#cookies"/);
+ assert.match(p.shown().html,/We use cookies to see what farmers enjoy, to measure our ads and to show our ads to visitors\./);assert.match(p.shown().html,/href="\/privacy#cookies"/);
 });
 test('Accept is the filled button; Decline sits next to it at the same size, outlined and clearly readable',()=>{
  const [decline,accept]=page().shown().buttons;

@@ -203,8 +203,8 @@ test('inside our apps /app shows only that the farmer is in the app: no About th
 test('the sitemap names /partners, and /privacy with the date the page says',()=>{
  const xml=read('public/sitemap.xml');
  assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/partners<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod><\/url>/);
- assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/privacy<\/loc><lastmod>2026-10-22<\/lastmod><\/url>/);
- assert.match(read('public/privacy.html'),/Last updated: 22 October 2026/,'22 Oct 2026: Meta Custom Audiences for our own players, with the right to object');
+ assert.match(xml,/<url><loc>https:\/\/www\.harvesttycoon\.com\/privacy<\/loc><lastmod>2026-10-28<\/lastmod><\/url>/);
+ assert.match(read('public/privacy.html'),/Last updated: 28 October 2026/,'28 Oct 2026: Google Ads and showing our ads to visitors (retargeting), Apple Ads');
 });
 
 // ---- The wiki: breadcrumbs, the share card's address, /llms.txt ----

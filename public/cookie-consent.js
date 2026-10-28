@@ -1,4 +1,4 @@
-// The cookie choice. The banner names the purposes; the privacy policy it links to names the tools. Google Tag Manager (which runs Google Analytics, the Meta Pixel and the TikTok Pixel) only loads after "Accept": the
+// The cookie choice. The banner names the purposes; the privacy policy it links to names the tools. Google Tag Manager (which runs Google Analytics, Google Ads, the Meta Pixel and the TikTok Pixel) only loads after "Accept": the
 // loader at the top of play.html reads the same choice. The choice is kept for 12 months in local storage and can be
 // changed at any time: "Cookie settings" at the bottom of the home page, in the game's Settings, or /?cookie-settings.
 // Accept is the filled button; Decline sits next to it at the same size and stays clearly readable (outlined), so declining
@@ -22,7 +22,7 @@
  function app(){return window.HarvestMeta||null;}
  function tellApp(value,at){try{if(app()&&app().consent)app().consent(value==='accepted',at);}catch(e){}}
  function forgetApp(){try{if(app()&&app().forget)app().forget();}catch(e){}}
- // Removes the Google Analytics, Meta and TikTok cookies from this site (they are set on the site's own domain).
+ // Removes the Google Analytics, Google Ads, Meta and TikTok cookies from this site (they are set on the site's own domain).
  function clearTrackingCookies(){
   var host=location.hostname,parts=host.split('.'),domains=['',host,'.'+host];
   if(parts.length>2)domains.push('.'+parts.slice(-2).join('.'));
@@ -47,7 +47,7 @@
   banner.className='cookie-banner';banner.setAttribute('role','dialog');banner.setAttribute('aria-modal','false');banner.setAttribute('aria-labelledby','cookie-title');
   banner.innerHTML='<span class="wart cookie-art" aria-hidden="true"></span>'
    +'<div class="cookie-copy"><h2 id="cookie-title">Help a new farm game grow</h2>'
-   +'<p>We use cookies to see what farmers enjoy and to measure our ads. <a href="/privacy#cookies">Privacy Policy</a></p>'
+   +'<p>We use cookies to see what farmers enjoy, to measure our ads and to show our ads to visitors. <a href="/privacy#cookies">Privacy Policy</a></p>'
    +'<div class="cookie-actions"><button type="button" class="cookie-button is-decline" data-cookie="declined">Decline</button><button type="button" class="cookie-button is-accept" data-cookie="accepted">Accept</button></div></div>';
   banner.querySelectorAll('[data-cookie]').forEach(function(button){button.onclick=function(){decide(button.getAttribute('data-cookie'));};});
   document.body.appendChild(banner);
