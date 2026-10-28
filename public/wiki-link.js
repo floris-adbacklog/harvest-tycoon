@@ -6,7 +6,7 @@
 // spot: renderWiki(state, topic, section) in public/wiki-ui.js scrolls to it and lights it up for a moment.
 // No imports, so the page around the game (src/, the chat) can use it without loading the wiki.
 export const WIKI_SITE='https://www.harvesttycoon.com';
-export const WIKI_TOPIC_IDS=Object.freeze(['getting-started','crops','buildings','market','quests','daily','family','events','helpers','village','estate','diamonds','chat','account']);
+export const WIKI_TOPIC_IDS=Object.freeze(['getting-started','crops','buildings','market','quests','daily','family','events','helpers','village','harbour','estate','diamonds','chat','account']);
 const TOPIC=new Set(WIKI_TOPIC_IDS),SECTION=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // The canonical link of a topic, or of a spot on it.
 export const wikiLink=(topic,section='')=>`${WIKI_SITE}/wiki/${topic}${section?`#${section}`:''}`;

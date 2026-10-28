@@ -13,7 +13,7 @@ import {createSeasonUI} from './season-ui.js';
 import {createLookSettings} from './look-settings.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
-import {buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
+import {worldThreeOpen,harbourWorkDone,buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure,noteOnDevice} from './loading-screen.js';
 import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
 import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE} from './graphics-mode.js';
@@ -38,7 +38,7 @@ import { createRookieUI } from './rookie-ui.js';
 import { art,refreshArt } from './visual-icons.js';
 import { createFamilyFlag,drawFamilyCloth } from './family-flag.js';
 import { bindFarmInput,cameraDragDelta } from './farm-input.js';
-import { createQuestsUI,villageQuestReady,questGroups,villageQuestGroups,readyDailies } from './quests-ui.js';
+import { createQuestsUI,villageQuestReady,harbourQuestReady,questGroups,villageQuestGroups,harbourQuestGroups,readyDailies } from './quests-ui.js';
 import { createBeginnerUI, calmStep } from './beginner-ui.js';
 import { LAYOUT_YARDS, LAYOUT_GRID, LAND, DECOR, landAt, landOpen, inWater, obstacleKind, OLD_ROADS, PATH_GRID, roadPieces } from './farm-map.js';
 import { createLayoutEditor } from './layout-edit.js';
@@ -97,14 +97,31 @@ state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key
 // World II (30 Sep 2026): with ?world=village the game shows the village instead of the farm, for a farm at level 100 or higher
 // (src/main.js travels there and back through the loading screen). The farm-only parts (fields, the farm's buildings and scenery,
 // the minimap, the welcome back) are skipped; the village's places are building labels like the farm's (public/village-scene.js).
-const villageWorld=new URLSearchParams(location.search).get('world')==='village'&&worldTwoOpen(state);
+// World III, the Harbour (27 Oct 2026, Fase 0: the map only, in the harness): ?world=harbour opens the harbour's scene on the village's
+// camera and HUD (harbour-scene.js); from level 200, nothing to do there yet.
+let harbourUI=null;   // the harbour office's window (harbour-ui.js), in the harbour only
+const harbourWorld=new URLSearchParams(location.search).get('world')==='harbour'&&worldThreeOpen(state);   // level 200 and the Great Hall
+const villageWorld=(new URLSearchParams(location.search).get('world')==='village'||harbourWorld)&&worldTwoOpen(state);
 if(villageWorld)document.documentElement.dataset.world='village';else document.documentElement.removeAttribute('data-trip');   // app-mode.js marks the trip
 // In the village the camera buttons speak of the village: centre it, or show all of it.
 if(villageWorld)for(const [id,label] of [['zoom-reset','Center the village'],['zoom-fit','Show the whole village']]){$(id).setAttribute('aria-label',label);$(id).title=label;}
+// In the harbour the world buttons travel (28 Oct 2026, review: its own "Harbour" button did nothing there): My farm to the farm, Village
+// to the village; neither is lit, as the harbour is a third place. The zoom buttons name the harbour.
+if(harbourWorld){for(const [id,label] of [['zoom-reset','Center the harbour'],['zoom-fit','Show the whole harbour']]){$(id).setAttribute('aria-label',label);$(id).title=label;}}
 // The sound goes along (13 Oct 2026, farm-audio.js travel): the next page takes over this page's running context. A trip whose load
 // fails stays here, and is no trip for the sound either. Without a page around it the trip takes this page's place in the history
 // too (13 Oct 2026, Android app 1.3, src/main.js travel).
-const travel=to=>{if(window.parent?.harvestBridge?.travel){farmAudio.travel();void Promise.resolve(window.parent.harvestBridge.travel(to)).catch(error=>{farmAudio.travel(false);throw error;});}else location.replace(location.pathname+(to==='village'?'?world=village':''));};
+// Where a trip arrives (27 Oct 2026, the owner): the road between the farm and the village ends at the farm's signpost and the village's
+// market square, the road to the harbour at the harbour's road back, and the boat between the village and the harbour at the Pier and at
+// the harbour's quay. travel() notes the world it left; the next one opens on the spot it arrives at (arrive, once its scene is drawn).
+const ARRIVAL_KEY='harvest-arrive-from',worldHere=()=>harbourWorld?'harbour':villageWorld?'village':'farm';
+const ARRIVALS={farm:{village:'villageroad',harbour:'harbourroad'},village:{farm:'villagemarket',harbour:'harbourboat'},harbour:{farm:'farmroad',village:'villageboat'}};
+function arrive(){
+ let from=null;try{const a=JSON.parse(sessionStorage.getItem(ARRIVAL_KEY)??'null');sessionStorage.removeItem(ARRIVAL_KEY);if(a&&Date.now()-a.at<120000)from=a.from;}catch{}
+ const key=ARRIVALS[worldHere()][from];if(!key)return;
+ if(villageWorld)showVillagePlace(key);else{const v=utilityViews.get(key);if(v)lookAt(v.x,v.z);}
+}
+const travel=to=>{try{sessionStorage.setItem(ARRIVAL_KEY,JSON.stringify({from:worldHere(),at:Date.now()}));}catch{}if(window.parent?.harvestBridge?.travel){farmAudio.travel();void Promise.resolve(window.parent.harvestBridge.travel(to)).catch(error=>{farmAudio.travel(false);throw error;});}else location.replace(location.pathname+(to==='village'||to==='harbour'?`?world=${to}`:''));};
 window.harvestTravel=travel;
 // The apps' Back button (13 Oct 2026, Android app 1.3): closes the top-most window as Escape does, true when one was open (public/windows.js).
 window.harvestBack=createBack();
@@ -259,6 +276,8 @@ function tapOwnFarmer(){const me=window.parent?.harvestBridge?.playerId,landed=w
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},warehouse:{name:'Warehouse',icon:'warehouse',hint:'All your crops and goods'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
 Object.assign(utilityInfo,{villagemarket:{name:'Market square',icon:'store',hint:'Villagers’ requests and golden briefs'},farmroad:{name:'Road to your farm',icon:'house',hint:'Travel back to your farm'}});
+// World III (27 Oct 2026): the harbour office (ships, works, market, quests), its market and the harbour seal.
+Object.assign(utilityInfo,{harbouroffice:{name:'Harbour office',icon:'anchor',hint:'Ships and the harbour master’s works'},harbourseal:{name:'Harbour seal',icon:'heart',hint:'A pat once an hour'},villageboat:{name:'Boat to the village',icon:'sailboat',hint:'Sail back to your village'},harbourwarehouse:{name:'Harbour warehouse',icon:'warehouse',hint:'More room for crops and goods'},harbourboat:{name:'Boat to the harbour',icon:'sailboat',hint:'Sail to the harbour'},harbourroad:{name:'The Harbour',icon:'anchor',hint:'Travel to the harbour'}});
 const client=createFarmClient(state,{onChapterReward:reward=>toast(`Completed chapters: +${reward.diamonds} diamonds added!`),onLevelReward:reward=>progression?.announce({...progressionChange(progressionSnapshot(state),state,reward),catchUp:true}),onGift:giftPopup,onEmailCheck:c=>setEmailCheck(c),onChange:()=>{if(ready)expandVisuals();updateUI();},onError:toast,onStatus:status=>{const el=$('save-status'),shown=status==='error'||status==='reconnecting';el.hidden=!shown;el.textContent=status==='error'?'Connection interrupted · Retry':status==='reconnecting'?'Reconnecting…':'';el.disabled=status!=='error';el.classList.toggle('save-error',shown);}});
 // home (13 Oct 2026): the page around the farm keeps the sound's context, so a trip to the village and back keeps the sound going.
 const farmAudio=createFarmAudio({home:window.parent,onChange:()=>soundUI?.refresh()});
@@ -290,7 +309,17 @@ const nudge=createReminderNudge({state,level:()=>levelProgress(state).level,noti
 const runAction=withActionSounds(async action=>{const before=progressionSnapshot(state),medalsBefore=medalsWaiting(state);const result=await client.runAction(action);if(result?.inviteReward)inviteRewardPopup(result.inviteReward);beginner?.afterAction(result);if(harvestAction(action))nudge?.harvested();else if(action.type==='checkin')nudge?.gifted();const change=progressionChange(before,state,result.levelReward);progression?.announce(change);if(change.leveled)track('level_up',{level:change.level});if(change.leveled)farmerCheers();farmerNews();farmerJoins(action);medalToast(newMedals(medalsBefore,state));return result;},()=>levelProgress(state).level,kind=>{farmAudio.play(kind);haptic(kind);});
 // retention.openUtility only ever knew 'tractor' and 'silo' (anything else fell through to Silo research); "A helping hand" now opens
 // its own hub, a clean 2x2 of all four stops (tapping a station's own 3D pin still goes straight to that stop, unchanged).
-function openUtility(key){if(key==='warehouse'){warehouse?.open();return;}if(key==='neighbours'){neighbours?.open();return;}if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
+// The harbour's pins (27 Oct 2026; its goods sell at the Market button, so no pin of its own): the office opens on its ships (an unbuilt place on its works), the
+// seal gives a pat, and the boat sails back to the village. true when the pin was the harbour's.
+function openHarbourUtility(key){
+ if(key==='harbouroffice'||key==='harbourworks'||key==='harbourships'){harbourUI?.open(key==='harbourworks'?'works':'ships');return true;}   // harbourships: by rail, from the farm or the village
+ if(key==='harbourseal'){void runAction({type:'seal_pat'}).then(r=>toast(`The seal loves it! +${r.rope} rope.`),error=>toast(error.message)).finally(()=>updateUI());return true;}
+ if(key==='villageboat'){travel('village');return true;}
+ if(key==='harbourwarehouse'){warehouse?.open('harbour');return true;}
+ if(key==='harbourboat'||key==='harbourroad'){if(worldThreeOpen(state))travel('harbour');return true;}
+ return false;
+}
+function openUtility(key){if(key==='warehouse'){warehouse?.open();return;}if(openHarbourUtility(key))return;if(key==='neighbours'){neighbours?.open();return;}if(key==='farmroad'){travel('farm');return;}if(key==='villagelake'){pond?.open();return;}if(key==='villageroad'){if(worldTwoOpen(state))travel('village');else toast(`Reach level ${WORLD_TWO_LEVEL} to travel to the village.`);return;}if(key==='villagemarket'){villageSquare?.open();return;}if(!featureUnlocked(state,key)){toast(featureUnlockHint(key));return;}if(key==='valleymarket'||key==='ranch')valley.open(key);else if(['estateworkshop','tradedepot','grandfair','seedlab','visitors','valleyprojects','giantpumpkin'].includes(key))estatePlaces.open(key);else if(key==='master')growth.open('master');else if(key==='stall'||key==='chores'||key==='mastery')growth.open(key);else if(key==='activities')activities.openHub();else retention.openUtility(key);}
 const clock=new THREE.Clock(), raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
 const world=$('world'),labels=$('plot-labels');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -474,6 +503,7 @@ async function addAnimals(){
 async function addPets(){
  try{
   if(graphicsSimple)return;   // simple graphics: no pets (each is a moving, skinned model)
+  if(harbourWorld)return;   // the harbour has no pets yet
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:4000}):setTimeout(done,1500));
   const {createPets,FARM_PETS,VILLAGE_DEER}=await import('./farm-pets.js');
   // On the farm the grass is the ground; the lane's top is .085 over it (ROADS, farm-layout.js), and a pet steps up onto it over 0.3.
@@ -500,6 +530,7 @@ let sceneryDone=Promise.resolve();
 async function addFarmer(){
  try{
   if(!farmerComes())return;
+  if(harbourWorld)return;   // no walks laid out in the harbour yet
   await new Promise(done=>'requestIdleCallback' in window?requestIdleCallback(done,{timeout:6000}):setTimeout(done,2500));
   const {createFarmWalker,FARM_WALK,VILLAGE_WALK,VILLAGE_FAMILY_WALKS,FARM_FAMILY_WALKS,FARM_FAMILY_LITE,familyStage,tripFor,besideTrip}=await import('./farm-farmer.js');
   // On the farm the farmer comes after the scenery is planted, so it never stands where the scenery looks for room.
@@ -905,7 +936,10 @@ function decorateFarm(){
  zone('pond');addUtility('valleyprojects','pointer_002',12.6,6.8,{height:1.9,rotation:.4});
  // World II (30 Sep 2026): a signpost on the road out of the valley, past the Trade Depot, points to the village. From level 90
  // its pin is a closed bridge (the village opens at 100); below 90 it is not there.
- zone('tradedepot');addUtility('villageroad','pointer_002',53.5,-5.3,{height:2.4,rotation:-.5});
+ // 28 Oct 2026 (the owner: the visitor and the sign to the village stood so close a tap meant for the visitor went to the village, and
+ // the harbour's right beside them): both signs further down the road, on its far side from the visitor's cart, well apart.
+ zone('tradedepot');addUtility('villageroad','pointer_002',59,-2.4,{height:2.4,rotation:-.5});
+ addUtility('harbourroad','pointer_002',65,-2.4,{height:2.4,rotation:-.9});   // the road's second sign, to the harbour: only once it is open
  // Small work yards and low props create breathing room around every building.
  // Organic ground pieces replace flat rectangles so each yard reads as trodden earth, not a shape.
  zone('warehouse');groundPatch('ground_002',-12.5,4,6.4,6.4,0xb8af8a);
@@ -1819,7 +1853,7 @@ function updateUI(){
  // 12 Oct 2026 (a player's feedback): the More menu offers the other world in both, The Village on the farm and My farm in the village.
  const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageBrief(state)?.ready||villageLandmark(state)?.ready?1:0):0;
  // My farm only beside the Village (23 Oct 2026, the owner: "haal my farm button weg tenzij je het dorp hebt"): it is the way back from it.
- $('farm-button').hidden=!worldTwo;$('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld);$('farm-button').classList.toggle('active',!villageWorld);
+ $('farm-button').hidden=!worldTwo;$('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld&&!harbourWorld);$('farm-button').classList.toggle('active',!villageWorld);
  $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;$('farm-menu-entry').hidden=!villageWorld;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  trackTotals(lvl);
@@ -1830,7 +1864,7 @@ function updateUI(){
  const next=nextUnlock(state);$('level-next').hidden=!next;$('level-next').textContent=next?`Next at level ${next.level}: ${next.name}`:'';
  // How many quests wait to be claimed, one tap each in Quests (11 Oct 2026, Part A A13; it was "!"), and the daily challenges that are
  // ready in Today (Plan F, 13 Oct 2026; the line at the top of Quests opens Today).
- {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0)+readyDailies(state,farmNow()).length;$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
+ {const waiting=questGroups(state).ready.length+(villageQuestReady(state)?villageQuestGroups(state).ready.length:0)+(harbourQuestReady(state)?harbourQuestGroups(state).ready.length:0)+readyDailies(state,farmNow()).length;$('task-dot').hidden=!waiting;$('task-dot').textContent=waiting>99?'99+':String(waiting);}
  // The medals of the first basket, a moment after the first sale (A11).
  if(heldMedals.length&&!guideAt('sell')){const medals=heldMedals;heldMedals=[];clearTimeout(heldTimer);heldTimer=0;setTimeout(()=>medalToast(medals),2600);}
  if(ready)cheerNewBuildings();
@@ -1839,6 +1873,7 @@ function updateUI(){
 function renderMarket(){economy.renderMarket();}
 function sell(item='category'){return economy.sell(item);}
 // World II's own quests (public/quests-ui.js, from level 100).
+async function claimHarbour(id){try{const r=await runAction({type:'harbour_quest',id});updateUI();toast(`Harbour quest complete! +${r.coins.toLocaleString('en-US')} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 async function claimVillage(id){try{const r=await runAction({type:'village_quest',id});updateUI();toast(`Village quest complete! +${r.coins.toLocaleString('en-US')} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 async function claim(id,{quiet=false}={}){try{const r=await runAction({type:'quest',id});updateUI();if(!quiet)toast(`Quest complete! +${r.coins} coins${r.xp?` and +${r.xp} XP`:''}.`);return r;}catch(e){toast(e.message);return {error:e.message};}}
 // While step 2 waits, Market opens on Crops with Sell all corn in view: two taps instead of three (11 Oct 2026, Part A A11). Every time, the
@@ -2072,10 +2107,13 @@ function stepFarm(direction){if(!farmAxis)return;const from=glide&&!glide.stop?g
 function resetView(){viewMode=startView();if(villageWorld){zoom=1;pan=0;panDepth=0;resize();}else glideFarm(FARM_STOPS.indexOf(viewMode),{stop:viewMode});if(ready)updateUI();}
 function showOverview(){if(villageWorld){viewMode='overview';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(FARM_FAR,{stop:FARM_STOPS[Math.round(FARM_FAR)]});}
 function focusFields(){if(villageWorld){viewMode='fields';zoom=1;pan=0;panDepth=0;resize();}else glideFarm(0,{stop:'fields'});}
+// The way to the harbour stands only once the harbour is open: until then the map, its frame and the farm's zoom-out bounds leave it
+// out, so they stay what they are in the live game (28 Oct 2026).
+const shownWay=key=>key!=='harbourroad'&&key!=='harbourboat'||worldThreeOpen(state);
 function measureFarm(){
  // Use each actual building and field box, retaining the useful heights.
  const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
- for(const object of [...Array.from(buildingViews.values(),v=>v.object),...Array.from(utilityViews.values(),v=>v.object),...plots.map(v=>v.soil),...Array.from(farmLife?.views.values()??[],v=>v.object),...Array.from(decorViews.values(),v=>v.obj)]){
+ for(const object of [...Array.from(buildingViews.values(),v=>v.object),...Array.from(utilityViews,([key,v])=>shownWay(key)?v.object:null).filter(Boolean),...plots.map(v=>v.soil),...Array.from(farmLife?.views.values()??[],v=>v.object),...Array.from(decorViews.values(),v=>v.obj)]){
   const box=new THREE.Box3().setFromObject(object);
   for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y+1])for(const z of [box.min.z,box.max.z]){
    const sx=(x-z)/Math.SQRT2,sy=-(x+z)*40/Math.sqrt(8384)+y*72/Math.sqrt(8384);
@@ -2182,6 +2220,7 @@ function measureVillage(spots,margin=26){
 let villageGroup=null,villageExtras=null;
 async function addVillageExtras(){
  try{
+  if(harbourWorld)return;
   const {loadVillageExtras,createVillageFields}=await import('./village-scene.js');
   villageExtras=await loadVillageExtras(villageGroup);scene.add(villageExtras.group);
   // The Fields' lid (11 Oct 2026, the owner's review: only a tap by their name, at the plot's south-west corner, opened them) takes the
@@ -2295,13 +2334,13 @@ function setupMinimap(){
  const nameOf=(key,kind)=>kind==='building'?BUILDINGS[key].name:utilityInfo[key]?.name??key;
  minimap=createMinimap({root,background:mapBuffer,project:mapProject,unproject:mapUnproject,view:viewCorners,onJump:lookAt,
   points:()=>[...[...buildingViews].map(([key,v])=>({x:v.x,z:v.z,locked:v.locked,ready:v.label.classList.contains('ready'),name:nameOf(key,'building')})),
-   ...[...utilityViews].map(([key,v])=>({x:v.x,z:v.z,locked:v.locked,ready:v.label.classList.contains('ready'),name:nameOf(key,'place')}))]});
+   ...[...utilityViews].filter(([key])=>shownWay(key)).map(([key,v])=>({x:v.x,z:v.z,locked:v.locked,ready:v.label.classList.contains('ready'),name:nameOf(key,'place')}))]});
  shootMinimap();
 }
 // Frame every building, place and field, seen from a steeper angle than the play camera (the same direction, so right on the
 // map is right on screen).
 function frameMapCamera(){
- const spots=[...buildingViews.values(),...utilityViews.values(),...plots].map(v=>new THREE.Vector3(v.x,0,v.z));
+ const spots=[...buildingViews.values(),...[...utilityViews].filter(([key])=>shownWay(key)).map(([,v])=>v),...plots].map(v=>new THREE.Vector3(v.x,0,v.z));
  const box=new THREE.Box3().setFromPoints(spots),centre=box.getCenter(new THREE.Vector3());
  mapCamera.position.copy(centre).add(new THREE.Vector3(36,95,36));mapCamera.up.set(0,1,0);mapCamera.lookAt(centre);mapCamera.updateMatrixWorld();
  let [minX,maxX,minY,maxY]=[Infinity,-Infinity,Infinity,-Infinity];
@@ -2396,6 +2435,7 @@ function positionBuildingLabels(){
   // The after-90 places (seed lab, visitors, valley projects) are hidden, models and pins, until the farm reaches level 90.
   if(ENDGAME_PLACES.includes(key)){const shown=endgameInSight(state);v.object.visible=shown;for(const d of yardDecor[key]??[])d.visible=shown;if(!shown){v.label.hidden=true;continue;}}
   if(key==='villageroad'){placeVillageRoad(v,width,height);continue;}
+  if((key==='harbourroad'||key==='harbourboat')&&!worldThreeOpen(state)){v.object.visible=false;v.label.hidden=true;continue;}else if(key==='harbourroad'||key==='harbourboat')v.object.visible=true;
   const locked=!featureUnlocked(state,key);setLocked(v.object,locked);
   if(v.locked!==locked){v.locked=locked;v.label.classList.toggle('locked',locked);v.label.innerHTML=art(locked?'lock':key);v.label.setAttribute('aria-label',locked?`${v.info.name} (locked)`:`Open ${v.info.name}`);v.label.title=locked?`${v.info.name} · ${featureUnlockHint(key)}`:`${v.info.name} · ${v.info.hint}`;}
   const light=locked?'':pinLight(key);v.label.classList.toggle('ready',light==='ready');v.label.classList.toggle('full',light==='full');
@@ -2472,7 +2512,7 @@ function bindUI(){
  // A topic of How to play, and a spot in it (a pop-up's button opens how to install the app: src/popup-ui.js). options (Oct 2026):
  // renderWiki's {from}, where it was opened from for its way back (the chat's wiki chip: "‹ Chat", src/chat-ui.js).
  window.harvestWiki=(id,anchor='',options={})=>{openDialog('help-dialog');renderWiki(state,id,anchor,options);};
- $('village-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!villageWorld)travel('village');});
+ $('village-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!villageWorld||harbourWorld)travel('village');});
  // My farm: back to the farm's own view. No toast (18 Oct 2026, the owner: the camera move shows it).
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(villageWorld){travel('farm');return;}resetView();});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
@@ -2511,10 +2551,13 @@ function bindUI(){
  lookSettings=createLookSettings(document.getElementById('look-settings'),{state,runAction,clock:farmNow});
  // The family chat's request cards (src/chat-ui.js) show how many of the asked-for good you have.
  window.harvestStock=key=>Number(state.inventory?.[key])||0;
- economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),onWarehouse:()=>warehouse?.open(),village:villageWorld});
+ economy=createEconomyUI({state,onFamily:()=>familyUI.open(),onPlace:key=>openUtility(key),onBoat:()=>boat?.open(),onChange:updateUI,onCrop:setCrop,onExpand:expandVisuals,notify:toast,runAction,onEstate:section=>growth.open(section),onWarehouse:()=>warehouse?.open(),village:villageWorld,world:harbourWorld?3:villageWorld?2:1});
+ // The harbour office (27 Oct 2026): only in the harbour, and the first trip counts once a day.
+ // And on the farm and in the village once the Rail siding stands (28 Oct 2026): its ships load from there too (Buildings).
+ if(harbourWorld||harbourWorkDone(state,'rail'))void import('./harbour-ui.js').then(({createHarbourUI})=>{harbourUI=createHarbourUI({state,runAction,onChange:updateUI,notify:toast,refresh:()=>client.refresh()});return harbourWorld?runAction({type:'harbour_visit'}).catch(()=>{}):null;});
  // The Warehouse's window and its full note (22 Oct 2026, public/warehouse-ui.js). A refusal because it is full is that note, with the Market
  // and Upgrade, over any open window (the toast sits under a modal window); every other message stays the toast.
- warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI});
+ warehouse=createWarehouseUI({state,runAction,openMarket:tab=>economy.openMarket(tab),notify:toast,onChange:updateUI,harbour:harbourWorld});
  // The neighbours (24 Oct 2026, public/neighbours.js): More › Neighbours. Not on an admin's showcase farm (25 Oct 2026, the owner: "Je moet
  // geen buren kunnen doen als admin"; farm-api refuses an admin's actions anyway).
  if(adminView)document.querySelector('[data-menu-utility="neighbours"]')?.setAttribute('hidden','');
@@ -2541,7 +2584,7 @@ function bindUI(){
  // A notification or a shortcut on the app icon can open Today (src/game-cloud.js harvestOpen).
  window.harvestToday=()=>retention.openToday();
  rookie=createRookieUI({state});
- quests=createQuestsUI({state,claim,claimVillage,icons,notify:toast,openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
+ quests=createQuestsUI({state,claim,claimVillage,claimHarbour,harbour:harbourWorld,icons,notify:toast,openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  activities=createActivitiesUI({state,runAction,notify:toast,onResult:(action,result)=>{if(action.type==='activity_work'){farmLife?.celebrate(action.station);}}});
  // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
  // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
@@ -2673,7 +2716,7 @@ function bindContextRestore(canvas){
  });
 }
 async function init(){
- const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)],level:()=>levelProgress(state).level});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open   // the tips about later features from level 10 (13 Oct 2026)
+ const loadingUI=createLoadingScreen(document,villageWorld?100:modelNames.length,harbourWorld?{loading:'Sailing to the harbour',village:true}:villageWorld?{loading:'Travelling to the village',village:true}:undefined),stopTips=startLoadingTips(document,{tips:villageWorld?[...(LAKE_OPEN?[LAKE_LOADING_TIP]:[]),...VILLAGE_LOADING_TIPS]:[...(POND_OPEN?[POND_LOADING_TIP]:[]),...(passPhase(Date.now())==='open'?[PASS_LOADING_TIP,...LOADING_TIPS]:LOADING_TIPS)],level:()=>levelProgress(state).level});   // the Fishing pond's tip once it is open   // the Halloween Pass's tip only while it is open   // the tips about later features from level 10 (13 Oct 2026)
  try{
   // Graphics (21 Oct 2026, public/graphics-mode.js): the last start that ended under the player (the app or the browser closed before a
   // minute of play) is a note for farm-api, and the second one in a row makes this start simple; then this start's own mark, which a
@@ -2719,15 +2762,19 @@ async function init(){
    // The camera stands 65 units from the spot it looks at, and the mountains at the front of the ring rise past it: it draws from
    // 200 behind itself (7 Oct 2026), or a view further back cut them open (a hole in the rock at the bottom of a phone's view).
    camera.near=-200;
+   // The harbour (27 Oct 2026, the owner: "ik mis wat bergen"): its hills stand round the bay 100-250 units out, behind the quays: the
+   // fog starts past the quays and ends past the hills, so they show as in the pack's scene; the camera draws from further back too.
+   if(harbourWorld){scene.fog=new THREE.Fog(0xdeede6,190,520);camera.near=-400;camera.far=800;camera.updateProjectionMatrix();}
    // Only a farmer in the village loads its scene code (and its mesh decoder): the farm never downloads it.
-   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES,VILLAGE_FAR_SIDE,VILLAGE_FRAME,VILLAGE_LANDMARK_SPOTS,VILLAGE_CLOUD_HEIGHT,VILLAGE_VIEW}=await import('./village-scene.js');
+   const {loadVillage,VILLAGE_PLACES,VILLAGE_UTILITIES,VILLAGE_FAR_SIDE,VILLAGE_FRAME,VILLAGE_LANDMARK_SPOTS,VILLAGE_CLOUD_HEIGHT,VILLAGE_VIEW,FRAME_SPOTS}=harbourWorld?await import('./harbour-scene.js'):await import('./village-scene.js');
    const [village]=await Promise.all([loadVillage({onProgress:share=>{loadingUI.modelsReady(Math.round(share*99));if(Math.round(share*99)%10===0)markRun(gfxStore,{percent:Number($('load-progress')?.value)||0});}}),client.load().then(()=>loadingUI.accountReady())]);
    loadingUI.modelsReady(100);scene.add(village);villageGroup=village;markRun(gfxStore,{step:'village',percent:Number($('load-progress')?.value)||0});
    // The whole village (measured round the places the owner approved on 30 Sep, VILLAGE_FRAME), the middle of the places on its side of
    // the lake (an upright phone's view: the far side is a swipe away) and how far the camera may look. Landmarks never move the frames.
-   const spots={...VILLAGE_PLACES,...VILLAGE_UTILITIES},framed=VILLAGE_FRAME.map(k=>spots[k]);villageFrame={...measureVillage(framed),phone:measureVillage(Object.entries(spots).filter(([k])=>!VILLAGE_FAR_SIDE.includes(k)).map(([,spot])=>spot),0).focus,view:VILLAGE_VIEW};
+   const spots={...VILLAGE_PLACES,...VILLAGE_UTILITIES},framed=FRAME_SPOTS??VILLAGE_FRAME.map(k=>spots[k]);villageFrame={...measureVillage(framed),phone:measureVillage(FRAME_SPOTS??Object.entries(spots).filter(([k])=>!VILLAGE_FAR_SIDE.includes(k)).map(([,spot])=>spot),0).focus,view:VILLAGE_VIEW};
    for(const [key,spot] of Object.entries(VILLAGE_PLACES))addVillagePlace(key,spot);
-   for(const [key,spot] of Object.entries(VILLAGE_UTILITIES))addVillageUtility(key,spot);
+   for(const [key,spot] of Object.entries(VILLAGE_UTILITIES))addVillageUtility(key,spot.pin??spot);   // pin: where it stands, if not where the views are measured from
+   if(!harbourWorld)addVillageUtility('harbourboat',(await import('./village-scene.js')).VILLAGE_HARBOUR_BOAT);   // shown once the harbour is open
    for(const [key,spot] of Object.entries(VILLAGE_LANDMARK_SPOTS))addVillageLandmark(key,spot);
    atmosphere=createAtmosphere({scene,renderer,sun,hemi,reducedMotion,mobile:mobileLayout.matches,cloudHeight:VILLAGE_CLOUD_HEIGHT});measureFarm();resize();icons();
   }else{
@@ -2790,7 +2837,7 @@ async function init(){
   });
   markRun(gfxStore,{step:'frame',percent:99});
   showVisitBar();
-  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
+  ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();arrive();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(harbourWorld)toast('Welcome to the harbour! The ships come soon.');else if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
   markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');registerAgentTools();requestAnimationFrame(frame);
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
@@ -2800,7 +2847,7 @@ async function init(){
   if(POND_OPEN&&!villageWorld&&!adminView)void import('./pond-ui.js').then(({createPond})=>{pond=createPond({state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:focusFields});positionBuildingLabels();}).catch(error=>console.error('Fishing pond failed',error?.message));
   // The village lake (12 Oct 2026, plan D): the pond's screen for the lake, at the rowboat (village-scene.js VILLAGE_FISHING_SPOT; that
   // module is already here), in the village only, never on the admin's showcase farm. Its chip turns the camera to a ready place.
-  if(LAKE_OPEN&&villageWorld&&!adminView)void Promise.all([import('./pond-ui.js'),import('./village-scene.js')]).then(([{createPond},{VILLAGE_FISHING_SPOT}])=>{pond=createPond({water:'lake',place:VILLAGE_FISHING_SPOT,state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:key=>key?showVillagePlace(key):resetView()});positionBuildingLabels();}).catch(error=>console.error('Village lake failed',error?.message));
+  if(LAKE_OPEN&&villageWorld&&!harbourWorld&&!adminView)void Promise.all([import('./pond-ui.js'),import('./village-scene.js')]).then(([{createPond},{VILLAGE_FISHING_SPOT}])=>{pond=createPond({water:'lake',place:VILLAGE_FISHING_SPOT,state,scene,game:$('game'),labels:$('building-labels'),runAction,now:farmNow,play:kind=>farmAudio.play(kind),haptic,toast,resize,reducedMotion,focusFarm:key=>key?showVillagePlace(key):resetView()});positionBuildingLabels();}).catch(error=>console.error('Village lake failed',error?.message));
   // The loading screen fades into the farm instead of disappearing at once.
   $('loading').classList.add('fade');
   if(!villageWorld&&!adminView&&!(state.stats.harvested>0))noteFirstLook();

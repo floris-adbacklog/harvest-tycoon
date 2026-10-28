@@ -707,7 +707,7 @@ test('the pass box and the diamond packs on Kongregate with Kreds: Kongregate\'s
 test('the wiki on Kongregate with Kreds: buying with Kreds at Kongregate\'s prices, no card, Stripe or euro table; without Kreds as before',()=>{
  const features=on=>Object.fromEntries(PORTAL_FEATURES.map(f=>[f,f==='payments'&&on]));
  const ctx=on=>({level:120,portal:{name:'kongregate',guest:false,features:features(on),privacyContact:'info@harvesttycoon.com'},href:id=>`#wiki-${id}`,now:Date.UTC(2026,9,25)});
- const html=on=>WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx(on)).html).join('\n');
+ const html=on=>WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx(on))?.html??'').join('\n');
  const sells=html(true),off=html(false);
  assert.match(sells,/<p>One-time purchases with Kreds, Kongregate’s own currency, added to your farm right after payment\. The diamond shop shows each price in Kreds\. From level 14 there is also a Starter Pack for 7 days\.<\/p>/);
  assert.doesNotMatch(sells,/\bStripe\b|Google Play;|the App Store;|we never see your card|per euro|€/,'no other way to pay, no euro');

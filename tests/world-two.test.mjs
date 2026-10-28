@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,unlockEntries,upgradeCost,upgradeRequirements,upgradeGoods,marketHighlights,familyOrder,
+import {otherWorldBuilding,createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,unlockEntries,upgradeCost,upgradeRequirements,upgradeGoods,marketHighlights,familyOrder,
  buildingRecipes,marketItems,villageBrief,villageSquareReady,villageRequestGoods,villagePlaceBefore,itemAvailable,questXp,
  BUILDINGS,BUILDING_COSTS,BUILDING_LEVELS,RECIPE_LEVELS,RECIPES,ITEMS,VILLAGE_GOODS,MASTER_UPGRADES,MAX_BUILDING_LEVEL,TOP_BUILDING_LEVEL,WORLD_TWO_LEVEL,
  VILLAGE_BRIEFS,VILLAGE_BUILD_XP,VILLAGE_UPGRADE_GOODS,VILLAGE_QUESTS,VILLAGERS,VILLAGE_REQUEST_WAIT,QUESTS,DAILY_POOLS,
@@ -241,7 +241,9 @@ test('level 99 sees nothing new in How to play or on the screens: no search hit,
  }
  const ctx={level:99,href:id=>`#wiki-${id}`};
  assert.doesNotMatch(wikiGroups(ctx),/data-wiki-topic="village"/);assert.equal(wikiArticle('village',ctx),null);
- for(const t of WIKI_TOPICS.filter(t=>t.id!=='village')){
+ // The Harbour (World III, from level 200) is hidden at 99 too.
+ assert.equal(wikiArticle('harbour',ctx),null);
+ for(const t of WIKI_TOPICS.filter(t=>t.id!=='village'&&t.id!=='harbour')){
   const a=wikiArticle(t.id,ctx);
   assert.doesNotMatch(a.html,/data-wiki-topic="village"|market square|golden brief|packed lunch|master tools|heirloom pie|golden loaf|from the village/i,t.id);
   assert.ok(a.related.every(r=>r.id!=='village'),t.id);
@@ -579,10 +581,10 @@ test('the market week: 15 villagers between Monday and Sunday open the crate onc
  const help=(s,until,t)=>{const out=[];while(out.length<until){normalizeFarm(s,t);for(const [i,b] of s.village.boards.entries())if(b.request&&out.length<until)out.push(act(s,{type:'village_deliver',board:i,request:b.request.id,input:b.request.input},t));t+=VILLAGE_REQUEST_WAIT;}return out;};
  for(const mode of ['guided','legacy']){
   const s=mode==='guided'?farm(116):legacyFarm(116);for(const k of Object.keys(s.inventory))s.inventory[k]=100000;
-  const diamonds=s.diamonds,earned=s.stats.diamonds_earned??0,W=familyWeek(now);
+  const diamonds=s.diamonds,earned=s.stats.village_diamonds_earned??0,W=familyWeek(now);   // the village's own count (28 Oct 2026)
   const got=help(s,16,now);
   assert.deepEqual(got.map(r=>r.crate),[...Array(14).fill(0),10,0],mode);
-  assert.deepEqual([s.diamonds-diamonds,s.stats.market_crates,(s.stats.diamonds_earned??0)-earned],[10,1,10]);
+  assert.deepEqual([s.diamonds-diamonds,s.stats.market_crates,(s.stats.village_diamonds_earned??0)-earned],[10,1,10]);
   assert.deepEqual(s.village.week,{week:W,helped:16,paid:true});
   assert.deepEqual(villageWeek(s,now),{helped:16,paid:true});
   // A new week: the count starts again, and the next crate comes with its 15th villager.
@@ -684,7 +686,7 @@ test('builder’s crates take 8,000 coins each off a farm building’s upgrade t
  }
  // Every farm building but the Factory, levels 1-9, with and without the voucher, any stock: at most half the price, never more than in stock.
  const s=farm(128);
- for(const key of Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].type==='production'&&k!=='factory'&&!worldTwoBuilding(k)))for(let level=1;level<=9;level++)for(const voucher of [0,1])for(const stock of [0,1,5,1000]){
+ for(const key of Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].type==='production'&&k!=='factory'&&!otherWorldBuilding(k)))for(let level=1;level<=9;level++)for(const voucher of [0,1])for(const stock of [0,1,5,1000]){
   s.buildings[key].level=level;s.boosts.upgradeCredits=voucher;s.inventory.builderscrate=stock;const cost=upgradeCost(s,key),n=builderCrates(s,key);
   assert.equal(n,Math.min(stock,Math.floor(cost/2/BUILDER_CRATE_COINS)),`${key} ${level} ${voucher} ${stock}`);assert.ok(n*BUILDER_CRATE_COINS<=cost/2);
  }
@@ -839,7 +841,8 @@ test('the town boat: one cargo at a time from the Pier, loaded bit by bit, 1.6 t
   const before=structuredClone({coins:s.coins,xp:s.xp,diamonds:s.diamonds,stats:s.stats});
   assert.deepEqual(load({}),{loaded:{linen:29,scentedsachet:32,silverbar:7},units:68,sailed:true,coins:87700,xp:1370,diamonds:3,readyAt:now+BOAT_RETURN});
   assert.deepEqual([s.coins-before.coins,s.xp-before.xp,s.diamonds-before.diamonds],[87700,1370,3]);
-  assert.deepEqual([s.stats.earned-before.stats.earned,(s.stats.diamonds_earned??0)-(before.stats.diamonds_earned??0),s.stats.boat_trips,s.stats.boat_coins,s.stats.boat_loaded],[87700,3,1,87700,78]);
+  // 27 Oct 2026: the village's own counts (village_earned, village_diamonds_earned), never the farm's.
+  assert.deepEqual([s.stats.earned-before.stats.earned,(s.stats.village_earned??0)-(before.stats.village_earned??0),(s.stats.diamonds_earned??0)-(before.stats.diamonds_earned??0),(s.stats.village_diamonds_earned??0)-(before.stats.village_diamonds_earned??0),s.stats.boat_trips,s.stats.boat_coins,s.stats.boat_loaded],[0,87700,0,3,1,87700,78]);
   for(const k of ['sold','deliveries','produced'])assert.equal(s.stats[k],before.stats[k],k);
   assert.deepEqual(s.village.boat,{serial:1,cargo:null,readyAt:now+BOAT_RETURN,trips:1,week:familyWeek(now),paid:1});
   assert.throws(()=>load({}),{message:BOAT_GONE},'the boat has sailed');

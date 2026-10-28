@@ -369,7 +369,7 @@ test('a language picked in Settings reloads our own page only, never CrazyGames\
 test('loading tips, the wiki and the chat leave out what is not there on CrazyGames; the website keeps everything',()=>{
  const crazy={documentElement:{dataset:{portal:'crazygames'}}};
  assert.ok(portalTips(LOADING_TIPS,crazy).length<LOADING_TIPS.length);assert.ok(portalTips(LOADING_TIPS,crazy).every(([picture])=>!PORTAL_HIDDEN_TIPS.includes(picture)));assert.equal(portalTips(LOADING_TIPS,{documentElement:{dataset:{}}}),LOADING_TIPS);
- const wiki=portal=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal}).html).join('\n');
+ const wiki=portal=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal})?.html??'').join('\n');
  const crazyWiki=wiki(true),site=wiki(false);
  for(const gone of [/Buying diamonds/,/Play it as an app/,/Install the app/,/Invite a friend/,/Confirm your email/,/Share my farm/,/delete-account/,/Stripe;/,/Reminders/,/Forgot your password/,/home screen/])
   {assert.doesNotMatch(crazyWiki,gone,String(gone));assert.match(site,gone,`the website keeps ${gone}`);}

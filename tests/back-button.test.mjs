@@ -119,7 +119,7 @@ test('the farm page sets window.harvestBack; the page around it asks the farm (w
  await win.harvestBridge.travel('farm');assert.deepEqual(replaced,['/farm.html?world=village','/farm.html']);
  frame.contentWindow=null;await win.harvestBridge.travel('village');assert.equal(frame.src,'/farm.html?world=village','no window to send: its src, as before');
  // Without a page around it (a test stage) the farm page travels by replacing itself as well.
- assert.match(game,/else location\.replace\(location\.pathname\+\(to==='village'\?'\?world=village':''\)\);\};/);
+ assert.match(game,/else location\.replace\(location\.pathname\+\(to==='village'\|\|to==='harbour'\?`\?world=\$\{to\}`:''\)\);\};/);
  assert.doesNotMatch(game,/location\.search=to==='village'/);
 });
 

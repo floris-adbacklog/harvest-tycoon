@@ -8,7 +8,7 @@ import {buildWiki,namePictures} from '../scripts/build-wiki.mjs';
 import {flag} from '../src/language-switch.js';
 import {LANGUAGES} from '../public/languages.js';
 import {catalog,translations} from '../scripts/i18n.mjs';
-import {CROPS,EVENT_LEAGUES} from '../game/farm-state.js';
+import {CROPS,EVENT_LEAGUES,LIVE_EVENT_LEAGUES} from '../game/farm-state.js';
 
 // 9 Oct 2026: Bing's site scan warns "Alt attribute for images is missing" for every page with an alt="" picture (its number per page
 // is how deep the page is linked, not a count). Every picture on the pages it reads now has a name: a picture that means something on
@@ -66,7 +66,7 @@ test('the website wiki: every picture has a name and is hidden from screen reade
  const page=name=>readFileSync(join(out,'wiki',`${name}.html`),'utf8');
  // A crop by its game name (not "12 Apples" from the line beside it); a league badge by its league; a chore by the name beside it.
  assert.match(page('crops'),/<img class="game-art " data-art="apples" src="[^"]+" alt="Apples" aria-hidden="true"/);
- for(const l of EVENT_LEAGUES)assert.match(page('events'),new RegExp(`<img class="wiki-league-badge" src="/assets/icons/league-${l.id}\\.webp" alt="${l.name}" aria-hidden="true"`));
+ for(const l of EVENT_LEAGUES.slice(0,LIVE_EVENT_LEAGUES))assert.match(page('events'),new RegExp(`<img class="wiki-league-badge" src="/assets/icons/league-${l.id}\\.webp" alt="${l.name}" aria-hidden="true"`));
  assert.match(page('helpers'),/data-art="chore-weeds" src="[^"]+" alt="Clear the paths" aria-hidden="true"/);
  assert.match(page('account'),/<img src="\/assets\/avatars\/family-farmer\.webp" alt="Family farmer" aria-hidden="true"/);
  // A building's small product pictures sit in a row that is hidden from screen readers already; they carry their names too.

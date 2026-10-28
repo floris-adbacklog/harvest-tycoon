@@ -26,18 +26,19 @@ test('league helpers: an event keeps the leagues it was made with, and a farmer 
  assert.equal(eventLeagueFor({leagues:Array(12)},100,null).id,'cobble');assert.equal(eventLeagueFor({leagues:Array(12)},80,1).id,'estate');
  assert.equal(eventLeagueFor({leagues:Array(12)},250,1).id,'legends');assert.equal(eventLeagueFor({leagues:Array(12)},10).id,'sprout');
  assert.equal(eventLeagueIn({leagues:Array(6)},9).id,'legends');assert.equal(eventLeagueIn({leagues:Array(12)},9).id,'silver');
- assert.equal(eventLeagueIn({leagues:Array(12)},-3).id,'sprout');assert.equal(eventLeagueIn({leagues:Array(20)},40).id,'village');
+ assert.equal(eventLeagueIn({leagues:Array(12)},-3).id,'sprout');assert.equal(eventLeagueIn({leagues:Array(12)},40).id,'village');assert.equal(eventLeagueIn({leagues:Array(20)},40).id,'harbour');   // the harbour's leagues (27 Oct 2026)
  assert.equal(eventLeagueCount({leagues:[]}),6);assert.equal(eventLeagueCount({}),6);assert.equal(eventLeagueCount({leagues:Array(12)}),12);
 });
 
 test('pools: five groups in every league, never empty; the farm draws farm goals, the village village goals, the farm as before',()=>{
- assert.equal(EVENT_GOAL_POOLS.length,12);
+ assert.equal(EVENT_GOAL_POOLS.length,17);   // 12, and the harbour's five (27 Oct 2026)
  for(const [i,pool] of EVENT_GOAL_POOLS.entries()){
   const l=EVENT_LEAGUES[i];assert.equal(pool.length,5,l.id);
   for(const [k,group] of pool.entries())assert.ok(group.length>0,`${l.id}: group ${k} has a goal (harvest_event_pick divides by its size)`);
-  for(const {stat} of pool.flat())assert.ok(l.world===1?!WORLD_TWO_STAT(stat):WORLD_TWO_STAT(stat)||stat==='upgrades',`${l.id} ${stat}`);
+  const HARBOUR_STAT=stat=>/^(ship_loads|ships_sent|harbour_batches|harbour_sold|harbour_upgrades|seal_pats|made_(rope|barrel|shipsbiscuits|sailcloth|provisions|anchor|fishingnet|anchorchain))$/.test(stat);   // the harbour's (27 Oct 2026)
+  for(const {stat} of pool.flat())assert.ok(l.world===1?!WORLD_TWO_STAT(stat)&&!HARBOUR_STAT(stat):l.world===2?WORLD_TWO_STAT(stat)||stat==='upgrades':HARBOUR_STAT(stat),`${l.id} ${stat}`);   // the harbour's own upgrades (28 Oct 2026), never the farm's
  }
- assert.deepEqual(EVENT_GOAL_POOLS.slice(6).map(p=>p.map(g=>g.length).join('/')),['3/1/2/1/2','4/2/5/1/2','4/4/9/1/2','4/4/11/1/2','4/4/11/1/2','4/4/11/1/2']);
+ assert.deepEqual(EVENT_GOAL_POOLS.slice(6,12).map(p=>p.map(g=>g.length).join('/')),['3/1/2/1/2','4/2/5/1/2','4/4/9/1/2','4/4/11/1/2','4/4/11/1/2','4/4/11/1/2']);
  assert.equal(EVENT_GOAL_GROUPS[1].length,5);assert.deepEqual(EVENT_GOAL_GROUPS[2],['Mine and forest','Fields and kitchens','Workshops','Market square','Around the village']);
  // The farm leagues' pools are byte-identical to what harvest_event_pick drew before (supabase/live-event-league-goals.sql as live).
  const farm=JSON.stringify(EVENT_GOAL_POOLS.slice(0,6).map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES_BEFORE_ONE_CROP[stat]}))))).replaceAll("'","''");
@@ -122,14 +123,14 @@ test('Part B: the leagues, the coins, the counter, the world, the village goals,
 
 test('every goal in a pool is counted by harvest_event_progress, so none can be unfinishable',()=>{
  const progress=body(B,'harvest_event_progress'),mapped=progress.slice(progress.indexOf('mapped:='),progress.indexOf(';',progress.indexOf('mapped:=')));
- for(const stat of new Set(EVENT_GOAL_POOLS.flat(2).map(g=>g.stat))){
+ for(const stat of new Set(EVENT_GOAL_POOLS.slice(0,12).flat(2).map(g=>g.stat))){   // the live patch's leagues; the harbour's come with their own
   const prefix=['made_','harvest_','sold_'].find(p=>stat.startsWith(p));
   const ok=(prefix&&mapped.includes(`stat like '${prefix.slice(0,-1)}\\_%'`))||mapped.includes(`stat='${stat}'`)||new RegExp(`stat in \\([^)]*'${stat}'`).test(mapped);
   assert.ok(ok,stat);
  }
  // And the check on events allows them all.
  const validate=body(B,'harvest_event_validate'),allowed=validate.match(/not in \(([^)]*)\)/)[1];
- for(const {stat} of EVENT_GOAL_POOLS.flat(2))assert.ok(allowed.includes(`'${stat}'`),stat);
+ for(const {stat} of EVENT_GOAL_POOLS.slice(0,12).flat(2))assert.ok(allowed.includes(`'${stat}'`),stat);
 });
 
 test('standings: a village league pays its own coins, the diamonds of every league',()=>{

@@ -203,15 +203,19 @@ test('curve 6: from level 90 every level asks twice the XP; farms convert both w
 // 9 Oct 2026 (curve 7): the steps from level 5 to 59 dearer, up to 1.3x from level 10 to 50, back to curve 6's own steps at 60. Every
 // copy learns to read it first (XP_CURVE stays 6), then farms switch; a farm keeps its level and its share of the way to the next one.
 const factor7=level=>level<5?1:level<10?1+(level-5)*.06:level<50?1.3:level<60?1.3-(level-50)*.03:1;
-const xp7=(()=>{const totals=[0,0];return level=>{while(totals.length<=level){const from=totals.length-1;totals.push(totals[from]+Math.round((xp6(from+1)-xp6(from))*factor7(from)));}return totals[level];};})();
+const xp7=(()=>{const totals=[0,0];return level=>{while(totals.length<=level){const from=totals.length-1;totals.push(totals[from]+(from>=200?Math.min(150000,Math.round((xp6(from+1)-xp6(from))*factor7(from))):Math.round((xp6(from+1)-xp6(from))*factor7(from))));}return totals[level];};})();
 test('curve 7: levels 5 to 59 ask more XP, up to 1.3x, with no jump anywhere; every copy reads it; farms convert both ways keeping level and share',()=>{
  const step6=level=>xp6(level+1)-xp6(level),step7=level=>xp7(level+1)-xp7(level);
  assert.equal(XP_CURVE,7,'step 2 (9 Oct 2026): farms are on curve 7; every copy read it first (step 1)');
  for(let level=1;level<=6;level++)assert.equal(xp7(level),xp6(level),`reaching level ${level} costs the same`);
  assert.deepEqual([5,6,9,10,11,20,49,50,51,59,60,89,90].map(step7),[130,180,397,429,462,832,2574,2626,2720,3334,3388,9165,18824]);
  for(let level=10;level<50;level++)assert.equal(step7(level),Math.round(step6(level)*1.3),`${level} -> ${level+1} is 1.3x`);
- for(let level=60;level<300;level++)assert.equal(step7(level),step6(level),`${level} -> ${level+1} as on curve 6`);
- for(let level=1;level<300;level++)assert(step7(level+1)>step7(level),`steps keep growing: ${level}`);
+ for(let level=60;level<200;level++)assert.equal(step7(level),step6(level),`${level} -> ${level+1} as on curve 6`);
+ for(let level=1;level<199;level++)assert(step7(level+1)>step7(level),`steps keep growing: ${level}`);
+ // The harbour's levels (27 Oct 2026, the owner): from 200 every level costs 150,000 XP, a little more than 199 -> 200.
+ // 28 Oct 2026: never more than curve 7 asked, so 200-204 keep their steps and no farm drops a level.
+ assert.deepEqual([200,201,202,203,204].map(step7),[144360,146048,147744,149450,150000]);
+ for(let level=204;level<300;level++)assert.equal(step7(level),150000,`${level} -> ${level+1}`);assert.equal(xp7(300)-xp7(200),14987602);
  for(let level=10;level<300;level++)if(level!==90)assert(step7(level)/step7(level-1)<1.1,`no jump at ${level}`);
  assert.deepEqual([10,20,30,50,60,90].map(xp7),[1476,7388,19064,60664,90725,272521]);
  for(let level=2;level<=300;level++){

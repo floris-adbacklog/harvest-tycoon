@@ -4,7 +4,7 @@ import {vipBadge,refreshVipBadges} from './vip-ui.js';
 import {farmNow} from './farm-client.js';
 import {placeLabel} from './place-label.js';
 import {skeleton} from './skeleton.js';
-import {formatDuration,levelOf,EVENT_LEAGUES,eventLeague,eventLeagueOf,eventPrizes,HOUR_EVENT_REWARDS,WORLD_TWO_LEVEL} from './farm-state.js';
+import {liveEventLeague,formatDuration,levelOf,EVENT_LEAGUES,eventLeague,eventLeagueOf,eventPrizes,HOUR_EVENT_REWARDS,WORLD_TWO_LEVEL} from './farm-state.js';
 import {keepFolds} from './keep-folds.js';
 import {ownWords,ownText} from './i18n.js';
 // Farm events: a new event every hour, 55 minutes of play, then 5 minutes for the prizes (20 Oct 2026; 5 hours and a 1-hour
@@ -36,7 +36,11 @@ export const EVENT_GOALS={harvested:{label:'Harvest crops',art:'harvest'},produc
  made_packedlunch:{label:'Pack lunches',art:'packedlunch'},made_potatoes:{label:'Grow potatoes',art:'potatoes'},made_flax:{label:'Grow flax',art:'flax'},made_lavender:{label:'Grow lavender',art:'lavender'},
  made_linen:{label:'Weave linen',art:'linen'},made_builderscrate:{label:'Pack builder’s crates',art:'builderscrate'},made_lavendersoap:{label:'Make lavender soap',art:'lavendersoap'},
  made_scentedsachet:{label:'Sew scented sachets',art:'scentedsachet'},made_silvercandlestick:{label:'Make silver candlesticks',art:'silvercandlestick'},made_rubyring:{label:'Set ruby rings',art:'rubyring'},
- village_batches:{label:'Collect village batches',art:'village-badge'},village_requests:{label:'Help villagers',art:'villagemarket'},lake_fish:{label:'Catch lake fish',art:'villagelake'}};
+ village_batches:{label:'Collect village batches',art:'village-badge'},village_requests:{label:'Help villagers',art:'villagemarket'},lake_fish:{label:'Catch lake fish',art:'villagelake'},
+ // The harbour (27 Oct 2026): World III's goals (event-goals.js HARBOUR_KINDS).
+ made_rope:{label:'Twist rope',art:'rope'},made_barrel:{label:'Make barrels',art:'barrel'},made_sailcloth:{label:'Weave sailcloth',art:'sailcloth'},made_fishingnet:{label:'Tie fishing nets',art:'fishingnet'},
+ made_shipsbiscuits:{label:'Bake ship’s biscuits',art:'shipsbiscuits'},made_provisions:{label:'Pack provisions crates',art:'provisions'},made_anchor:{label:'Forge anchors',art:'anchor'},made_anchorchain:{label:'Forge anchor chains',art:'anchorchain'},
+ harbour_upgrades:{label:'Upgrade harbour places',art:'harbour-master'},ship_loads:{label:'Load ships',art:'harbour-badge'},ships_sent:{label:'Send off ships',art:'harbour-badge'},harbour_batches:{label:'Collect harbour batches',art:'harbour-master'},harbour_sold:{label:'Sell harbour goods',art:'harbour-crate'},seal_pats:{label:'Pat the harbour seal',art:'seal-pet'}};
 // Same level as the server gate (player_stats.level>=15, live-events-mixed.sql; 10 until 26 Sep 2026, when spending diamonds, which
 // opens at 14, became a goal): below it the button stays visible but greyed.
 export const EVENTS_LEVEL=15;
@@ -190,7 +194,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:
  // The rules of the hourly events (20 Oct 2026), with the prizes of the event on screen, or the hourly ones: with coins when it pays
  // them (the first hourly events paid diamonds only).
  const rules=()=>{
-  const view=eventView(data.events,now()),shown=view.live??view.next,world=(shown?leagueOf(shown):eventLeague(levelOf(state))).world;
+  const view=eventView(data.events,now()),shown=view.live??view.next,world=(shown?leagueOf(shown):liveEventLeague(levelOf(state))).world;
   const own=shown&&eventPrizes(shown.rewards),prize=own?.hour?own:eventPrizes(HOUR_EVENT_REWARDS),[first,second,third]=prize.podium.map(p=>num(p.diamonds));
   return `<details class="family-extra event-rules" data-fold="how-events"><summary>How events work<span>A new event every hour</span></summary><ul><li>A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out.</li><li>Each event has one goal. Reach it and you have finished.</li><li>The first three to finish in your league win ${first}, ${second} and ${third} diamonds. Everyone else who finishes wins ${num(prize.finisher.diamonds)} diamond${prize.finisher.diamonds===1?'':'s'}.</li>${prize.paysCoins?'<li>Everyone who finishes wins coins too; the sooner you finish, the more.</li>':''}<li>You race in your league, against farmers of about your level. Your league is set when you join an event (your first action that counts), and you finish that event in that league, even if you level up.<span class="event-league-list">${EVENT_LEAGUES.filter(l=>l.world===world).map(l=>`<span><img src="/assets/icons/league-${l.id}.webp" alt="" width="28" height="28" draggable="false"><b>${l.name}</b><small>${leagueRange(l)}</small></span>`).join('')}</span></li>${world===2?`<li>From level ${WORLD_TWO_LEVEL} your league is a village league, with goals in the village. Each village event you finish counts in Village events and in Events finished.</li>`:''}<li>${prize.paysCoins?'Each league has its own top 10 and podium. Diamonds are the same in every league; higher leagues win more coins. The family bonus counts family members from every league.':'Each league has its own top 10 and podium. The prizes are the same in every league. The family bonus counts family members from every league.'}</li><li>${familySentence(own??prize)} <span>They do not have to be in the same league.</span></li><li>Open from level ${EVENTS_LEVEL}.</li></ul></details>`;
  };

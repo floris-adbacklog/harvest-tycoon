@@ -207,7 +207,7 @@ test('the game opens the market square from the Village market\'s pin and lights
  assert.match(game,/villageSquare=createVillageSquareUI\(\{state,runAction,onChange:updateUI,notify:toast,itemList:economy\.itemList,onShow:showVillagePlace,onSell:\(\)=>economy\.openMarket\('village'\),refresh:\(\)=>client\.refresh\(\)\}\);/,'and a refusal for a villager who moved on loads the farm again');
  assert.match(game,/valley\?\.refresh\(\);villageSquare\?\.refresh\(\);/);
  assert.doesNotMatch(game,/harvestVillageMarket/,'the Market button sells; nothing else opened the sell list from the pin');
- assert.match(game,/if\(!adminView\)\{if\(villageWorld\)toast\('Welcome to the village! '\+\(briefWaits\(\)\?'A golden brief waits at the market square\.':'Your farm keeps growing while you are here\.'\)\);/);
+ assert.match(game,/if\(!adminView\)\{(?:if\(harbourWorld\)toast\('Welcome to the harbour! [^']*'\);else )?if\(villageWorld\)toast\('Welcome to the village! '\+\(briefWaits\(\)\?'A golden brief waits at the market square\.':'Your farm keeps growing while you are here\.'\)\);/);
  assert.match(game,/const briefWaits=\(\)=>\{const b=villageBrief\(state\);return Boolean\(b\?\.open\)&&\['mine','lumbercamp'\]\.includes\(b\.place\);\};/);
  // These actions wait for the server (farm-state.js decides the goods), like the Valley Market's.
  for(const type of ['village_deliver','village_skip','village_build','villager_now'])assert.ok(!read('public/farm-client.js').match(/INSTANT_ACTIONS=Object\.freeze\(new Set\(\[([^\]]+)\]/)[1].includes(`'${type}'`),type);
@@ -489,7 +489,7 @@ test('the game opens the town boat from the Pier, counts a boat ready to sail on
  assert.match(read('public/farm.html'),/<dialog id="boat-dialog" class="game-dialog wide-dialog is-sheet is-m" aria-labelledby="boat-title"><div class="dialog-heading"><i class="dialog-badge" data-game-art="pier" aria-hidden="true"><\/i><div class="dialog-titles"><h2 id="boat-title">Town boat<\/h2><\/div><button class="icon-button close-dialog" aria-label="Close"><i data-lucide="x"><\/i><\/button><\/div><div id="boat-content"><\/div><\/dialog>/);
  for(const file of ['public/village-square-ui.js','public/economy-ui.js'])assert.ok(read(file).includes("' The town boat waits at the pier.'"),file);
  // The boat's list is the Trade Depot's (one set of cream values, retention.css), and so is a landmark's.
- const css=read('public/retention.css');assert.match(css,/#estate-place-content \.depot-load li,#boat-content \.depot-load li,#village-square-content \.village-landmark \.depot-load li\{/);assert.match(css,/#village-square-content \.order-card,#boat-content \.order-card\{/);
+ const css=read('public/retention.css');assert.match(css,/#estate-place-content \.depot-load li,#boat-content \.depot-load li,(#harbour-content \.depot-load li,)?#village-square-content \.village-landmark \.depot-load li\{/);assert.match(css,/#village-square-content \.order-card,#boat-content \.order-card(,#harbour-content \.order-card)?\{/);   // the harbour office (27 Oct 2026) is drawn as the town boat
 });
 
 test('the landmark card: the villager\'s line, what it builds, a row per good, Give, Give all you can, then Finish',()=>{

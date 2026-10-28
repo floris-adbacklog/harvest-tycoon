@@ -384,11 +384,11 @@ async function openFarm(){
   bridge.paymentReturn=()=>{if(inApp&&!webPay)return {id:null,cancelled:false};const params=new URLSearchParams(location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
   bridge.clearPaymentReturn=()=>{const url=new URL(location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');history.replaceState(null,'',url.pathname+url.search+url.hash);};
   // World II (30 Sep 2026): travelling between the farm and the village loads the game frame again, through its loading screen,
-  // with the farm as it is now (public/game.js reads ?world=village).
+  // with the farm as it is now (public/game.js reads ?world=village, and since 27 Oct 2026 ?world=harbour).
   // 13 Oct 2026 (Android app 1.3, the Back button): the trip takes the frame's own place in the history (location.replace), so Back
   // after trips does what it did before them; frame.src added a step for each trip, and Back then loaded the whole game again.
   // dataset.address says where the frame was sent (public/loading-screen.js farmHandOver watches a trip's page by it).
-  bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'?'/farm.html?world=village':'/farm.html';try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
+  bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'||to==='harbour'?`/farm.html?world=${to}`:'/farm.html';try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
   // How you sign in (17 Oct 2026, the owner; src/account-sign-in.js): Settings, Your account says it from the user above (verifiedUser:
   // getUser, so its identities are the server's; no extra call). Set a password sends this account's own address the mail of the sign-in
   // card's "Forgot your password?", with the same return address (redirectUrl()): its link opens this page in recovery mode, "Choose a new

@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt,dailyWait} from './quests-ui.js';
-import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,otherWorldItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
@@ -181,11 +181,11 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   // Lifetime totals: every crop picked and every good collected. The Glasshouse grows crops, not goods, so its crates count
   // as crops picked (the leaderboards count the fields only).
   const total=(prefix,keep=()=>true)=>Object.entries(stats).reduce((n,[k,v])=>k.startsWith(prefix)&&keep(k.slice(prefix.length))&&Number.isFinite(v)?n+v:n,0);
-  const crops=Math.max(stats.harvested??0,total('harvest_'))+total('made_',k=>CROPS[k]),goods=Math.max(stats.produced??0,total('made_',k=>!CROPS[k]&&!worldTwoItem(k)));
+  const crops=Math.max(stats.harvested??0,total('harvest_'))+total('made_',k=>CROPS[k]),goods=Math.max(stats.produced??0,total('made_',k=>!CROPS[k]&&!otherWorldItem(k)));
   // 23 Oct 2026 (the owner): the four totals as one row of small chips, so a new farmer's zeros do not fill the window.
   const tile=(icon,value,label)=>`<li>${art(icon)}<strong>${value}</strong><span>${label}</span></li>`;
   // World II's goods (30 Sep 2026) have their own tab, from level 100; the farm's Goods tab and its count stay the farm's.
-  const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!worldTwoItem(k)),villageKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&worldTwoItem(k));
+  const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!otherWorldItem(k)),villageKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&worldTwoItem(k));
   if(journalTab==='village'&&!worldTwoOpen(state))journalTab='crops';
   // Honey also comes from the Apiary (a few jars per finished job), not only from the Factory.
   const apiaryHoney=(stats.activity_apiary??state.activities?.completed?.apiary??0)*(ACTIVE_STATIONS.apiary.itemCount??0);

@@ -167,5 +167,6 @@
  "Rosie",
  "Mei",
  "Otto",
- "Hank"
+ "Hank",
+ "varying vec3 vMeadow;"
 ]

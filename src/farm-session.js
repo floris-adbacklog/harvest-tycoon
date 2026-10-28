@@ -75,9 +75,10 @@ export function createFarmSession({
    bridge.checkout=async(pack,requestId,offerId)=>{if(!paymentRequest)noPayments();bridge.trackCommerce('diamond_pack_started',{pack});const data=await bridge.payments({operation:'create',pack,requestId,language:doc?.documentElement?.lang,...(offerId?{offerId}:{})});const url=new URL(data.url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw new Error('Invalid checkout destination.');win.location.assign(url.href);};
    bridge.paymentReturn=()=>{const params=new URLSearchParams(win.location.search);return {id:params.get('purchase'),cancelled:params.get('checkout')==='cancelled'};};
    bridge.clearPaymentReturn=()=>{const url=new URL(win.location.href);url.searchParams.delete('purchase');url.searchParams.delete('checkout');win.history.replaceState(null,'',url.pathname+url.search+url.hash);};
+   // World III (27 Oct 2026): the harbour travels the same way, ?world=harbour.
    // World II: travelling between the farm and the village loads the game frame again, through its loading screen, with the farm as it is now.
    // A trip takes the frame's own place in the history, as on the website (13 Oct 2026, src/main.js travel).
-   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'?`${farmUrl}?world=village`:farmUrl;try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
+   bridge.travel=async to=>{if(ticket!==generation)return;const data=await farmRequest({operation:'load'});if(ticket!==generation)return;initial=data;bridge.serverNow=data.serverNow;bridge.serverAt=Date.now();const address=to==='village'||to==='harbour'?`${farmUrl}?world=${to}`:farmUrl;try{frame.dataset.address=address;frame.contentWindow.location.replace(address);}catch{frame.src=address;}};
    extend(bridge,{alive:()=>ticket===generation,user});
    // A purchase holds Reload everyone now back while it runs (src/app-update.js guardPurchases, 22 Oct 2026).
    guardPurchases(bridge);

@@ -1,4 +1,4 @@
-import {QUESTS,VILLAGE_QUESTS,questXp,levelOf,guidedFarm,availableDaily,questFeatureOpen,worldTwoOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS,villageQuestOpen} from './farm-state.js';
+import {QUESTS,VILLAGE_QUESTS,HARBOUR_QUESTS,harbourQuestPicture,questXp,levelOf,guidedFarm,availableDaily,questFeatureOpen,worldTwoOpen,worldThreeOpen,featureUnlocked,dailyTasks,ACTIVE_STATIONS,villageQuestOpen} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 
@@ -33,6 +33,18 @@ export function villageQuestGroups(state){
  return groups;
 }
 export const villageQuestReady=state=>worldTwoOpen(state)&&villageQuestGroups(state).ready.length>0;
+// World III's quests (27 Oct 2026): those open at the farmer's level, and every one already claimed, in a third list beside the village's.
+export function harbourQuestGroups(state){
+ const groups={ready:[],active:[],done:[]},claimed=state.harbourQuests??[],level=levelOf(state);
+ HARBOUR_QUESTS.forEach((quest,id)=>{
+  if(!claimed.includes(id)&&quest.minLevel>level)return;
+  const value=Math.min(quest.target,Number(state.stats[quest.stat])||0);
+  groups[claimed.includes(id)?'done':value>=quest.target?'ready':'active'].push({id,quest,value});
+ });
+ groups.active.sort((a,b)=>a.quest.minLevel-b.quest.minLevel||a.id-b.id);
+ return groups;
+}
+export const harbourQuestReady=state=>worldThreeOpen(state)&&harbourQuestGroups(state).ready.length>0;
 // Plan F (13 Oct 2026): the daily challenges that are done and wait in Today, one Claim each. On a phone Today sits in More, and 48% of
 // the farmers who stopped at level 5 or 6 left one there: the Quests button counts them too (game.js), and its window has one line at the
 // top that opens Today. They are still claimed in Today, one at a time.
@@ -59,14 +71,15 @@ export function questArt(stat){
 const number=n=>Number(n).toLocaleString('en-US');
 
 // village: the game shows the village (World II), where Your quests opens on the village's quests. From level 100 a Farm / Village
-// switch shows either list; below it there is only the farm's.
+// switch shows either list; below it there is only the farm's. harbour: the game shows the harbour (World III); once it is open the switch
+// has a third button, Harbour, for its quests (27 Oct 2026).
 // openToday(id) (Plan F, 13 Oct 2026): the line at the top for the daily challenges that are ready opens Today at the first of them, where
 // they are claimed (review fix: at the top of Today a phone of 360x640 showed the gift and no Claim).
-export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=null,village=false,document:doc=globalThis.document}){
+export function createQuestsUI({state,claim,claimVillage,claimHarbour,icons,notify,openToday=null,village=false,harbour=false,document:doc=globalThis.document}){
  const dialog=doc.getElementById('tasks-dialog'),list=doc.getElementById('task-list');
- let showDone=false,world=village?'village':'farm';
+ let showDone=false,world=harbour?'harbour':village?'village':'farm';
  const toolbar=doc.createElement('div');toolbar.className='quest-toolbar';
- toolbar.innerHTML='<button type="button" class="quest-today-line" data-quest-today hidden></button><div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true"><i data-game-art="farm"></i><span>Farm</span></button><button data-quest-world="village" aria-pressed="false"><i data-game-art="village-badge"></i><span>Village</span></button></div><div id="quest-summary" role="status"></div>';
+ toolbar.innerHTML='<button type="button" class="quest-today-line" data-quest-today hidden></button><div class="market-tabs quest-worlds" role="group" aria-label="Quests for" hidden><button data-quest-world="farm" aria-pressed="true"><i data-game-art="farm"></i><span>Farm</span></button><button data-quest-world="village" aria-pressed="false"><i data-game-art="village-badge"></i><span>Village</span></button><button data-quest-world="harbour" aria-pressed="false" hidden><i data-game-art="harbour-badge"></i><span>Harbour</span></button></div><div id="quest-summary" role="status"></div>';
  list.before(toolbar);
  // The quest card (23 Oct 2026, as the chores window): picture, title and its line, then one row with the bar and its count beside the
  // reward chips; a quest that is done has its Claim beside the card (one tap per quest, never all at once), a claimed one its tick after the chips.
@@ -74,16 +87,16 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
   const xp=questXp(q),rewards=`<span class="quest-rewards"><b>${art('coins')}${number(q.reward)}</b>${xp?`<b class="is-xp">${art('xp')}${xp} XP</b>`:''}</span>`;
   const meter=group==='active'?`<div class="quest-meter"><progress value="${value}" max="${q.target}" aria-label="${q.title} progress"></progress><span>${number(value)} / ${number(q.target)}</span></div>`:'';
   const tick=group==='done'?'<span class="quest-state">Completed ✓</span>':'',claim=group==='ready'?`<div class="quest-act"><button class="primary-button" data-claim="${id}">Claim</button></div>`:'';
-  return `<article class="task-row quest-item is-${group}"><span class="quest-art">${questArt(q.stat)}</span><div class="quest-body"><div class="quest-row-heading"><h3>${q.title}</h3></div><p>${q.description}</p><div class="task-bottom">${meter}${rewards}${tick}</div></div>${claim}</article>`;
+  return `<article class="task-row quest-item is-${group}"><span class="quest-art">${world==='harbour'?art(harbourQuestPicture(q)):questArt(q.stat)}</span><div class="quest-body"><div class="quest-row-heading"><h3>${q.title}</h3></div><p>${q.description}</p><div class="task-bottom">${meter}${rewards}${tick}</div></div>${claim}</article>`;
  }
  function render(){
-  const both=worldTwoOpen(state);if(!both)world='farm';
-  const villageList=world==='village',groups=villageList?villageQuestGroups(state):questGroups(state),done=groups.done.length,all=villageList?VILLAGE_QUESTS.length:QUESTS.length;
+  const both=worldTwoOpen(state),third=worldThreeOpen(state);if(!both||(world==='harbour'&&!third))world='farm';
+  const villageList=world==='village',harbourList=world==='harbour',groups=harbourList?harbourQuestGroups(state):villageList?villageQuestGroups(state):questGroups(state),done=groups.done.length,all=harbourList?HARBOUR_QUESTS.length:villageList?VILLAGE_QUESTS.length:QUESTS.length;
   // Plan F (13 Oct 2026): the daily challenges the Quests button also counts, in one line that opens Today.
   const daily=readyDailies(state).length,line=toolbar.querySelector('[data-quest-today]');if(line)line.hidden=!daily||!openToday;
   if(line&&!line.hidden)line.innerHTML=`${art('gift')}<strong>${daily} daily challenge${daily===1?'':'s'} ready</strong><span>Today</span><i data-lucide="chevron-right"></i>`;
-  const worlds=toolbar.querySelector('.quest-worlds');if(worlds){worlds.hidden=!both;worlds.querySelectorAll('[data-quest-world]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.questWorld===world)));}
-  toolbar.querySelector('#quest-summary').innerHTML=`${art(villageList?'village-badge':'quests')}<strong>${villageList?`${done} of ${all} village quests done`:`${done} of ${all} quests done`}</strong><progress max="${all}" value="${done}" aria-label="Quests completed"></progress>`;
+  const worlds=toolbar.querySelector('.quest-worlds');if(worlds){worlds.hidden=!both;worlds.querySelector('[data-quest-world="harbour"]').hidden=!third;worlds.querySelectorAll('[data-quest-world]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.questWorld===world)));}
+  toolbar.querySelector('#quest-summary').innerHTML=`${art(harbourList?'harbour-badge':villageList?'village-badge':'quests')}<strong>${harbourList?`${done} of ${all} harbour quests done`:villageList?`${done} of ${all} village quests done`:`${done} of ${all} quests done`}</strong><progress max="${all}" value="${done}" aria-label="Quests completed"></progress>`;
   // One list, no tabs (30 Sep 2026): what you can claim comes first, then what is in progress; completed quests fold away at the
   // end. Every reward is claimed on its own, one tap per quest: that is the satisfying part.
   const open=[...groups.ready.map(entry=>row(entry,'ready')),...groups.active.map(entry=>row(entry,'active'))].join('');
@@ -92,7 +105,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
   icons();
  }
  function open(){
-  world=village&&worldTwoOpen(state)?'village':'farm';
+  world=harbour&&worldThreeOpen(state)?'harbour':village&&worldTwoOpen(state)?'village':'farm';
   showDone=false;
   doc.querySelectorAll('dialog[open]').forEach(other=>{if(other!==dialog)other.close();});
   render();if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
@@ -106,7 +119,7 @@ export function createQuestsUI({state,claim,claimVillage,icons,notify,openToday=
  list.addEventListener('click',async event=>{
   if(event.target.closest('[data-quest-done]')){showDone=!showDone;render();return;}
   const button=event.target.closest('[data-claim]');if(!button||button.disabled)return;
-  button.disabled=true;await (world==='village'?claimVillage:claim)(Number(button.dataset.claim));render();
+  button.disabled=true;await (world==='harbour'?claimHarbour:world==='village'?claimVillage:claim)(Number(button.dataset.claim));render();
   (list.querySelector('[data-claim]')??dialog.querySelector('.close-dialog'))?.focus({preventScroll:true});
  });
  // One direct path for desktop and mobile; there is no nested quest popover on phones.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {xpForLevel,normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue,recipeAvailability,upgradeCost,BUILDINGS,BUILDING_COSTS,UPGRADE_BUILD_SHARE,ESTATE_UPGRADES,UPGRADE_LADDER_STEP,BASE_BUILDING_LEVEL,RECIPES,CROPS,BOOSTS,ITEMS,farmSummary,marketQuote} from '../game/farm-state.js';
+import {worldThreeBuilding,xpForLevel,normalizeFarm,applyFarmAction,productionSlots,productionJobs,recipeValue,recipeAvailability,upgradeCost,BUILDINGS,BUILDING_COSTS,UPGRADE_BUILD_SHARE,ESTATE_UPGRADES,UPGRADE_LADDER_STEP,BASE_BUILDING_LEVEL,RECIPES,CROPS,BOOSTS,ITEMS,farmSummary,marketQuote} from '../game/farm-state.js';
 import {createProductionCueTracker} from '../public/farm-audio.js';
 import {createBeginnerUI} from '../public/beginner-ui.js';
 const now=1789690000000;
@@ -10,7 +10,7 @@ function farm(){const s=createFarm(now);s.xp=xpForLevel(150);   // World II's pl
 const act=(s,a,t=now)=>applyFarmAction(s,a,t);
 import {roomFor} from './warehouse-room.mjs';
 test('every production building permits exactly one simultaneous batch per level',()=>{
- for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'))for(let level=1;level<=10;level++){
+ for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'&&!worldThreeBuilding(id)))for(let level=1;level<=10;level++){
   const s=farm();s.buildings[id].level=level;const recipe=Object.keys(RECIPES).find(k=>RECIPES[k].building===id);
   for(let i=0;i<level;i++)act(s,{type:'produce',recipe});
   const jobs=productionJobs(s.buildings[id]);assert.equal(jobs.length,level);assert.equal(new Set(jobs.map(j=>j.id)).size,level);assert(jobs.every(j=>j.startedAt===now));
@@ -49,7 +49,7 @@ test('instant production finishes every parallel job and grants nothing until co
  assert.equal(s.inventory.oil,before+3);assert.equal(s.stats.produced,3);assert.equal(s.buildings.mill.job,null);
 });
 test('higher-level production, early upgrade pricing and vouchers stay consistent',()=>{
- for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory')){
+ for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&id!=='factory'&&!worldThreeBuilding(id))){
   const s=farm();for(const level of [1,2,3]){s.buildings[id].level=level;// The upgrade ladder's ceiling only reaches the costliest to build (the village's places, 30 Sep 2026).
   const ceiling=Math.round(ESTATE_UPGRADES[0].coins/UPGRADE_LADDER_STEP**(BASE_BUILDING_LEVEL-level));
   const base=Math.min(ceiling,Math.max(Math.round(b.upgradeCost*(level<3?level*1.5:12)),Math.round((BUILDING_COSTS[id]??0)*UPGRADE_BUILD_SHARE*2.7**(level-1))));assert.equal(upgradeCost(s,id),base);s.boosts.upgradeCredits=1;assert.equal(upgradeCost(s,id),Math.ceil(base/2));s.boosts.upgradeCredits=0;}

@@ -17,7 +17,7 @@ test('every crop has its own board; only public metrics can be selected',async()
  // World II's goods are under Village, the farm's under By good (30 Sep 2026).
  for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,ITEMS[good].world===2?'village':'goods',good);
  assert.deepEqual(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard&&LEADERBOARD_CATEGORIES['made_'+k]),[],'no board for a good marked noBoard');
- assert.equal(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard).length,13);
+ assert.equal(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard&&ITEMS[k].world===2).length,13);   // and the harbour's 8 (27 Oct 2026)
  for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
  for(const category of ['diamonds','harvested_grain','state','__proto__'])await assert.rejects(fetchLeaderboard({from(){throw new Error('Should not query');}},'self',category),/valid leaderboard/);
  for(const category of Object.keys(LEADERBOARD_CATEGORIES)){

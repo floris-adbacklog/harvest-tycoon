@@ -24,7 +24,7 @@ test('phones show XP progress as a ring around the level badge',()=>{
 });
 test('an empty market offers the way forward',()=>{
  const ui=read('public/economy-ui.js');
- assert.match(ui,/data-market-empty>\$\{marketTab==='crops'\?'Go to your fields':marketTab==='village'\?'Open places':'Open buildings'\}<\/button>/);
+ assert.match(ui,/data-market-empty>\$\{marketTab==='crops'\?'Go to your fields':marketTab!=='crops'&&village\?'Open places':'Open buildings'\}<\/button>/);
  assert.match(ui,/\[data-market-empty\]'\)\?\.addEventListener\('click',\(\)=>\{\$\('market-dialog'\)\.close\(\);if\(marketTab!=='crops'\)openBuildings\(\);\}\)/);
 });
 test('the tractor shows the crop as a chip that opens the crop picker, and one tile per job (5 Oct 2026); no rest pill since it never rests (4 Oct 2026)',()=>{

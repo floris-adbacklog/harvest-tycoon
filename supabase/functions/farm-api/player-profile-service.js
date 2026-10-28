@@ -1,9 +1,9 @@
 import {playerAvatar} from './player-avatars.js';
 import {isRecentlyActive} from './presence.js';
-import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem,wornLook,seasonBadges,visitView,levelOf} from './farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,worldTwoItem,otherWorldItem,wornLook,seasonBadges,visitView,levelOf} from './farm-state.js';
 import {isAdminAddress} from './admin-service.js';
 
-const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key));   // the farm's goods, not World II's
+const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!otherWorldItem(key));   // the farm's goods, not World II's or III's
 // The profile's stat pages (src/player-profiles.js): the same public numbers as the leaderboards, coins included (the "Most coins"
 // board already shows them). Diamonds and the rest of the account stay private.
 // 20 Oct 2026: the village page ("In the village") reads Villagers helped and Village events (supabase/world-two-leagues-a.sql).

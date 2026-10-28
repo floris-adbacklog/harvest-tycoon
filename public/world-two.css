@@ -11,6 +11,9 @@ html[data-world="village"] #buildings-dialog .utility-shortcuts{display:none!imp
 /* The loading screen on the way there shows the village (public/app-mode.js marks the trip before the game's code runs). */
 html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/village-backdrop.webp');background-color:#2c4a5a}
 @media(orientation:portrait){html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/village-backdrop-tall.webp')}}
+/* World III, the harbour (27 Oct 2026): its own painted harbour on the way there (the owner's pictures, plan-wereld-3/chatgpt). */
+html[data-trip="harbour"] .farm-loading.loading{background-image:url('/assets/harbour-backdrop.webp');background-color:#2a6f9e}
+@media(orientation:portrait){html[data-trip="harbour"] .farm-loading.loading{background-image:url('/assets/harbour-backdrop-tall.webp')}}
 /* On a phone the farm keeps room at the bottom for its tool dock; the village has none, so its view runs down to the menu bar. */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){html[data-world="village"]{--mobile-bottom:var(--mobile-nav,76px)}}
 /* A phone on its side has its menu bar on the left: the village's view runs down to the bottom edge (7 Oct 2026; it left an empty
@@ -36,7 +39,7 @@ html[data-trip="village"] .farm-loading.loading{background-image:url('/assets/vi
 :is(#village-square-content,#building-content) .village-brief .order-head small{display:block;margin:0 0 1px;font-size:12px;font-weight:700;letter-spacing:1px;color:#8a6a22}
 :is(#village-square-content,#building-content) .village-brief .order-icon{background:#f6ecd0}
 :is(#village-square-content,#building-content) .village-brief q{font-style:italic}
-:is(#village-square-content,#building-content,#boat-content) .brief-from{display:block;margin-top:2px;font-size:12px;font-style:normal;font-weight:600;color:#9a8457}
+:is(#village-square-content,#building-content,#boat-content,#harbour-content) .brief-from{display:block;margin-top:2px;font-size:12px;font-style:normal;font-weight:600;color:#9a8457}
 :is(#village-square-content,#building-content) .brief-builds{margin:0 0 8px;font-size:13px;line-height:1.45;color:#7a705f}
 :is(#village-square-content,#building-content) .brief-builds b{color:#453e28}
 :is(#village-square-content,#building-content) .brief-actions{display:flex;flex:none;gap:8px}
@@ -76,13 +79,14 @@ html[data-world="village"] :is(.building-label,.utility-label).is-pointed{z-inde
 #building-content .village-fertilizer{margin:0 0 14px}
 #building-content .village-fertilizer .game-art{width:22px;height:22px;vertical-align:-6px;margin-right:6px}
 /* The town boat (Oct 2026, public/boat-ui.js): the skipper's line in italics, as a villager's on a golden brief. */
-#boat-content .boat-cargo q{font-style:italic}
+#boat-content .boat-cargo q, as a villager's on a golden brief. */
+#harbour-content .boat-cargo q{font-style:italic}
 /* The miller's order (17 Oct 2026): his painted portrait, round, a little larger than a place's picture. */
 #village-square-content .miller-order .order-icon.miller-portrait{flex:none;display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:50%;background:#f6ecd0;overflow:hidden}
 #village-square-content .miller-order .order-icon.miller-portrait>.game-art{width:56px;height:56px;object-fit:contain}
 /* The small diamond button at a wait (20 Oct 2026, the Village tab of the diamond shop): the boat's "back in" line and an empty villager
    board, right under the line it shortens, with what is left today beside it. */
-:is(#village-square-content,#boat-content) .wait-buy-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+:is(#village-square-content,#boat-content,#harbour-content) .wait-buy-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
 .wait-buy-row .square-note{margin:0}
 /* The button itself: the diamond and its price, then the name, with room between them (the boat, a board and the lake). */
 .wait-buy{display:inline-flex;align-items:center;gap:4px;padding-inline:14px}

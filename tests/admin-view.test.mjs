@@ -172,7 +172,7 @@ test('in the admin view no action is tried: no farm change, no request, the admi
 test('no analytics or ad conversions from the showcase, no Welcome back; the menu lights its own buttons only there',()=>{
  const game=read('public/game.js');
  assert.match(game,/const track=\(event,params=\{\}\)=>\{if\(adminView\)return;try\{window\.parent\.harvestBridge\?\.trackGame\?\.\(event,params\);\}catch\{\}\};/);
- assert.match(game,/if\(!adminView\)\{if\(villageWorld\)toast\('Welcome to the village!/);
+ assert.match(game,/if\(!adminView\)\{(?:if\(harbourWorld\)toast\('Welcome to the harbour! [^']*'\);else )?if\(villageWorld\)toast\('Welcome to the village!/);
  // farm-client's own tracking runs only after an action, which never happens there.
  assert.ok(read('public/farm-client.js').indexOf('if(adminView())throw adminLocked();')<read('public/farm-client.js').indexOf('const instant=instantResult(state,action,farmNow());'));
  const mobile=read('public/mobile-ui.js');

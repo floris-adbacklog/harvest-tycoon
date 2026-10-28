@@ -152,7 +152,7 @@ test('the portal object the page hands the game: every feature off, a signed-in 
  assert.equal(portalAround({parent:{harvestPortal:portal}}),portal);
 });
 test('the wiki on Kongregate: no buying, inviting, app, email or reminders; its own lines; only the privacy policy as a link out',()=>{
- const ctx={level:120,portal:'kongregate',href:id=>`#wiki-${id}`},html=WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx).html).join('\n');
+ const ctx={level:120,portal:'kongregate',href:id=>`#wiki-${id}`},html=WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx)?.html??'').join('\n');
  for(const gone of [/Buying diamonds/,/Play it as an app/,/Install the app/,/Invite a friend/,/Confirm your email/,/Share my farm/,/delete-account/,/Stripe;/,/Reminders/,/Forgot your password/,/home screen/,/CrazyGames/,/As a guest/,/Starter Pack/])assert.doesNotMatch(html,gone,String(gone));
  assert.match(html,/Your farm on Kongregate/);assert.match(html,/Your farm is saved on our server with your Kongregate account/);
  assert.match(html,/Questions about your privacy\? Email info@harvesttycoon\.com\./);
@@ -161,10 +161,10 @@ test('the wiki on Kongregate: no buying, inviting, app, email or reminders; its 
  assert.doesNotMatch(html,/mailto:/,'the address is written out, not a link');
  assert.doesNotMatch(wikiQuick({portal:'kongregate'}),/>App</);
  // CrazyGames keeps its own lines.
- const cg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:true}).html).join('\n');assert.match(cg,/Your farm on CrazyGames/);assert.doesNotMatch(cg,/Kongregate|Questions about your privacy/);
+ const cg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:true})?.html??'').join('\n');assert.match(cg,/Your farm on CrazyGames/);assert.doesNotMatch(cg,/Kongregate|Questions about your privacy/);
  // Kongregate as before Discord (Oct 2026): its own lines, none of Discord's, and the portal object reads the same as its name.
  assert.doesNotMatch(html,/Discord|Who can chat/);assert.match(html,/sign in to Kongregate on any device and it is there\./);
- assert.equal(WIKI_TOPICS.map(t=>wikiArticle(t.id,{...ctx,portal:KONG}).html).join('\n'),html);
+ assert.equal(WIKI_TOPICS.map(t=>wikiArticle(t.id,{...ctx,portal:KONG})?.html??'').join('\n'),html);
  // Nothing is sold on either: What opens when has no Starter Pack there (the website's wiki keeps it).
  assert.doesNotMatch(cg,/Starter Pack/);assert.match(wikiArticle('quests',{level:120,href:id=>`#wiki-${id}`}).html,/<span>Starter Pack<\/span>/);
  assert.ok(portalTips(LOADING_TIPS,{documentElement:{dataset:{portal:'kongregate'}}}).every(([picture])=>!PORTAL_HIDDEN_TIPS.includes(picture)),'no tips about inviting or the app');

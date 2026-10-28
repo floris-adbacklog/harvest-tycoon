@@ -89,7 +89,7 @@ test('the SQL file: guard, check, settle, schedule, the events made ahead and th
  for(const [name,hash] of Object.entries(HC.NEW_MD5))assert.equal(md5(body(name.slice(0,name.indexOf('(')))),hash,name);
  // Settle: the hourly coins line and the family coins; the 6-hour lines unchanged.
  const settle=body('harvest_event_settle');assert.equal(settle,HC.SETTLE_BODY);
- assert.ok(settle.includes(`  coins=case when hour then (coalesce((e.rewards->>'coins')::integer,0)+coalesce((e.rewards->'podiumCoins'->>(r.rank::integer-1))::integer,(e.rewards->>'finisherCoins')::integer,0))*(array[${EVENT_LEAGUES.map(l=>l.coins).join(',')}])[r.league+1] else ${HE.LEGACY_LINES.coins} end,\n`));
+ assert.ok(settle.includes(`  coins=case when hour then (coalesce((e.rewards->>'coins')::integer,0)+coalesce((e.rewards->'podiumCoins'->>(r.rank::integer-1))::integer,(e.rewards->>'finisherCoins')::integer,0))*(array[${EVENT_LEAGUES.filter(l=>l.world<=2).map(l=>l.coins).join(',')}])[r.league+1] else ${HE.LEGACY_LINES.coins} end,\n`));
  assert.ok(settle.includes("fam_c:=case when hour then coalesce((e.rewards->>'familyCoins')::integer,0) else 200 end;"));
  assert.ok(settle.includes('set coins=p.coins+fam_c,diamonds=p.diamonds+fam_d'),'the family coins are flat: no league factor');
  const was=HE.HOUR_SETTLE_BODY.split('\n'),now=settle.split('\n');

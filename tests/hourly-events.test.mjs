@@ -143,7 +143,7 @@ test('the SQL file: guard, table check, pause, pick, settle, schedule, cron and 
  assert.equal(body('harvest_event_pick'),HOUR_PICK_BODY);
  const pools=JSON.parse(HOUR_PICK_BODY.match(/pools constant jsonb:='([^\n]*)';\n/)[1].replaceAll("''","'"));
  // hourly-events.sql ran with the pools from before one crop a harvest (22 Oct 2026); supabase/one-crop.sql draws from today's.
- assert.deepEqual(pools.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))),EVENT_HOUR_POOLS_BEFORE_ONE_CROP.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))));
+ assert.deepEqual(pools.map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))),EVENT_HOUR_POOLS_BEFORE_ONE_CROP.slice(0,12).map(l=>l.map(g=>g.map(k=>[k.stat,k.target]))));   // the 12 live leagues
  assert.ok(HOUR_PICK_BODY.includes("grp int:=(n%5)::int;")&&HOUR_PICK_BODY.includes("'objectives',jsonb_build_array(jsonb_build_object('stat',kind->>'stat','target',(kind->>'target')::int))"));
  // Pause: admin only.
  assert.equal(body('harvest_event_pause'),PAUSE_BODY);

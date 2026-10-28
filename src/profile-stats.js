@@ -1,12 +1,12 @@
 import {art} from '../public/visual-icons.js';
 import {RANK_ART} from '../public/rank-picker.js';
-import {CROPS,ITEMS,MASTERY_TIERS,QUESTS,worldTwoItem,WORLD_TWO_LEVEL} from '../game/farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,QUESTS,worldTwoItem,otherWorldItem,WORLD_TWO_LEVEL} from '../game/farm-state.js';
 
 // A farmer's stats on the profile (src/player-profiles.js): two pages of nine, "On the farm" and "In the valley", with arrows (and a
 // swipe on a phone). A stat that has its own leaderboard is a button that opens that board. Zero stays visible, but greyed.
 // 20 Oct 2026: a third page "In the village" for a farmer from level 100, only for a viewer who has the Village boards themselves
 // ({village}: src/ui.js villageShown), so a tile never opens a board the viewer cannot see.
-const CROP_COUNT=Object.keys(CROPS).length,GOOD_COUNT=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!worldTwoItem(key)).length;
+const CROP_COUNT=Object.keys(CROPS).length,GOOD_COUNT=Object.keys(ITEMS).filter(key=>!Object.hasOwn(CROPS,key)&&!ITEMS[key].heirloom&&!otherWorldItem(key)).length;   // the farm's goods: not the village's or the harbour's (28 Oct 2026)
 const DAY=24*60*60*1000;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const whole=value=>Math.max(0,Math.floor(Number(value)||0));

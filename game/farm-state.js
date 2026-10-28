@@ -148,11 +148,44 @@ export const VILLAGE_GOODS=Object.freeze({
  rubyring:{name:'Ruby ring',sell:14000,village:true,world:2,noBoard:true},
  saffronbun:{name:'Saffron bun',sell:2100,village:true,world:2,noBoard:true}
 });
+// World III, the harbour (27 Oct 2026, plan 15.1): its own goods, sold only at the harbour's market, never asked on the farm or in the
+// village (harbourGood, otherWorldItem), made in the harbour's places from what the farm and the village make.
+export const HARBOUR_GOODS=Object.freeze({
+ rope:{name:'Rope',sell:1660,harbour:true,world:3,noBoard:true},
+ barrel:{name:'Barrel',sell:1390,harbour:true,world:3,noBoard:true},
+ shipsbiscuits:{name:'Ship’s biscuits',sell:910,harbour:true,world:3,noBoard:true},
+ sailcloth:{name:'Sailcloth',sell:7620,harbour:true,world:3,noBoard:true},
+ provisions:{name:'Provisions crate',sell:14000,harbour:true,world:3,noBoard:true},
+ anchor:{name:'Anchor',sell:10500,harbour:true,world:3,noBoard:true},
+ fishingnet:{name:'Fishing net',sell:8640,harbour:true,world:3,noBoard:true},
+ anchorchain:{name:'Anchor chain',sell:14850,harbour:true,world:3,noBoard:true},
+ // The three later places' goods (27 Oct 2026, the owner: "Doe 1"), priced as the first eight: what goes in at 0.8 of its price, plus 46%.
+ shiplantern:{name:'Ship’s lantern',sell:4310,harbour:true,world:3,noBoard:true},
+ shiptar:{name:'Ship’s tar',sell:6700,harbour:true,world:3,noBoard:true},
+ shippaint:{name:'Ship paint',sell:4640,harbour:true,world:3,noBoard:true},
+ figurehead:{name:'Figurehead',sell:22750,harbour:true,world:3,noBoard:true},
+ compass:{name:'Compass',sell:8100,harbour:true,world:3,noBoard:true},
+ shipsbell:{name:'Ship’s bell',sell:15940,harbour:true,world:3,noBoard:true},
+ // And the three after those (27 Oct 2026, the owner: "Maak nog meer buildings"), priced the same way.
+ tinnedstew:{name:'Tinned stew',sell:1700,harbour:true,world:3,noBoard:true},
+ tinnedfruit:{name:'Tinned fruit',sell:2290,harbour:true,world:3,noBoard:true},
+ spicecrate:{name:'Spice crate',sell:6920,harbour:true,world:3,noBoard:true},
+ perfumecrate:{name:'Perfume crate',sell:7800,harbour:true,world:3,noBoard:true},
+ oars:{name:'Oars',sell:1510,harbour:true,world:3,noBoard:true},
+ rowboat:{name:'Rowboat',sell:34630,harbour:true,world:3,noBoard:true}
+});
 export const villageGood=key=>ITEMS[key]?.village===true;
+export const harbourGood=key=>ITEMS[key]?.harbour===true;
+// Sold at another world's market (the village's or the harbour's), never at the farm's Market.
+export const elsewhereGood=key=>villageGood(key)||harbourGood(key);
 // Everything of World II (the village goods, and the farm's bakes with heirloom flour): never shared with a family, never in a
 // Family Order or on the World I leaderboards.
 export const worldTwoItem=key=>ITEMS[key]?.world===2;
-export const ITEMS=Object.freeze({...CROPS,...PRODUCTS,...HEIRLOOMS,...VILLAGE_GOODS,...SEASON_CROPS});
+// Of another world than the farm (27 Oct 2026, the owner: "zorg dat wereld II en III zich niet bemoeien met dingen in wereld I"): World II's
+// goods now, World III's once they are in ITEMS. What only the farm's own goods may join (the family tournament) asks this.
+export const otherWorldItem=key=>(ITEMS[key]?.world??1)>1;
+export const worldThreeItem=key=>ITEMS[key]?.world===3;
+export const ITEMS=Object.freeze({...CROPS,...PRODUCTS,...HEIRLOOMS,...VILLAGE_GOODS,...HARBOUR_GOODS,...SEASON_CROPS});
 // A season crop in storage: never shared with a family, gifted or asked for in a Family Order (SEASON_CROPS).
 export const seasonItem=key=>seasonCrop(key);
 // The Starter Pack (level 14) gives one of every crop in the game. The payment itself is credited by the database
@@ -181,7 +214,7 @@ export function marketQuote(item,now=Date.now()){
 export function marketValue(items,now=Date.now()){return Object.entries(items).reduce((sum,[key,count])=>sum+marketQuote(key,now).price*count,0);}
 export function marketHighlights(now=Date.now(),state){
  // World II's bakes only from level 100 (Oct 2026): a legacy farm below it was told golden loaf or heirloom pie was today's best price.
- const keys=(state&&guidedFarm(state)?Object.keys(ITEMS).filter(k=>!villageGood(k)&&(state.inventory[k]>0||itemAvailable(state,k))):Object.keys(PRODUCTS)).filter(k=>!worldTwoItem(k)||(state&&worldTwoOpen(state)));
+ const keys=(state&&guidedFarm(state)?Object.keys(ITEMS).filter(k=>!elsewhereGood(k)&&(state.inventory[k]>0||itemAvailable(state,k))):Object.keys(PRODUCTS)).filter(k=>!worldThreeItem(k)&&(!worldTwoItem(k)||(state&&worldTwoOpen(state))));
  const sorted=time=>keys.map(k=>marketQuote(k,time)).sort((a,b)=>b.change-a.change||a.item.localeCompare(b.item));
  return {today:sorted(now)[0],tomorrow:sorted(now+DAY_MS)[0]};
 }
@@ -231,9 +264,22 @@ export const BUILDINGS = Object.freeze({
  linenloft:{name:'Linen Loft',tagline:'Flax woven into fine linen.',icon:'scroll',model:null,type:'production',upgradeCost:2000,minLevel:125,buildCost:300000,world:2},
  soapmaker:{name:'Soap Maker',tagline:'Lavender soap and scented sachets.',icon:'droplets',model:null,type:'production',upgradeCost:2000,minLevel:135,buildCost:350000,world:2},
  pier:{name:'Pier',tagline:'The old pier, mended: the town boat calls for your finest goods.',icon:'anchor',model:null,type:'pier',minLevel:144,buildCost:400000,world:2},
- jeweller:{name:'Jeweller',tagline:'Silver candlesticks and ruby rings.',icon:'gem',model:null,type:'production',upgradeCost:2000,minLevel:150,buildCost:450000,world:2}
+ jeweller:{name:'Jeweller',tagline:'Silver candlesticks and ruby rings.',icon:'gem',model:null,type:'production',upgradeCost:2000,minLevel:150,buildCost:450000,world:2},
+ // World III, the harbour (27 Oct 2026): its places, each built by its harbour work (HARBOUR_WORKS), in the harbour only.
+ ropewalk:{name:'Ropewalk',tagline:'Rope from flax and linen, sailcloth and fishing nets.',icon:'scroll',model:null,type:'production',upgradeCost:2400,minLevel:204,buildCost:4000000,world:3},
+ cooperage:{name:'Cooperage',tagline:'Sturdy barrels from planks and iron.',icon:'hammer',model:null,type:'production',upgradeCost:2400,minLevel:210,buildCost:5000000,world:3},
+ galley:{name:'Galley',tagline:'Ship’s biscuits, and provisions for long voyages.',icon:'utensils',model:null,type:'production',upgradeCost:2400,minLevel:216,buildCost:6000000,world:3},
+ harbourforge:{name:'Harbour forge',tagline:'Anchors and anchor chains.',icon:'anchor',model:null,type:'production',upgradeCost:2400,minLevel:240,buildCost:8000000,world:3},
+ chandlery:{name:'Chandlery',tagline:'Ship’s lanterns and ship’s tar.',icon:'lamp',model:null,type:'production',upgradeCost:2400,minLevel:228,buildCost:7000000,world:3},
+ paintshop:{name:'Paint shop',tagline:'Ship paint and figureheads.',icon:'paintbrush',model:null,type:'production',upgradeCost:2400,minLevel:254,buildCost:9000000,world:3},
+ instruments:{name:'Instrument maker',tagline:'Compasses and ship’s bells.',icon:'compass',model:null,type:'production',upgradeCost:2400,minLevel:266,buildCost:12000000,world:3},
+ cannery:{name:'Cannery',tagline:'Tinned stew and tinned fruit for long voyages.',icon:'package',model:null,type:'production',upgradeCost:2400,minLevel:236,buildCost:8000000,world:3},
+ tradinghouse:{name:'Trading house',tagline:'Spice crates and perfume crates for faraway ports.',icon:'store',model:null,type:'production',upgradeCost:2400,minLevel:248,buildCost:10000000,world:3},
+ boatyard:{name:'Boatyard',tagline:'Oars and rowboats.',icon:'sailboat',model:null,type:'production',upgradeCost:2400,minLevel:276,buildCost:14000000,world:3}
 });
 export const worldTwoBuilding=key=>BUILDINGS[key]?.world===2;
+export const worldThreeBuilding=key=>BUILDINGS[key]?.world===3;
+export const otherWorldBuilding=key=>(BUILDINGS[key]?.world??1)>1;
 const BASE_RECIPES=Object.freeze({
  grainmeal:{building:'windmill',name:'Grind grain meal',input:{wheat:8,barley:4},output:{grainmeal:3},duration:1200000,xp:30},
  fertilizer:{building:'windmill',name:'Mix natural fertilizer',input:{grainmeal:2,cabbage:2},output:{fertilizer:3},duration:1800000,xp:40},
@@ -344,7 +390,31 @@ const VILLAGE_RECIPES=Object.freeze({
  sowsaffron:{building:'villagefields',name:'Sow saffron',input:{fertilizer:2},coins:1100,output:{saffron:8},duration:21600000,xp:120,minLevel:158},
  saffronbun:{building:'canteen',name:'Bake saffron buns',input:{saffron:4,flour:4,eggs:2},output:{saffronbun:2},duration:3600000,xp:30,minLevel:158}
 });
-export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES,...VILLAGE_RECIPES});
+// World III (27 Oct 2026, plan 15.1): the harbour's recipes, about 30 XP a slot-hour, each later one in a place paying at least as well.
+const HARBOUR_RECIPES=Object.freeze({
+ twistrope:{building:'ropewalk',name:'Twist rope',input:{flax:12,linen:2},output:{rope:2},duration:2700000,xp:23,minLevel:204},
+ makebarrels:{building:'cooperage',name:'Make barrels',input:{plank:8,ironbar:2},output:{barrel:3},duration:2700000,xp:23,minLevel:210},
+ bakebiscuits:{building:'galley',name:'Bake ship’s biscuits',input:{bread:6,cheese:2},output:{shipsbiscuits:4},duration:2700000,xp:23,minLevel:216},
+ weavesailcloth:{building:'ropewalk',name:'Weave sailcloth',input:{linen:4,rope:2},output:{sailcloth:1},duration:5400000,xp:45,minLevel:222},
+ packprovisions:{building:'galley',name:'Pack a provisions crate',input:{barrel:2,shipsbiscuits:6,cheese:6},output:{provisions:1},duration:9000000,xp:75,minLevel:224},
+ forgeanchor:{building:'harbourforge',name:'Forge an anchor',input:{ironbar:6,rope:2},output:{anchor:1},duration:7200000,xp:60,minLevel:240},
+ tienet:{building:'ropewalk',name:'Tie a fishing net',input:{rope:3,linen:2},output:{fishingnet:1},duration:5400000,xp:45,minLevel:250},
+ forgechain:{building:'harbourforge',name:'Forge an anchor chain',input:{ironbar:8,silverbar:2},output:{anchorchain:1},duration:9000000,xp:75,minLevel:262},
+ // The three later places (27 Oct 2026): 30 XP an hour of making, as the first eight; at least 2 of every ingredient, as every mixed recipe.
+ makelantern:{building:'chandlery',name:'Make a ship’s lantern',input:{candles:4,ironbar:2},output:{shiplantern:2},duration:7200000,xp:60,minLevel:228},
+ boiltar:{building:'chandlery',name:'Boil ship’s tar',input:{oil:4,barrel:2},output:{shiptar:2},duration:10800000,xp:90,minLevel:246},
+ mixpaint:{building:'paintshop',name:'Mix ship paint',input:{oil:2,berries:20,clay:8},output:{shippaint:2},duration:7200000,xp:60,minLevel:254},
+ carvefigurehead:{building:'paintshop',name:'Carve a figurehead',input:{plank:40,shippaint:4,gemstone:2},output:{figurehead:2},duration:28800000,xp:240,minLevel:272},
+ makecompass:{building:'instruments',name:'Make a compass',input:{silverbar:2,ironbar:2,gemstone:2},output:{compass:2},duration:10800000,xp:90,minLevel:266},
+ castbell:{building:'instruments',name:'Cast a ship’s bell',input:{silverbar:2,ironbar:4,rope:2},output:{shipsbell:1},duration:10800000,xp:90,minLevel:284},
+ tinstew:{building:'cannery',name:'Tin stew',input:{stew:2,ironbar:2},output:{tinnedstew:3},duration:3600000,xp:30,minLevel:236},
+ tinfruit:{building:'cannery',name:'Tin fruit',input:{berrypreserves:4,ironbar:2},output:{tinnedfruit:3},duration:5400000,xp:45,minLevel:258},
+ packspices:{building:'tradinghouse',name:'Pack a spice crate',input:{saffron:4,lavender:8,plank:4},output:{spicecrate:1},duration:5400000,xp:45,minLevel:248},
+ packperfume:{building:'tradinghouse',name:'Pack a perfume crate',input:{lavendersoap:4,scentedsachet:4,plank:4},output:{perfumecrate:1},duration:5400000,xp:45,minLevel:262},
+ carveoars:{building:'boatyard',name:'Carve oars',input:{timber:10,plank:6},output:{oars:2},duration:2700000,xp:23,minLevel:276},
+ buildrowboat:{building:'boatyard',name:'Build a rowboat',input:{plank:40,rope:4,shippaint:2},output:{rowboat:1},duration:21600000,xp:180,minLevel:288}
+});
+export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES,...VILLAGE_RECIPES,...HARBOUR_RECIPES});
 // How big a Factory batch is on this farm (26 Sep 2026): twice the level of the building that normally makes the good, up to ×20;
 // goods that take over an hour its level, up to ×10. A level-5 Dairy makes cheese ×10 in the Factory, a level-10 one ×20. Before,
 // every Factory batch was ×20 (×10): balanced for level-20 buildings, it did the work of four to fifteen of the level 3-7 buildings
@@ -849,6 +919,10 @@ export const MAX_PLOTS=40;
 // every copy read curve 7 while farms stayed on curve 6 (XP_CURVE 6, 9 Oct 2026, 20:09), then XP_CURVE became 7 (9 Oct 2026, same
 // evening, at the owner's request) and farms convert.
 export const XP_CURVE=7;
+// The harbour's levels (27 Oct 2026, the owner, option 1 of the XP advice): from level 200 every level costs the same 150,000 XP, so
+// 200 -> 300 asks 15 million instead of 24.3 (curve 7 on); below 200 nothing changes. A step is never more than curve 7's (28 Oct 2026):
+// levels 200-204 keep their old steps (142,682..149,450), so a farm that passes 200 before the harbour ships never drops a level.
+export const HARBOUR_XP_FROM=200,HARBOUR_XP_STEP=150000;
 export const LATE_XP_FROM=50,LATE_XP_STEP=.04,LATER_XP_FROM=100,LATER_XP_STEP=.06,TOP_XP_FROM=90,TOP_XP_FACTOR=2;
 const oldXpForLevel=level=>{const n=level-1;return 60*n+20*n*(n-1);};
 const CURVE5_GAPS=Object.freeze([15,40,65,95,130,170,215,265,320,  330,355,380,405,435,465,495,525,560,595,  640,690,745,800,860,920,985,1050,1115,1175]);   // to level 30
@@ -869,7 +943,7 @@ export const CURVE7_FACTOR=level=>level<5?1:level<10?1+(level-5)*.06:level<50?1.
 const curve6Step=level=>level>=LATE_XP_FROM?lateStep(level,6):totalForLevel(level+1,6)-totalForLevel(level,6);
 const CURVE7_TOTALS=[0,0];
 function curve7Total(level){
- while(CURVE7_TOTALS.length<=level){const from=CURVE7_TOTALS.length-1;CURVE7_TOTALS.push(CURVE7_TOTALS[from]+Math.round(curve6Step(from)*CURVE7_FACTOR(from)));}
+ while(CURVE7_TOTALS.length<=level){const from=CURVE7_TOTALS.length-1;CURVE7_TOTALS.push(CURVE7_TOTALS[from]+(from>=HARBOUR_XP_FROM?Math.min(HARBOUR_XP_STEP,Math.round(curve6Step(from)*CURVE7_FACTOR(from))):Math.round(curve6Step(from)*CURVE7_FACTOR(from))));}
  return CURVE7_TOTALS[level];
 }
 function totalForLevel(level,curve){
@@ -927,7 +1001,7 @@ export const MASTER_UPGRADES=Object.freeze([
  {level:160,coins:1700000,materials:{mastertools:4,plank:80,stone:120}},
  {level:180,coins:2200000,materials:{mastertools:5,plank:100,stone:150}}
 ].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
-export const beyondMaxBuilding=key=>BUILDINGS[key]?.type==='production'&&key!=='factory'&&!worldTwoBuilding(key);
+export const beyondMaxBuilding=key=>BUILDINGS[key]?.type==='production'&&key!=='factory'&&!otherWorldBuilding(key);
 export const worldTwoOpen=state=>levelOf(state)>=WORLD_TWO_LEVEL;
 // The next step past level 10 for this building (with the farm level it needs), or null: none below level 100, none for the Factory
 // or the village's places, none at level 15.
@@ -970,7 +1044,7 @@ export const rookieBoostLeft=(state,now=Date.now())=>guidedFarm(state)&&Number.i
 export const rookieBoost=(state,now=Date.now())=>ROOKIE_TIMER_BOOST*Math.min(1,rookieBoostLeft(state,now)/ROOKIE_BOOST_MS);
 // The village's Wind pump and Longhouse (landmarks, Oct 2026) take 25% off the Village Fields' batches and 10% off every village place's;
 // on the Fields both count (x0.675). A batch already running keeps the time it started with.
-export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building].level,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1)*(1-masterBonus(state,'production'))*(['windmill','mill'].includes(RECIPES[id].building)?1-valleyProjectBonus(state,'watermill'):1)*(RECIPES[id].building==='villagefields'?1-landmarkBonus(state,'windpump'):1)*(worldTwoBuilding(RECIPES[id].building)?1-landmarkBonus(state,'longhouse'):1));}
+export function recipeDuration(state,id,now=Date.now()){return Math.round(RECIPES[id].duration*(1-productionSpeed(state.buildings[RECIPES[id].building]?.level??1,RECIPES[id].building))*(vipActive(state,now)?.9:1)*(1-rookieBoost(state,now))*(ranchFocus(state)===RECIPES[id].building?1-ranchSpeedup(state):1)*(RECIPES[id].building==='glasshouse'&&hasImprovement(state,'heating')?.75:1)*(1-masterBonus(state,'production'))*(['windmill','mill'].includes(RECIPES[id].building)?1-valleyProjectBonus(state,'watermill'):1)*(RECIPES[id].building==='villagefields'?1-landmarkBonus(state,'windpump'):1)*(worldTwoBuilding(RECIPES[id].building)?1-landmarkBonus(state,'longhouse'):1));}
 // The first batch in a new building is ready in 30 seconds (11 Oct 2026, the owner's call): the guide's eggs come at once instead of
 // after three minutes, and the first milk, grain meal and bread pay off right away. Guided farms only, once per building: its very first
 // batch (batchSequence counts every batch started there; of several started at once only the first is quick). Time only, never more goods.
@@ -982,13 +1056,19 @@ export function siloBonus(level){return {seeds:Math.min(level,3)*.05+Math.max(0,
 // independently of inventory bundles, so purchases never bypass progression.
 export const CROP_LEVELS=Object.freeze({corn:1,wheat:1,lettuce:3,barley:5,greenbeans:12,cabbage:9,cauliflower:11,pumpkin:13,redcabbage:15,sunflower:17,apples:20,berries:23,squash:28,polebeans:31,ciderapples:46,cherries:66});
 export const BUILDING_LEVELS=Object.freeze({familyhall:FAMILY_MIN_LEVEL,farmhouse:1,coop:1,mill:2,dairy:4,windmill:6,bakery:8,packing:11,kitchen:12,juicepress:21,preserves:24,pigfarm:29,beeyard:34,sheepbarn:37,glasshouse:40,weaving:43,goatshed:54,craftshop:58,factory:FACTORY_LEVEL,mine:100,lumbercamp:100,smithy:102,villagemill:112,
- villagefields:110,canteen:113,kiln:118,linenloft:125,soapmaker:135,pier:144,jeweller:150});
+ villagefields:110,canteen:113,kiln:118,linenloft:125,soapmaker:135,pier:144,jeweller:150,ropewalk:204,cooperage:210,galley:216,harbourforge:240,chandlery:228,paintshop:254,instruments:266,cannery:236,tradinghouse:248,boatyard:276});
 export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,bakery:1000,packing:1400,kitchen:3500,juicepress:6500,preserves:10000,pigfarm:14000,beeyard:18000,sheepbarn:26000,glasshouse:40000,weaving:55000,goatshed:72000,craftshop:90000,factory:FACTORY_COST,
  // World II (Oct 2026): built from the golden brief at the market square (VILLAGE_BRIEFS), with these coins and the brief's goods. One
  // number for the brief, the wiki and the upgrade ladder's floor (150k / 150k / 200k / 300k from 30 Sep 2026, when they were built here).
- mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000});
+ mine:75000,lumbercamp:75000,smithy:150000,villagemill:250000,villagefields:150000,canteen:200000,kiln:250000,linenloft:300000,soapmaker:350000,pier:400000,jeweller:450000,
+ // World III (28 Oct 2026): the harbour's places, at their work's coins. Built only by that work (harbourFinish), never bought; listed here
+ // so a place stays closed until its work is done (buildingUnlocked asks for built) and its upgrades follow the same floor as the village's.
+ ropewalk:4000000,cooperage:5000000,galley:6000000,chandlery:7000000,cannery:8000000,harbourforge:8000000,tradinghouse:10000000,paintshop:9000000,instruments:12000000,boatyard:14000000});
 export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
- sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158});
+ sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158,
+ twistrope:204,makebarrels:210,bakebiscuits:216,weavesailcloth:222,packprovisions:224,forgeanchor:240,tienet:250,forgechain:262,
+ makelantern:228,boiltar:246,mixpaint:254,carvefigurehead:272,makecompass:266,castbell:284,
+ tinstew:236,tinfruit:258,packspices:248,packperfume:262,carveoars:276,buildrowboat:288});
 // The Fishing pond (11 Oct 2026, part C): POND_OPEN is its one switch. While it is false the pond is built but hidden: it is in no list
 // (not in FEATURE_LEVELS or FEATURE_NAMES, so no level card, Coming up, wiki or menu names it), the game loads none of it and farm-api
 // refuses every 'fish', so no save gets a pond. Release: closed first (site, about 40 minutes, then farm-api), then POND_OPEN true with
@@ -1027,11 +1107,12 @@ export function recipeLevel(state,id){const factory=RECIPES[id]?.building==='fac
 export function deliveryTierUnlocked(state,tier){return !guidedFarm(state)||kept(state,'orderTiers',tier)||levelOf(state)>=DELIVERY_LEVELS[tier];}
 const FEATURE_ART={fishing:'fishingpond',shipbin:'shipping-bin',neighbours:'friendship-heart',challenges:'quests',family:'familyhall',mastery:'trophy',projects:'estate',boosts:'boost',activities:'helping-hand',valleymarket:'valley-market',ranch:'ranch',estateworkshop:'estate-workshop',tradedepot:'trade-depot',grandfair:'grand-fair',master:'master',seedlab:'seedlab',visitors:'visitors',giantpumpkin:'giantpumpkin',valleyprojects:'valleyprojects'};
 // World II's unlocks (its places, and the farm's recipes for it) only show from level 100: below it nothing of the village does. Its places
-// are their own kind (Oct 2026): built from a golden brief at the market square, one at a time, never from Buildings.
-const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state);
+// are their own kind (Oct 2026): built from a golden brief at the market square, one at a time, never from Buildings. World III's (past
+// level 200, 27 Oct 2026) show once the harbour is open; the Great Hall at 200 is the village's, and opens the harbour.
+const worldTwoEntry=(state,level)=>level<WORLD_TWO_LEVEL||worldTwoOpen(state)&&(level<=WORLD_THREE_LEVEL||worldThreeOpen(state));
 export function unlockEntries(state){return [
  ...Object.entries(CROPS).map(([key,c])=>({id:'crop:'+key,name:c.name,art:key,kind:'Crop',level:guidedFarm(state)?CROP_LEVELS[key]:c.minLevel??1,unlocked:cropUnlocked(state,key),hint:cropUnlockHint(state,key)})),
- ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall'&&worldTwoEntry(state,guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)).map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:worldTwoBuilding(key)?'Village place':buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:buildingUnlockHint(state,key)})),
+ ...Object.entries(BUILDINGS).filter(([key])=>key!=='familyhall'&&worldTwoEntry(state,guidedFarm(state)?BUILDING_LEVELS[key]:BUILDINGS[key].minLevel??1)).map(([key,b])=>({id:'building:'+key,name:b.name,art:key,kind:worldTwoBuilding(key)?'Village place':worldThreeBuilding(key)?'Harbour place':buildingCost(state,key)?'Ready to build':'Building',level:guidedFarm(state)?BUILDING_LEVELS[key]:b.minLevel??1,unlocked:buildingEligible(state,key),hint:worldThreeBuilding(key)?'Harbour places are built from the harbour master’s works.':buildingUnlockHint(state,key)})),
  // The market week (Oct 2026): an activity of the village's market square, so only from level 100, like every World II entry.
  ...(worldTwoOpen(state)?[{id:'village:week',name:'Market week',art:'villagemarket',kind:'Activity',level:VILLAGE_WEEK_LEVEL,unlocked:levelOf(state)>=VILLAGE_WEEK_LEVEL,hint:`Reach level ${VILLAGE_WEEK_LEVEL}.`}]:[]),
  // The miller's order (17 Oct 2026): from level 100 like every World II entry, so level 115's card names it and Coming up shows it before.
@@ -1064,6 +1145,7 @@ export const buildingRecipes=(state,key)=>Object.keys(RECIPES).filter(id=>RECIPE
 // What a Market tab lists (Oct 2026; was economy-ui.js marketEntries): legacy farms listed every good, the heirloom bakes too.
 export function marketItems(state,tab){
  if(tab==='village')return Object.keys(VILLAGE_GOODS).filter(k=>state.inventory[k]>0||itemAvailable(state,k));
+ if(tab==='harbour')return Object.keys(HARBOUR_GOODS).filter(k=>state.inventory[k]>0||itemAvailable(state,k));   // World III's market (27 Oct 2026)
  // A season crop (cranberries) only while the farm has some to sell.
  if(tab==='crops'){const season=Object.keys(SEASON_CROPS).filter(k=>state.inventory[k]>0);if(season.length)return [...season,...marketItems(state,'farmcrops')];}
  return Object.keys(tab==='crops'||tab==='farmcrops'?{...CROPS,...HEIRLOOMS}:PRODUCTS).filter(k=>(worldTwoOpen(state)||!worldTwoItem(k))&&(HEIRLOOMS[k]?state.inventory[k]>0||itemAvailable(state,k):!guidedFarm(state)||state.inventory[k]>0||itemAvailable(state,k)));
@@ -1152,10 +1234,12 @@ export function itemAvailable(state,item,seen=new Set()){
 export function constructBuilding(state,key){
  if(!Object.hasOwn(BUILDINGS,key)||!buildingCost(state,key))throw new Error('Choose a new production building.');
  const b=BUILDINGS[key],cost=buildingCost(state,key);
+ if(worldThreeBuilding(key))throw new Error('Harbour places are built from the harbour master’s works.');
  if(state.buildings[key].built)throw new Error('This building is already open.');
  if(!buildingEligible(state,key))throw new Error(buildingUnlockHint(state,key));
  // Since Oct 2026 only through villageBuild: a game from before this update gets this instead of paying the old price.
  if(worldTwoBuilding(key))throw new Error('Village places are built from the golden brief at the market square.');
+ if(worldThreeBuilding(key))throw new Error('Harbour places are built from the harbour master’s works.');
  const needs=constructionNeeds(state,key);if(needs.length)throw new Error(`Open ${needs.map(k=>BUILDINGS[k].name).join(' and ')} first to supply this building.`);
  if(state.coins<cost)throw new Error(`You need ${cost} coins to open ${b.name}.`);
  state.coins-=cost;state.buildings[key].built=true;state.stats['built_'+key]=1;
@@ -1311,7 +1395,7 @@ export function upgradeGoods(building,level){
  if(!BUILDINGS[building]||BUILDINGS[building].type!=='production'||level<1||level>=MAX_BUILDING_LEVEL)return {};
  if(building==='factory')return {flour:16*level,cheese:4*level,cloth:2*level,...(level>=4?{harvesthamper:level}:{}),...(level>=6?{squashsoup:level}:{}),...(level>=8?{cider:level}:{})};
  if(level<UPGRADE_GOODS_FROM)return {};
- if(worldTwoBuilding(building))return Object.fromEntries(Object.entries({...VILLAGE_UPGRADE_GOODS,...(BUILDING_LEVELS[building]>=VILLAGE_TILES_FROM?{rooftile:VILLAGE_UPGRADE_TILES}:{})}).map(([k,n])=>[k,n*level]));
+ if(otherWorldBuilding(building))return Object.fromEntries(Object.entries({...VILLAGE_UPGRADE_GOODS,...(BUILDING_LEVELS[building]>=VILLAGE_TILES_FROM?{rooftile:VILLAGE_UPGRADE_TILES}:{})}).map(([k,n])=>[k,n*level]));
  firstProducts??=Object.fromEntries(Object.keys(BUILDINGS).map(key=>[key,Object.entries(RECIPES).filter(([,r])=>r.building===key).sort(([a],[b])=>(RECIPE_LEVELS[a]??0)-(RECIPE_LEVELS[b]??0))[0]?.[1]]).filter(([,r])=>r).map(([key,r])=>[key,Object.entries(r.output)[0]]));
  const product=firstProducts[building];return product?{[product[0]]:2*level*product[1]}:{};
 }
@@ -1365,7 +1449,7 @@ function createBaseFarm(now=Date.now()) {
  const plots=Array.from({length:STARTER_FIELDS},(_,id)=>({id,crop:null,plantedAt:0,readyAt:0,watered:false}));
  for(const id of [0,1,2])plots[id]={id,crop:'corn',plantedAt:now-CROPS.corn.duration*1.1,readyAt:now-1000,watered:false,oneCrop:true};
  [30000,60000,90000].forEach((left,i)=>{plots[3+i]={id:3+i,crop:'wheat',plantedAt:now+left-CROPS.wheat.duration,readyAt:now+left,watered:false,oneCrop:true};});
- return {version:14,progression:{mode:'guided',version:6,fields:STARTER_FIELDS},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,{level:1,job:null}]))};
+ return {version:14,progression:{mode:'guided',version:6,fields:STARTER_FIELDS},coins:STARTER_COINS,xp:0,xpCurve:XP_CURVE,keep:{...STARTER_KEEP},rookieUntil:now+ROOKIE_MS,inventory:{...Object.fromEntries(Object.keys(ITEMS).filter(k=>!worldThreeItem(k)).map(k=>[k,0])),...STARTER_ITEMS},stats:{harvested:0,planted:0,watered:0,earned:0,produced:0,upgrades:0,expansions:0,bread:0},claimed:[],plots,buildings:Object.fromEntries(Object.keys(BUILDINGS).filter(k=>!worldThreeBuilding(k)).map(k=>[k,{level:1,job:null}]))};
 }
 export function progress(plot,now=Date.now()) {
  if(!plot.crop)return 0;
@@ -1447,22 +1531,26 @@ export function workFields(state,action,ids,now=Date.now(),crop='corn'){
 }
 export function sellCrops(state,item='all',now=Date.now(),day,category,quantity) {
  if(day!==undefined&&day!==utcDay(now))throw new Error('Market prices have refreshed. Check today’s prices before selling.');
- if(category!==undefined&&!['crops','goods','village'].includes(category))throw new Error('Choose a market category.');
+ if(category!==undefined&&!['crops','goods','village','harbour'].includes(category))throw new Error('Choose a market category.');
  if(item!=='all'&&!Object.hasOwn(ITEMS,item))throw new Error('Choose a valid item.');
  // World II: village goods sell only at the Village market (category 'village'), which buys nothing else.
- const village=category==='village';
+ // World III (27 Oct 2026): harbour goods sell only at the harbour's market (category 'harbour'), which buys nothing else.
+ const village=category==='village',harbour=category==='harbour';
  if(village&&!worldTwoOpen(state))throw new Error(`Reach level ${WORLD_TWO_LEVEL} to trade in the village.`);
+ if(harbour)harbourOpen(state);
+ if(item!=='all'&&harbourGood(item)!==harbour)throw new Error(harbour?'The harbour’s market only buys harbour goods.':'Sell harbour goods at the harbour.');
  if(item!=='all'&&villageGood(item)!==village)throw new Error(village?'The Village market only buys village goods.':'Sell village goods at the Village market.');
- const keys=village?(item==='all'?Object.keys(VILLAGE_GOODS):[item]):category?(category==='crops'?[...Object.keys(CROPS),...Object.keys(HEIRLOOMS),...Object.keys(SEASON_CROPS)]:Object.keys(PRODUCTS)):item==='all'?Object.keys(ITEMS).filter(k=>!villageGood(k)):[item];   // heirlooms sell with the crops
- if(quantity!==undefined&&(item==='all'||(category!==undefined&&!village)||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
+ const keys=harbour?(item==='all'?Object.keys(HARBOUR_GOODS):[item]):village?(item==='all'?Object.keys(VILLAGE_GOODS):[item]):category?(category==='crops'?[...Object.keys(CROPS),...Object.keys(HEIRLOOMS),...Object.keys(SEASON_CROPS)]:Object.keys(PRODUCTS)):item==='all'?Object.keys(ITEMS).filter(k=>!elsewhereGood(k)):[item];   // heirlooms sell with the crops
+ if(quantity!==undefined&&(item==='all'||(category!==undefined&&!village&&!harbour)||!Number.isSafeInteger(quantity)||quantity<1||quantity>state.inventory[item]))throw new Error('Choose a valid quantity within your stock.');
  if(quantity!==undefined&&quantity>sellableStock(state,item,now))throw new Error(`Keep your first ${keptStock(state,item,now)} ${ITEMS[item].name.toLowerCase()} for now: you need them for your first steps. Sell what you grow or make on top of them; the rest is free to sell after your first 30 minutes.`);
  const amounts=Object.fromEntries(keys.map(k=>[k,quantity??sellableStock(state,k,now)]));
- const first=!village&&firstSaleDouble(state),total=(first?2:1)*marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
+ const first=!village&&!harbour&&firstSaleDouble(state),total=(first?2:1)*marketSaleValue(state,keys.reduce((v,k)=>v+amounts[k]*marketQuote(k,now).price,0),now);
  if(total===0){const kept=keys.filter(k=>keptStock(state,k,now)>0);throw new Error(kept.length?`Your starting ${kept.map(k=>ITEMS[k].name.toLowerCase()).join(' and ')} ${kept.length>1?'are':'is'} kept for your first steps. Harvest or make more to sell, or wait until your first 30 minutes are up.`:'Your basket is empty. Harvest or produce something first.');}
  const units=keys.reduce((v,k)=>v+amounts[k],0);
  for(const k of keys){state.inventory[k]-=amounts[k];state.stats['sold_'+k]=(state.stats['sold_'+k]??0)+amounts[k];}
  // Sold at the Village market: the village's own count, not the farm Market's (quests, challenges and the Items sold board).
- state.coins+=total;state.stats.earned+=total;if(village){state.stats.village_sold=(state.stats.village_sold??0)+units;state.stats.village_earned=(state.stats.village_earned??0)+total;}else state.stats.sold+=units;
+ // 27 Oct 2026: the coins too, in village_earned only (earned is the farm's: its Earn quests and the Earn coins daily).
+ state.coins+=total;if(harbour){state.stats.harbour_sold=(state.stats.harbour_sold??0)+units;state.stats.harbour_earned=(state.stats.harbour_earned??0)+total;}else if(village){state.stats.village_sold=(state.stats.village_sold??0)+units;state.stats.village_earned=(state.stats.village_earned??0)+total;}else{state.stats.earned+=total;state.stats.sold+=units;}
  return {coins:total,day:utcDay(now),...(first?{firstSale:true}:{})};
 }
 export function recipeUnlocked(state,id){const r=RECIPES[id];return !!r&&(!r.base||recipeUnlocked(state,r.base))&&buildingUnlocked(state,r.building)&&levelOf(state)>=recipeLevel(state,id)&&(r.requiresBuildings??[]).every(k=>buildingUnlocked(state,k))&&(!guidedFarm(state)||Object.keys(r.input).every(k=>k==='feed'&&state.inventory.feed>0||itemAvailable(state,k)));}
@@ -1470,7 +1558,7 @@ export function recipeUnlockHint(state,id){
  const r=RECIPES[id];if(!buildingEligible(state,r.building))return buildingUnlockHint(state,r.building);
  if(r.base&&buildingUnlocked(state,r.building)&&!recipeUnlocked(state,r.base))return `First unlock ${RECIPES[r.base].name}. ${recipeUnlockHint(state,r.base)}`;
  if(levelOf(state)<recipeLevel(state,id))return `Reach level ${recipeLevel(state,id)}.`;
- if(!buildingUnlocked(state,r.building))return `Open the ${BUILDINGS[r.building].name} in Buildings.`;
+ if(!buildingUnlocked(state,r.building))return worldThreeBuilding(r.building)?`Build the ${BUILDINGS[r.building].name}: it is one of the harbour master’s works.`:`Open the ${BUILDINGS[r.building].name} in Buildings.`;
  const crops=Object.keys(r.input).filter(k=>CROPS[k]&&!cropUnlocked(state,k));
  if(crops.length)return crops.map(k=>`${CROPS[k].name}: ${cropUnlockHint(state,k)}`).join(' ');
  const missing=(r.requiresBuildings??[]).filter(k=>!buildingUnlocked(state,k));
@@ -1517,7 +1605,9 @@ function startSingleProduction(state,id,now=Date.now(),random=secureChoreRandom)
  b.batchSequence=(b.batchSequence??0)+1;
  const chance=beyondMaxBuilding(r.building)?doubleBatchChance(b.level):0,double=chance>0&&random()<chance;
  const job={id:`${r.building}-${b.batchSequence}`,recipe:id,startedAt:now,readyAt:now+duration,output:double?scaled(r.output,2):{...r.output},xp:r.xp,...(double?{double:true}:{})};
- if(productionJobs(b).some(j=>j.readyAt>now))state.stats.parallel_batches=(state.stats.parallel_batches??0)+1;
+ // Side by side counts on the farm only (28 Oct 2026, review): its quests and the farm leagues' events ask it; the village's and the
+ // harbour's places keep to themselves.
+ if(productionJobs(b).some(j=>j.readyAt>now)&&!otherWorldBuilding(r.building))state.stats.parallel_batches=(state.stats.parallel_batches??0)+1;
  if(!b.job)b.job=job;else (b.extraJobs??=[]).push(job);
  return {building:r.building,recipe:id,jobId:job.id,readyAt:job.readyAt,...(double?{double:true}:{})};
 }
@@ -1530,7 +1620,10 @@ export function collectProduction(state,building,now=Date.now(),jobId){
  for(const [k,n]of Object.entries(output)){state.inventory[k]+=n;state.stats['made_'+k]=(state.stats['made_'+k]??0)+n;}
  // A batch counts where it was made (30 Sep 2026): the village's places in the village's own count, so the farm's quests, challenges
  // and leaderboards stay the farm's; the goods themselves are in made_* either way (the village's own boards read those).
- if(worldTwoBuilding(building))state.stats.village_batches=(state.stats.village_batches??0)+1;else state.stats.produced++;
+ // Also a batch of World II goods made in a farm building (27 Oct 2026: packed lunches, golden loaves, heirloom pies and their Factory
+ // runs): the farm's produced (its Family Chest points, quests, challenges and events) counts only the farm's own goods.
+ if(worldThreeBuilding(building))state.stats.harbour_batches=(state.stats.harbour_batches??0)+1;
+ else if(worldTwoBuilding(building)||Object.keys(output).some(otherWorldItem))state.stats.village_batches=(state.stats.village_batches??0)+1;else state.stats.produced++;
  state.stats.bread+=output.bread??0;state.xp+=xp;
  const remaining=jobs.filter(j=>j!==job);b.job=remaining.shift()??null;b.extraJobs=remaining;
  if(building==='windmill')state.stats.windmill_batches=(state.stats.windmill_batches??0)+1;
@@ -1556,7 +1649,7 @@ export function collectAllProduction(state,building,now=Date.now()){
 export const BUILDER_CRATE_COINS=8000;
 // How many crates this upgrade may take now: 0 below level 100 and wherever crates do not count, so the card shows no crate option.
 export function builderCrates(state,building){
- if(!worldTwoOpen(state)||!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production'||building==='factory'||worldTwoBuilding(building)||(state.buildings[building]?.level??1)>=MAX_BUILDING_LEVEL)return 0;
+ if(!worldTwoOpen(state)||!Object.hasOwn(BUILDINGS,building)||BUILDINGS[building].type!=='production'||building==='factory'||otherWorldBuilding(building)||(state.buildings[building]?.level??1)>=MAX_BUILDING_LEVEL)return 0;
  const cost=upgradeCost(state,building);return cost?Math.min(state.inventory.builderscrate??0,Math.floor(cost/2/BUILDER_CRATE_COINS)):0;
 }
 export function upgradeBuilding(state,building,currency='coins',expectedCost,expectedLevel,crates){
@@ -1577,7 +1670,9 @@ export function upgradeBuilding(state,building,currency='coins',expectedCost,exp
  if(missing.length)throw new Error(`Make the goods first: ${missing.map(([key,n])=>`${n} ${ITEMS[key].name}`).join(', ')}.`);
  state[currency]-=pay;if(estate)for(const [key,n] of Object.entries(estate.materials))state.inventory[key]-=n;
  if(used){state.inventory.builderscrate-=used;state.stats.builder_crates_used=(state.stats.builder_crates_used??0)+used;}
- b.level++;state.stats.upgrades++;state.xp+=15;
+ // A village place's upgrade in the village's own count too (27 Oct 2026), and still in upgrades (28 Oct 2026, review): the village
+ // leagues' events ask upgrades, as live. A harbour place's only in the harbour's own count; its leagues ask harbour_upgrades.
+ b.level++;if(worldThreeBuilding(building))state.stats.harbour_upgrades=(state.stats.harbour_upgrades??0)+1;else{if(worldTwoBuilding(building))state.stats.village_upgrades=(state.stats.village_upgrades??0)+1;state.stats.upgrades++;}state.xp+=15;
  // Past level 10 (World II): counted per building, so a level can never come back from an old save (normalizeFarm), and for the
  // World II leaderboard.
  if(b.level>MAX_BUILDING_LEVEL){b.beyond=b.level-MAX_BUILDING_LEVEL;state.stats.beyond_upgrades=(state.stats.beyond_upgrades??0)+1;}
@@ -1817,9 +1912,10 @@ export function boostStatus(state,id,now=Date.now(),length='30m'){
  const remaining=Math.max(0,(until??0)-now);
  let reason='';
  if(id==='upgrade'&&state.boosts?.upgradeCredits>0)reason='Voucher ready';
- if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
+ // The farm's power-ups stay out of the harbour (28 Oct 2026): its places neither keep 'All buildings at maximum level' away nor get finished.
+ if(id==='upgrade'&&!Object.entries(state.buildings).some(([key,b])=>BUILDINGS[key].type==='production'&&!worldThreeBuilding(key)&&b.level<MAX_BUILDING_LEVEL))reason='All buildings at maximum level';
  if(id==='crops'&&!state.plots.some(p=>p.crop&&p.readyAt>now))reason='No crops are growing';
- if(id==='production'&&!Object.entries(state.buildings).some(([key,b])=>key!=='factory'&&productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
+ if(id==='production'&&!Object.entries(state.buildings).some(([key,b])=>key!=='factory'&&!worldThreeBuilding(key)&&productionJobs(b).some(j=>j.readyAt>now)))reason='No batches are running';
  return {...boost,...offer,remaining,reason,canBuy:!reason&&state.diamonds>=offer.cost};
 }
 export function buyBoost(state,id,now=Date.now(),length='30m'){
@@ -1831,7 +1927,7 @@ export function buyBoost(state,id,now=Date.now(),length='30m'){
  if(id==='upgrade')state.boosts.upgradeCredits=1;
  let affected=0;
  if(id==='crops')for(const p of state.plots)if(p.crop&&p.readyAt>now){p.readyAt=now;affected++;}
- if(id==='production')for(const [key,b] of Object.entries(state.buildings))if(key!=='factory')for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
+ if(id==='production')for(const [key,b] of Object.entries(state.buildings))if(key!=='factory'&&!worldThreeBuilding(key))for(const job of productionJobs(b))if(job.readyAt>now){job.readyAt=now;affected++;}
  spendDiamonds(state,status.cost);
  state.stats.boosts_used=(state.stats.boosts_used??0)+1;
  return {boost:id,length:status.length,cost:status.cost,affected,expiresAt:key?state.boosts[key]:null};
@@ -2606,13 +2702,13 @@ export function villageDeliver(state,board,request,input,now=Date.now()){
  if(missing.length)throw new Error('Missing: '+missing.map(([k,n])=>`${ITEMS[k].name} (${state.inventory[k]??0}/${n})`).join(', ')+'.');
  let units=0;for(const [k,n] of Object.entries(r.input)){state.inventory[k]-=n;units+=n;}
  // At the Village market, so in its own counts (its quests too), never in the farm Market's sold and sold_* counts.
- state.coins+=r.coins;state.xp+=r.xp;state.stats.earned+=r.coins;
+ state.coins+=r.coins;state.xp+=r.xp;   // the coins count in village_earned only (27 Oct 2026), not the farm's earned
  state.stats.village_requests=(state.stats.village_requests??0)+1;state.stats.village_sold=(state.stats.village_sold??0)+units;state.stats.village_earned=(state.stats.village_earned??0)+r.coins;
  b.request=null;b.readyAt=now+VILLAGE_REQUEST_WAIT;
  // The market week (from level 116): the 15th villager of the week opens the crate in this same Help.
  let crate=0;
  if(levelOf(state)>=VILLAGE_WEEK_LEVEL){const wk=familyWeek(now),w=state.village.week;if(w.week!==wk)Object.assign(w,{week:wk,helped:0,paid:false});w.helped++;
-  if(!w.paid&&w.helped>=VILLAGE_WEEK_TARGET){w.paid=true;crate=VILLAGE_CRATE_DIAMONDS;state.diamonds+=crate;state.stats.market_crates=(state.stats.market_crates??0)+1;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+crate;}}
+  if(!w.paid&&w.helped>=VILLAGE_WEEK_TARGET){w.paid=true;crate=VILLAGE_CRATE_DIAMONDS;state.diamonds+=crate;state.stats.market_crates=(state.stats.market_crates??0)+1;state.stats.village_diamonds_earned=(state.stats.village_diamonds_earned??0)+crate;}}   // the village's count, like the miller's (28 Oct 2026)
  return {coins:r.coins,xp:r.xp,villager:VILLAGERS[r.villager].name,readyAt:b.readyAt,crate};
 }
 // "Not now": the goods the farmer was shown are checked too when the game sends them.
@@ -2640,8 +2736,8 @@ export function millerDeliver(state,week,now=Date.now()){
  for(const [k,n] of Object.entries(MILLER_ORDER))state.inventory[k]-=n;
  const value=millerValue(),coins=value*MILLER_PREMIUM,xp=Math.round(value/VILLAGE_XP_SHARE);
  state.coins+=coins;state.xp+=xp;state.diamonds+=MILLER_DIAMONDS;state.village.miller={week};
- state.stats.earned+=coins;state.stats.village_earned=(state.stats.village_earned??0)+coins;
- state.stats.miller_orders=(state.stats.miller_orders??0)+1;state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+MILLER_DIAMONDS;
+ state.stats.village_earned=(state.stats.village_earned??0)+coins;   // the village's count only (27 Oct 2026)
+ state.stats.miller_orders=(state.stats.miller_orders??0)+1;state.stats.village_diamonds_earned=(state.stats.village_diamonds_earned??0)+MILLER_DIAMONDS;
  return {coins,xp,diamonds:MILLER_DIAMONDS};
 }
 // The golden brief that is open now: the first village place not built yet, in VILLAGE_BRIEFS' order, or null when all are. There is no
@@ -2737,9 +2833,9 @@ export function boatLoad(state,cargo,input,item,now=Date.now()){
  // first BOAT_DIAMOND_TRIPS boats (10 Oct 2026, the main session's choice F2): the coins and XP on every one.
  const boat=state.village.boat,week=familyWeek(now);if(boat.week!==week)Object.assign(boat,{week,paid:0});
  const diamonds=boat.paid<BOAT_DIAMOND_TRIPS?c.diamonds:0;if(diamonds)boat.paid++;
- state.coins+=c.coins;state.xp+=c.xp;state.diamonds+=diamonds;state.stats.earned+=c.coins;
+ state.coins+=c.coins;state.xp+=c.xp;state.diamonds+=diamonds;state.stats.village_earned=(state.stats.village_earned??0)+c.coins;   // the village's, not the farm's earned (27 Oct 2026)
  state.stats.boat_trips=(state.stats.boat_trips??0)+1;state.stats.boat_coins=(state.stats.boat_coins??0)+c.coins;
- if(diamonds)state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ if(diamonds)state.stats.village_diamonds_earned=(state.stats.village_diamonds_earned??0)+diamonds;   // the village's count (27 Oct 2026)
  boat.trips++;boat.cargo=null;boat.readyAt=now+boatReturn(state);
  return {loaded,units,sailed:true,coins:c.coins,xp:c.xp,diamonds,readyAt:boat.readyAt};
 }
@@ -2821,8 +2917,334 @@ export function landmarkFinish(state,id){
  const diamonds=id==='greathall'?GREAT_HALL_DIAMONDS:0;
  state.coins-=l.coins;state.village.landmarks.done.push(id);state.village.landmarks.given={};
  state.xp+=VILLAGE_LANDMARK_XP;state.diamonds+=diamonds;
- state.stats.village_landmarks=(state.stats.village_landmarks??0)+1;if(diamonds)state.stats.diamonds_earned=(state.stats.diamonds_earned??0)+diamonds;
+ state.stats.village_landmarks=(state.stats.village_landmarks??0)+1;if(diamonds)state.stats.village_diamonds_earned=(state.stats.village_diamonds_earned??0)+diamonds;   // the village's count (28 Oct 2026)
  return {landmark:id,name:l.name,coins:l.coins,xp:VILLAGE_LANDMARK_XP,diamonds};
+}
+// World III, The Harbour (levels 200-300; 27 Oct 2026, the owner: "begin alvast met bouwen van v1", the plan in
+// ~/Harvest Tycoon/plan-wereld-3, choices "1a 2b 3 ook nieuwe goederen 4a-12a"). It opens at level 200 once the village's Great Hall stands
+// (choice 2b). Ships at the quays ask for four kinds of goods (at least one from the farm and one from the village; from level 216 at most
+// one harbour good), loaded bit by bit, and pay twice their worth (2.1 and 2.2 times with the portal cranes) and a 50th in XP when they
+// sail; the next ship docks 12 hours later (8 with the Tugboat). The harbour master's works open the harbour one at a time: hand in the
+// goods bit by bit, then pay the coins (5,000 XP each). The harbour's places (Ropewalk, Cooperage, Galley, Harbour forge) are four of
+// them. Everything counts in the harbour's own numbers, never the farm's (otherWorldAction, harbour_* stats).
+export const WORLD_THREE_LEVEL=200,WORLD_THREE_TOP=300;
+// Once the harbour is open (level 200 and the Great Hall) a save holds the harbour's goods and places (normalizeFarm); before that it
+// keeps the live shape, so a level-200 farm without the Hall loads the same in old code (28 Oct 2026).
+export const harbourEra=state=>levelOf(state)>=WORLD_THREE_LEVEL&&landmarkDone(state,'greathall')||Object.keys(HARBOUR_GOODS).some(k=>Object.hasOwn(state.inventory??{},k));
+// The harbour's goods and places join the save the moment the harbour opens, also in the middle of an action (the level-up to 200 or the
+// Great Hall's last part), so no screen reads a place that is not there yet (28 Oct 2026).
+export const addHarbourKeys=state=>{if(!harbourEra(state))return;for(const k of Object.keys(ITEMS))if(worldThreeItem(k))state.inventory[k]??=0;for(const k of Object.keys(BUILDINGS))if(worldThreeBuilding(k))state.buildings[k]??={level:1,job:null,built:false};};
+export const worldThreeOpen=state=>levelOf(state)>=WORLD_THREE_LEVEL&&landmarkDone(state,'greathall');
+const harbourOpen=state=>{if(levelOf(state)<WORLD_THREE_LEVEL)throw new Error(`Reach level ${WORLD_THREE_LEVEL} to sail to the harbour.`);if(!landmarkDone(state,'greathall'))throw new Error('Finish the village’s Great Hall to sail to the harbour.');if(!state.harbour)normalizeHarbour(state);};   // reached level 200 since the save was loaded
+export const SHIP_PREMIUM=2,SHIP_XP_SHARE=50,SHIP_RETURN=12*3600000,SHIP_TUG_RETURN=8*3600000,SHIP_LINE_MAX=400,SHIP_SWAP_LEVEL=226;
+export const SHIP_GONE='This ship’s order has changed. Look at the quay again.';
+export const HARBOUR_WORK_XP=5000,HARBOUR_SEAL_MS=3600000,HARBOUR_SEAL_ROPE=2;
+export const HARBOUR_WEEK=Object.freeze({level:206,target:6,diamonds:15,yardDiamonds:25});
+export const CONTAINER_SHIP=Object.freeze({level:270,every:48*3600000,size:3,kinds:6,premium:2.2,diamonds:10});
+export const WORLD_VOYAGE=Object.freeze({level:300,every:7*24*3600000,size:5,premium:2.5,diamonds:25});
+export const CARGO_SHED_ROOM=1000;
+export const shipValue=level=>Math.min(500000,200000+3000*Math.max(0,level-WORLD_THREE_LEVEL));
+// The harbour works (plan 15.2): one at a time in this order; a place's work builds that place.
+export const HARBOUR_WORKS=Object.freeze([
+ {id:'office',name:'Harbour office & Quay 1',art:'harbour-badge',level:200,coins:5e6,goods:{plank:300,stone:600,ironbar:40},effect:'Ship orders open, with one quay.'},
+ {id:'ropewalk',name:'Ropewalk',art:'rope',level:204,coins:4e6,goods:{plank:200,stone:300},effect:'Twist rope from flax and linen.'},
+ {id:'cooperage',name:'Cooperage',art:'barrel',level:210,coins:5e6,goods:{plank:300,ironbar:40},effect:'Make barrels from planks and iron.'},
+ {id:'quay2',name:'Second quay',art:'harbour-badge',level:212,coins:7e6,goods:{plank:600,stone:900,rope:40},effect:'Two ships at a time.'},
+ {id:'galley',name:'Galley',art:'shipsbiscuits',level:216,coins:6e6,goods:{plank:200,rooftile:100,barrel:40},effect:'Bake ship’s biscuits and pack provisions.'},
+ {id:'tugboat',name:'Tugboat',art:'harbour-badge',level:220,coins:8e6,goods:{plank:400,rope:60,silverbar:30},effect:'A new ship docks after 8 hours instead of 12.'},
+ {id:'chandlery',name:'Chandlery',art:'chandlery',level:228,coins:7e6,goods:{plank:400,rooftile:150,rope:60},effect:'Make ship’s lanterns and ship’s tar.'},
+ {id:'crane1',name:'Portal crane',art:'harbour-badge',level:232,coins:10e6,goods:{ironbar:200,rope:100,stone:600},effect:'Ships pay 2.1 times instead of 2.'},
+ {id:'cannery',name:'Cannery',art:'cannery',level:236,coins:8e6,goods:{plank:500,ironbar:120,barrel:40},effect:'Tin stew and fruit for long voyages.'},
+ {id:'cargoshed',name:'Cargo shed',art:'harbour-crate',level:238,coins:10e6,goods:{plank:800,rooftile:400,barrel:100},effect:'1,000 more room in your Warehouse.'},
+ {id:'harbourforge',name:'Harbour forge',art:'anchor',level:240,coins:8e6,goods:{stone:400,ironbar:100,rope:40},effect:'Forge anchors and anchor chains.'},
+ {id:'quay3',name:'Third quay',art:'harbour-badge',level:245,coins:12e6,goods:{plank:1000,stone:1500,rope:100},effect:'Three ships at a time.'},
+ {id:'tradinghouse',name:'Trading house',art:'tradinghouse',level:248,coins:10e6,goods:{plank:600,rooftile:200,silverbar:30},effect:'Pack spice crates and perfume crates.'},
+ {id:'rail',name:'Rail siding',art:'harbour-badge',level:252,coins:12e6,goods:{ironbar:300,plank:600,stone:1000,barrel:50},effect:'Load ships from the farm and the village too.'},
+ {id:'paintshop',name:'Paint shop',art:'paintshop',level:254,coins:9e6,goods:{plank:500,stone:400,barrel:60},effect:'Mix ship paint and carve figureheads.'},
+ {id:'crane2',name:'Second portal crane',art:'harbour-badge',level:258,coins:14e6,goods:{ironbar:300,silverbar:60,rope:150},effect:'Ships pay 2.2 times.'},
+ {id:'yard',name:'Container yard',art:'harbour-crate',level:264,coins:15e6,goods:{plank:800,stone:1500,rooftile:300,builderscrate:20},effect:'The harbour crate holds 25 diamonds.'},
+ {id:'instruments',name:'Instrument maker',art:'instruments',level:266,coins:12e6,goods:{ironbar:200,silverbar:40,rope:100},effect:'Make compasses and ship’s bells.'},
+ {id:'deepquay',name:'Deep quay & quay crane',art:'harbour-badge',level:270,coins:20e6,goods:{stone:2000,anchor:20,anchorchain:20},effect:'A container ship every 2 days.'},
+ {id:'boatyard',name:'Boatyard',art:'boatyard',level:276,coins:14e6,goods:{plank:1000,rope:150,shippaint:20},effect:'Carve oars and build rowboats.'},
+ {id:'shipyard',name:'Shipyard',art:'harbour-badge',level:280,coins:15e6,goods:{plank:1200,rooftile:600,provisions:40},effect:'Work on your own flagship starts.'},
+ {id:'hull',name:'Flagship: hull',art:'anchorchain',level:285,coins:15e6,goods:{plank:2000,ironbar:400},effect:'The flagship’s hull.'},
+ {id:'engine',name:'Flagship: engine',art:'anchorchain',level:290,coins:15e6,goods:{ironbar:600,silverbar:100,anchorchain:20},effect:'The flagship’s engine.'},
+ {id:'sails',name:'Flagship: deck & sails',art:'sailcloth',level:295,coins:15e6,goods:{sailcloth:120,rope:200,plank:800},effect:'The flagship’s deck and sails.'},
+ {id:'launch',name:'Flagship: launch',art:'provisions',level:WORLD_THREE_TOP,coins:20e6,goods:{provisions:100,saffronbun:200,goldenloaf:50},effect:'Name your flagship: 300 diamonds once, and a world voyage every week.'}
+].map(w=>Object.freeze({...w,goods:Object.freeze(w.goods)})));
+export const FLAGSHIP_DIAMONDS=300;
+export const harbourWorkDone=(state,id)=>state.harbour?.works?.done?.includes(id)===true;
+export const shipPremium=state=>harbourWorkDone(state,'crane2')?2.2:harbourWorkDone(state,'crane1')?2.1:SHIP_PREMIUM;
+export const shipQuays=state=>harbourWorkDone(state,'office')?1+(harbourWorkDone(state,'quay2')?1:0)+(harbourWorkDone(state,'quay3')?1:0):0;
+export const shipReturn=state=>harbourWorkDone(state,'tugboat')?SHIP_TUG_RETURN:SHIP_RETURN;
+// The berths at the harbour (28 Oct 2026, review: the Deep quay's container ship and the flagship's world voyage were promised but not
+// there): the quays' ships first, then from the Deep quay a container ship (CONTAINER_SHIP: every 2 days, three ships' worth, six kinds,
+// 2.2 times and 10 diamonds), then from the launch the flagship's world voyage (WORLD_VOYAGE: every week, five ships' worth, 2.5 times and
+// 25 diamonds). The works go in order, so a berth never changes its place in the list. Loaded, skipped and swapped as a ship.
+export const harbourBerths=state=>[...Array(shipQuays(state)).fill('ship'),...(harbourWorkDone(state,'deepquay')?['container']:[]),...(harbourWorkDone(state,'launch')?['voyage']:[])];
+const BERTH=Object.freeze({container:CONTAINER_SHIP,voyage:WORLD_VOYAGE});
+export const berthReturn=(state,kind)=>BERTH[kind]?.every??shipReturn(state);
+// What a ship may ask: the farm's dearer goods (as the Trade Depot's), the village's goods (as the villagers'), and from level 216 the
+// harbour's own, each only once the farm can make it.
+const SHIP_FARM=()=>Object.keys(PRODUCTS).filter(k=>ITEMS[k].sell>=400&&!otherWorldItem(k)&&!['prizeproduce'].includes(k));
+const SHIP_VILLAGE=()=>Object.keys(VILLAGE_GOODS).filter(k=>!VILLAGE_NEVER_ASKED.includes(k));
+const SHIP_HARBOUR_FROM=216;
+function shipOrder(state,serial,kind='ship'){
+ const big=BERTH[kind],roll=n=>mixBits(calendarHash(`ship-v1:${serial}:${n}`)),target=shipValue(levelOf(state))*(big?.size??1),kinds=big?.kinds??(kind==='voyage'?6:4);
+ const farm=SHIP_FARM().filter(k=>itemAvailable(state,k)),village=SHIP_VILLAGE().filter(k=>itemAvailable(state,k));
+ const harbour=levelOf(state)>=SHIP_HARBOUR_FROM?Object.keys(HARBOUR_GOODS).filter(k=>itemAvailable(state,k)):[];
+ if(!farm.length||!village.length)return null;
+ const pick=(list,n)=>list.splice(roll(n)%list.length,1)[0],keys=[pick(farm,0),pick(village,1)];
+ const rest=[...farm,...village];if(harbour.length&&roll(2)%2)keys.push(pick(harbour,3));
+ while(keys.length<kinds&&rest.length)keys.push(pick(rest,4+keys.length));
+ const input={};for(const k of keys)input[k]=Math.max(1,Math.min(SHIP_LINE_MAX,Math.round(target/keys.length/ITEMS[k].sell)));
+ const value=Object.entries(input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0),premium=big?.premium??shipPremium(state);
+ return {id:serial,input,loaded:Object.fromEntries(keys.map(k=>[k,0])),value,premium,coins:Math.ceil(value*premium/100)*100,xp:Math.round(value/SHIP_XP_SHARE),swapped:false,...(big?{kind,diamonds:big.diamonds}:{})};
+}
+function refreshHarbour(state,now){
+ if(!worldThreeOpen(state))return;
+ const h=state.harbour,berths=harbourBerths(state);while(h.quays.length<berths.length)h.quays.push({ship:null,readyAt:0});
+ h.quays.forEach((q,i)=>{if(!q.ship&&now>=q.readyAt){const ship=shipOrder(state,h.serial+1,berths[i]);if(ship){h.serial++;q.ship=ship;}}});
+}
+export const harbourShipGoods=ship=>Object.fromEntries(Object.keys(ship.input).map(k=>[k,ship.input[k]]));
+// One Load all would send it: what is not loaded yet is all in stock.
+export function shipReady(state,quay){const s=state.harbour?.quays?.[quay]?.ship;return Boolean(s)&&Object.entries(s.input).every(([k,n])=>s.loaded[k]+(state.inventory[k]??0)>=n);}
+function shipOf(state,quay,ship,input,shown=true){
+ harbourOpen(state);
+ const q=Number.isInteger(quay)?state.harbour.quays[quay]:undefined;if(!q)throw new Error('Choose a quay.');
+ const s=q.ship;if(!s||s.id!==ship||shown&&!sameGoods(input,s.input))throw new Error(SHIP_GONE);
+ return {q,s};
+}
+// Loads one kind of goods (item) or everything the ship still needs (no item), as far as the barn has it; a full ship sails at once.
+export function shipLoad(state,quay,ship,input,item,now=Date.now()){
+ const {q,s}=shipOf(state,quay,ship,input);
+ if(item!==undefined&&(typeof item!=='string'||!Object.hasOwn(s.input,item)))throw new Error('This ship does not take that.');
+ const loaded={};
+ for(const key of item===undefined?Object.keys(s.input):[item]){const n=Math.min(state.inventory[key]??0,s.input[key]-s.loaded[key]);if(n>0){state.inventory[key]-=n;s.loaded[key]+=n;loaded[key]=n;}}
+ const units=Object.values(loaded).reduce((sum,n)=>sum+n,0);
+ if(!units)throw new Error(item===undefined?'You have none of the goods this ship still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to load.`);
+ state.stats.ship_loads=(state.stats.ship_loads??0)+1;state.stats.ship_loaded=(state.stats.ship_loaded??0)+units;
+ if(Object.keys(s.input).some(k=>s.loaded[k]<s.input[k]))return {loaded,units,sailed:false};
+ // Sails: the harbour's own counts, never the farm's earned, sold or deliveries. The harbour week: the crate opens with the sixth ship.
+ state.coins+=s.coins;state.xp+=s.xp;state.stats.harbour_earned=(state.stats.harbour_earned??0)+s.coins;state.stats.ships_sent=(state.stats.ships_sent??0)+1;
+ const h=state.harbour,week=familyWeek(now);if(h.week.week!==week)h.week={week,sent:0,paid:false};
+ let crate=0;
+ if(levelOf(state)>=HARBOUR_WEEK.level){h.week.sent++;if(!h.week.paid&&h.week.sent>=HARBOUR_WEEK.target){h.week.paid=true;crate=harbourWorkDone(state,'yard')?HARBOUR_WEEK.yardDiamonds:HARBOUR_WEEK.diamonds;state.diamonds+=crate;state.stats.harbour_weeks=(state.stats.harbour_weeks??0)+1;state.stats.harbour_diamonds_earned=(state.stats.harbour_diamonds_earned??0)+crate;}}
+ let diamonds=0;
+ if(s.kind==='container'||s.kind==='voyage'){diamonds=s.diamonds??0;state.diamonds+=diamonds;state.stats.harbour_diamonds_earned=(state.stats.harbour_diamonds_earned??0)+diamonds;const stat=s.kind==='container'?'container_ships':'world_voyages';state.stats[stat]=(state.stats[stat]??0)+1;}
+ q.ship=null;q.readyAt=now+berthReturn(state,s.kind);
+ return {loaded,units,sailed:true,coins:s.coins,xp:s.xp,crate,diamonds,kind:s.kind??'ship',readyAt:q.readyAt};
+}
+// "Not now": only while nothing is loaded; the next ship docks after the same wait.
+export function shipSkip(state,quay,ship,input,now=Date.now()){
+ const {q,s}=shipOf(state,quay,ship,input,input!==undefined);
+ if(Object.values(s.loaded).some(n=>n>0))throw new Error('Goods are already on board. Finish loading this ship.');
+ q.ship=null;q.readyAt=now+berthReturn(state,s.kind);
+ return {readyAt:q.readyAt};
+}
+// "Ask for something else" (from level 226): once a ship, one line nothing is loaded of becomes another good of the same world, worth
+// the same share. It follows from the ship's number, so the game and the server swap to the same good.
+export function shipSwap(state,quay,ship,input,item){
+ const {s}=shipOf(state,quay,ship,input);
+ if(levelOf(state)<SHIP_SWAP_LEVEL)throw new Error(`Reach level ${SHIP_SWAP_LEVEL} to ask for something else.`);
+ if(s.swapped)throw new Error('This ship has already changed one line.');
+ if(typeof item!=='string'||!Object.hasOwn(s.input,item))throw new Error('Choose a line of this ship.');
+ if(s.loaded[item]>0)throw new Error('Something of that line is already on board.');
+ const world=harbourGood(item)?3:worldTwoItem(item)?2:1;
+ const pool=(world===3?Object.keys(HARBOUR_GOODS):world===2?SHIP_VILLAGE():SHIP_FARM()).filter(k=>!Object.hasOwn(s.input,k)&&itemAvailable(state,k));
+ if(!pool.length)throw new Error('There is nothing else of that kind to ask for yet.');
+ const next=pool[mixBits(calendarHash(`ship-swap-v1:${s.id}`))%pool.length],worth=s.input[item]*ITEMS[item].sell;
+ const count=Math.max(1,Math.min(SHIP_LINE_MAX,Math.round(worth/ITEMS[next].sell)));
+ const order=Object.keys(s.input);s.input=Object.fromEntries(order.map(k=>k===item?[next,count]:[k,s.input[k]]));s.loaded=Object.fromEntries(order.map(k=>k===item?[next,0]:[k,s.loaded[k]]));
+ s.value=Object.entries(s.input).reduce((sum,[k,n])=>sum+ITEMS[k].sell*n,0);s.coins=Math.ceil(s.value*s.premium/100)*100;s.xp=Math.round(s.value/SHIP_XP_SHARE);s.swapped=true;
+ return {item:next,count};
+}
+// The work the harbour master hands out now (null below level 200, before the Great Hall or once all are done). missing: the goods still
+// to hand in; ready: its level reached, everything in and the coins there.
+export function harbourWork(state){
+ if(!worldThreeOpen(state))return null;
+ const w=HARBOUR_WORKS.find(x=>!harbourWorkDone(state,x.id));if(!w)return null;
+ const given=state.harbour?.works?.given??{},open=levelOf(state)>=w.level;
+ const missing=Object.fromEntries(Object.entries(w.goods).filter(([k,n])=>(given[k]??0)<n).map(([k,n])=>[k,n-(given[k]??0)]));
+ return {...w,given:{...given},open,missing,short:Math.max(0,w.coins-state.coins),ready:open&&!Object.keys(missing).length&&state.coins>=w.coins};
+}
+function harbourStep(state,id){
+ harbourOpen(state);
+ const w=HARBOUR_WORKS.find(x=>x.id===id);if(!w)throw new Error('Choose a harbour work.');
+ if(harbourWorkDone(state,id))throw new Error(`The ${w.name} is already built.`);
+ const next=harbourWork(state);if(next.id!==id)throw new Error(`Build the ${next.name} first: one work at a time.`);
+ if(!next.open)throw new Error(`Reach level ${w.level} to build the ${w.name}.`);
+ return {w,given:state.harbour.works.given};
+}
+export function harbourGive(state,id,item){
+ const {w,given}=harbourStep(state,id);
+ if(item!==undefined&&(typeof item!=='string'||!Object.hasOwn(w.goods,item)))throw new Error(`The ${w.name} does not need that.`);
+ const handed={};
+ for(const key of item===undefined?Object.keys(w.goods):[item]){const n=Math.min(state.inventory[key]??0,w.goods[key]-(given[key]??0));if(n>0){state.inventory[key]-=n;given[key]=(given[key]??0)+n;handed[key]=n;}}
+ const units=Object.values(handed).reduce((sum,n)=>sum+n,0);
+ if(!units)throw new Error(item===undefined?'You have none of the goods this work still needs.':`You have no ${ITEMS[item].name.toLowerCase()} to give.`);
+ return {handed,units,ready:Object.entries(w.goods).every(([k,n])=>(given[k]??0)>=n)};
+}
+export function harbourFinish(state,id,now=Date.now()){
+ const {w,given}=harbourStep(state,id);
+ if(Object.entries(w.goods).some(([k,n])=>(given[k]??0)<n))throw new Error('Hand in all the goods first.');
+ if(state.coins<w.coins)throw new Error(`You need ${w.coins.toLocaleString('en-US')} coins to finish it.`);
+ state.coins-=w.coins;state.harbour.works.done.push(id);state.harbour.works.given={};state.xp+=HARBOUR_WORK_XP;
+ state.stats.harbour_works=(state.stats.harbour_works??0)+1;
+ if(Object.hasOwn(BUILDINGS,id)&&worldThreeBuilding(id)){state.buildings[id].built=true;state.stats['built_'+id]=1;}
+ const diamonds=id==='launch'?FLAGSHIP_DIAMONDS:0;if(diamonds){state.diamonds+=diamonds;state.stats.harbour_diamonds_earned=(state.stats.harbour_diamonds_earned??0)+diamonds;}
+ refreshHarbour(state,now);
+ return {work:id,name:w.name,coins:w.coins,xp:HARBOUR_WORK_XP,diamonds};
+}
+// The harbour warehouse (27 Oct 2026, the owner: "een extra warehouse waar je meer goederen kwijt kan vanaf lvl 200 ... en crops"): built
+// from level 200 once the harbour is open, then upgraded up to level 10. Each level adds room to the one Warehouse, for crops and goods
+// alike: level 1 1,000 places, then 500 more a level, 5,500 at level 10. coins and goods: what that level costs.
+export const HARBOUR_WAREHOUSE=Object.freeze([
+ {room:1000,coins:3e6,goods:{plank:300,stone:300}},{room:1500,coins:2e6,goods:{plank:300,stone:400}},
+ {room:2000,coins:2.5e6,goods:{plank:400,stone:500}},{room:2500,coins:3e6,goods:{plank:500,rooftile:100}},
+ {room:3000,coins:3.5e6,goods:{plank:600,rooftile:150}},{room:3500,coins:4e6,goods:{plank:700,rooftile:200,barrel:20}},
+ {room:4000,coins:5e6,goods:{plank:800,rooftile:250,barrel:40}},{room:4500,coins:6e6,goods:{plank:900,rooftile:300,barrel:60}},
+ {room:5000,coins:7e6,goods:{plank:1000,rooftile:350,barrel:80}},{room:5500,coins:8e6,goods:{plank:1200,rooftile:400,barrel:100}}
+].map(step=>Object.freeze({...step,goods:Object.freeze(step.goods)})));
+export const harbourWarehouseLevel=state=>Math.max(0,Math.min(HARBOUR_WAREHOUSE.length,Number(state.harbour?.warehouse)||0));
+export const harbourWarehouseRoom=state=>{const n=harbourWarehouseLevel(state);return n?HARBOUR_WAREHOUSE[n-1].room:0;};
+// The next level: {level, room (in all at that level), added, coins, goods}, or null at the top.
+export function harbourWarehouseNext(state){
+ const n=harbourWarehouseLevel(state);if(n>=HARBOUR_WAREHOUSE.length)return null;
+ const step=HARBOUR_WAREHOUSE[n];return {level:n+1,room:step.room,added:step.room-(n?HARBOUR_WAREHOUSE[n-1].room:0),coins:step.coins,goods:step.goods};
+}
+export function upgradeHarbourWarehouse(state,expectedCost){
+ harbourOpen(state);
+ const next=harbourWarehouseNext(state);if(!next)throw new Error('Your harbour warehouse is fully upgraded.');
+ if(expectedCost!==undefined&&expectedCost!==next.coins)throw new Error('The price has changed. Look at the upgrade again.');
+ if(state.coins<next.coins)throw new Error(`You need ${next.coins} coins for this.`);
+ const missing=Object.entries(next.goods).filter(([k,n])=>(state.inventory[k]??0)<n);
+ if(missing.length)throw new Error(`Bring the goods first: ${missing.map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')}.`);
+ state.coins-=next.coins;for(const [k,n] of Object.entries(next.goods))state.inventory[k]-=n;
+ state.harbour.warehouse=next.level;state.stats.harbour_warehouse=next.level;state.xp+=WAREHOUSE_XP;   // its own count: harbour_upgrades is the places' (28 Oct 2026)
+ return {level:next.level,room:next.room,capacity:warehouseCapacity(state),cost:next.coins};
+}
+// The flagship's name (28 Oct 2026): given once the launch is done, changed whenever the farmer likes; 2 to 24 letters, digits, spaces,
+// apostrophes and dashes. The world voyage's card and the farmer's harbour show it.
+export const flagshipName=value=>{const name=typeof value==='string'?value.trim().replace(/\s+/g,' '):'';return name.length>=2&&name.length<=24&&/^[\p{L}\p{N}' -]+$/u.test(name)?name:null;};
+export function nameFlagship(state,name){
+ harbourOpen(state);
+ if(!harbourWorkDone(state,'launch'))throw new Error('Launch your flagship first.');
+ const clean=flagshipName(name);if(!clean)throw new Error('Choose a name of 2 to 24 letters.');
+ state.harbour.flagship=clean;return {name:clean};
+}
+// The harbour seal: a pat once an hour, a little rope.
+export function sealPat(state,now=Date.now()){
+ harbourOpen(state);
+ const at=state.harbour.seal;if(now<at+HARBOUR_SEAL_MS)throw new Error(`Pat the seal again in ${Math.ceil((at+HARBOUR_SEAL_MS-now)/60000)} min.`);
+ state.harbour.seal=now;state.inventory.rope=(state.inventory.rope??0)+HARBOUR_SEAL_ROPE;state.stats.seal_pats=(state.stats.seal_pats??0)+1;state.xp+=5;
+ return {rope:HARBOUR_SEAL_ROPE,xp:5};
+}
+// The first trip: a farmer who reaches the harbour counts it once a day (the first quest).
+export function harbourVisit(state,now=Date.now()){
+ harbourOpen(state);
+ const day=utcDay(now);if(state.harbour.visited===day)return {visited:false};
+ state.harbour.visited=day;state.stats.harbour_visits=(state.stats.harbour_visits??0)+1;
+ return {visited:true};
+}
+// The harbour's quests (from level 200), counted from the harbour's own numbers, claimed one by one as the village's.
+export const HARBOUR_QUESTS=Object.freeze([
+ {title:'Set sail',description:'Sail to the harbour.',stat:'harbour_visits',target:1,reward:100000,minLevel:200},
+ {title:'Open the harbour',description:'Build the Harbour office and the first quay.',stat:'harbour_works',work:'office',target:1,reward:150000,minLevel:200},
+ {title:'First ship out',description:'Send off your first ship.',stat:'ships_sent',target:1,reward:150000,minLevel:200},
+ {title:'A friend on the quay',description:'Pat the harbour seal 10 times.',stat:'seal_pats',target:10,reward:120000,minLevel:200},
+ {title:'Five ships',description:'Send off 5 ships.',stat:'ships_sent',target:5,reward:200000,minLevel:202},
+ {title:'Rope by the yard',description:'Twist 50 rope in the Ropewalk.',stat:'made_rope',target:50,reward:200000,minLevel:204},
+ {title:'A good week at the harbour',description:'Open the harbour crate.',stat:'harbour_weeks',target:1,reward:220000,minLevel:206},
+ {title:'Barrels by the dozen',description:'Make 60 barrels in the Cooperage.',stat:'made_barrel',target:60,reward:240000,minLevel:210},
+ {title:'Two quays busy',description:'Build the Second quay.',stat:'harbour_works',work:'quay2',target:4,reward:260000,minLevel:212},
+ {title:'Twenty ships',description:'Send off 20 ships.',stat:'ships_sent',target:20,reward:300000,minLevel:214},
+ {title:'Something to chew on',description:'Bake 100 ship’s biscuits in the Galley.',stat:'made_shipsbiscuits',target:100,reward:300000,minLevel:216},
+ {title:'Tugboat on duty',description:'Build the Tugboat.',stat:'harbour_works',work:'tugboat',target:6,reward:350000,minLevel:220},
+ {title:'Canvas for the wind',description:'Weave 20 sailcloth.',stat:'made_sailcloth',target:20,reward:350000,minLevel:222},
+ {title:'Well stocked',description:'Pack 10 provisions crates.',stat:'made_provisions',target:10,reward:400000,minLevel:224},
+ {title:'Fifty ships',description:'Send off 50 ships.',stat:'ships_sent',target:50,reward:450000,minLevel:228},
+ {title:'Ten million in trade',description:'Earn 10,000,000 coins at the harbour: ships and its market.',stat:'harbour_earned',target:10000000,reward:500000,minLevel:230},
+ {title:'Lift it high',description:'Build the Portal crane.',stat:'harbour_works',work:'crane1',target:7,reward:550000,minLevel:232},
+ {title:'Room to spare',description:'Build the Cargo shed.',stat:'harbour_works',work:'cargoshed',target:8,reward:600000,minLevel:238},
+ {title:'Iron and fire',description:'Build the Harbour forge.',stat:'harbour_works',work:'harbourforge',target:9,reward:650000,minLevel:240},
+ {title:'Drop anchor',description:'Forge 10 anchors.',stat:'made_anchor',target:10,reward:700000,minLevel:242},
+ {title:'Three quays busy',description:'Build the Third quay.',stat:'harbour_works',work:'quay3',target:10,reward:750000,minLevel:245},
+ {title:'A hundred ships',description:'Send off 100 ships.',stat:'ships_sent',target:100,reward:800000,minLevel:248},
+ {title:'Nets for the fleet',description:'Tie 20 fishing nets.',stat:'made_fishingnet',target:20,reward:800000,minLevel:250},
+ {title:'All aboard the goods train',description:'Build the Rail siding.',stat:'harbour_works',work:'rail',target:11,reward:900000,minLevel:252},
+ {title:'Ten good weeks',description:'Open the harbour crate 10 times.',stat:'harbour_weeks',target:10,reward:1000000,minLevel:256},
+ {title:'Two cranes at work',description:'Build the Second portal crane.',stat:'harbour_works',work:'crane2',target:12,reward:1000000,minLevel:258},
+ {title:'Heavy links',description:'Forge 10 anchor chains.',stat:'made_anchorchain',target:10,reward:1100000,minLevel:262},
+ {title:'Lights on deck',description:'Make 20 ship’s lanterns in the Chandlery.',stat:'made_shiplantern',target:20,reward:900000,minLevel:230},
+ {title:'A fresh coat',description:'Mix 20 pots of ship paint in the Paint shop.',stat:'made_shippaint',target:20,reward:1200000,minLevel:256},
+ {title:'True north',description:'Make 10 compasses in the Instrument maker.',stat:'made_compass',target:10,reward:1400000,minLevel:268},
+ {title:'Tins for the hold',description:'Tin 30 stews in the Cannery.',stat:'made_tinnedstew',target:30,reward:1000000,minLevel:238},
+ {title:'Scents of far away',description:'Pack 15 spice crates in the Trading house.',stat:'made_spicecrate',target:15,reward:1300000,minLevel:250},
+ {title:'Row, row, row',description:'Build 3 rowboats in the Boatyard.',stat:'made_rowboat',target:3,reward:2200000,minLevel:290},
+ {title:'Stacks of colour',description:'Build the Container yard.',stat:'harbour_works',work:'yard',target:13,reward:1200000,minLevel:264},
+ {title:'Deep water',description:'Build the Deep quay and its crane.',stat:'harbour_works',work:'deepquay',target:14,reward:1500000,minLevel:270},
+ {title:'Boxes from afar',description:'Load 5 container ships.',stat:'container_ships',target:5,reward:1500000,minLevel:274},
+ {title:'Two hundred and fifty ships',description:'Send off 250 ships.',stat:'ships_sent',target:250,reward:1600000,minLevel:278},
+ {title:'A yard for ships',description:'Build the Shipyard.',stat:'harbour_works',work:'shipyard',target:15,reward:1800000,minLevel:280},
+ {title:'A hundred million in trade',description:'Earn 100,000,000 coins at the harbour: ships and its market.',stat:'harbour_earned',target:100000000,reward:2000000,minLevel:285},
+ {title:'Full steam',description:'Finish the flagship’s hull, engine, deck and sails.',stat:'harbour_works',work:'sails',target:18,reward:2500000,minLevel:295},
+ {title:'Your own flagship',description:'Launch your flagship.',stat:'harbour_works',work:'launch',target:19,reward:5000000,minLevel:300},
+ {title:'Around the world',description:'Send your flagship on a world voyage.',stat:'world_voyages',target:1,reward:3000000,minLevel:300},
+ // More harbour quests (27 Oct 2026, the owner: "maak ook nieuwe quests"): the six later places' works and their goods, the harbour
+ // warehouse, the places' batches and upgrades, the harbour's market and the seal.
+ {title:'A roof for more',description:'Build the harbour warehouse.',stat:'harbour_warehouse',target:1,reward:150000,minLevel:200},
+ {title:'Market day',description:'Sell 500 harbour goods.',stat:'harbour_sold',target:500,reward:300000,minLevel:215},
+ {title:'Busy hands',description:'Collect 200 batches in the harbour’s places.',stat:'harbour_batches',target:200,reward:400000,minLevel:226},
+ {title:'Lamps and tar',description:'Build the Chandlery.',stat:'harbour_works',work:'chandlery',target:1,reward:450000,minLevel:228},
+ {title:'Better places',description:'Upgrade the harbour’s places 25 times.',stat:'harbour_upgrades',target:25,reward:550000,minLevel:235},
+ {title:'Tin by tin',description:'Build the Cannery.',stat:'harbour_works',work:'cannery',target:1,reward:600000,minLevel:236},
+ {title:'Room to grow',description:'Bring the harbour warehouse to level 5.',stat:'harbour_warehouse',target:5,reward:700000,minLevel:240},
+ {title:'Black and sticky',description:'Boil 15 ship’s tar in the Chandlery.',stat:'made_shiptar',target:15,reward:800000,minLevel:248},
+ {title:'Open for trade',description:'Build the Trading house.',stat:'harbour_works',work:'tradinghouse',target:1,reward:800000,minLevel:248},
+ {title:'Best friends',description:'Pat the harbour seal 100 times.',stat:'seal_pats',target:100,reward:800000,minLevel:250},
+ {title:'Every colour',description:'Build the Paint shop.',stat:'harbour_works',work:'paintshop',target:1,reward:950000,minLevel:254},
+ {title:'Sweet and red',description:'Make 30 tins of fruit in the Cannery.',stat:'made_tinnedfruit',target:30,reward:1000000,minLevel:260},
+ {title:'A trading empire',description:'Sell 5,000 harbour goods.',stat:'harbour_sold',target:5000,reward:1100000,minLevel:262},
+ {title:'Scented cargo',description:'Pack 15 perfume crates in the Trading house.',stat:'made_perfumecrate',target:15,reward:1200000,minLevel:264},
+ {title:'Fine tools',description:'Build the Instrument maker.',stat:'harbour_works',work:'instruments',target:1,reward:1300000,minLevel:266},
+ {title:'A proper bow',description:'Carve 5 figureheads in the Paint shop.',stat:'made_figurehead',target:5,reward:1400000,minLevel:274},
+ {title:'A thousand batches',description:'Collect 1,000 batches in the harbour’s places.',stat:'harbour_batches',target:1000,reward:1500000,minLevel:270},
+ {title:'Boats of your own',description:'Build the Boatyard.',stat:'harbour_works',work:'boatyard',target:1,reward:1600000,minLevel:276},
+ {title:'Pull together',description:'Carve 40 oars in the Boatyard.',stat:'made_oars',target:40,reward:1700000,minLevel:278},
+ {title:'Every corner full',description:'Bring the harbour warehouse to level 10.',stat:'harbour_warehouse',target:10,reward:1800000,minLevel:280},
+ {title:'Ring the bell',description:'Cast 5 ship’s bells in the Instrument maker.',stat:'made_shipsbell',target:5,reward:2000000,minLevel:286},
+ {title:'Master of the places',description:'Upgrade the harbour’s places 80 times.',stat:'harbour_upgrades',target:80,reward:2200000,minLevel:288}
+].map(q=>Object.freeze(q.work?{...q,target:HARBOUR_WORKS.findIndex(w=>w.id===q.work)+1}:q)));   // a work's quest: done when that work is (the works go in order)
+export const harbourQuestPicture=q=>{const [,good]=q.stat.match(/^made_(.+)$/)??[];return good??{harbour_visits:'harbour-badge',harbour_works:'harbour-master',ships_sent:'harbour-badge',seal_pats:'seal-pet',harbour_weeks:'harbour-crate',harbour_earned:'coins',container_ships:'harbour-badge',world_voyages:'harbour-badge',harbour_warehouse:'harbourwarehouse',harbour_sold:'harbour-crate',harbour_batches:'harbour-master',harbour_upgrades:'harbour-master'}[q.stat]??'harbour-badge';};
+export function claimHarbourQuest(state,id){
+ if(!Number.isInteger(id)||!HARBOUR_QUESTS[id])throw new Error('Choose a valid quest.');
+ const q=HARBOUR_QUESTS[id];
+ if(levelOf(state)<q.minLevel)throw new Error(`Reach level ${q.minLevel} for this quest.`);
+ harbourOpen(state);
+ if(state.harbourQuests.includes(id))throw new Error('This reward has already been claimed.');
+ if((state.stats[q.stat]??0)<q.target)throw new Error('Finish this quest to claim your reward.');
+ const xp=questXp(q);
+ state.harbourQuests.push(id);state.coins+=q.reward;state.xp+=xp;state.stats.quests_claimed=(state.stats.quests_claimed??0)+1;
+ return {coins:q.reward,xp};
+}
+// The harbour's saved state, cleaned. Farms from before start with nothing done and no ships; a ship is kept only as the rules make one
+// (two to six kinds, never more loaded than asked), the works only in their order.
+function normalizeHarbour(state){
+ // Below level 200 a save gets no harbour keys (release order: an older farm-api must read every save as it is).
+ if(!harbourEra(state)&&state.harbour===undefined&&state.harbourQuests===undefined)return;
+ const obj=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{},h=obj(state.harbour),count=n=>Number.isSafeInteger(n)&&n>0?n:0;
+ const ship=s=>{const keys=s&&obj(s.input)===s.input?Object.keys(s.input):[];
+  const ok=count(s?.id)&&keys.length>=2&&keys.length<=6&&keys.every(k=>Object.hasOwn(ITEMS,k)&&count(s.input[k])&&Number.isSafeInteger(s.loaded?.[k])&&s.loaded[k]>=0&&s.loaded[k]<=s.input[k])&&count(s.value)&&count(s.coins)&&Number.isSafeInteger(s.xp)&&typeof s.premium==='number';
+  return ok?{id:s.id,input:Object.fromEntries(keys.map(k=>[k,s.input[k]])),loaded:Object.fromEntries(keys.map(k=>[k,s.loaded[k]])),value:s.value,premium:s.premium,coins:s.coins,xp:s.xp,swapped:s.swapped===true,...(s.kind==='container'||s.kind==='voyage'?{kind:s.kind,diamonds:count(s.diamonds)}:{})}:null;};
+ const ids=HARBOUR_WORKS.map(w=>w.id),w=obj(h.works),saved=Array.isArray(w.done)?w.done:[];let n=0;while(n<ids.length&&saved.includes(ids[n]))n++;
+ const next=HARBOUR_WORKS[n],g=obj(w.given),given=next?Object.fromEntries(Object.entries(next.goods).map(([k,need])=>[k,Math.min(need,count(g[k]))]).filter(([,x])=>x>0)):{};
+ const quays=(Array.isArray(h.quays)?h.quays:[]).slice(0,5).map(q=>({ship:ship(q?.ship),readyAt:count(q?.readyAt)}));
+ const wk=obj(h.week),week={week:Number.isSafeInteger(wk.week)?wk.week:null,sent:count(wk.sent),paid:wk.paid===true};
+ state.harbour={serial:Math.max(count(h.serial),...quays.map(q=>q.ship?.id??0)),works:{done:ids.slice(0,n),given},quays,week,seal:count(h.seal),visited:Number.isSafeInteger(h.visited)?h.visited:null,warehouse:Math.min(HARBOUR_WAREHOUSE.length,count(h.warehouse))};
+ state.harbour.quays=state.harbour.quays.slice(0,harbourBerths(state).length);
+ const name=flagshipName(h.flagship);if(name)state.harbour.flagship=name;
+ state.harbourQuests=Array.isArray(state.harbourQuests)?[...new Set(state.harbourQuests.filter(id=>Number.isInteger(id)&&HARBOUR_QUESTS[id]))]:[];
 }
 function normalizeEndgame(state){
  const master=state.master&&typeof state.master==='object'?state.master:{};state.master={};
@@ -2849,13 +3271,14 @@ export function normalizeFarm(state,now=Date.now()){
  if(state.emailBonus!==undefined&&!Number.isSafeInteger(state.emailBonus))delete state.emailBonus;
  if(state.rookieUntil!==undefined)state.rookieUntil=Number.isSafeInteger(state.rookieUntil)?Math.max(0,state.rookieUntil):0;
  state.villageQuests=Array.isArray(state.villageQuests)?[...new Set(state.villageQuests.filter(id=>Number.isInteger(id)&&VILLAGE_QUESTS[id]))]:[];   // World II's claimed quests
- state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))state.inventory[k]??=0;
+ state.version=14;state.vipExpiresAt=Number.isSafeInteger(state.vipExpiresAt)?Math.max(0,state.vipExpiresAt):0;state.inventory??={};for(const k of Object.keys(ITEMS))if(!worldThreeItem(k))state.inventory[k]??=0;
  state.diamonds=Number.isFinite(state.diamonds)?Math.max(0,Math.floor(state.diamonds)):0;
  state.boosts??={};for(const key of ['xpUntil','harvestUntil','coinsUntil','farmhandUntil','upgradeCredits'])state.boosts[key]=Number.isFinite(state.boosts[key])?Math.max(0,Math.floor(state.boosts[key])):0;
  state.boosts.upgradeCredits=Math.min(1,state.boosts.upgradeCredits);
- state.buildings??={};for(const key of Object.keys(BUILDINGS))state.buildings[key]??={level:1,job:null};
+ // World III's goods and places join a save only once the harbour opens (level 200 and the Great Hall, 28 Oct 2026): any other farm keeps the shape the live game reads.
+ state.buildings??={};for(const key of Object.keys(BUILDINGS))if(!worldThreeBuilding(key))state.buildings[key]??={level:1,job:null};addHarbourKeys(state);
  state.stats??={};migrateProgression(state);migrateFeatureLevels(state);migrateUnlockSpread(state);migrateGradualUnlocks(state);
- for(const key of Object.keys(BUILDINGS))if(buildingCost(state,key))state.buildings[key].built??=false;
+ for(const key of Object.keys(BUILDINGS))if(buildingCost(state,key)&&state.buildings[key])state.buildings[key].built??=false;
  // Keep paid-for legacy flour batches intact when milling moves to the Windmill.
  if(oldVersion<6&&state.buildings.mill.job?.recipe==='flour'){
   state.buildings.mill.job.output??={flour:1};state.buildings.mill.job.xp??=8;
@@ -2905,9 +3328,9 @@ export function normalizeFarm(state,now=Date.now()){
  // come from the pool again, found by its counter and title (a unique pair), so the text is the one the languages translate.
  for(const q of state.daily.tasks){const cur=q&&DAILY_POOLS.flat().find(p=>p.stat===q.stat&&p.title===q.title);if(cur)Object.assign(q,{target:cur.target,reward:cur.reward,description:cur.description});}
  state.daily.orderBoard??=oldVersion<10&&existingDay?[0,2,4].map(offset=>orderQuote(LEGACY_ORDER_POOL[(d+offset)%LEGACY_ORDER_POOL.length])):selectDailyOrders(state,d);
- normalizeEndgame(state);normalizeVillage(state);
+ normalizeEndgame(state);normalizeVillage(state);normalizeHarbour(state);
  normalizeShift(state);settleShift(state,now);payShipBin(state,now);normalizeWarehouse(state);normalizePond(state);normalizeLake(state);normalizePets(state);normalizeFarmer(state);normalizeLayout(state);countCollections(state);
- refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshPass(state,now);refreshSeason(state,now);
+ refreshValley(state,now);refreshDepot(state,now);refreshFair(state,now);refreshVisitors(state,now);refreshGiant(state,now);refreshVillage(state,now);refreshHarbour(state,now);refreshPass(state,now);refreshSeason(state,now);
  currentEndgameDiamonds(state);
  return state;
 }
@@ -4044,7 +4467,7 @@ function normalizeShift(state){
 export const SHIP_BIN_BONUS=.1,SHIP_BIN_ROOM_MAX=500;
 export const shipBinRoom=state=>Math.min(SHIP_BIN_ROOM_MAX,20+5*levelOf(state));
 export const shipBinCount=state=>Object.values(state.shipBin?.items??{}).reduce((n,v)=>n+(Number.isInteger(v)&&v>0?v:0),0);
-export const shipBinItem=key=>Object.hasOwn(ITEMS,key)&&!villageGood(key);
+export const shipBinItem=key=>Object.hasOwn(ITEMS,key)&&!otherWorldItem(key);   // the farm's own crops and goods: no village or harbour goods (28 Oct 2026)
 // What count of `key` would bring in the bin now, bonus included (whole coins).
 export const shipBinValue=(state,key,count,now=Date.now())=>Math.floor(marketSaleValue(state,count*marketQuote(key,now).price,now)*(1+SHIP_BIN_BONUS));
 export function shipBinAdd(state,key,count,now=Date.now()){
@@ -4145,7 +4568,7 @@ export const WAREHOUSE_MASTER=Object.freeze([3000000,4000000,5200000,6800000,880
 export const storedCount=state=>Object.keys(ITEMS).reduce((sum,key)=>{const n=state.inventory?.[key];return sum+(Number.isFinite(n)&&n>0?Math.floor(n):0);},0);
 const warehouseLevelOf=state=>{const n=state.warehouse?.level;return Number.isInteger(n)?Math.max(1,Math.min(WAREHOUSE_TOP_LEVEL,n)):1;};
 export const warehouseLevel=warehouseLevelOf;
-export const warehouseCapacity=(state,level=warehouseLevelOf(state))=>WAREHOUSE_CAPACITY[Math.max(1,Math.min(WAREHOUSE_TOP_LEVEL,level))-1];
+export const warehouseCapacity=(state,level=warehouseLevelOf(state))=>WAREHOUSE_CAPACITY[Math.max(1,Math.min(WAREHOUSE_TOP_LEVEL,level))-1]+(harbourWorkDone(state,'cargoshed')?CARGO_SHED_ROOM:0)+harbourWarehouseRoom(state);
 export const warehouseFull=state=>storedCount(state)>=warehouseCapacity(state);
 export const warehouseNearFull=state=>storedCount(state)>=Math.ceil(warehouseCapacity(state)*WAREHOUSE_NEAR_FULL);
 // The highest level this farm's level allows: 10, and one more at each master step's farm level.
@@ -4642,14 +5065,27 @@ export function visitView(source,now=Date.now()){
  normalizeFarm(view,now);view.coins=0;view.diamonds=0;
  return view;
 }
+// The actions of another world (27 Oct 2026): the village's own, and a batch or upgrade in one of its places.
+const HARBOUR_ACTIONS=new Set(['harbour_visit','ship_load','ship_skip','ship_swap','harbour_give','harbour_finish','harbour_quest','seal_pat','harbour_warehouse','flagship_name']);
+const VILLAGE_ACTIONS=new Set(['village_quest','village_deliver','village_skip','miller_deliver','village_build','boat_load','boat_skip','landmark_give','landmark_finish','village_cart','boat_now','villager_now','lake_casts','lake_fish','landmark_supplies']);
+const actionBuilding=action=>action.building??RECIPES[action.recipe]?.building;
+// Which world an action belongs to (1 the farm, 2 the village, 3 the harbour): what it spends counts in that world's own numbers.
+export const actionWorld=action=>HARBOUR_ACTIONS.has(action?.type)||action?.type==='sell'&&action.category==='harbour'||(['produce','collect','collect_all','upgrade','finish_batch'].includes(action?.type)&&worldThreeBuilding(actionBuilding(action)))?3
+ :VILLAGE_ACTIONS.has(action?.type)||(['produce','collect','collect_all','upgrade','finish_batch'].includes(action?.type)&&worldTwoBuilding(actionBuilding(action)))?2:1;   // finish_batch too (28 Oct 2026, review): diamonds spent finishing a place's batch count in its world
+export const otherWorldAction=action=>actionWorld(action)>1;
 export function applyFarmAction(state,action,now=Date.now(),random=secureChoreRandom){
  normalizeFarm(state,now);if(!action||typeof action!=='object')throw new Error('Choose a farm action.');
- const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state);
+ const beforeXP=state.xp,beforeCoins=state.coins,beforeLevel=levelOf(state),beforeDiamondsSpent=state.stats.diamonds_spent??0;
  const beginnerBefore={harvested:state.stats.harvested,wheat:state.stats.harvest_wheat??0,watered:state.stats.watered,tended:state.stats.tended};
  const result=dispatchFarmAction(state,action,now,random);
+ addHarbourKeys(state);
  if(action.look)recordFirstLook(state,action.look,now);
  // Coins spent (seeds, buildings, upgrades, fields, research…), for the farm events' "Spend coins" goal (26 Sep 2026).
- const spent=beforeCoins-state.coins;if(spent>0&&!NO_EVENT_ACTIONS.has(action.type))state.stats.coins_spent=(state.stats.coins_spent??0)+spent;
+ // What is spent in the village (27 Oct 2026) counts in the village's own village_coins_spent and village_diamonds_spent, so the farm's
+ // Spend quests, the Gem collector and the farm events' Spend goals stay the farm's.
+ const spent=beforeCoins-state.coins,world=actionWorld(action),own=world===3?'harbour_':world===2?'village_':'';
+ if(spent>0&&!NO_EVENT_ACTIONS.has(action.type))state.stats[own+'coins_spent']=(state.stats[own+'coins_spent']??0)+spent;
+ const gems=(state.stats.diamonds_spent??0)-beforeDiamondsSpent;if(own&&gems>0){state.stats.diamonds_spent-=gems;state.stats[own+'diamonds_spent']=(state.stats[own+'diamonds_spent']??0)+gems;}
  recordBeginnerAction(state,action,result,beginnerBefore);
  const earnedXP=state.xp-beforeXP;
  if(state.boosts.xpUntil>now&&earnedXP>0){state.xp+=earnedXP;result.xp=(result.xp??earnedXP)+earnedXP;}
@@ -4738,6 +5174,17 @@ function dispatchFarmAction(state,action,now,random){
   case 'village_build':return villageBuild(state,action.place);
   // The town boat at the Pier (from level 144) carries the cargo the screen showed; the landmarks (165-200) come from the golden brief.
   case 'boat_load':return boatLoad(state,action.cargo,action.input,action.item,now);
+  // World III, the harbour (27 Oct 2026).
+  case 'harbour_visit':return harbourVisit(state,now);
+  case 'ship_load':return shipLoad(state,action.quay,action.ship,action.input,action.item,now);
+  case 'ship_skip':return shipSkip(state,action.quay,action.ship,action.input,now);
+  case 'ship_swap':return shipSwap(state,action.quay,action.ship,action.input,action.item);
+  case 'harbour_give':return harbourGive(state,action.work,action.item);
+  case 'harbour_finish':return harbourFinish(state,action.work,now);
+  case 'harbour_quest':return claimHarbourQuest(state,action.id);
+  case 'seal_pat':return sealPat(state,now);
+  case 'harbour_warehouse':return upgradeHarbourWarehouse(state,action.expectedCost);
+  case 'flagship_name':return nameFlagship(state,action.name);
   case 'boat_skip':return boatSkip(state,action.cargo,action.input,now);
   case 'landmark_give':return landmarkGive(state,action.landmark,action.item);
   case 'landmark_finish':return landmarkFinish(state,action.landmark);
@@ -5115,9 +5562,19 @@ export const EVENT_LEAGUES=Object.freeze([
  {id:'harvest',name:'Harvest League',from:60},{id:'estate',name:'Estate League',from:75},{id:'legends',name:'Valley Legends',from:90,coins:8},
  {id:'cobble',name:'Cobble League',from:100,coins:10,world:2},{id:'timber',name:'Timber League',from:121,coins:12,world:2},
  {id:'linen',name:'Linen League',from:141,coins:14,world:2},{id:'silver',name:'Silver League',from:161,coins:16,world:2},
- {id:'ruby',name:'Ruby League',from:181,coins:18,world:2},{id:'village',name:'Village Legends',from:201,coins:20,world:2}
+ {id:'ruby',name:'Ruby League',from:181,coins:18,world:2},{id:'village',name:'Village Legends',from:201,coins:20,world:2},
+ // World III, the harbour (27 Oct 2026, the owner: "maak ook events voor wereld III met nieuwe leagues"): five harbour leagues after
+ // the Village Legends (201-220, so a farmer whose Great Hall still waits races in the village first), goals in the harbour
+ // (public/event-goals.js HARBOUR_KINDS), coins ×22 to ×30. Indices 0-11 stay as they are.
+ {id:'quay',name:'Quay League',from:221,coins:22,world:3},{id:'crane',name:'Crane League',from:241,coins:24,world:3},
+ {id:'anchor',name:'Anchor League',from:261,coins:26,world:3},{id:'flagship',name:'Flagship League',from:281,coins:28,world:3},
+ {id:'harbour',name:'Harbour Legends',from:300,coins:30,world:3}
 ].map((l,i,all)=>Object.freeze({world:1,...l,index:i,to:all[i+1]?all[i+1].from-1:null,coins:l.coins??i+1})));
 export const eventLeague=level=>EVENT_LEAGUES.reduce((found,l)=>Number(level)>=l.from?l:found,EVENT_LEAGUES[0]);
+// How many leagues the live events have (28 Oct 2026, review): 12 until the harbour's leagues' SQL has run, then 17. A screen that shows
+// a farmer's league without an event at hand (the bonus overview, the rules) shows the one the events would put them in.
+export const LIVE_EVENT_LEAGUES=12;
+export const liveEventLeague=level=>EVENT_LEAGUES[Math.min(eventLeague(level).index,LIVE_EVENT_LEAGUES-1)];
 // An event only has the leagues it was made with (20 Oct 2026): one made before the village leagues (6 entries, or none at all)
 // keeps a farmer of 100+ in the Valley Legends, with the Legends' goals and coins. The database does the same
 // (harvest_event_league_for), so screen, standings and settlement always agree. A farmer who first counted in an event below
@@ -5155,7 +5612,7 @@ const niceCount=n=>n<10?Math.max(1,Math.round(n)):n<50?Math.round(n/5)*5:Math.ro
 export const FAMILY_ORDER_FROM_WEEK=Object.freeze({truffles:2960,truffleomelette:2960});   // week 2960 starts Monday 28 September 2026
 export function familyOrder(familyId,week,members,config=FAMILY_CONFIG){
  if(!Number.isInteger(members)||members<1||members>config.MAX_MEMBERS)throw new Error('Choose a valid family size.');
- const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!worldTwoItem(k)&&!seasonItem(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
+ const pool=Object.keys(ITEMS).filter(k=>ITEMS[k].sell>0&&!ITEMS[k].heirloom&&!otherWorldItem(k)&&!seasonItem(k)&&(FAMILY_ORDER_FROM_WEEK[k]??0)<=week),picked=[];let draw=0;
  const next=()=>pool[calendarHash(`family-order-v2:${week}:${draw++}`)%pool.length];
  // At most one of the dearest goods (5,000+ coins each, such as a blanket) in one week.
  const dear=k=>ITEMS[k].sell>=5000;
@@ -5560,6 +6017,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    const needed=Math.max(0,(order.lines[action.item]??0)-(order.filled[action.item]??0)),points=ITEMS[action.item].sell*action.count;
    if(type==='family_contribute'&&(!Object.hasOwn(order.lines,action.item)||action.count>needed))throw new Error('This exceeds what the order still needs.');
    if(type==='family_tournament_goods'){
+    if(otherWorldItem(action.item))throw new Error('Tournament goods are goods from your farm.');   // 27 Oct 2026: never the village's
     if(!Object.entries(order.lines).some(([k,n])=>(order.filled[k]??0)>=n))throw new Error('Fill one order line to unlock Tournament goods.');
    }
    if((state.inventory[action.item]??0)<action.count)throw new Error('You do not have enough in stock.');
@@ -5690,12 +6148,16 @@ export function createShowcaseFarm(now=Date.now(),{family=null}={}){
  Object.assign(s,{showcase:true,xp:xpForLevel(SHOWCASE_LEVEL)+Math.floor((xpForLevel(SHOWCASE_LEVEL+1)-xpForLevel(SHOWCASE_LEVEL))/2),xpOffset:0,xpCurve:XP_CURVE,coins:0,diamonds:0,rookieUntil:0,keep:{},vipExpiresAt:0});
  if(family&&typeof family==='object')s.family=structuredClone(family);
  s.inventory=Object.fromEntries(Object.keys(ITEMS).map(k=>[k,250]));s.discovered=Object.keys(CROPS);
+ // The harbour as the village (27 Oct 2026): every work done, every place built at its top, the harbour warehouse at level 10.
+ for(const k of Object.keys(BUILDINGS))if(worldThreeBuilding(k))s.buildings[k]??={level:1,job:null};
+ s.harbour={serial:0,works:{done:HARBOUR_WORKS.map(w=>w.id),given:{}},quays:[],week:{week:null,sent:0,paid:false},seal:0,visited:null,warehouse:HARBOUR_WAREHOUSE.length};s.harbourQuests=[];
  s.onboarding={completed:BEGINNER_QUESTS.length,milestones:Object.fromEntries(BEGINNER_QUESTS.map(q=>[q.id,true])),rewardClaimed:true};
  s.levelRewards=Array.from({length:SHOWCASE_LEVEL},(_,i)=>i+1);
  // 29 of 30 days grown: full size and green, never ripe while it is looked at (no "ready" labels, a tap only says when).
  s.plots=SHOWCASE_CROPS.map((crop,id)=>({id,crop,plantedAt:now-29*DAY_MS,readyAt:now+DAY_MS,careAt:now-29*DAY_MS,watered:true,tended:true,fertilized:true,...(CROPS[crop].perennial?{harvestCycles:3}:{})}));
  for(const [key,b] of Object.entries(BUILDINGS)){
-  const own=s.buildings[key];own.built=true;own.job=null;own.extraJobs=[];own.batchSequence=0;
+  const own=s.buildings[key];if(!own)continue;
+  own.built=true;own.job=null;own.extraJobs=[];own.batchSequence=0;
   if(b.type!=='production')continue;
   if(beyondMaxBuilding(key)){own.level=TOP_BUILDING_LEVEL;own.beyond=TOP_BUILDING_LEVEL-MAX_BUILDING_LEVEL;}else own.level=MAX_BUILDING_LEVEL;
   // Every slot busy for hours (smoke, a turning windmill), its first recipe; nothing ready to collect.

@@ -255,7 +255,8 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   family:member?{name:familyRow?.data?.name??'A family',role:member.role??'member'}:null,
   emailBonus:Boolean(state?.emailBonus),
   activity:ACTIVITY.map(([key,label])=>({key,label,count:num(stats[key])})).concat([{key:'events',label:'Farm events finished',count:num(s?.events_finished)}]),
-  earned:{coins:num(stats.earned),diamonds:num(stats.diamonds_earned)},
+  // Every world's (28 Oct 2026): since the worlds count apart, the farm's earned misses the village's and the harbour's coins and diamonds.
+  earned:{coins:num(stats.earned)+num(stats.village_earned)+num(stats.harbour_earned),diamonds:num(stats.diamonds_earned)+num(stats.village_diamonds_earned)+num(stats.harbour_diamonds_earned)},
   events:{joined:num(eventsJoined?.count),finished:finishedEvents.length,diamonds:finishedEvents.reduce((sum,e)=>sum+num(e.diamonds),0)},
   chat:{messages:messages?.count??null,reported:reports?.count??null,muted,banned:sanction?.data?.banned===true},
   invites:{invitedBy:inviter?inviterRow?.data?.username??'A farmer':null,friends:friends.length,qualified:friends.filter(f=>f.qualified_at).length,closed:inviteCode?.data?.closed_at!=null},

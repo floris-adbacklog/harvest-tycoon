@@ -5,7 +5,7 @@ import {staffRole,staffBadge} from './staff-badge.js';
 import {rankArt} from '../public/rank-art.js';
 import {art} from '../public/visual-icons.js';
 import {rankArtKey} from '../public/rank-picker.js';
-import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem,WORLD_TWO_LEVEL} from '../public/farm-state.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem,otherWorldItem,WORLD_TWO_LEVEL} from '../public/farm-state.js';
 import {ONLINE_WINDOW} from './presence.js';
 import {countLines} from './player-counts.js';
 import {ownText} from '../public/i18n.js';
@@ -15,7 +15,7 @@ const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='
 const byLevel=(a,b)=>goodLevel(a)-goodLevel(b)||ITEMS[a].name.localeCompare(ITEMS[b].name);
 // World II's goods (30 Sep 2026) are boards of their own, under Village, which only a farmer from level 100 sees (src/ui.js). The 13 goods
 // of its later places (Oct 2026, noBoard) have none: the Village row holds the first fourteen and Villagers helped.
-const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom&&!worldTwoItem(key)).sort(byLevel);
+const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom&&!otherWorldItem(key)).sort(byLevel);   // the harbour's goods (27 Oct 2026) have no board yet
 const VILLAGE_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&worldTwoItem(key)&&!ITEMS[key].noBoard).sort(byLevel);
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},

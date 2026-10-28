@@ -136,7 +136,8 @@ test('the miller\'s order: from level 115, once a week, 6 golden loaves and 2 he
  const r=act(s,{type:'miller_deliver',week});
  assert.deepEqual(r,{coins:80000,xp:Math.round(40000/VILLAGE_XP_SHARE),diamonds:10});
  assert.deepEqual([s.coins-before.coins,s.diamonds-before.diamonds,s.xp-before.xp],[80000,10,800]);
- assert.deepEqual([s.stats.earned-before.earned,s.stats.village_earned-before.village,s.stats.diamonds_earned-before.gems,s.stats.miller_orders],[80000,80000,10,1]);
+ // 27 Oct 2026: the village's own counts, never the farm's earned and diamonds_earned.
+ assert.deepEqual([s.stats.earned-before.earned,s.stats.village_earned-before.village,s.stats.diamonds_earned-before.gems,s.stats.village_diamonds_earned,s.stats.miller_orders],[0,80000,0,10,1]);
  assert.equal(s.inventory.goldenloaf,0);assert.equal(s.inventory.heirloompie,0);assert.equal(millerDelivered(s,now),true);
  stock(s);assert.throws(()=>act(s,{type:'miller_deliver',week}),{message:'The miller has his bakes for this week. He comes back on Monday.'});
  const monday=familyWeekStart(week+1)+60000;assert.equal(millerDelivered(s,monday),false);act(s,{type:'miller_deliver',week:week+1},monday);assert.equal(s.stats.miller_orders,2);

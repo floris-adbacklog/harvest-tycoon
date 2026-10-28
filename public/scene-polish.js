@@ -84,7 +84,7 @@ function yardTexture(rand){
 }
 
 // Three crossed blades per tuft, darker at the root and lighter at the tip.
-function tuftGeometry(){
+export function tuftGeometry(){
  const pos=[],col=[],norm=[];
  for(let k=0;k<3;k++){
   const a=k*Math.PI/3,c=Math.cos(a),s=Math.sin(a),bend=.05+k*.02;

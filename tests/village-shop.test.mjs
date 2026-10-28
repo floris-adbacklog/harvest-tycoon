@@ -57,10 +57,10 @@ test('each of the five: diamonds spent, boosts only for the time-skips, events c
  const steps=[['village_cart',statusAction(s,'supplycart'),0],['village_cart',statusAction(s,'tilecart'),0],['boat_now',statusAction(s,'boat'),1],['villager_now',statusAction(s,'villager'),1],['lake_casts',statusAction(s,'casts'),1],['landmark_supplies',statusAction(s,'landmark'),0]];
  for(const [type,action,boosts] of steps){
   assert.equal(action.type,type);
-  const villageKeys=Object.keys(s.village),boatKeys=Object.keys(s.village.boat),spent=s.stats.diamonds_spent??0,used=s.stats.boosts_used??0,diamonds=s.diamonds;
+  const villageKeys=Object.keys(s.village),boatKeys=Object.keys(s.village.boat),spent=s.stats.village_diamonds_spent??0,used=s.stats.boosts_used??0,diamonds=s.diamonds;
   const r=act(s,action);
   assert.equal(r.cost,action.expectedCost,type);assert.equal(s.diamonds,diamonds-action.expectedCost,type);
-  assert.equal(s.stats.diamonds_spent,spent+action.expectedCost,`${type}: diamonds_spent`);
+  assert.equal(s.stats.village_diamonds_spent,spent+action.expectedCost,`${type}: village_diamonds_spent`);   // 27 Oct 2026: the village's own count
   assert.equal((s.stats.boosts_used??0)-used,boosts,`${type}: boosts_used (the owner: the time-skips count, the carts and supplies do not)`);
   assert.deepEqual(Object.keys(s.village),villageKeys,type);assert.deepEqual(Object.keys(s.village.boat),boatKeys,type);
  }
@@ -310,7 +310,7 @@ test('the small diamond buttons: under the boat\'s and an empty board\'s time, a
  assert.ok(pond.includes("${lake?`<div class=\"wait-buy-row pond-refill\" data-pond-refill hidden>${waitButton(villageShopStatus(state,'casts',now()))}</div>`:''}"),'drawn once, for the lake only, never a button around a button');
  assert.ok(pond.includes("if(refill)refill.hidden=!(phase==='idle'&&c.casts===0);"),'top() only shows or hides it');
  assert.ok(pond.includes("`${lake?waitButton(villageShopStatus(state,'casts',now())):''}<button type=\"button\" class=\"primary-button\" data-card-farm>"),'and on the last catch\'s card');
- assert.match(read('public/world-two.css'),/:is\(#village-square-content,#boat-content\) \.wait-buy-row\{display:flex/);
+ assert.match(read('public/world-two.css'),/:is\(#village-square-content,#boat-content(,#harbour-content)?\) \.wait-buy-row\{display:flex/);
  assert.match(read('public/pond.css'),/\.pond-refill\{pointer-events:auto\}/);
 });
 

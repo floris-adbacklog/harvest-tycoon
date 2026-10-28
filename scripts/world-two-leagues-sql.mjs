@@ -10,14 +10,15 @@
 // The md5 of a body here is md5(prosrc) in Postgres: the exact text between the $function$ markers.
 import {writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {EVENT_LEAGUES,eventLeague} from '../public/farm-state.js';
+import {EVENT_LEAGUES as ALL_LEAGUES,eventLeague} from '../public/farm-state.js';
+const EVENT_LEAGUES=ALL_LEAGUES.filter(l=>l.world<=2);   // the live leagues, 0..11 (the harbour's five, 27 Oct 2026, come with their own patch)
 import {PICK_SQL,PICK_BODY,VALIDATE_SQL,VALIDATE_BODY} from './event-goals-sql.mjs';
 
 const md5=text=>createHash('md5').update(text).digest('hex');
 // Everything below that depends on the leagues comes from EVENT_LEAGUES.
 const LAST=EVENT_LEAGUES.length-1,LAST_FARM=EVENT_LEAGUES.filter(l=>l.world===1).length-1,VILLAGE=EVENT_LEAGUES.findIndex(l=>l.world===2);
 const COINS=EVENT_LEAGUES.map(l=>l.coins).join(',');
-const eventLeagueIndex=level=>eventLeague(level).index;
+const eventLeagueIndex=level=>Math.min(eventLeague(level).index,EVENT_LEAGUES.length-1);   // 201+ was the Village Legends then
 // The levels the after-check asks harvest_event_league for: every league's edges.
 const CHECK_LEVELS=[14,15,29,30,89,90,99,100,120,121,140,141,160,161,180,181,200,201,999];
 export const LEAGUE_CASE='case '+EVENT_LEAGUES.slice(1).reverse().map((l,i)=>`when ${i?'p_level':'coalesce(p_level,0)'}>=${l.from} then ${l.index}`).join(' ')+' else 0 end';

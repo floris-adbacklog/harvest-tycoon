@@ -80,7 +80,7 @@
  #sound-dialog .account-actions{flex-wrap:wrap}
  #sound-dialog .account-actions button{flex:1 1 auto;min-height:44px;padding:6px 10px}
  /* The claim and Deliver buttons in Quests, Today and the village's lists: 44 px (they were 38). */
- #task-list .quest-item .primary-button,#today-content .task-bottom .primary-button,#valley-content .task-bottom .primary-button,#estate-place-content .task-bottom .primary-button,#village-square-content .task-bottom .primary-button,#boat-content .task-bottom .primary-button{min-height:44px}
+ #task-list .quest-item .primary-button,#today-content .task-bottom .primary-button,#valley-content .task-bottom .primary-button,#estate-place-content .task-bottom .primary-button,#village-square-content .task-bottom .primary-button,#boat-content .task-bottom .primary-button,#harbour-content .task-bottom .primary-button{min-height:44px}
  /* Market: each row's Sell all 44 px (it was 40), and "Sell all crops" on one line beside the basket's worth (in Dutch it broke into two lines, 60 px high). */
  #market-items .market-quick-sell{min-height:44px}
  .market-total #sell-all{flex:none;white-space:nowrap;padding-inline:14px}

@@ -9,7 +9,7 @@ const sql=read('supabase/pig-farm.sql'),constraintSql=read('supabase/family-shar
 
 test('the server accepts exactly the game\'s crops and goods, so a new item needs both lists updated',()=>{
  const list=sql.match(/items constant text\[\]:=array\[([^\]]+)\]/)[1].split(',').map(s=>s.trim().replace(/'/g,''));
- assert.deepEqual(list,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&ITEMS[k].world!==2&&!ITEMS[k].season),'heirlooms (the Seed Lab, 27 Sep 2026), World II goods (30 Sep 2026) and season crops (the Season Pass, Oct 2026) are not shared');
+ assert.deepEqual(list,Object.keys(ITEMS).filter(k=>!ITEMS[k].heirloom&&(ITEMS[k].world??1)===1&&!ITEMS[k].season),'heirlooms (the Seed Lab, 27 Sep 2026), World II goods (30 Sep 2026), season crops (the Season Pass, Oct 2026) and World III goods (27 Oct 2026) are not shared');
 });
 test('gifts and requests are 1–5 of any of them; the daily limits and the old 3-wheat gift stay',()=>{
  assert.deepEqual([10,19,20,30,60].map(maxShare),[5,5,10,15,30],'up to 5 per 10 levels (26 Sep 2026)');assert.deepEqual([10,11,30,60].map(helpCoins),[250,275,750,1500],'help: level × 25 coins');
@@ -29,8 +29,8 @@ test('the toast names what moved, with the item\'s own name',()=>{
 test('a gift sends the chosen item and amount; the request list is every crop or good you have unlocked',()=>{
  const ui=read('public/social-ui.js');
  assert.match(ui,/act\(\{kind:'gift',recipient:gift\.to,item:gift\.item,quantity:gift\.quantity\}\)/);
- assert.match(ui,/const keys=Object\.keys\(ITEMS\)\.filter\(k=>itemAvailable\(state,k\)&&!ITEMS\[k\]\.heirloom&&!worldTwoItem\(k\)\)/);
- assert.match(ui,/const giftKeys=\(\)=>Object\.keys\(ITEMS\)\.filter\(k=>stock\(k\)>0&&!ITEMS\[k\]\.heirloom&&!worldTwoItem\(k\)\)/,'you can only give what you have, and never World II goods');
+ assert.match(ui,/const keys=Object\.keys\(ITEMS\)\.filter\(k=>itemAvailable\(state,k\)&&!ITEMS\[k\]\.heirloom&&!otherWorldItem\(k\)\)/);
+ assert.match(ui,/const giftKeys=\(\)=>Object\.keys\(ITEMS\)\.filter\(k=>stock\(k\)>0&&!ITEMS\[k\]\.heirloom&&!otherWorldItem\(k\)\)/,'you can only give what you have, and never World II or III goods');
 });
 
 // 30 Sep 2026: a request fills up from several farmers ("Give what you have"), supabase/family-sharing-partial.sql.

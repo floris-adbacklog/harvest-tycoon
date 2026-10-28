@@ -1,4 +1,4 @@
-import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,PETS,levelOf,recipeFor} from './farm-state.js';
+import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,PETS,HARBOUR_WORKS,HARBOUR_QUESTS,levelOf,recipeFor} from './farm-state.js';
 import {isStaff,isSuperadmin} from './admin-service.js';
 
 // A log per farmer (26 Sep 2026): what they did and what it gave or cost, with the time, in categories. The farmer reads their own
@@ -62,6 +62,17 @@ const FARM_ACTIONS={
  landmark_give:['farm',a=>`Handed in goods for the ${landmark(a.landmark)}`],
  landmark_finish:['farm',a=>`Finished the ${landmark(a.landmark)} in the village`],
  depot_load:['market',()=>'Loaded an export trailer'],
+ // World III, the harbour (28 Oct 2026): ships loaded and sent, the harbour master's works, its warehouse, quests and seal.
+ harbour_visit:['farm',(a,s,r)=>r?.visited?'Sailed to the harbour':null],
+ ship_load:['market',(a,s,r)=>r?.sailed?`${r?.kind==='voyage'?'Sent the flagship on a world voyage':r?.kind==='container'?'Sent a container ship off':'Sent a ship off from the harbour'}${r?.diamonds?` (+${r.diamonds} diamonds)`:''}${r?.crate?' and opened the harbour crate':''}`:'Loaded a ship at the harbour'],
+ flagship_name:['farm',(a,s,r)=>`Named the flagship ${r?.name??''}`],
+ ship_skip:['market',()=>'Said “Not now” to a ship at the harbour'],
+ ship_swap:['market',()=>'Asked a ship at the harbour for something else'],
+ harbour_give:['farm',a=>`Handed in goods for the ${HARBOUR_WORKS.find(w=>w.id===a.work)?.name??'harbour work'}`],
+ harbour_finish:['farm',a=>`Finished the ${HARBOUR_WORKS.find(w=>w.id===a.work)?.name??'harbour work'} at the harbour`],
+ harbour_warehouse:['farm',(a,s,r)=>`Harbour warehouse level ${r?.level??''}`],
+ harbour_quest:['rewards',a=>`Claimed the harbour quest “${HARBOUR_QUESTS[a.id]?.title??'quest'}”`],
+ seal_pat:['rewards',()=>'Patted the harbour seal'],
  depot_skip:['market',()=>'Skipped an export order'],
  fair_enter:['market',()=>'Entered the Grand Valley Fair'],
  master_spend:['farm',a=>`Spent a Master point (${a.branch})`],
@@ -116,7 +127,7 @@ const line=(category,action,text,detail)=>({category,action,text:(detail?`${text
 // The log lines for one farm action: the action itself (when it is one worth logging) and a level reached on the way.
 export function farmLog(action,before,state,result){
  const rows=[],after=snapshot(state),known=FARM_ACTIONS[action?.type];
- if(known){const [category,text]=known;rows.push(line(category,action.type,text(action,state,result),changes(before,after)));}
+ if(known){const [category,text]=known,said=text(action,state,result);if(said!=null)rows.push(line(category,action.type,said,changes(before,after)));}   // null: nothing worth a line (a second harbour visit the same day)
  if(after.level>before.level)rows.push(line('farm','level',`Reached level ${after.level}`));
  return rows;
 }

@@ -4,7 +4,7 @@ import {createLegacyFarm} from './legacy-farm.mjs';
 import {roomFor} from './warehouse-room.mjs';
 import {applyFarmAction as act,normalizeFarm,productionJobs,SINGLE_BATCH_COST,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,replacementOptions,dailyOrders,utcDay,DAY_MS,xpForLevel,BUILDINGS,RECIPES} from '../game/farm-state.js';
 const now=Date.UTC(2026,8,19,12);
-function farm(){const s=createLegacyFarm(now);s.diamonds=10000;s.coins=100000;s.xp=xpForLevel(20);s.levelRewards=Array.from({length:20},(_,i)=>i+1);for(const k in s.inventory)s.inventory[k]=100;for(const k in BUILDINGS)if(BUILDINGS[k].buildCost)s.buildings[k].built=true;delete s.daily;return normalizeFarm(s,now);}
+function farm(){const s=createLegacyFarm(now);s.diamonds=10000;s.coins=100000;s.xp=xpForLevel(20);s.levelRewards=Array.from({length:20},(_,i)=>i+1);for(const k in s.inventory)s.inventory[k]=100;for(const k in BUILDINGS)if(BUILDINGS[k].buildCost&&s.buildings[k])s.buildings[k].built=true;delete s.daily;return normalizeFarm(s,now);}
 test('finish one batch charges 10 once, preserves other jobs and does not collect',()=>{
  const s=roomFor(farm(),['eggs']);s.buildings.coop.level=3;act(s,{type:'produce',recipe:'eggs',count:3},now);
  const jobs=productionJobs(s.buildings.coop),original=structuredClone(jobs),inventory=structuredClone(s.inventory),diamonds=s.diamonds,xp=s.xp;

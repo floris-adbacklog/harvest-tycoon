@@ -97,6 +97,16 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 // Your own farm layout (24 Oct 2026, painted for the owner): Move things, Rotate, Clear, Store, drawing and erasing a path, the land that
 // opens later and Visit farm.
 for(const key of ['shipping-bin','friendship-heart'])webpPictures.add(key);
+// World III, the harbour (27 Oct 2026, the owner's ChatGPT pictures): its badge, the harbour master and the first harbour goods.
+for(const key of ['harbour-badge','harbour-master','harbour-crate','seal-pet','rope','barrel','shipsbiscuits','sailcloth','provisions','anchor','fishingnet','anchorchain']){pictures[key]=key;webpPictures.add(key);}
+// The harbour's pins: the harbour master on the office, the seal, and each place's picture (27 Oct 2026, the owner's ChatGPT pictures,
+// 512 px; plan-wereld-3/chatgpt/extra-plekken and plekken-8-10).
+Object.assign(pictures,{harbouroffice:'harbour-master',harbourseal:'seal-pet',ropewalk:'ropewalk',cooperage:'cooperage',galley:'galley',harbourforge:'harbourforge',chandlery:'chandlery',paintshop:'paintshop',instruments:'instruments',
+ shiplantern:'shiplantern',shiptar:'shiptar',shippaint:'shippaint',figurehead:'figurehead',compass:'compass',shipsbell:'shipsbell',harbourwarehouse:'harbourwarehouse',
+ cannery:'cannery',tradinghouse:'tradinghouse',boatyard:'boatyard',tinnedstew:'tinnedstew',tinnedfruit:'tinnedfruit',spicecrate:'spicecrate',perfumecrate:'perfumecrate',oars:'oars',rowboat:'rowboat'});   // places 8-10 and their goods: the owner's ChatGPT pictures too (chatgpt/plekken-8-10), as the first seven places now   // the owner's ChatGPT pictures (27 Oct 2026, chatgpt/extra-plekken): places 512 px, goods 256 px
+pictures.villageboat='farmroad';pictures.harbourboat='farmroad';   // every way to another world in the village and the harbour: the same signpost as the road to the farm (28 Oct 2026, the owner)
+pictures.harbourroad='harbour-badge';   // on the farm, the road to the harbour: its badge
+for(const key of ['harbouroffice','harbourseal','villageboat','harbourboat','harbourroad','ropewalk','cooperage','galley','harbourforge','chandlery','paintshop','instruments','shiplantern','shiptar','shippaint','figurehead','compass','shipsbell','harbourwarehouse','cannery','tradinghouse','boatyard','tinnedstew','tinnedfruit','spicecrate','perfumecrate','oars','rowboat'])webpPictures.add(key);
 for(const key of ['layout-move','layout-rotate','layout-clear','layout-store','path-draw','path-erase','land-locked','visit-farm']){pictures[key]=key;webpPictures.add(key);}
 // What you can build on your farm (24 Oct 2026, painted for the owner), one picture per Build tile.
 for(const kind of ['fence','flowers','grass','oak','pine','birch','shrub','path','bench','flowerbed','haybale','barrels','cart','firewood']){pictures[`decor-${kind}`]=`decor-${kind}`;webpPictures.add(`decor-${kind}`);}

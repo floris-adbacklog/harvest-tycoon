@@ -31,7 +31,7 @@ export const WINDOW_WIKI=Object.freeze({
  'boost-dialog':['diamonds','sec-boosts'],'events-dialog':['events','sec-how-it-works'],'season-dialog':['daily','sec-season-pass'],
  'pass-dialog':['daily','sec-halloween-pass'],'family-dialog':['family','sec-together-is-better'],'utility-dialog':['helpers','sec-tractor'],
  'estate-dialog':['estate','sec-estate-chapters'],'activities-hub-dialog':['helpers','sec-a-helping-hand'],'activities-dialog':['helpers','sec-a-helping-hand'],
- 'valley-dialog':['estate','sec-valley-projects'],'village-square-dialog':['village','sec-your-second-world'],'boat-dialog':['village','sec-your-second-world'],
+ 'valley-dialog':['estate','sec-valley-projects'],'village-square-dialog':['village','sec-your-second-world'],'boat-dialog':['village','sec-your-second-world'],'harbour-dialog':['harbour','sec-ship-orders'],
  'leaderboard-dialog':['quests','sec-leaderboards'],'sound-dialog':['account','sec-settings'],'look-dialog':['account','sec-my-farmer']});
 const BADGE_WIKI=Object.freeze({silo:['helpers','sec-silo-research'],stall:['helpers','sec-farm-stall'],chores:['helpers','sec-farm-chores']});
 export function wikiFor(dialog){

@@ -1,4 +1,4 @@
-import {ITEMS,CROPS,PRODUCTS,HEIRLOOMS,SEASON_CROPS,VILLAGE_GOODS,storedCount,warehouseCapacity,warehouseLevel,warehouseUpgrade,warehouseFull,warehouseNearFull,
+import {ITEMS,CROPS,PRODUCTS,HEIRLOOMS,SEASON_CROPS,VILLAGE_GOODS,HARBOUR_GOODS,harbourWarehouseLevel,harbourWarehouseNext,harbourWarehouseRoom,worldThreeOpen,storedCount,warehouseCapacity,warehouseLevel,warehouseUpgrade,warehouseFull,warehouseNearFull,
  levelOf,worldTwoOpen,WAREHOUSE_MAX_LEVEL} from './farm-state.js';
 import {art,refreshArt} from './visual-icons.js';
 // The Warehouse (22 Oct 2026, the owner's plan: plan-warehouse/voorstel.md with his choices). Its window shows every item in storage, grouped
@@ -14,13 +14,13 @@ export const isWarehouseFull=message=>typeof message==='string'&&WAREHOUSE_FULL.
 export function warehouseTone(state){return warehouseFull(state)?'full':warehouseNearFull(state)?'near':'ok';}
 export const fillText=state=>`${number(storedCount(state))} / ${number(warehouseCapacity(state))}`;
 // The groups of the window, in the Market's order: crops (with heirlooms and season crops, which sell with them), farm goods, village goods.
-const GROUPS=[['crops','Crops','wheat',[...Object.keys(CROPS),...Object.keys(HEIRLOOMS),...Object.keys(SEASON_CROPS)]],['goods','Farm goods','bread',Object.keys(PRODUCTS)],['village','Village goods','stone',Object.keys(VILLAGE_GOODS)]];
+const GROUPS=[['crops','Crops','wheat',[...Object.keys(CROPS),...Object.keys(HEIRLOOMS),...Object.keys(SEASON_CROPS)]],['goods','Farm goods','bread',Object.keys(PRODUCTS)],['village','Village goods','stone',Object.keys(VILLAGE_GOODS)],['harbour','Harbour goods','rope',Object.keys(HARBOUR_GOODS)]];
 export function warehouseGroups(state){
  const seen=new Set();
  return GROUPS.map(([id,name,icon,keys])=>{
   const items=[...new Set(keys)].filter(k=>{if(seen.has(k)||!ITEMS[k])return false;seen.add(k);return (state.inventory?.[k]??0)>0;}).map(k=>[k,Math.floor(state.inventory[k])]).sort((a,b)=>b[1]-a[1]||ITEMS[a[0]].name.localeCompare(ITEMS[b[0]].name));
   return {id,name,icon,items,total:items.reduce((sum,[,n])=>sum+n,0)};
- }).filter(g=>g.items.length||g.id!=='village'||worldTwoOpen(state));
+ }).filter(g=>g.items.length||g.id!=='village'&&g.id!=='harbour'||g.id==='village'&&worldTwoOpen(state));
 }
 // The bar: green, amber from 90%, red when full.
 export function warehouseBar(state){
@@ -39,25 +39,44 @@ export function upgradeCard(state){
   :`<button class="primary-button" id="warehouse-upgrade-go" data-cost="${next.coins}" ${poor||missing?'disabled':''}><span>Upgrade</span><span class="button-price">${art('coins')}${number(next.coins)}</span></button>`;
  return `<section class="warehouse-upgrade" id="warehouse-upgrade"><div><h3>Level ${level} → ${next.level}: ${number(next.capacity)} places</h3>${chips}</div>${button}</section>`;
 }
-export function warehouseContent(state){
+// The harbour warehouse (27 Oct 2026): from level 200, once the harbour is open, built and upgraded at the harbour; each level adds room
+// to this Warehouse, for crops and goods alike (farm-state.js HARBOUR_WAREHOUSE). Each world upgrades its own (the owner: "ik zie in de
+// warehouse 3 buttons"): in the harbour the window has the harbour warehouse's card and no farm upgrade; on the farm and in the village
+// the farm upgrade, and one line for the room the harbour warehouse adds.
+export function harbourLine(state){
+ const level=harbourWarehouseLevel(state);
+ return level?`<p class="warehouse-harbour-line">${art('harbourwarehouse')}<span>Harbour warehouse level ${level}: ${number(harbourWarehouseRoom(state))} more places</span></p>`:'';
+}
+export function harbourCard(state){
+ if(!worldThreeOpen(state))return '';
+ const next=harbourWarehouseNext(state),level=harbourWarehouseLevel(state),room=harbourWarehouseRoom(state);
+ const head=`<h3>${art('harbourwarehouse')}<span>Harbour warehouse${level?` level ${level}`:''}</span></h3>`;
+ if(!next)return `<section class="warehouse-upgrade is-complete" id="warehouse-harbour"><div>${head}<p>Fully upgraded: ${number(room)} more places for crops and goods.</p></div></section>`;
+ const goods=Object.entries(next.goods),missing=goods.some(([k,n])=>(state.inventory[k]??0)<n),poor=state.coins<next.coins;
+ const chips=`<span class="reward-chips"><b class="is-gain">+${number(next.added)} places</b>${goods.map(([k,n])=>`<b class="${(state.inventory[k]??0)<n?'is-missing':''}">${art(k)}${number(state.inventory[k]??0)}/${number(n)} ${ITEMS[k].name}</b>`).join('')}</span>`;
+ const line=level?`It adds ${number(room)} places to your Warehouse, for crops and goods alike.`:'More room in your Warehouse, for crops and goods alike.';
+ return `<section class="warehouse-upgrade" id="warehouse-harbour"><div>${head}<p>${line}</p>${chips}</div><button class="primary-button" id="warehouse-harbour-go" data-cost="${next.coins}" ${poor||missing?'disabled':''}><span>${level?'Upgrade':'Build'}</span><span class="button-price">${art('coins')}${number(next.coins)}</span></button></section>`;
+}
+export function warehouseContent(state,{harbour=false}={}){
  const groups=warehouseGroups(state),empty=!groups.some(g=>g.items.length);
  const list=empty?`<div class="quest-empty warehouse-empty">${art('warehouse')}<h3>Your Warehouse is empty</h3><p>Harvest your fields and collect your batches: everything comes in here.</p></div>`
   :groups.filter(g=>g.items.length).map(g=>`<section class="warehouse-group" data-warehouse-group="${g.id}"><h3>${art(g.icon)}<span>${g.name}</span><b>${number(g.total)}</b></h3><div class="warehouse-items">${g.items.map(([k,n])=>`<div class="warehouse-item">${art(k,'product-art')}<span>${ITEMS[k].name}</span><b>${number(n)}</b></div>`).join('')}</div></section>`).join('');
- return `<p class="warehouse-lead">Everything you harvest and make is kept here. When it is full, harvesting and collecting wait until you sell or use something. Nothing is lost.</p>${warehouseBar(state)}<div class="warehouse-actions"><button class="secondary-button" id="warehouse-market">${art('market')}<span>To the Market</span></button></div>${upgradeCard(state)}${list}`;
+ return `<p class="warehouse-lead">Everything you harvest and make is kept here. When it is full, harvesting and collecting wait until you sell or use something. Nothing is lost.</p>${warehouseBar(state)}<div class="warehouse-actions"><button class="secondary-button" id="warehouse-market">${art('market')}<span>To the Market</span></button></div>${harbour?harbourCard(state):upgradeCard(state)+harbourLine(state)}${list}`;
 }
 // The note where bringing in waits: the numbers, one line, and the two ways on. count: a sweep's fields harvested before it stopped.
 export function fullNoteHtml(state,{count=0}={}){
  const lead=count?`${count} ${count===1?'field':'fields'} harvested. The rest waits on its fields.`:'Sell or use something to bring in more. Nothing is lost.';
  return `<div class="center-notice-card warehouse-note"><span class="toast-icon">${art('warehouse')}</span><p class="toast-text"><strong>Warehouse full (${fillText(state)})</strong></p><p class="warehouse-note-line">${lead}</p><div class="warehouse-note-actions"><button type="button" class="primary-button" data-full-market>${art('market')}<span>To the Market</span></button><button type="button" class="secondary-button" data-full-upgrade><span>Upgrade</span></button></div></div>`;
 }
-export function createWarehouseUI({state,runAction,openMarket,notify,onChange}){
+export function createWarehouseUI({state,runAction,openMarket,notify,onChange,harbour=false}){
  let busy=false,lastTone=null;
  const dialog=()=>$('warehouse-dialog');
  function render(){
   const d=dialog();if(!d?.open)return;
-  $('warehouse-content').innerHTML=warehouseContent(state);
+  $('warehouse-content').innerHTML=warehouseContent(state,{harbour});
   $('warehouse-market').onclick=()=>{d.close();openMarket(marketTab());};
   const go=$('warehouse-upgrade-go');if(go&&go.dataset.cost)go.onclick=upgrade;
+  const build=$('warehouse-harbour-go');if(build)build.onclick=upgradeHarbour;
   refreshArt();
  }
  // The Market opens on the tab with the most to sell.
@@ -66,12 +85,21 @@ export function createWarehouseUI({state,runAction,openMarket,notify,onChange}){
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
   const d=dialog();if(!d)return;d.showModal();render();
   if(section==='upgrade')$('warehouse-upgrade')?.scrollIntoView({block:'center'});
+  if(section==='harbour')$('warehouse-harbour')?.scrollIntoView({block:'center'});
  }
  async function upgrade(){
   if(busy)return;const go=$('warehouse-upgrade-go'),cost=Number(go?.dataset.cost);
   if(warehouseUpgrade(state)?.coins!==cost){notify('The price has changed. Look at the upgrade again.');render();return;}
   busy=true;go.disabled=true;
   try{const r=await runAction({type:'warehouse_upgrade',expectedCost:cost});onChange();notify(`Warehouse level ${r.level}: room for ${number(r.capacity)} items.`);}
+  catch(e){notify(e.message);}
+  finally{busy=false;render();}
+ }
+ async function upgradeHarbour(){
+  if(busy)return;const go=$('warehouse-harbour-go'),cost=Number(go?.dataset.cost);
+  if(harbourWarehouseNext(state)?.coins!==cost){notify('The price has changed. Look at the upgrade again.');render();return;}
+  busy=true;go.disabled=true;
+  try{const r=await runAction({type:'harbour_warehouse',expectedCost:cost});onChange();notify(`Harbour warehouse level ${r.level}: room for ${number(r.capacity)} items in all.`);}
   catch(e){notify(e.message);}
   finally{busy=false;render();}
  }

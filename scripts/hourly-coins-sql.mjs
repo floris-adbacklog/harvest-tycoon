@@ -12,7 +12,8 @@
 // not come out as generated. The md5 of a body here is md5(prosrc) in Postgres: the exact text between the $function$ markers.
 import {writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {EVENT_LEAGUES,HOUR_EVENT_REWARDS} from '../public/farm-state.js';
+import {EVENT_LEAGUES as ALL_LEAGUES,HOUR_EVENT_REWARDS} from '../public/farm-state.js';
+const EVENT_LEAGUES=ALL_LEAGUES.filter(l=>l.world<=2);   // the live leagues, 0..11 (the harbour's five, 27 Oct 2026, come with their own patch)
 import {HOUR_SETTLE_BODY,SCHEDULE_BODY,REWARDS_JSON as DIAMONDS_ONLY_JSON,LEGACY_LINES,NEW_MD5 as HOURLY_MD5} from './hourly-events-sql.mjs';
 import {HOUR_VALIDATE_BODY} from './event-goals-sql.mjs';
 

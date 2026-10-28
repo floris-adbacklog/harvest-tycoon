@@ -95,6 +95,21 @@ export const EVENT_GOAL_TITLES=Object.freeze({
  made_silvercandlestick:[['Silver shine','Silver bars and candles into fine candlesticks.'],['Polished silver','Candlesticks fit for the town’s finest tables.']],
  made_rubyring:[['Ruby red','Set rubies in silver at the Jeweller.'],['A ring of red','Rubies from deep in the Mine, set in silver.']],
  village_requests:[['Helping the village','Bring the villagers the goods they ask for.'],['A busy square','Villagers are waiting at the market square with their requests.']],
+ // The harbour (27 Oct 2026): World III's goals, from the Quay League.
+ ship_loads:[['Load the ships','Bring goods to the ships at the quay.'],['All hands on deck','The ships are waiting for their cargo.']],
+ ships_sent:[['Ships away','Fill a ship and send it off.'],['Fair winds','Load a ship to the brim and wave it goodbye.']],
+ made_rope:[['Rope by the yard','Twist rope in the Ropewalk.'],['Knots and coils','Flax and linen become strong rope.']],
+ made_barrel:[['Barrels by the dozen','Make barrels in the Cooperage.'],['Hoops and staves','Planks and iron become sturdy barrels.']],
+ made_sailcloth:[['Canvas for the wind','Weave sailcloth in the Ropewalk.'],['Full sails','Linen and rope become sailcloth.']],
+ made_fishingnet:[['Cast a wide net','Tie fishing nets in the Ropewalk.'],['Nets for the fleet','Rope and linen become fishing nets.']],
+ harbour_batches:[['Busy harbour','Collect batches in the harbour.'],['Work on the quays','Keep the harbour’s places busy.']],
+ made_shipsbiscuits:[['Ship’s biscuits','Bake ship’s biscuits in the Galley.'],['Food for the voyage','Bread and cheese become ship’s biscuits.']],
+ made_provisions:[['Well stocked','Pack provisions crates in the Galley.'],['Ready to sail','Barrels, biscuits and cheese for a long voyage.']],
+ made_anchor:[['Drop anchor','Forge anchors in the Harbour forge.'],['Iron and rope','Iron bars and rope become anchors.']],
+ made_anchorchain:[['Heavy links','Forge anchor chains in the Harbour forge.'],['Chain by chain','Iron and silver become anchor chains.']],
+ harbour_sold:[['Harbour trade','Sell harbour goods in the harbour.'],['Good business','The harbour’s buyers want your goods.']],
+ seal_pats:[['A friend on the quay','Pat the harbour seal.'],['Whiskers and flippers','The harbour seal loves a pat.']],
+ harbour_upgrades:[['Bigger places','Upgrade the harbour’s places.'],['Shipshape','Make the harbour’s places better and faster.']],
  lake_fish:[['Gone fishing','Row out on the village lake and cast your line.'],['Lake day','Catch fish from the rowboat on the village lake.']]
 });
 
@@ -164,9 +179,26 @@ const VILLAGE_KINDS=[
  // Around the village
  ['lake_fish',4,6,[5,10,15],1],['upgrades',4,6,[1,2,3],1.1]
 ];
-const WORLD_KINDS={1:KINDS,2:VILLAGE_KINDS};
+// Harbour goals (27 Oct 2026, the owner: "maak ook events voor wereld III met nieuwe leagues"): the five harbour leagues from level 221
+// (absolute league index 12 the Quay League ... 16 the Harbour Legends) draw from these only. Groups: 0 ships and quays, 1 ropewalk and
+// cooperage, 2 galley and forge, 3 the harbour's market, 4 around the harbour. A good joins in the first league its place's recipe is
+// open in (sailcloth 222 and provisions 224 from the Crane League, the fishing net 250 from the Anchor League, the chain 262 from the
+// Flagship League). They count once World III's v1 counts them (ship loads, harbour batches, harbour sales, seal pats).
+const HARBOUR_KINDS=[
+ // Ships and quays
+ ['ship_loads',0,12,[4,8,12],1.2],['ships_sent',0,12,[1,1,2],1.1],
+ // Ropewalk and cooperage
+ ['made_rope',1,12,[8,16,24],1.25],['made_barrel',1,12,[9,18,27],1.25],['made_sailcloth',1,13,[2,4,6],1.2],['made_fishingnet',1,14,[1,2,4],1.2],
+ // Galley and forge
+ ['harbour_batches',2,12,[5,8,14],1.5],['made_shipsbiscuits',2,12,[12,24,36],1.25],['made_provisions',2,13,[1,2,3],1.2],['made_anchor',2,13,[1,2,3],1.2],['made_anchorchain',2,15,[1,2,3],1.2],
+ // The harbour's market
+ ['harbour_sold',3,12,[5,10,20],1.2],
+ // Around the harbour
+ ['seal_pats',4,12,[1,2,3],1],['harbour_upgrades',4,12,[1,2,3],1.1]   // the harbour's own upgrades (28 Oct 2026): upgrades is the farm's and the village's
+];
+const WORLD_KINDS={1:KINDS,2:VILLAGE_KINDS,3:HARBOUR_KINDS};
 // The names of the five groups per world, for the wiki (20 Oct 2026).
-export const EVENT_GOAL_GROUPS=Object.freeze({1:['Fields','Crops','Buildings','Market','Helping out'],2:['Mine and forest','Fields and kitchens','Workshops','Market square','Around the village']});
+export const EVENT_GOAL_GROUPS=Object.freeze({1:['Fields','Crops','Buildings','Market','Helping out'],2:['Mine and forest','Fields and kitchens','Workshops','Market square','Around the village'],3:['Ships and quays','Ropewalk and cooperage','Galley and forge','Harbour market','Around the harbour']});
 // Round numbers in the leagues above a kind's own (whole below 20, then to 5, 10 and 100; never 0, easy ≤ medium ≤ hard).
 const nice=x=>x<20?Math.max(1,Math.round(x)):x<100?Math.round(x/5)*5:x<1000?Math.round(x/10)*10:Math.round(x/100)*100;
 // One pool per league (farm-state.js EVENT_LEAGUES): the farm leagues from KINDS, the village leagues from VILLAGE_KINDS.
@@ -187,6 +219,8 @@ export const HOUR_LEFT_OUT=Object.freeze(Object.fromEntries([
  'made_orchardjuice','made_berrypreserves','made_berrysmoothie','made_applecompote','made_pickledbeans','made_truffleomelette','made_berrycheesecake',
  'made_truffles','made_honey','made_wool','made_yarn','made_cloth','made_squashsoup','made_goatcheese','made_candles','made_cider','made_cherryjam',
  'made_flax','made_lavender','made_ironbar','made_builderscrate','made_lavendersoap','made_scentedsachet','made_silvercandlestick','made_rubyring',
+ // The harbour (27 Oct 2026): its batches of 1.5 hours or more, and a whole ship (the next one docks 8-12 hours later).
+ 'made_sailcloth','made_provisions','made_anchor','made_fishingnet','made_anchorchain','ships_sent',
  // The owner: never.
  'valley_baskets','boat_trips','diamonds_spent',
  // Single-product sales most farmers had at 0.

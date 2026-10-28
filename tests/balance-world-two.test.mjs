@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,itemAvailable,recipeValue,marketSaleValue,marketValue,
+import {otherWorldBuilding,createFarm,normalizeFarm,applyFarmAction,xpForLevel,itemAvailable,recipeValue,marketSaleValue,marketValue,
  villageRequestValue,villageBoards,villageRequestExtra,villagerLine,villageSquareReady,
  BUILDINGS,RECIPES,RECIPE_LEVELS,ITEMS,VILLAGE_GOODS,MAX_BUILDING_LEVEL,VILLAGERS,VILLAGE_FARM_GOODS,VILLAGE_NEVER_ASKED,VILLAGE_REQUEST_WAIT,VILLAGE_PREMIUM,VILLAGE_XP_SHARE,
  VILLAGE_THIRD_BOARD,VILLAGE_REQUEST_BOARDS,VILLAGE_REQUEST_BOARDS_MAX,villageGood,worldTwoBuilding,
@@ -136,7 +136,7 @@ test('Help pays exactly what the villager shows, also with VIP and Double earnin
  assert.deepEqual(got,{coins:r.coins,xp:r.xp,villager:VILLAGERS[r.villager].name,readyAt:now+VILLAGE_REQUEST_WAIT,crate:0},'no market crate below level 116');
  assert.equal(s.coins,before.coins+r.coins,'no VIP or Double earnings on top: the shown price');assert.equal(s.xp,before.xp+r.xp);
  for(const [k,n] of Object.entries(r.input))assert.equal(s.inventory[k],before.inventory[k]-n,k);
- assert.deepEqual([s.stats.village_requests,s.stats.village_sold-(before.stats.village_sold??0),s.stats.village_earned-(before.stats.village_earned??0),s.stats.earned-before.stats.earned],[1,units,r.coins,r.coins]);
+ assert.deepEqual([s.stats.village_requests,s.stats.village_sold-(before.stats.village_sold??0),s.stats.village_earned-(before.stats.village_earned??0),s.stats.earned-before.stats.earned],[1,units,r.coins,0]);   // 27 Oct 2026: not the farm's earned
  assert.equal(s.stats.sold,before.stats.sold,'not the farm Market\'s count');
  for(const k of Object.keys(r.input))assert.equal(s.stats['sold_'+k],before.stats['sold_'+k],k);
  assert.equal(s.village.boards[0].request,null);
@@ -289,7 +289,7 @@ test('a builder\'s crate is worth about 1.54 times its market price, never more 
  const ratio=BUILDER_CRATE_COINS/(MARKET_PAYOUT_MULTIPLIER*ITEMS.builderscrate.sell);assert.ok(ratio>=1.5&&ratio<=1.6,`${ratio}`);
  const s=fixture(128,PLACES,{builderscrate:1e6});s.boosts.upgradeCredits=0;
  let coins=0,crates=0,count=0;
- for(const key of Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].type==='production'&&k!=='factory'&&!worldTwoBuilding(k))){
+ for(const key of Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].type==='production'&&k!=='factory'&&!otherWorldBuilding(k))){
   count++;for(let level=1;level<MAX_BUILDING_LEVEL;level++){s.buildings[key].level=level;coins+=upgradeCost(s,key);crates+=builderCrates(s,key);}
  }
  assert.deepEqual([count,coins,crates,crates*BUILDER_CRATE_COINS],[16,20490263,1225,9800000]);

@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {createLegacyFarm} from './legacy-farm.mjs';
-import {createFarm,applyFarmAction,normalizeFarm,xpForLevel,levelOf,recipeAvailability,recipeUnlocked,recipeUnlockHint,recipeDuration,recipeValue,productionSlots,productionSpeed,productionJobs,upgradeCost,buildingEligible,buildingUnlocked,buildingCost,factoryBatches,marketQuote,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,CROPS,ITEMS,FACTORY_LEVEL,FACTORY_COST,FACTORY_TIME_FACTOR,FACTORY_UPGRADE_MULTIPLIER,MAX_BUILDING_LEVEL,SINGLE_BATCH_COST,BOOSTS,QUESTS} from '../game/farm-state.js';
+import {worldThreeBuilding,createFarm,applyFarmAction,normalizeFarm,xpForLevel,levelOf,recipeAvailability,recipeUnlocked,recipeUnlockHint,recipeDuration,recipeValue,productionSlots,productionSpeed,productionJobs,upgradeCost,buildingEligible,buildingUnlocked,buildingCost,factoryBatches,marketQuote,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,CROPS,ITEMS,FACTORY_LEVEL,FACTORY_COST,FACTORY_TIME_FACTOR,FACTORY_UPGRADE_MULTIPLIER,MAX_BUILDING_LEVEL,SINGLE_BATCH_COST,BOOSTS,QUESTS} from '../game/farm-state.js';
 import {ANCHORS,anchorAt} from '../public/farm-layout.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.UTC(2026,8,21,12);
 const act=(s,action,t=now)=>applyFarmAction(s,action,t);
 // Every production recipe gets a bulk version, except the Glasshouse's: those grow crops, and the Factory never makes crops.
-const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&r.building!=='glasshouse'&&BUILDINGS[r.building].world!==2);   // the village's places have no bulk versions
+const base=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&r.building!=='glasshouse'&&!BUILDINGS[r.building].world);   // the village's and the harbour's places have no bulk versions
 const mass=Object.entries(RECIPES).filter(([,r])=>r.building==='factory');
 function farm(level=60){const s=createLegacyFarm(now);s.xp=xpForLevel(level);s.coins=1e9;s.diamonds=1000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;return s;}
 
@@ -94,7 +94,7 @@ test('at level 10 a full Factory makes one good about 2.4 times as fast as that 
 });
 test('only the Factory\'s coin upgrade price is doubled; the diamond alternative and every other building are untouched',()=>{
  const s=farm();
- for(const [id,b] of Object.entries(BUILDINGS).filter(([,b])=>b.type==='production'&&b!==BUILDINGS.factory)){
+ for(const [id,b] of Object.entries(BUILDINGS).filter(([id,b])=>b.type==='production'&&b!==BUILDINGS.factory&&!worldThreeBuilding(id))){
   s.buildings[id].level=1;assert.equal(upgradeCost(s,id),Math.max(Math.round(b.upgradeCost*1.5),Math.round((BUILDING_COSTS[id]??0)*.05)),id);
  }
  s.buildings.factory.level=1;assert.equal(upgradeCost(s,'factory'),Math.round(BUILDING_COSTS.factory/FACTORY_UPGRADE_MULTIPLIER*.05)*FACTORY_UPGRADE_MULTIPLIER);

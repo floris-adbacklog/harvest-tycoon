@@ -32,7 +32,10 @@ export const VILLAGE_PLACES=Object.freeze({
 // The market square's pin (11 Oct 2026, the owner's review) stands on the square's west half: on its middle it touched the Jeweller's name.
 export const VILLAGE_UTILITIES=Object.freeze({
  villagemarket:{x:37.1,y:8.4,z:-6.2},
- farmroad:{x:.6,y:6.7,z:-21}
+ // 28 Oct 2026 (the owner: the road to the farm ending at the waterfall was not logical): its sign and pin stand at the market square's
+ // east side (pin), where the road leaves the square for the pass in the mountains; a trip from the farm arrives at the square, beside
+ // it. x, y, z stay the old corner by the waterfall, which the village's approved first views are measured round (VILLAGE_FRAME).
+ farmroad:{x:.6,y:6.7,z:-21,pin:Object.freeze({x:48,y:8.6,z:-5})}
 });
 // The village lake's fishing spot (12 Oct 2026, plan D; VILLAGE_LAKE is the water's colour): the rowboat that already floats in the
 // middle of the lake, between the market square and the Pier (the pack's props_016; tests/lake-screen.test.mjs checks it is still there,
@@ -40,6 +43,9 @@ export const VILLAGE_UTILITIES=Object.freeze({
 // about 3 units out (left of the boat on the screen); water the lake's surface there (the farm pond's is .034); pin the fishing pin's
 // spot over the boat; jump how far from the float a fish may leap. Not a VILLAGE_UTILITIES place: that list would give it a second pin
 // and move the village's approved first views (VILLAGE_FRAME, villageFrame.phone). pond-scene.js makes the rest from it.
+// The boat to the harbour (27 Oct 2026): beside the Pier, over the lake, where the town boat sails from. Not a VILLAGE_UTILITIES place, so
+// the village's approved first views stay as they are; game.js adds its pin, shown once the harbour is open.
+export const VILLAGE_HARBOUR_BOAT=Object.freeze({x:9.8,y:7,z:.2});
 export const VILLAGE_FISHING_SPOT=Object.freeze({x:-1.6,z:-.7,seat:6.95,float:Object.freeze({x:-3.7,z:1.4}),water:6.67,pin:Object.freeze({x:-1.6,y:8,z:-.7}),jump:2});
 // The places across the lake or past the west shore (Oct 2026): an upright phone's first view is the village's own side; these are a swipe away.
 export const VILLAGE_FAR_SIDE=Object.freeze(['lumbercamp','kiln','linenloft','soapmaker','pier']);

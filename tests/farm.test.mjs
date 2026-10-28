@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {createLegacyFarm as createFarm} from './legacy-farm.mjs';
-import {worldTwoBuilding,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS,FIRST_HARVEST_BONUS} from '../game/farm-state.js';
+import {worldTwoBuilding,worldThreeBuilding,otherWorldItem,applyFarmAction,CROPS,RECIPES,QUESTS,ITEMS,DAY_MS,DAILY_REWARDS,utcDay,levelReward,levelOf,dailyTasks,dailyOrders,normalizeFarm,marketValue,xpForLevel,STARTER_COINS,STARTER_ITEMS,FIRST_HARVEST_BONUS} from '../game/farm-state.js';
 import {readFarm,transactFarm} from '../game/farm-store.js';
 const now=Date.UTC(2026,8,16,12);
 const apply=(s,a,t=now)=>applyFarmAction(s,a,t);
@@ -27,7 +27,7 @@ test('all 16 crops can be planted, watered and harvested; collection is unique',
  assert.equal(s.stats.varieties,16);assert.equal(s.discovered.length,16);
 });
 test('all 81 recipes require ingredients, persist timed jobs and collect once',()=>{
- const ordinary=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory');   // the Factory's bulk versions have their own tests
+ const ordinary=Object.entries(RECIPES).filter(([,r])=>r.building!=='factory'&&!worldThreeBuilding(r.building));   // the Factory's bulk versions and the harbour's places (27 Oct 2026) have their own tests
  assert.equal(ordinary.length,81,'wheat feed joined on 26 Sep 2026; World II added 3 farm recipes and 10 in the village (30 Sep 2026), and 14 for levels 110-158 (Oct 2026)');
  for(const [id,r]of ordinary){
   const s=createFarm(now);s.xp=xpForLevel(Math.max(90,r.minLevel??1));s.coins=100000;for(const b of Object.values(s.buildings))b.built=true;for(const k of Object.keys(s.inventory))s.inventory[k]=0;
@@ -40,7 +40,7 @@ test('all 81 recipes require ingredients, persist timed jobs and collect once',(
   const result=apply(restored,{type:'collect',building:r.building},now+r.duration);
   assert.deepEqual(result.items,r.output);
   // A batch counts where it was made: the village's places in their own count (30 Sep 2026).
-  if(worldTwoBuilding(r.building))assert.deepEqual([restored.stats.village_batches,restored.stats.produced??0],[1,0]);else assert.equal(restored.stats.produced,1);
+  if(worldTwoBuilding(r.building)||Object.keys(r.output).some(otherWorldItem))assert.deepEqual([restored.stats.village_batches,restored.stats.produced??0],[1,0]);else assert.equal(restored.stats.produced,1);
   assert.throws(()=>apply(restored,{type:'collect',building:r.building},now+r.duration),/Nothing to collect/);
  }
 });

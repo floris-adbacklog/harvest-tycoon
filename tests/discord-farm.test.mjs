@@ -66,7 +66,7 @@ test('the privacy policy opens through Discord\'s own window; other taps, other 
 });
 
 test('the wiki on Discord: its own lines, no guests, nothing of CrazyGames or Kongregate, the policy the only link out',()=>{
- const ctx={level:120,portal:'discord',href:id=>`#wiki-${id}`},html=WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx).html).join('\n');
+ const ctx={level:120,portal:'discord',href:id=>`#wiki-${id}`},html=WIKI_TOPICS.map(t=>wikiArticle(t.id,ctx)?.html??'').join('\n');
  for(const gone of [/Buying diamonds/,/Play it as an app/,/Install the app/,/Invite a friend/,/Confirm your email/,/Share my farm/,/delete-account/,/Stripe;/,/Reminders/,/Forgot your password/,/home screen/,/CrazyGames/,/Kongregate/,/As a guest/,/Starter Pack/,/Who can chat/])
   assert.doesNotMatch(html,gone,String(gone));
  assert.match(html,/Your farm on Discord/);assert.match(html,/Your farm belongs to your Discord account: open the game in Discord on any device and it is there\./);
@@ -74,11 +74,11 @@ test('the wiki on Discord: its own lines, no guests, nothing of CrazyGames or Ko
  const links=[...html.matchAll(/href="([^"]*)"/g)].map(m=>m[1]);
  assert.deepEqual([...new Set(links.filter(href=>!href.startsWith('#')))],[PRIVACY_URL],'the wiki stays in the game; the policy is the one link out');
  assert.doesNotMatch(html,/mailto:/);assert.doesNotMatch(wikiQuick({portal:'discord'}),/>App</);
- assert.equal(WIKI_TOPICS.map(t=>wikiArticle(t.id,{...ctx,portal:DISCORD}).html).join('\n'),html,'the portal object reads the same as its name');
+ assert.equal(WIKI_TOPICS.map(t=>wikiArticle(t.id,{...ctx,portal:DISCORD})?.html??'').join('\n'),html,'the portal object reads the same as its name');
  // CrazyGames and Kongregate as before.
- const cg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:true}).html).join('\n');
+ const cg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:true})?.html??'').join('\n');
  assert.match(cg,/Who can chat/);assert.match(cg,/Your farm on CrazyGames/);assert.doesNotMatch(cg,/Discord|Kongregate/);
- const kg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:'kongregate'}).html).join('\n');
+ const kg=WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,portal:'kongregate'})?.html??'').join('\n');
  assert.match(kg,/Your farm on Kongregate/);assert.doesNotMatch(kg,/Discord|Who can chat|CrazyGames/);
 });
 

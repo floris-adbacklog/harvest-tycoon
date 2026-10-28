@@ -25,6 +25,7 @@ export function entryLine(e,{phone=false}={}){
  if(e.kind==='Ready to build')return 'Ready to build · open Buildings';
  if(e.kind==='Landmark')return 'Landmark · built from a golden brief at the market square';
  if(e.kind==='Village place')return 'Village place · built from a golden brief at the market square';
+ if(e.kind==='Harbour place')return 'Harbour places are built from the harbour master’s works.';   // World III (28 Oct 2026): not from Buildings
  if(e.kind==='Ready to expand')return 'New field · buy it at the Farmhouse';
  if(e.id==='feature:fishing')return 'Activity · tap its pin over the pier';
  if(e.id==='pond:page2')return `Catch all ${Object.keys(FISH).length} kinds: ${POND_BOOK2_DIAMONDS} diamonds and a new cast every ${POND_BOOK_REFILL_MS/60000} minutes.`;

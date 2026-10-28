@@ -33,7 +33,7 @@ test('a window\'s rule lines are left out, each one still in the game; a buildin
 // 24 Oct 2026 (the owner: "wat doet dit i'tje hier?", then "stuur die i gewoon naar wiki links want dit is heel verwarrend"): the ⓘ opens
 // the window's page in How to play, with the way back to the window.
 test('the ⓘ beside Close opens the window\'s page in How to play, and its way back opens the window again',()=>{
- const topics=new Set(['getting-started','crops','buildings','market','quests','daily','family','events','helpers','village','estate','diamonds','chat','account']);
+ const topics=new Set(['getting-started','crops','buildings','market','quests','daily','family','events','helpers','village','harbour','estate','diamonds','chat','account']);
  for(const [id,[topic,section]] of Object.entries(WINDOW_WIKI)){assert.ok(topics.has(topic),id);assert.match(section,/^sec-[a-z0-9-]+$/,id);}
  const farm=read('public/farm.html')+read('src/ui.js');for(const id of Object.keys(WINDOW_WIKI).filter(id=>id!=='events-dialog'))assert.match(farm,new RegExp(`<dialog id="${id}"`),id);   // the leaderboard's window is made in src/ui.js
  let kept=null,asked=null,shown=0;const closed=[];

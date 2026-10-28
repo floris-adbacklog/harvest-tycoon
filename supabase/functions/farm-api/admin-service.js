@@ -1,4 +1,4 @@
-import {normalizeFarm,levelOf,ITEMS,CROPS,giftPass} from './farm-state.js';
+import {normalizeFarm,levelOf,ITEMS,CROPS,giftPass,worldThreeItem,WORLD_THREE_LEVEL} from './farm-state.js';
 import {validEmail} from './account-form.js';
 import {portalOf} from './portal.js';
 import {setInviteClosed} from './invite-service.js';
@@ -88,6 +88,9 @@ export async function handleAdminGrant({admin,body,user}){
   if(foundFarm.error)throw foundFarm.error;if(foundProfile.error)throw foundProfile.error;
   const row=foundFarm.data;if(!row||!foundProfile.data)return respond({error:'This farmer could not be found.'},404);
   const now=Date.now(),state=normalizeFarm(row.state,now);
+  // A harbour good only for a farmer of level 200 or more (27 Oct 2026): below it the harbour is not there, and its goods would put the
+  // harbour's keys in a save that has none (farm-state.js harbourEra).
+  if(item&&worldThreeItem(item)&&levelOf(state)<WORLD_THREE_LEVEL)return respond({error:`Harbour goods only go to farmers of level ${WORLD_THREE_LEVEL} or more.`},400);
   // A removal takes what is there, at most: never below 0.
   const given=diamonds<0?-Math.min(-diamonds,Math.max(0,state.diamonds)):diamonds;
   if(diamonds<0&&!given)return respond({error:'This farmer has no diamonds to take back.'},400);

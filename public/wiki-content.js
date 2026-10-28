@@ -1,10 +1,11 @@
-import {EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,COIN_PACK,DAILY_BOOST_MS,giftCoins,COMEBACK_MIN_DAYS,COMEBACK_MAX_DAYS,COMEBACK_EVERY_DAYS,COMEBACK_COINS,comebackCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,MARKET_PAYOUT_MULTIPLIER,familyOrderPay,FAMILY_ORDER_LINES,FAMILY_ORDER_VALUE,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,HAND_FULL_LEVEL,HAND_REST_PER_LEVEL,FIRST_BATCH_MS,TRACTOR_FUEL_BASE,FULL_CARE_COST,SHIFT_MS,SHIFT_COINS_PER_DIAMOND,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fieldFuel,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,LAB_FULL_BEDS,MILLER_LEVEL,MILLER_ORDER,MILLER_PREMIUM,MILLER_DIAMONDS,millerValue,POND_BOOK_REFILL_MS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,VISITOR_DIAMONDS,GIANT_COINS_PER_KG,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,TOP_XP_FROM,XP_CURVE,FAMILY_EVENT_BONUS,worldTwoBuilding,worldTwoItem,VILLAGE_GOODS,MASTER_UPGRADES,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,TOP_BUILDING_LEVEL,DOUBLE_BATCH_PER_LEVEL,VILLAGE_QUESTS,questXp,VILLAGE_BRIEFS,VILLAGE_BUILD_XP,VILLAGE_UPGRADE_GOODS,VILLAGE_THIRD_BOARD,VILLAGE_REQUEST_BOARDS,VILLAGE_REQUEST_BOARDS_MAX,VILLAGE_REQUEST_WAIT,VILLAGE_XP_SHARE,VILLAGE_PREMIUM,villageRequestValue,upgradeGoods,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_TILES_FROM,VILLAGE_UPGRADE_TILES,VILLAGE_THREE_KINDS,BUILDER_CRATE_COINS,upgradeCost,BOAT_GOODS,BOAT_PREMIUM,BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,BOAT_XP_SHARE,BOAT_RETURN,BOAT_QUAY_RETURN,boatValue,WORLD_TWO_TOP,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,SEASON_PASS,passPhase,passTotals,BOOST_LENGTH_NAMES,expansionCost,expansionMaterials,expansionLevel} from './farm-state.js';
+import {HARBOUR_XP_FROM,HARBOUR_XP_STEP,worldThreeBuilding,worldThreeItem,EVENT_LEAGUES,CHAPTER_STALL_INCOME,FAIR_CHAMPION_DIAMONDS,QUESTS,QUEST_XP,ACTIVE_STATIONS,CROPS,CROP_LEVELS,BUILDINGS,BUILDING_LEVELS,BUILDING_COSTS,RECIPES,RECIPE_LEVELS,PRODUCTS,ITEMS,FEATURE_LEVELS,FACTORY_LEVEL,FACTORY_COST,MAX_BUILDING_LEVEL,MAX_PLOTS,STARTER_FIELDS,EARLY_FIELDS,MASTERY_TIERS,SILO_COSTS,siloBonus,DAILY_REWARDS,DAILY_DIAMONDS,DAILY_BOOSTS,COIN_PACK,DAILY_BOOST_MS,giftCoins,COMEBACK_MIN_DAYS,COMEBACK_MAX_DAYS,COMEBACK_EVERY_DAYS,COMEBACK_COINS,comebackCoins,DELIVERY_LEVELS,DELIVERY_TIERS,REPLACE_ORDER_COST,FAMILY_CONFIG,FAMILY_MIN_LEVEL,MARKET_PAYOUT_MULTIPLIER,familyOrderPay,FAMILY_ORDER_LINES,FAMILY_ORDER_VALUE,BOOSTS,VIP_PLANS,DIAMOND_PACKS,SINGLE_CROP_COST,SINGLE_BATCH_COST,INVITE_REWARD,INVITE_LEVEL,INVITE_DAYS,INVITE_LIMIT,STARTER_LEVEL,IMPROVEMENTS,CHORES,RANCH_HERDS,SWIPE_MAX_FIELDS,BEGINNER_REWARD,ROOKIE_BOOST_MS,ROOKIE_TIMER_BOOST,EMAIL_BONUS,choreRewards,CHORE_PRACTICE_STEP,ACTIVITY_ROUND_REWARD,HAND_FULL_LEVEL,HAND_REST_PER_LEVEL,FIRST_BATCH_MS,TRACTOR_FUEL_BASE,FULL_CARE_COST,SHIFT_MS,SHIFT_COINS_PER_DIAMOND,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fieldFuel,stallLevel,STALL_MAX_LEVEL,PROJECTS,CHAPTER_DIAMONDS,VALLEY_STALLS,VALLEY_RESTOCK,VALLEY_PREMIUM,RANCH_SPEEDUP,RANCH_SWITCH_COST,DEPOT_PREMIUM,DEPOT_RESTOCK,DEPOT_DIAMONDS,levelReward,DAILY_CHALLENGE_DIAMONDS,DAILY_BONUS,MARKET_RANGES,FAMILY_CHEST_TIERS,FAMILY_CHEST_POINTS,FAMILY_CHEST_MIN,FAMILY_LEVEL_STEPS,FAMILY_LEVEL_BONUS,FAMILY_MAX_COLEADERS,HEIRLOOMS,LAB_YIELD,LAB_DISCOVER_DIAMONDS,LAB_COMPLETE_DIAMONDS,LAB_FULL_BEDS,MILLER_LEVEL,MILLER_ORDER,MILLER_PREMIUM,MILLER_DIAMONDS,millerValue,POND_BOOK_REFILL_MS,VISITOR_STREAK_MAX,VISITOR_PREMIUM,VISITOR_DIAMONDS,GIANT_COINS_PER_KG,GIANT_KG_PER_DIAMOND,GIANT_MAX_DIAMONDS,GIANT_RECORD_DIAMONDS,GIANT_RECORD_MIN,GIANT_FEED,GIANT_FEED_KG,VALLEY_PROJECTS,MASTER_BRANCHES,MASTER_FROM,TOP_XP_FROM,XP_CURVE,FAMILY_EVENT_BONUS,worldTwoBuilding,worldTwoItem,VILLAGE_GOODS,MASTER_UPGRADES,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,TOP_BUILDING_LEVEL,DOUBLE_BATCH_PER_LEVEL,VILLAGE_QUESTS,questXp,VILLAGE_BRIEFS,VILLAGE_BUILD_XP,VILLAGE_UPGRADE_GOODS,VILLAGE_THIRD_BOARD,VILLAGE_REQUEST_BOARDS,VILLAGE_REQUEST_BOARDS_MAX,VILLAGE_REQUEST_WAIT,VILLAGE_XP_SHARE,VILLAGE_PREMIUM,villageRequestValue,upgradeGoods,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,VILLAGE_TILES_FROM,VILLAGE_UPGRADE_TILES,VILLAGE_THREE_KINDS,BUILDER_CRATE_COINS,upgradeCost,BOAT_GOODS,BOAT_PREMIUM,BOAT_DIAMONDS,BOAT_DIAMOND_TRIPS,BOAT_XP_SHARE,BOAT_RETURN,BOAT_QUAY_RETURN,boatValue,WORLD_TWO_TOP,VILLAGE_LANDMARKS,VILLAGE_LANDMARK_XP,VILLAGE_HALL_PREMIUM,GREAT_HALL_DIAMONDS,SEASON_PASS,passPhase,passTotals,BOOST_LENGTH_NAMES,expansionCost,expansionMaterials,expansionLevel} from './farm-state.js';
 import {art,artSource} from './visual-icons.js';
+import {HARBOUR_WAREHOUSE,WORLD_THREE_LEVEL,SHIP_XP_SHARE,SHIP_RETURN,SHIP_TUG_RETURN,shipValue,shipPremium,shipQuays,CONTAINER_SHIP,WORLD_VOYAGE,HARBOUR_WEEK,HARBOUR_GOODS,HARBOUR_PLACES,HARBOUR_RECIPES,HARBOUR_WORKS,HARBOUR_WORK_XP,HARBOUR_QUESTS,harbourQuestPicture} from './harbour-rules.js';
 // Natural fertilizer's share (21 Oct 2026): its own section in Fields and crops.
 import {FERTILIZER_CUT,CARE_AT,WATER_CUT,WATER_TOWER_CUT,CARE_CUT,caredDuration,SHIP_BIN_BONUS,SHIP_BIN_ROOM_MAX,NEIGHBOUR_HEARTS,neighbourLevel} from './farm-state.js';
 import {WAREHOUSE_CAPACITY,WAREHOUSE_COSTS,WAREHOUSE_MASTER,WAREHOUSE_MAX_LEVEL,WAREHOUSE_START_ROOM} from './farm-state.js';
 // The Fishing pond (11 Oct 2026): its section, only once the pond is open (POND_OPEN).
-import {FAMILY_IDLE_DAYS,FAMILY_IDLE_DEFAULT} from './farm-state.js';
+import {FAMILY_IDLE_DAYS,FAMILY_IDLE_DEFAULT,LIVE_EVENT_LEAGUES,xpForLevel} from './farm-state.js';
 // The farm's pets (20 Oct 2026): their names and finds, for one line in Getting started.
 import {PETS,PET_CAT_CROPS,PET_DEER_PLANKS} from './farm-state.js';
 import {FEATURE_NAMES,POND_OPEN,POND_LEVEL,POND_START_CASTS,POND_MAX_CASTS,POND_REFILL_MS,POND_PERFECT,POND_NEW_FISH_XP,POND_NEW_FISH_COINS,POND_BOOK_DIAMONDS,POND_LEGEND_BY,FISH,FISH_PAGES,POND_PAGE_TWO_LEVEL,POND_BOOK2_DIAMONDS,POND_STURGEON_BY} from './farm-state.js';
@@ -41,6 +42,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'events',title:'Events',art:'live-events',blurb:'A short shared goal every hour.',keywords:'event goals qualify podium league'},
  {id:'helpers',title:'Farm helpers',art:'tractor',blurb:'Tractor, silo research, farm stall, chores and a helping hand.',keywords:'tractor silo stall chores helping hand greenhouse apiary paddock workshop fertilize'},
  {id:'village',title:'The Village',art:'village-badge',blurb:'World II from level 100: villagers’ requests, the mine, the forest, the smithy and master tools for your farm.',keywords:'village world ii second world mine lumber camp smithy windmill iron silver ruby pickaxe master tools packed lunch stone log plank level 15 double batch travel requests villagers brief golden market square fields potatoes canteen pasty market week crate clay roof tile kiln potter flax linen loft weaver builder crate lavender soap sachet jeweller candlestick pier boat cargo landmark landmarks wind pump longhouse quay lookout tower great hall'},
+ {id:'harbour',title:'The Harbour',art:'harbour-badge',blurb:'World III from level 200: ships that pay twice, harbour places and goods, and your own flagship at 300.',keywords:'harbour harbor port world iii third world ship ships orders quay quays crane cranes tugboat container cargo ropewalk rope cooperage barrel galley biscuits provisions sailcloth forge anchor chain fishing net seal pigeons flagship voyage rail siding shipyard harbour master'},
  {id:'estate',title:'Estate and Valley',art:'estate',blurb:'Big goals for later: projects, the Valley Market and more.',keywords:'estate projects valley market ranch workshop trade depot fair improvements'},
  {id:'diamonds',title:'Diamonds, boosts and VIP',art:'diamonds',blurb:'How to earn diamonds and what they do.',keywords:'diamonds boosts vip shop packs starter pack buy premium'},
  {id:'chat',title:'Chat and house rules',art:'chat',blurb:'Talking with other farmers, and keeping it friendly.',keywords:'chat messages private block report rules moderator moderators admin team staff'},
@@ -62,19 +64,21 @@ export const STARTER_DAYS=7;
 export const WIKI_GROUPS=Object.freeze([
  {title:'Start here',art:'tool-seeds',ids:['getting-started','crops','buildings']},
  {title:'Grow your farm',art:'harvest',ids:['market','daily','quests','helpers']},
- {title:'Together and extras',art:'family-sharing',ids:['family','events','chat','diamonds','estate','village','account']}
+ {title:'Together and extras',art:'family-sharing',ids:['family','events','chat','diamonds','estate','village','harbour','account']}
 ]);
 // Each topic's header has its own soft colour.
-export const WIKI_TINTS=Object.freeze({'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',village:'#dde6ee',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'});
+export const WIKI_TINTS=Object.freeze({'getting-started':'#e3efd6',crops:'#f6e7b8',buildings:'#f3d9cf',market:'#f6dfc4',quests:'#efe4cf',daily:'#f5d9dc',family:'#dcebd3',events:'#e6def0',helpers:'#d8e7f0',estate:'#dbe9e2',village:'#dde6ee',harbour:'#d6e9f2',diamonds:'#d9ebf7',chat:'#e1eed8',account:'#ebe5dc'});
 const TINTS=WIKI_TINTS;
 
 const number=n=>Number(n).toLocaleString('en-US');
+// The first level whose step is the harbour's flat step (the steps just past 200 stay what curve 7 asked, so no farm drops a level).
+const harbourXpFlat=()=>{let l=HARBOUR_XP_FROM;while(l<HARBOUR_XP_FROM+50&&xpForLevel(l+1)-xpForLevel(l)!==HARBOUR_XP_STEP)l++;return l;};
 export function wikiTime(ms){
  const minutes=Math.round(ms/60000);if(minutes<60)return `${minutes} min`;
  const hours=Math.floor(minutes/60),rest=minutes%60;if(hours<24)return rest?`${hours} h ${rest} min`:`${hours} h`;
  const days=Math.floor(hours/24),h=hours%24,d=`${days} ${days===1?'day':'days'}`;return h?`${d} ${h} h`:d;
 }
-const itemName=key=>ITEMS[key]?.name??PRODUCTS[key]?.name??CROPS[key]?.name??key;
+const itemName=key=>HARBOUR_GOODS[key]?.name??ITEMS[key]?.name??PRODUCTS[key]?.name??CROPS[key]?.name??key;
 // While a topic is written (wikiArticle): its helpers, so a name in any table can link to where it is explained without every table
 // handing them on (Oct 2026). Only set during that one synchronous call.
 let scope=null;
@@ -140,10 +144,13 @@ export const recipeLevel=key=>{const r=RECIPES[key];return r.building==='factory
 // World II (30 Sep 2026): the village's places and everything made for or from it (packed lunches, the heirloom-flour bakes) have
 // their own topic, The Village; the farm's topics leave them out.
 const worldTwoRecipe=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some(worldTwoItem);
+// The harbour's places and goods (27 Oct 2026) are on The Harbour's page only, which shows from level 200.
+const harbourRecipe=r=>worldThreeBuilding(r.building)||Object.keys(r.output).some(worldThreeItem);
+const HARBOUR_SPOT='sec-harbour-places-and-goods';
 // Where a name in a table leads (Oct 2026): a crop to its row in Every crop, a good to the building that makes it (its row opens; the
 // village's goods and the farm's goods for the village as in search), an heirloom to Heirlooms. [topic, spot]; null: plain text.
 const MADE_AT=new Map();
-for(const r of Object.values(RECIPES))if(r.building!=='factory')for(const out of Object.keys(r.output))if(!MADE_AT.has(out))MADE_AT.set(out,worldTwoRecipe(r)?['village',worldTwoBuilding(r.building)?`building-${r.building}`:'sec-made-on-the-farm']:['buildings',`building-${r.building}`]);
+for(const r of Object.values(RECIPES))if(r.building!=='factory')for(const out of Object.keys(r.output))if(!MADE_AT.has(out))MADE_AT.set(out,harbourRecipe(r)?['harbour',HARBOUR_SPOT]:worldTwoRecipe(r)?['village',worldTwoBuilding(r.building)?`building-${r.building}`:'sec-made-on-the-farm']:['buildings',`building-${r.building}`]);
 const itemTarget=key=>CROPS[key]?['crops',`crop-${key}`]:HEIRLOOMS[key]?['estate','sec-heirlooms']:MADE_AT.get(key)??null;
 
 // ctx: {level: the player's level, or null on the website; href: id => link to a topic; now: the moment (seasonal sections, the
@@ -420,7 +427,7 @@ const BODIES={
   +section('Every crop',dual(table(['Crop','Opens','Seed','Grows in','With water and care','Sells for','XP','Grows back','Used for'],rows,'wiki-crops'),cards));
  },
  buildings(h){
-  const production=Object.entries(BUILDINGS).filter(([key,b])=>b.type==='production'&&!worldTwoBuilding(key)).sort(([a],[b])=>buildingLevel(a)-buildingLevel(b));
+  const production=Object.entries(BUILDINGS).filter(([key,b])=>b.type==='production'&&!worldTwoBuilding(key)&&!worldThreeBuilding(key)).sort(([a],[b])=>buildingLevel(a)-buildingLevel(b));
   const blocks=production.map(([key])=>buildingBlock(h,key,Object.entries(RECIPES).filter(([,r])=>r.building===key&&!worldTwoRecipe(r)).sort(([a],[b])=>recipeLevel(a)-recipeLevel(b)))).join('');
   return section('How buildings work',facts([
    ['buildings','Build',`Each building opens at a level and costs coins once; the ${BUILDINGS.dairy.name} needs the ${BUILDINGS.mill.name} first, the ${BUILDINGS.bakery.name} the ${BUILDINGS.dairy.name} and the ${BUILDINGS.windmill.name}. Tap a building to start a batch: it turns crops (or other goods) into goods that sell for more.`],
@@ -545,14 +552,17 @@ const BODIES={
   // 20 Oct 2026, the owner: an event every hour with one goal (farm-state.js HOUR_EVENT_REWARDS, eventPrizes): diamonds, and since
   // later that day coins × the league again, a quarter of the 6-hour events' coins; the family bonus's coins are flat.
   const prize=eventPrizes(HOUR_EVENT_REWARDS),[first,second,third]=prize.podium.map(p=>p.diamonds),firstCoins=l=>(prize.coins+prize.podium[0].coins)*l.coins;
-  const village=h.level==null||h.level>=WORLD_TWO_LEVEL,shown=EVENT_LEAGUES.filter(l=>l.world===1||village);
-  const v=EVENT_LEAGUES.find(l=>l.world===2),last=EVENT_LEAGUES.at(-1);
+  // 27 Oct 2026: the five harbour leagues (world 3) show the same way, from level WORLD_THREE_LEVEL, once their SQL is live
+  // (LIVE_EVENT_LEAGUES past 12, 28 Oct 2026); until then nobody races in one.
+  const village=h.level==null||h.level>=WORLD_TWO_LEVEL,harbour=EVENT_LEAGUES.findIndex(l=>l.world===3)<LIVE_EVENT_LEAGUES&&(h.level==null||h.level>=WORLD_THREE_LEVEL),shown=EVENT_LEAGUES.filter(l=>l.world===1||l.world===2&&village||l.world===3&&harbour).map((l,i,all)=>i===all.length-1&&l.to?{...l,to:null}:l);   // the last shown league has no top
+  const v=EVENT_LEAGUES.find(l=>l.world===2),last=EVENT_LEAGUES.filter(l=>l.world===2).at(-1),hv=EVENT_LEAGUES.find(l=>l.world===3),hl=EVENT_LEAGUES.at(-1);
   return section('A new event every hour',`<p>${h.lvl(EVENTS_LEVEL)} A new event starts every hour, on the hour. You play for 55 minutes; in the last 5 minutes the prizes are handed out. Everyone in your league plays toward the same goal. Events open as soon as you reach level ${EVENTS_LEVEL}.</p>`)
   +section('How it works',facts([
    ['live-events','Goals',`Every event has one goal, one you can finish within the hour. The kind of play changes every hour: the fields, crops, buildings, the market or helping out. Each league gets its own goal, made for its levels: the Sprout League harvests wheat and collects eggs, higher leagues milk goats and drive the tractor, with bigger numbers.${village?` <span>From level ${v.from} your league is a village league: its goal is in the village, from stone and planks to roof tiles and lake fish.</span>`:''} <span>Your progress shows in the event window.</span>`],
    ['trophy','Rewards',`Reach the goal and you have finished. Everyone who finishes wins coins and diamonds; the sooner you finish, the more. The first three in each league win ${first}, ${second} and ${third} diamonds, every other finisher ${prize.finisher.diamonds}.`],
    ['rank-gold','Leagues','You race in your league, against farmers of about your level, with its own top 10 and podium. Your league is set when you join an event (your first action that counts), and you finish that event in that league, even if you level up. Diamonds are the same in every league; higher leagues win more coins.'],
    ...(village?[['village-badge','Village leagues',`From level ${v.from} you race in a village league, with goals in the village and coins ×${v.coins} to ×${last.coins}. Each one you finish counts in Village events and in Events finished.`]]:[]),
+   ...(harbour&&hv?[['harbour-badge','Harbour leagues',`From level ${hv.from} you race in a harbour league, with goals in the harbour and coins ×${hv.coins} to ×${hl.coins}.`]]:[]),
    ['family-members','Family bonus',`When ${FAMILY_EVENT_BONUS.finishers} or more members of one Farm family finish the same event, each of them gets ${number(FAMILY_EVENT_BONUS.coins)} coins and ${FAMILY_EVENT_BONUS.diamonds} diamonds more. <span>They do not have to be in the same league.</span>`],
    ['gift','Next event','When an event ends, the window shows when the next one starts and what it gives.']
   ]))
@@ -563,7 +573,7 @@ const BODIES={
   +shown.map(l=>{
    const i=l.index,prev=EVENT_LEAGUES[i-1],below=new Set(prev?.world===l.world?EVENT_HOUR_POOLS[i-1].flat().map(g=>g.stat):[]);
    const added=EVENT_HOUR_POOLS[i].map((group,k)=>[k,group.filter(g=>!below.has(g.stat))]).filter(([,group])=>group.length);
-   const intro=!i?'Goals you can expect, one per event:':prev.world!==l.world?'Village goals you can expect, one per event:':added.length?'Every goal from the league below, with bigger numbers, plus:':'Every goal from the league below, with bigger numbers.';
+   const intro=!i?'Goals you can expect, one per event:':prev.world!==l.world?`${l.world===3?'Harbour':'Village'} goals you can expect, one per event:`:added.length?'Every goal from the league below, with bigger numbers, plus:':'Every goal from the league below, with bigger numbers.';
    return section(l.name,`<p class="wiki-league"><img class="wiki-league-badge" src="/assets/icons/league-${l.id}.webp" alt="" width="48" height="48" loading="lazy"><span class="wiki-league-facts"><span>${l.to?`Levels ${l.from}–${l.to}`:`Level ${l.from}+`}</span><span>Coins ×${l.coins}</span></span></p><p>${intro}</p>${added.length?`<ul class="wiki-list">${added.map(([k,group])=>`<li><strong>${EVENT_GOAL_GROUPS[l.world][k]}</strong>: ${group.map(g=>`<span>${EVENT_GOALS[g.stat]?.label??g.stat}</span>`).join(', ')}</li>`).join('')}</ul>`:''}`);
   }).join('');
  },
@@ -603,6 +613,32 @@ const BODIES={
   +section('Estate chapters',`<p>One chapter at a time, in this order. Pay the coins and goods, and the work takes the time shown. Some chapters also ask for crop medals.</p>`+dual(table(['Chapter','Opens','Costs','Takes','Brings'],chapters,'wiki-chapters'),chapterCards))
   +section('Estate Workshop improvements',dual(table(['Improvement','What it does','Opens','Costs'],improvements),improvementCards))
   +afterNinety(h);
+ },
+ // World III (27 Oct 2026, the owner: "maak ook eigen quests etc voor wereld III en wiki pages, vanaf lvl 200"): every number from
+ // harbour-rules.js. In the game from level 200, on the website for everyone (as the village's).
+ harbour(h){
+  const shipLevels=[200,212,220,232,245,258,270,300],pays=n=>Math.ceil(shipValue(n)*shipPremium(n)/100)*100;
+  const shipRows=shipLevels.map(n=>h.row(n,[number(n),number(shipQuays(n)),`${art('coins')}${number(shipValue(n))}`,`${shipPremium(n).toFixed(1)}×`,`${art('coins')}${number(pays(n))} and ${number(Math.round(shipValue(n)/SHIP_XP_SHARE))} XP`]));
+  const shipCards=shipLevels.map(n=>card({picture:'harbour-badge',title:`Level ${number(n)}`,badge:h.lvl(n),locked:h.locked(n),stats:[`${shipQuays(n)} quay${shipQuays(n)>1?'s':''}`,`${shipPremium(n).toFixed(1)}×`],note:`Goods worth ${art('coins')}${number(shipValue(n))} pay ${art('coins')}${number(pays(n))} and ${number(Math.round(shipValue(n)/SHIP_XP_SHARE))} XP`}));
+  const recipes=Object.values(HARBOUR_RECIPES).sort((a,b)=>a.level-b.level);
+  const recipeRows=recipes.map(r=>{const [out,n]=Object.entries(r.output)[0];return h.row(r.level,[item(out,n,true),HARBOUR_PLACES[r.place].name,items(r.input),wikiTime(r.duration),h.lvl(r.level)]);});
+  const recipeCards=recipes.map(r=>{const [out,n]=Object.entries(r.output)[0];return card({picture:out,title:`${n>1?`${number(n)} `:''}${itemName(out)}`,badge:h.lvl(r.level),locked:h.locked(r.level),stats:[HARBOUR_PLACES[r.place].name,wikiTime(r.duration)],note:`Needs ${items(r.input)}`});});
+  const goodsRows=Object.entries(HARBOUR_GOODS).map(([key,g])=>h.row(HARBOUR_RECIPES[key].level,[item(key,1,true),`${art('coins')}${number(g.sell)}`,HARBOUR_PLACES[HARBOUR_RECIPES[key].place].name]));
+  const workRows=HARBOUR_WORKS.map((w,i)=>h.row(w.level,[`${art(w.art)}${i+1}. ${w.name}`,h.lvl(w.level),`${art('coins')}${number(w.coins)} + ${items(w.goods)}`,w.effect]));
+  const workCards=HARBOUR_WORKS.map((w,i)=>card({picture:w.art,title:`${i+1}. ${w.name}`,badge:h.lvl(w.level),locked:h.locked(w.level),stats:[`${art('coins')}${number(w.coins)}`],note:`Needs ${items(w.goods)}<br>${w.effect}`}));
+  const questReward=q=>`${art('coins')}${number(q.reward)} and ${questXp(q)} XP`;
+  const questRows=HARBOUR_QUESTS.map(q=>h.row(q.minLevel,[`${art(harbourQuestPicture(q))}${q.title}`,q.description,h.lvl(q.minLevel),questReward(q)]));
+  const questCards=HARBOUR_QUESTS.map(q=>card({picture:harbourQuestPicture(q),title:q.title,badge:h.lvl(q.minLevel),locked:h.locked(q.minLevel),stats:[questReward(q)],note:q.description}));
+  return section('Sailing to the harbour',`<ul class="wiki-facts"><li>${art('harbour-badge')}<div><strong>A third world ${h.lvl(WORLD_THREE_LEVEL)}</strong><p>Once your village’s Great Hall stands, a boat at the village’s Pier and a second signpost at the end of your farm’s road take you to the harbour: a sunny trading port in a bay, with quays, cranes, warehouses and ships coming and going. Your farm and your village keep going while you are there, and your coins are the same everywhere.</p></div></li><li>${art('harbour-master')}<div><strong>The harbour master</strong><p>He hands you the harbour’s works one at a time. Bring the goods bit by bit, then pay the coins to finish. Each work gives ${number(HARBOUR_WORK_XP)} XP.</p></div></li></ul>`)
+  +section('Ship orders',`<p>A ship at the quay asks for four kinds of goods: at least one from your farm and one from your village. Load it bit by bit; what you load stays loaded. When it is full it sails and pays twice what the goods are worth, and a new ship docks ${wikiTime(SHIP_RETURN)} later (${wikiTime(SHIP_TUG_RETURN)} once the Tugboat works). Say “Not now” and the next one comes just as soon. The cranes make every ship pay more, and more quays hold more ships at once.</p>`+dual(table(['Level','Quays','Goods worth','Pays','You get'],shipRows),shipCards))
+  +section('Harbour places and goods',`<p>The harbour makes goods of its own from what your farm and your village make. They sell only in the harbour, and ships and the harbour works ask for them.</p>`+dual(table(['Makes','Place','From','Takes','Opens'],recipeRows),recipeCards)+table(['Good','Sells for','Made in'],goodsRows))
+  +section('Harbour works',`<p>One work at a time, in this order. Every work changes the harbour for good.</p>`+dual(table(['Work','Opens','Costs','What it does'],workRows,'wiki-chapters'),workCards))
+  // The harbour warehouse (27 Oct 2026): its levels, what each costs and how much room it adds in all.
+  +section('Harbour warehouse',`<p>${h.lvl(WORLD_THREE_LEVEL)} Build the harbour warehouse at the harbour, once it is open: tap its pin, or open your Warehouse while you are there. It adds room to your one Warehouse, for crops and goods alike: ${number(HARBOUR_WAREHOUSE[0].room)} places at level 1, ${number(HARBOUR_WAREHOUSE.at(-1).room)} at level ${HARBOUR_WAREHOUSE.length}.</p>`
+   +table(['Level','Room in all','Costs'],HARBOUR_WAREHOUSE.map((step,i)=>h.row(WORLD_THREE_LEVEL,[`Level ${i+1}`,number(step.room),`${art('coins')}${number(step.coins)} ${Object.entries(step.goods).map(([k,n])=>item(k,n)).join(' ')}`]))))
+  +section('Harbour week',`<ul class="wiki-facts"><li>${art('harbour-crate')}<div><strong>The harbour crate ${h.lvl(HARBOUR_WEEK.level)}</strong><p>Send off ${HARBOUR_WEEK.target} ships between Monday and Sunday and the harbour crate opens with ${art('diamonds')}${HARBOUR_WEEK.diamonds} diamonds (${HARBOUR_WEEK.yardDiamonds} once the Container yard stands). No pop-up, and nothing lost if you miss a week.</p></div></li><li>${art('harbour-badge')}<div><strong>Container ships ${h.lvl(CONTAINER_SHIP.level)}</strong><p>Once the Deep quay stands, a big container ship comes every ${wikiTime(CONTAINER_SHIP.every)}: ${CONTAINER_SHIP.size} times a ship’s order, ${CONTAINER_SHIP.kinds} kinds of goods, ${CONTAINER_SHIP.premium} times their worth and ${art('diamonds')}${CONTAINER_SHIP.diamonds} diamonds.</p></div></li><li>${art('provisions')}<div><strong>Your own flagship ${h.lvl(WORLD_VOYAGE.level)}</strong><p>Build it in four parts at the Shipyard, give it a name, and it sails a world voyage every week: ${WORLD_VOYAGE.size} times a ship’s order at ${WORLD_VOYAGE.premium} times its worth and ${art('diamonds')}${WORLD_VOYAGE.diamonds} diamonds.</p></div></li></ul>`)
+  +section('Seals and pigeons',`<ul class="wiki-facts"><li>${art('seal-pet')}<div><strong>The harbour seal</strong><p>Seals lie on the quays’ edge and float in the basin, and pigeons peck about the quays. Pat the harbour seal once an hour for a little rope.</p></div></li></ul>`)
+  +section('Harbour quests',`<p>${number(HARBOUR_QUESTS.length)} quests of its own, from your first ship to your flagship’s world voyage. Claim them one at a time, like the village’s.</p>`+dual(table(['Quest','Goal','Opens','Reward'],questRows),questCards));
  },
  // World II (30 Sep 2026): every number from the rules (VILLAGE_RECIPES, MASTER_UPGRADES).
  village(h){
@@ -779,7 +815,7 @@ function afterNinety(h){
    ['valleyprojects','Valley projects',FEATURE_LEVELS.valleyprojects,'Five big works, three levels each. Hand in the goods bit by bit, then pay the coins to finish a level. Every level adds a lasting bonus.']
   ].map(([picture,name,level,text])=>`<li>${art(picture)}<div><strong>${name} ${h.lvl(level)}</strong><p>${text}</p></div></li>`).join('')}</ul>`
    // XP curve 6 (Oct 2026, farm-state.js): the endgame is meant to last. Said once farms are on it.
-   +(XP_CURVE>=6?`<p>From level ${TOP_XP_FROM}, the XP each level needs is doubled.</p>`:''))
+   +(XP_CURVE>=6?`<p>From level ${TOP_XP_FROM}, the XP each level needs is doubled.${h.level==null||h.level>=HARBOUR_XP_FROM-10?` <span>From level ${harbourXpFlat()} every level costs the same: ${number(HARBOUR_XP_STEP)} XP.</span>`:''}</p>`:''))
   +section('Heirlooms',dual(table(['Heirloom','Cross','Opens','Sells for'],heirlooms),heirloomCards))
   +section('Valley projects',dual(table(['Project','Bonus','Each level'],projects),projectCards));
 }
@@ -841,16 +877,16 @@ function opensByLevel(app=false,from=2){
  // Plan F (13 Oct 2026): village orders and special commissions, as on their level's card (farm-state.js unlockEntries).
  for(const [tier,n] of Object.entries(DELIVERY_LEVELS))if(tier!=='quick')add(n,{picture:tier==='village'?'cart':'trophy',name:tier==='village'?'Village orders':'Special commissions',to:['daily','sec-delivery-orders']});
  add(EVENTS_LEVEL,{picture:'live-events',name:'Events',to:['events']});if(!app)add(STARTER_LEVEL,{picture:'gift',name:'Starter Pack',mark:' data-shop-only'});
- for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production'&&!worldTwoBuilding(key))add(buildingLevel(key),{picture:key,name:b.name,kind:'building',to:['buildings',`building-${key}`]});
+ for(const [key,b] of Object.entries(BUILDINGS))if(b.type==='production'&&!worldTwoBuilding(key)&&!worldThreeBuilding(key))add(buildingLevel(key),{picture:key,name:b.name,kind:'building',to:['buildings',`building-${key}`]});
  for(const [key,c] of Object.entries(CROPS))add(cropLevel(key),{picture:key,name:c.name,kind:'crop',to:['crops',`crop-${key}`]});
- for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&!worldTwoRecipe(r)&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),{picture:Object.keys(r.output)[0],name:r.name,kind:'recipe',to:['buildings',`building-${r.building}`]});
+ for(const [id,r] of Object.entries(RECIPES))if(r.building!=='factory'&&!worldTwoRecipe(r)&&!harbourRecipe(r)&&recipeLevel(id)>buildingLevel(r.building))add(recipeLevel(id),{picture:Object.keys(r.output)[0],name:r.name,kind:'recipe',to:['buildings',`building-${r.building}`]});
  return opens;
 }
 // Where each feature in What opens when is explained (Oct 2026); one without a spot of its own leads to its topic.
 const FEATURE_SPOTS={fishing:['helpers','sec-fishing-pond'],neighbours:['daily','sec-neighbours'],shipbin:['market','sec-shipping-bin'],challenges:['daily','sec-daily-challenges'],cart:['daily','sec-delivery-orders'],activities:['helpers','sec-a-helping-hand'],chores:['helpers','sec-farm-chores'],mastery:['crops','sec-medals'],family:['family'],stall:['helpers','sec-farm-stall'],tractor:['helpers','sec-tractor'],boosts:['diamonds','sec-boosts'],silo:['crops','sec-silo-research'],projects:['estate','sec-estate-chapters'],valleymarket:['estate','sec-something-to-grow-towards'],ranch:['estate','sec-something-to-grow-towards'],estateworkshop:['estate','sec-estate-workshop-improvements'],tradedepot:['estate','sec-something-to-grow-towards'],grandfair:['estate','sec-after-level-90'],master:['estate','sec-after-level-90'],seedlab:['estate','sec-heirlooms'],visitors:['estate','sec-after-level-90'],giantpumpkin:['estate','sec-after-level-90'],valleyprojects:['estate','sec-valley-projects']};
 const featureTitle=key=>({family:'Farm family',boosts:'Diamond boosts'})[key]??{fishing:'Fishing pond',neighbours:'Neighbours',shipbin:'Shipping bin',challenges:'Daily challenges',chores:'Farm chores',stall:'Farm stall',mastery:'Medals',tractor:'Tractor',silo:'Silo research',cart:'Delivery orders',projects:'Estate projects',activities:'A helping hand',valleymarket:'Valley Market',ranch:'The Ranch',estateworkshop:'Estate Workshop',tradedepot:'Trade Depot',grandfair:'Grand Valley Fair',master:'Master points',seedlab:'Seed Lab',visitors:'Valley visitors',giantpumpkin:'Giant pumpkin',valleyprojects:'Valley projects'}[key]??key;
 
-const RELATED={'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],village:['estate','buildings','market'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
+const RELATED={harbour:['village','estate','diamonds'],'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],village:['estate','buildings','market'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
 
 export function wikiArticle(id,ctx={}){
  const topic=TOPIC[id];if(!topic||!topicShown(id,ctx))return null;const h=helpers(ctx);
@@ -884,7 +920,8 @@ export function wikiJump(article){
 // In the game The Village shows from level WORLD_TWO_LEVEL (Oct 2026, the owner's choice: it showed from 90), in the list, in search and
 // when a link (from the chat, say) opens it; below it a farmer sees the closed bridge on the farm and nothing more. The website shows
 // every topic.
-const topicShown=(id,ctx)=>id!=='village'||ctx.level==null||ctx.level>=WORLD_TWO_LEVEL;
+// The harbour (27 Oct 2026) the same way from level WORLD_THREE_LEVEL (it ships with World III's v1, when the harbour is live).
+const topicShown=(id,ctx)=>ctx.level==null||(id==='harbour'?ctx.level>=WORLD_THREE_LEVEL:id!=='village'||ctx.level>=WORLD_TWO_LEVEL);
 // Getting started, while it is the one to read first, stands above its group's grid; the grid has two columns (one on a phone),
 // and an odd last tile takes the whole row, so a group never ends in a gap (wiki.css).
 export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>{
@@ -911,12 +948,12 @@ const INDEX=[
  // The Fishing pond (11 Oct 2026), once it is open: its name, the fish and the book, single words like the Farmhouse's.
  ...(POND_OPEN?[{topic:'helpers',label:FEATURE_NAMES.fishing,art:'fishingpond',text:[FEATURE_NAMES.fishing.toLowerCase(),'fishing','fish','pond','book','float','rod',...Object.values(FISH).map(f=>f.name.toLowerCase())].join(' '),anchor:'sec-fishing-pond'}]:[]),
  ...PLAYER_AVATARS.filter(a=>a.level||avatarGoal(a.id)).map(a=>({topic:'account',label:a.name,art:'settings',text:`${a.name} avatar`.toLowerCase(),anchor:'sec-avatars'})),
- ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:worldTwoBuilding(k)?'village':'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:`building-${k}`})),
+ ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:worldThreeBuilding(k)?'harbour':worldTwoBuilding(k)?'village':'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:worldThreeBuilding(k)?HARBOUR_SPOT:`building-${k}`})),
  // The Pier and the town boat, and the landmarks (Oct 2026): single English words, like the Farmhouse's entry. The Village topic is hidden
  // below level 100, so nothing of them is found there.
  {topic:'village',label:BUILDINGS.pier.name,art:'pier',text:[BUILDINGS.pier.name.toLowerCase(),'town','boat','cargo'].join(' '),anchor:'building-pier'},
  ...Object.values(VILLAGE_LANDMARKS).map(l=>({topic:'village',label:l.name,art:l.art,text:[l.name.toLowerCase(),'landmark'].join(' '),anchor:'sec-landmarks'})),
- ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:worldTwoRecipe(r)?'village':'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:worldTwoRecipe(r)&&!worldTwoBuilding(r.building)?'sec-made-on-the-farm':`building-${r.building}`})))
+ ...Object.entries(RECIPES).flatMap(([,r])=>Object.keys(r.output).map(out=>({topic:harbourRecipe(r)?'harbour':worldTwoRecipe(r)?'village':'buildings',label:itemName(out),art:out,text:itemName(out).toLowerCase(),anchor:harbourRecipe(r)?HARBOUR_SPOT:worldTwoRecipe(r)&&!worldTwoBuilding(r.building)?'sec-made-on-the-farm':`building-${r.building}`})))
 ];
 // Everything search looks through, for the website's search (scripts/build-wiki.mjs writes it to /wiki/search.json).
 export const wikiSearchIndex=()=>INDEX.map(entry=>({...entry,topicTitle:TOPIC[entry.topic].title}));

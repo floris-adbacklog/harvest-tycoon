@@ -35,7 +35,7 @@ test('once per building: several batches started at once make only the first qui
   const two=act(s,{type:'produce',recipe},now);assert.equal(two.readyAt-now,recipeDuration(s,recipe,now),`${key}: the second is not`);
  }
  // The Factory too (the owner's pick: every new building, the simplest rule).
- const f=at(50);for(const key of Object.keys(BUILDINGS))if(BUILDINGS[key].type==='production')f.buildings[key].built=true;
+ const f=at(50);for(const key of Object.keys(BUILDINGS))if(BUILDINGS[key].type==='production'&&f.buildings[key])f.buildings[key].built=true;
  const bulk=Object.keys(RECIPES).find(id=>RECIPES[id].building==='factory'&&RECIPES[id].base==='eggs');f.inventory.feed=500;
  assert.equal(batchDuration(f,bulk,now),30000);
 });

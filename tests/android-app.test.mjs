@@ -153,7 +153,7 @@ test('the sign-in card and the website\'s wiki: the same second lock, only in th
  assert.ok(wikiHidden.some(s=>['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'].every(id=>s.includes(`[data-wiki-jump="${id}"]`))&&s.includes('[data-wiki-anchor="sec-play-it-as-an-app"]')),'and their chips in the jump bar');
  for(const css of [welcome,wiki])for(const selector of selectorsOf(css).filter(s=>s.includes('[data-app=')))assert.ok(selector.startsWith('html[data-app=android] ')||selector.startsWith('html[data-app=android]:not([data-app-sign-in]) '),selector);
  // The sections those rules name exist on the website's wiki (their ids come from their titles).
- const site=WIKI_TOPICS.map(t=>wikiArticle(t.id,{now:SEASON_PASS.startsAt+3600000}).html).join('\n');
+ const site=WIKI_TOPICS.map(t=>wikiArticle(t.id,{now:SEASON_PASS.startsAt+3600000})?.html??'').join('\n');
  for(const id of ['sec-play-it-as-an-app','sec-buying-diamonds','sec-halloween-pass','sec-your-account'])assert.match(site,new RegExp(`id="${id}"`),id);
  // Your account on the website holds only the home screen, full screen and push reminders (the app's own line is in Getting started; the
  // website's page cannot tell whether the app offers its own notifications yet, so the app leaves the whole section out there, and How
@@ -261,7 +261,7 @@ test('admin pop-ups: the app counts as installed, and a button to installing the
  assert.match(popup,/&&!\(androidApp\(win\)&&\/\^\(screen:\)\?install\$\/\.test\(popup\.buttonTarget\)\);/);
 });
 test('How to play in the app: no installing the web app and no buying on our website; push reminders once the app offers them; the rest as on the website',()=>{
- const now=SEASON_PASS.startsAt+3600000,text=ctx=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,now,...ctx}).html).join('\n');
+ const now=SEASON_PASS.startsAt+3600000,text=ctx=>WIKI_TOPICS.map(t=>wikiArticle(t.id,{level:120,now,...ctx})?.html??'').join('\n');
  const app=text({app:true,appPush:true}),site=text({});
  for(const gone of [/Play it as an app/,/Install the app/,/home screen/,/Buying diamonds/,/Stripe;/,/€/,/paid rewards open/,/Settings, Farm app/,/Starter Pack/])
   {assert.doesNotMatch(app,gone,String(gone));assert.match(site,gone,`the website keeps ${gone}`);}

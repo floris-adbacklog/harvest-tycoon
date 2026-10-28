@@ -10,7 +10,7 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,FAMILY_EMBLEMS,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
@@ -133,7 +133,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  // Tournament goods (on the Tournament tab since 30 Sep 2026: they count for the tournament only), once an order line is full.
  function extraGoods(){
   const o=view.order,locked=view.contributionLocked,extrasOpen=Object.entries(o.lines).some(([k,n])=>(o.filled[k]??0)>=n);
-  const available=Object.entries(ITEMS).filter(([k,item])=>item.sell>0&&state.inventory[k]>0&&!worldTwoItem(k));   // never World II's goods
+  const available=Object.entries(ITEMS).filter(([k,item])=>item.sell>0&&state.inventory[k]>0&&!otherWorldItem(k));   // never another world's goods (the server refuses them too, 27 Oct 2026)
   return `<details class="family-extra" data-fold="tournament-goods"><summary><span><strong>Tournament goods</strong><small>${extrasOpen?'Extra points for your family':'Fill an order line to unlock'}</small></span></summary><p>Extra goods count for the weekly tournament only (no coins, XP or diamonds), as many as you like. They are handed in permanently.</p>${extrasOpen&&available.length?`<form data-family-form="extra"><label for="family-extra-item">Goods to contribute</label><select id="family-extra-item" name="item">${available.map(([key,item])=>`<option value="${key}" data-art="${key}" data-note="${num(state.inventory[key])} in stock · ${num(item.sell)} points each">${esc(item.name)}</option>`).join('')}</select><label for="family-extra-count">Quantity</label><input id="family-extra-count" name="count" type="number" inputmode="numeric" min="1" step="1" value="1" required><button class="small-button" ${disabled(locked)}>Contribute goods</button></form>`:extrasOpen?'<p>No spare goods in storage yet.</p>':''}</details>`;
  }
  // The Family Chest: the bar to the next chest and what it gives, what you have put in, and what each chest gives you (in its fold).

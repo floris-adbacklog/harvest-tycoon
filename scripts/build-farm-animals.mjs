@@ -41,7 +41,11 @@ const KINDS=Object.freeze({
  horse_101:{variants:{horse_bay:['Horse_01'],horse_black:['Horse_02'],horse_chestnut:['Horse_05',{'=140,69,5':'79,51,46'}]},clips:['idle','eat','walk']},
  // The duck on the farm's pond (22 Oct 2026, the owner: "zet de eend hier bij, doet verder niks"; public/farm-duck.js): only its
  // swim and its float (swim_idle); it never comes ashore, so its walk, idle, gesture and run are left out.
- duck_101:{variants:{duck_white:['Duck_01']},clips:['swim','swim_idle']}
+ duck_101:{variants:{duck_white:['Duck_01']},clips:['swim','swim_idle']},
+ // World III, the harbour (27 Oct 2026, the owner: "Doe 1&2&3"): seals on the quays' edge and in the basin, pigeons on the quays
+ // (the pack has no gulls). <pack> then holds Polar/Animals' Seal_0* and Domestic/Animals' Pigeon_0* side by side.
+ seal_101:{variants:{seal_grey:['Seal_01'],seal_brown:['Seal_02'],seal_spotted:['Seal_03']},clips:['idle','gesture','swim','idle_swim']},
+ pigeon_101:{variants:{pigeon_grey:['Pigeon_01'],pigeon_brown:['Pigeon_02'],pigeon_white:['Pigeon_03']},clips:['idle','gesture','walk','fly']}
 });
 // KIND=duck_101 (a comma list) builds only those kinds; without it, all of them.
 const ONLY=process.env.KIND?new Set(process.env.KIND.split(',')):null;

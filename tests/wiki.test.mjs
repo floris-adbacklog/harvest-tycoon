@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,readdirSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {CROPS,RECIPES,BUILDINGS,worldTwoBuilding,worldTwoItem} from '../public/farm-state.js';
+import {CROPS,RECIPES,BUILDINGS,worldTwoBuilding,worldTwoItem,worldThreeBuilding,LIVE_EVENT_LEAGUES} from '../public/farm-state.js';
 // World II's recipes (the village's places, and the farm's recipes for or from it) are in The Village, not in Buildings and goods.
 const worldTwo=r=>worldTwoBuilding(r.building)||Object.keys(r.output).some(worldTwoItem);
-const FARM_RECIPES=Object.values(RECIPES).filter(r=>!worldTwo(r)).length;
+const FARM_RECIPES=Object.values(RECIPES).filter(r=>!worldTwo(r)&&!worldThreeBuilding(r.building)).length;   // the harbour's (27 Oct 2026) are in The Harbour
 import {WIKI_TOPICS,wikiArticle,wikiSearch,wikiTime} from '../public/wiki-content.js';
 import {buildWiki} from '../scripts/build-wiki.mjs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -16,7 +16,7 @@ const tempDir=(t,name)=>{const dir=mkdtempSync(join(tmpdir(),name));t.after(()=>
 const recipesOnly=html=>html.replace(/<details class="wiki-section wiki-building" id="building-(?:farmhouse|familyhall)">[^]*?<\/details>/g,'');
 
 test('every topic renders from the game rules without gaps, old drawn icons or broken links',()=>{
- assert.equal(WIKI_TOPICS.length,14);
+ assert.equal(WIKI_TOPICS.length,15);   // 15 with The Harbour (World III, 27 Oct 2026)
  const ids=new Set(WIKI_TOPICS.map(t=>t.id));
  for(const t of WIKI_TOPICS){
   const a=wikiArticle(t.id);
@@ -108,14 +108,19 @@ test('the wiki matches the rules it explains: family payouts, invites, events an
  // 20 Oct 2026 (hourly events, the owner): 8, 5 and 3 diamonds, every other finisher 1, the same in every league; and since later that
  // day coins again, a quarter of the 6-hour events': first place (50 + 500) × the league.
  assert.match(wikiArticle('events').html,/Everyone who finishes wins coins and diamonds; the sooner you finish, the more\. The first three in each league win 8, 5 and 3 diamonds, every other finisher 1\.<\/p>/);
- assert.match(wikiArticle('events').html,/<td>Village Legends<\/td><td>201\+<\/td><td>11,000 coins and 8 diamonds<\/td><\/tr><\/tbody><\/table><\/div>/,'the league table: first place in each league');
+ // 28 Oct 2026: the harbour leagues show once their SQL is live (LIVE_EVENT_LEAGUES 17); until then Village Legends is the top league.
+ const harbourLive=LIVE_EVENT_LEAGUES>12;
+ if(harbourLive)assert.match(wikiArticle('events').html,/<td>Village Legends<\/td><td>201–220<\/td><td>11,000 coins and 8 diamonds<\/td><\/tr>.*<td>Harbour Legends<\/td><td>300\+<\/td><td>16,500 coins and 8 diamonds<\/td><\/tr><\/tbody><\/table><\/div>/,'the league table: first place in each league');
+ else assert.match(wikiArticle('events').html,/<td>Village Legends<\/td><td>201\+<\/td><td>11,000 coins and 8 diamonds<\/td><\/tr><\/tbody><\/table><\/div>/,'the league table: first place in each league');
  assert.match(wikiArticle('events').html,/<td>Valley Legends<\/td><td>90–99<\/td><td>4,400 coins and 8 diamonds<\/td><\/tr>/);
  assert.match(wikiArticle('events').html,/<td>Sprout League<\/td><td>15–29<\/td><td>550 coins and 8 diamonds<\/td><\/tr>/);
  assert.doesNotMatch(wikiArticle('events').html,/coins and 25 diamonds|linen and|ruby rings/i);
  // 20 Oct 2026: the village leagues, on the website and in How to play from level 100; below 100 nothing of World II.
  const rows=html=>[...html.matchAll(/<tr><td>[^<]+<\/td><td>[\d–+]+<\/td><td>[\d,]+ coins and 8 diamonds<\/td><\/tr>/g)].length;
  const web=wikiArticle('events').html,below=wikiArticle('events',{level:99,href:id=>`#${id}`}).html,above=wikiArticle('events',{level:100,href:id=>`#${id}`}).html;
- assert.equal(rows(web),12);assert.equal(rows(above),12);assert.equal(rows(below),6);
+ assert.equal(rows(web),harbourLive?17:12);assert.equal(rows(above),12);assert.equal(rows(below),6);
+ // 27 Oct 2026: the five harbour leagues, on the website and in How to play from level 200.
+ assert.equal(rows(wikiArticle('events',{level:200,href:id=>`#${id}`}).html),harbourLive?17:12);assert.doesNotMatch(above,/Harbour League|Quay League|harbour league/i);
  for(const html of [web,above]){
   const cobble=html.slice(html.indexOf('Cobble League</h'));
   assert.match(cobble,/Village goals you can expect, one per event:/);assert.match(cobble,/<strong>Mine and forest<\/strong>/);

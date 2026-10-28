@@ -54,3 +54,8 @@
 /* The coin pill is a button, as its shadow always said (23 Oct 2026, the owner): it opens the Market (public/game.js). */
 button.coin-counter{position:relative;text-align:start}
 button.coin-counter:hover{background:#fff8ec}
+/* The harbour warehouse (27 Oct 2026): its card in the harbour (the picture beside its name), and on the farm and in the village one
+   quiet line for the room it adds. */
+.warehouse-upgrade h3 .game-art{width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-inline-end:6px}
+.warehouse-harbour-line{display:flex;align-items:center;gap:8px;margin:-6px 0 14px;font-size:13px;color:#6f6453}
+.warehouse-harbour-line .game-art{width:24px;height:24px;object-fit:contain}

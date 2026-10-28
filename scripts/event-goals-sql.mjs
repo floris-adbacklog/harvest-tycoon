@@ -6,7 +6,11 @@
 import {writeFileSync} from 'node:fs';
 // The 5-hour pick and the hourly pick that ran use the pools and titles from before one crop a harvest (22 Oct 2026); the hourly pick
 // of supabase/one-crop.sql (scripts/one-crop-sql.mjs) uses today's (HOUR_PICK_BODY_ONE_CROP).
-import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES_BEFORE_ONE_CROP as EVENT_GOAL_TITLES,EVENT_HOUR_POOLS_BEFORE_ONE_CROP as EVENT_HOUR_POOLS,EVENT_HOUR_POOLS as HOUR_POOLS_NOW,EVENT_GOAL_TITLES as TITLES_NOW} from '../public/event-goals.js';
+import {EVENT_GOAL_POOLS as ALL_GOAL_POOLS,EVENT_GOAL_TITLES_BEFORE_ONE_CROP as EVENT_GOAL_TITLES,EVENT_HOUR_POOLS_BEFORE_ONE_CROP as ALL_HOUR_POOLS,EVENT_HOUR_POOLS as ALL_POOLS_NOW,EVENT_GOAL_TITLES as TITLES_NOW} from '../public/event-goals.js';
+// The functions this file writes are the live ones, made for the farm's six leagues and the village's six (EVENT_LEAGUES 0..11). The
+// harbour's five (27 Oct 2026, 12..16) come with a patch of their own, so these stay exactly as they run.
+export const LIVE_LEAGUES=12;
+const EVENT_GOAL_POOLS=ALL_GOAL_POOLS.slice(0,LIVE_LEAGUES),EVENT_HOUR_POOLS=ALL_HOUR_POOLS.slice(0,LIVE_LEAGUES),HOUR_POOLS_NOW=ALL_POOLS_NOW.slice(0,LIVE_LEAGUES);
 
 const pools=EVENT_GOAL_POOLS.map(league=>league.map(group=>group.map(({stat,targets})=>{
  const titles=EVENT_GOAL_TITLES[stat];if(!titles)throw Error(`No titles for ${stat}`);

@@ -64,9 +64,9 @@ test('bring the goods bit by bit, then pay to finish: 5,000 XP, the coins counte
  assert.throws(()=>act(s,{type:'landmark_finish',landmark:'windpump'}),{message:'You need 1,500,000 coins to finish it.'});
  assert.equal(villageLandmark(s).short,500000);assert.equal(villageSquareReady(s),false,'the coins are not there yet');
  s.coins=1600000;assert.equal(villageSquareReady(s),true);
- const xp=s.xp,spent=s.stats.coins_spent??0,diamonds=s.diamonds;
+ const xp=s.xp,spent=s.stats.village_coins_spent??0,farmSpent=s.stats.coins_spent??0,diamonds=s.diamonds;
  assert.deepEqual(act(s,{type:'landmark_finish',landmark:'windpump'}),{landmark:'windpump',name:'Wind pump',coins:1500000,xp:5000,diamonds:0});
- assert.deepEqual([s.coins,s.xp-xp,s.diamonds-diamonds,s.stats.village_landmarks,s.stats.coins_spent-spent],[100000,VILLAGE_LANDMARK_XP,0,1,1500000]);
+ assert.deepEqual([s.coins,s.xp-xp,s.diamonds-diamonds,s.stats.village_landmarks,s.stats.village_coins_spent-spent,(s.stats.coins_spent??0)-farmSpent],[100000,VILLAGE_LANDMARK_XP,0,1,1500000,0]);   // 27 Oct 2026: spent in the village's own count
  assert.deepEqual(s.village.landmarks,{done:['windpump'],given:{}});
  assert.equal(s.stats.sold??0,0,'never a sale');
  assert.throws(()=>act(s,{type:'landmark_finish',landmark:'windpump'}),{message:'The Wind pump is already finished.'});
@@ -134,10 +134,10 @@ test('the Great Hall: new requests pay 1.6 times, 200 diamonds once, a waiting r
  for(const mode of ['guided','legacy']){
   const s=fixture(200,ALL,{},{mode,done:IDS.slice(0,4)});assert.equal(villagePremium(s),1.5);
   const waiting=structuredClone(s.village.boards[0].request);assert.equal(waiting.coins,30023);
-  const diamonds=s.diamonds,earned=s.stats.diamonds_earned??0,xp=s.xp;
+  const diamonds=s.diamonds,earned=s.stats.village_diamonds_earned??0,xp=s.xp;   // the village's own count (28 Oct 2026)
   give(s,'greathall',{rooftile:100,linen:100,lavendersoap:100,scentedsachet:100,saffronbun:100});
   assert.deepEqual(act(s,{type:'landmark_finish',landmark:'greathall'}),{landmark:'greathall',name:'Great Hall',coins:3000000,xp:5000,diamonds:GREAT_HALL_DIAMONDS});
-  assert.deepEqual([s.diamonds-diamonds,s.stats.diamonds_earned-earned,s.xp-xp,s.stats.village_landmarks],[200,200,5000,1],mode);
+  assert.deepEqual([s.diamonds-diamonds,s.stats.village_diamonds_earned-earned,s.xp-xp,s.stats.village_landmarks],[200,200,5000,1],mode);
   assert.equal(villagePremium(s),VILLAGE_HALL_PREMIUM);assert.deepEqual(s.village.boards[0].request,waiting,'a waiting request keeps its coins');
   // Help, and 3 hours later the next villager pays 1.6 times.
   Object.assign(s.inventory,waiting.input);act(s,{type:'village_deliver',board:0,request:waiting.id,input:waiting.input});

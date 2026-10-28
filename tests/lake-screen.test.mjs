@@ -114,7 +114,7 @@ test('the screen per water: the lake\'s rules and texts written out in full, its
 test('the game: the lake loads in the village only, at the rowboat; the village\'s HUD folds away; cards and gifts wait while fishing',()=>{
  const game=read('public/game.js'),css=read('public/pond.css');
  assert.match(game,/if\(POND_OPEN&&!villageWorld&&!adminView\)void import\('\.\/pond-ui\.js'\)\.then\(\(\{createPond\}\)=>\{pond=createPond\(\{state,/,'the farm\'s line as it was');
- assert.match(game,/if\(LAKE_OPEN&&villageWorld&&!adminView\)void Promise\.all\(\[import\('\.\/pond-ui\.js'\),import\('\.\/village-scene\.js'\)\]\)\.then\(\(\[\{createPond\},\{VILLAGE_FISHING_SPOT\}\]\)=>\{pond=createPond\(\{water:'lake',place:VILLAGE_FISHING_SPOT,state,/);
+ assert.match(game,/if\(LAKE_OPEN&&villageWorld&&!harbourWorld&&!adminView\)void Promise\.all\(\[import\('\.\/pond-ui\.js'\),import\('\.\/village-scene\.js'\)\]\)\.then\(\(\[\{createPond\},\{VILLAGE_FISHING_SPOT\}\]\)=>\{pond=createPond\(\{water:'lake',place:VILLAGE_FISHING_SPOT,state,/);
  assert.match(game,/focusFarm:key=>key\?showVillagePlace\(key\):resetView\(\)\}\);/,'its chip turns the camera to the ready place');
  assert.match(game,/if\(key==='villagelake'\)\{pond\?\.open\(\);return;\}/,'the Buildings card opens it');
  assert.match(game,/tips:villageWorld\?\[\.\.\.\(LAKE_OPEN\?\[LAKE_LOADING_TIP\]:\[\]\),\.\.\.VILLAGE_LOADING_TIPS\]:/,'its tip on the way to the village, once open');

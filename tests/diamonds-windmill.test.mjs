@@ -50,7 +50,7 @@ test('upgrade voucher applies once and survives a rejected upgrade',()=>{
  assert.throws(()=>act(state,{type:'upgrade',building:'windmill'}),/need/);assert.equal(state.boosts.upgradeCredits,1);
  state.coins=10000;const result=act(state,{type:'upgrade',building:'windmill'});assert.equal(result.cost,Math.ceil(originalCost/2));assert.equal(state.boosts.upgradeCredits,0);
  const before=state.diamonds;state.diamonds=0;assert.throws(()=>act(state,{type:'buy_boost',boost:'upgrade'}),/diamonds/);assert.equal(state.diamonds,0);state.diamonds=before;
- for(const key of Object.keys(BUILDINGS))state.buildings[key].level=MAX_BUILDING_LEVEL;
+ for(const key of Object.keys(BUILDINGS))if(state.buildings[key])state.buildings[key].level=MAX_BUILDING_LEVEL;
  assert.throws(()=>act(state,{type:'buy_boost',boost:'upgrade'}),/maximum level/);
 });
 test('windmill has a complete grain-to-fertilizer chain and useful one-time crop care',()=>{

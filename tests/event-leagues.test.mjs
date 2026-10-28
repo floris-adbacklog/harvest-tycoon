@@ -5,15 +5,17 @@ import {EVENT_LEAGUES,eventLeague,CROP_LEVELS,BUILDING_LEVELS,FEATURE_LEVELS,REC
 import {EVENT_GOAL_POOLS,EVENT_GOAL_TITLES,EVENT_GOAL_TITLES_BEFORE_ONE_CROP} from '../public/event-goals.js';
 import {EVENT_GOALS} from '../public/live-events-ui.js';
 import {eventStandings} from '../supabase/functions/farm-api/event-service.js';
+import {HARBOUR_RECIPES as HARBOUR,WORLD_THREE_LEVEL} from '../public/harbour-rules.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const H=3600000,now=Date.parse('2026-10-01T12:00:00Z'),iso=t=>new Date(t).toISOString();
 
 // 20 Oct 2026 (the owner): six village leagues from level 100 (world 2), with coins ×10 to ×20; the Valley Legends are 90-99.
-test('twelve leagues from level 15, each with its levels, badge and coins: ×1 to ×5, ×8 for the Valley Legends, ×10 to ×20 in the village',()=>{
+test('seventeen leagues from level 15, each with its levels, badge and coins: ×1 to ×5, ×8 for the Valley Legends, ×10 to ×20 in the village, ×22 to ×30 in the harbour',()=>{
  assert.deepEqual(EVENT_LEAGUES.map(l=>[l.id,l.from,l.to,l.coins,l.world]),[['sprout',15,29,1,1],['meadow',30,44,2,1],['orchard',45,59,3,1],['harvest',60,74,4,1],['estate',75,89,5,1],['legends',90,99,8,1],
-  ['cobble',100,120,10,2],['timber',121,140,12,2],['linen',141,160,14,2],['silver',161,180,16,2],['ruby',181,200,18,2],['village',201,null,20,2]]);
- assert.deepEqual([15,29,30,44,45,60,75,89,90,99,100,120,121,141,161,181,200,201,999].map(n=>eventLeague(n).id),
-  ['sprout','sprout','meadow','meadow','orchard','harvest','estate','estate','legends','legends','cobble','cobble','timber','linen','silver','ruby','ruby','village','village']);
+  ['cobble',100,120,10,2],['timber',121,140,12,2],['linen',141,160,14,2],['silver',161,180,16,2],['ruby',181,200,18,2],['village',201,220,20,2],
+  ['quay',221,240,22,3],['crane',241,260,24,3],['anchor',261,280,26,3],['flagship',281,299,28,3],['harbour',300,null,30,3]]);
+ assert.deepEqual([15,29,30,44,45,60,75,89,90,99,100,120,121,141,161,181,200,201,220,221,241,261,281,299,300,999].map(n=>eventLeague(n).id),
+  ['sprout','sprout','meadow','meadow','orchard','harvest','estate','estate','legends','legends','cobble','cobble','timber','linen','silver','ruby','ruby','village','village','quay','crane','anchor','flagship','flagship','harbour','harbour']);
  assert.deepEqual(EVENT_LEAGUES.map(l=>l.index),EVENT_LEAGUES.map((l,i)=>i));
  for(const l of EVENT_LEAGUES)assert.match(l.id,/^[a-z]+$/,'scripts/build-wiki.mjs reads the badge\'s league from [a-z]+');
  for(const l of EVENT_LEAGUES)assert.ok(existsSync(new URL(`../public/assets/icons/league-${l.id}.webp`,import.meta.url)),`badge for ${l.id}`);
@@ -33,11 +35,13 @@ test('every league draws its own goals, open from its first level, with bigger n
  // A goal must be possible from the league's first level, and a batch for it must fit well inside the 5 hours of an event.
  // 9 Oct 2026: the goals that need a feature or a recipe count too, since unlocks moved later (chores 10 -> 15, fertilizer 9 -> 14).
  const feature={chores:'chores',activities:'activities',activity_rounds:'activities',deliveries:'cart',mastery_medals:'mastery',boosts_used:'boosts',diamonds_spent:'boosts',dailies:'challenges'};
- const openAt=stat=>['village_batches','village_requests'].includes(stat)?WORLD_TWO_LEVEL:stat==='lake_fish'?LAKE_LEVEL:stat==='glasshouse_batches'?BUILDING_LEVELS.glasshouse:stat==='valley_baskets'?FEATURE_LEVELS.valleymarket:stat==='tractor'?FEATURE_LEVELS.tractor
+ // World III (27 Oct 2026): the harbour's goals open with its places (harbour-rules.js, until v1 moves them into the rules).
+ const harbourOpen=stat=>stat.startsWith('made_')&&HARBOUR[stat.slice(5)]?HARBOUR[stat.slice(5)].level:{ship_loads:WORLD_THREE_LEVEL,ships_sent:WORLD_THREE_LEVEL,seal_pats:WORLD_THREE_LEVEL,harbour_batches:HARBOUR.rope.level,harbour_sold:HARBOUR.rope.level}[stat];
+ const openAt=stat=>harbourOpen(stat)??(['village_batches','village_requests'].includes(stat)?WORLD_TWO_LEVEL:stat==='lake_fish'?LAKE_LEVEL:stat==='glasshouse_batches'?BUILDING_LEVELS.glasshouse:stat==='valley_baskets'?FEATURE_LEVELS.valleymarket:stat==='tractor'?FEATURE_LEVELS.tractor
   :feature[stat]?FEATURE_LEVELS[feature[stat]]:stat==='fertilized'?RECIPE_LEVELS.fertilizer
   :stat.startsWith('sold_')?itemUnlockLevel(stat.slice(5))
-  :stat.startsWith('harvest_')?CROP_LEVELS[stat.slice(8)]??1:stat.startsWith('made_')?itemUnlockLevel(stat.slice(5)):1;
- const batch=stat=>stat.startsWith('made_')?Math.min(...Object.entries(RECIPES).filter(([,r])=>r.output[stat.slice(5)]&&r.building!=='factory').map(([,r])=>r.duration)):0;
+  :stat.startsWith('harvest_')?CROP_LEVELS[stat.slice(8)]??1:stat.startsWith('made_')?itemUnlockLevel(stat.slice(5)):1);
+ const batch=stat=>stat.startsWith('made_')&&HARBOUR[stat.slice(5)]?HARBOUR[stat.slice(5)].duration:stat.startsWith('made_')?Math.min(...Object.entries(RECIPES).filter(([,r])=>r.output[stat.slice(5)]&&r.building!=='factory').map(([,r])=>r.duration)):0;
  for(const [i,pool] of EVENT_GOAL_POOLS.entries()){
   const league=EVENT_LEAGUES[i];assert.equal(pool.length,5,`${league.id}: five groups`);
   const stats=pool.flat().map(g=>g.stat);assert.equal(new Set(stats).size,stats.length,`${league.id}: a goal kind once`);
@@ -65,12 +69,12 @@ test('every league draws its own goals, open from its first level, with bigger n
 
 test('the database draws exactly these goals per league, counts the league\'s own and settles per league',()=>{
  const goals=read('supabase/live-event-league-goals.sql'),leagues=read('supabase/live-event-leagues.sql');
- const json=JSON.stringify(EVENT_GOAL_POOLS.map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES_BEFORE_ONE_CROP[stat]}))))).replaceAll("'","''");
+ const json=JSON.stringify(EVENT_GOAL_POOLS.slice(0,12).map(l=>l.map(g=>g.map(({stat,targets})=>({stat,targets,titles:EVENT_GOAL_TITLES_BEFORE_ONE_CROP[stat]}))))).replaceAll("'","''");
  assert.ok(goals.includes(`pools constant jsonb:='${json}';`),'run node scripts/event-goals-sql.mjs after changing public/event-goals.js');
  assert.match(goals,/insert into public\.live_events\(id,title,description,starts_at,ends_at,active,objectives,rewards,created_by,leagues\)/);
  // 4 Oct 2026: the check on new events refused the leagues' new goals, and the schedule skipped those events without a word.
  const allowed=goals.slice(goals.indexOf('function public.harvest_event_validate()')).match(/not in \(([^)]*)\)/)[1].split(',').map(s=>s.replace(/'/g,''));
- for(const {stat} of EVENT_GOAL_POOLS.flat(2))assert.ok(allowed.includes(stat),`the event check allows ${stat}`);
+ for(const {stat} of EVENT_GOAL_POOLS.slice(0,12).flat(2))assert.ok(allowed.includes(stat),`the event check allows ${stat}`);   // the live leagues; the harbour's come with their own patch
  assert.match(leagues,/objs:=coalesce\(e\.leagues->lg->'objectives',e\.objectives\);/,'progress counts the league\'s goals');
  assert.match(leagues,/\(stat='glasshouse_batches' and action in \('collect','collect_all'\)\) or \(stat='valley_baskets' and action='valley_sell'\)/);
  assert.match(leagues,/qualified=\(not exists\(select 1 from jsonb_array_elements\(coalesce\(e\.leagues->p\.league->'objectives',e\.objectives\)\)/);
@@ -117,7 +121,11 @@ test('helping-hand goals fit the hour-long rests: events ask at most 8 jobs or 2
 // A crop or recipe that opens at the league's own first level cannot be in the barn yet, so its whole chain counts: red cabbage (12 h)
 // and pickles both open at 15, so pickles join from the Meadow League.
 test('every goal can be made from scratch within an event by a farmer who has just reached the league',async()=>{
- const {RECIPES,CROPS,CROP_LEVELS,RECIPE_LEVELS,ACTIVE_STATIONS}=await import('../public/farm-state.js');
+ const {RECIPES:FARM_RECIPES,CROPS,CROP_LEVELS,RECIPE_LEVELS:FARM_LEVELS,ACTIVE_STATIONS}=await import('../public/farm-state.js');
+ // The harbour's recipes (World III, harbour-rules.js until v1 moves them into the rules) count as well.
+ const {HARBOUR_RECIPES}=await import('../public/harbour-rules.js');
+ const RECIPES={...FARM_RECIPES,...Object.fromEntries(Object.entries(HARBOUR_RECIPES).map(([id,r])=>[`harbour_${id}`,{building:r.place,input:r.input,output:r.output,duration:r.duration}]))};
+ const RECIPE_LEVELS={...FARM_LEVELS,...Object.fromEntries(Object.entries(HARBOUR_RECIPES).map(([id,r])=>[`harbour_${id}`,r.level]))};
  for(const [i,pool] of EVENT_GOAL_POOLS.entries()){
   const from=EVENT_LEAGUES[i].from;
   // The goal's own batch always runs in the event; an ingredient that opened before this level can be in the barn already, one that

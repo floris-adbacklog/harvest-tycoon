@@ -110,7 +110,7 @@ test('the next-goal card and the phone line open Today at a ready challenge; it 
 
 test('the wiring: Quests counts the ready challenges, Today is called Today in More, Today says when a stop is ready, the texts match',()=>{
  const game=read('public/game.js'),html=read('public/farm.html'),retention=read('public/retention-ui.js'),wiki=read('public/wiki-content.js');
- assert.match(game,/const waiting=questGroups\(state\)\.ready\.length\+\(villageQuestReady\(state\)\?villageQuestGroups\(state\)\.ready\.length:0\)\+readyDailies\(state,farmNow\(\)\)\.length;/);
+ assert.match(game,/const waiting=questGroups\(state\)\.ready\.length\+\(villageQuestReady\(state\)\?villageQuestGroups\(state\)\.ready\.length:0\)\+\(harbourQuestReady\(state\)\?harbourQuestGroups\(state\)\.ready\.length:0\)\+readyDailies\(state,farmNow\(\)\)\.length;/);
  assert.match(game,/quests=createQuestsUI\(\{[^\n]*openToday:id=>retention\.openToday\('challenges',\{at:id\}\)/,'the line in Quests opens Today at the first ready challenge');
  assert.match(game,/beginner=createBeginnerUI\(\{[^\n]*openToday:id=>retention\.openToday\('challenges',\{at:id\}\)/,'the card and the phone line open Today at the challenge');
  assert.match(game,/if\(goal\.kind==='daily'\)return \{label:'Open Today',run:\(\)=>retention\.openToday\('challenges',\{at:goal\.id\}\)\};/,'the guide-complete card too');
