@@ -9,7 +9,9 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const OWN={construct:'construct',finish_crop:'finish',finish_batch:'finish',quest:'quest',delivery:'delivery',stall_collect:'stall',buy_boost:'boost',expand:'expand',valley_sell:'valley',fair_enter:'fair',improve:'improve',
  // The market square (Oct 2026): helping a villager sounds like a sold basket, a golden brief like a new building; a finished landmark
  // like a lasting improvement.
- village_deliver:'valley',village_build:'construct',landmark_finish:'improve'};
+ village_deliver:'valley',village_build:'construct',landmark_finish:'improve',
+ // Seed Lab heirlooms collected (28 Oct 2026, the owner): a seed pod, a glass jar, two bells.
+ lab_collect:'heirloom'};
 
 test('each of these moments has its own sound, and a level-up still comes first',()=>{
  for(const [type,cue] of Object.entries(OWN))assert.equal(soundForAction({type},{},5,5),cue,type);
