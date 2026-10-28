@@ -56,6 +56,6 @@ test('the farm power-ups, the shipping bin and the level curve stay out of the h
  assert.equal(m.boostStatus(s,'upgrade',now).reason,'All buildings at maximum level');
  s.buildings.ropewalk.job={recipe:'twistrope',readyAt:now+6e5,output:{rope:1}};
  assert.equal(m.boostStatus(s,'production',now).reason,'No batches are running');
- assert.ok(Object.hasOwn(m.ITEMS,'goldenloaf')&&m.shipBinItem('goldenloaf')===false&&m.shipBinItem('rope')===false&&m.shipBinItem('bread')===true);
+ assert.ok(Object.hasOwn(m.ITEMS,'goldenloaf')&&m.shipBinItem('goldenloaf')===true&&m.shipBinItem('rope')===false&&m.shipBinItem('bread')===true);
  for(let level=200;level<300;level++)assert.ok(m.xpForLevel(level+1)-m.xpForLevel(level)<=m.HARBOUR_XP_STEP,`${level} -> ${level+1}`);
 });

@@ -4533,7 +4533,7 @@ function normalizeShift(state){
 export const SHIP_BIN_BONUS=.1,SHIP_BIN_ROOM_MAX=500;
 export const shipBinRoom=state=>Math.min(SHIP_BIN_ROOM_MAX,20+5*levelOf(state));
 export const shipBinCount=state=>Object.values(state.shipBin?.items??{}).reduce((n,v)=>n+(Number.isInteger(v)&&v>0?v:0),0);
-export const shipBinItem=key=>Object.hasOwn(ITEMS,key)&&!otherWorldItem(key);   // the farm's own crops and goods: no village or harbour goods (28 Oct 2026)
+export const shipBinItem=key=>Object.hasOwn(ITEMS,key)&&!villageGood(key)&&!worldThreeItem(key);   // what the farm Market sells: no village or harbour goods (28 Oct 2026)
 // What count of `key` would bring in the bin now, bonus included (whole coins).
 export const shipBinValue=(state,key,count,now=Date.now())=>Math.floor(marketSaleValue(state,count*marketQuote(key,now).price,now)*(1+SHIP_BIN_BONUS));
 export function shipBinAdd(state,key,count,now=Date.now()){
