@@ -5960,7 +5960,10 @@ export const FAMILY_REQUEST_LIFETIME=3*DAY_MS;
 export const familyJoinMode=f=>Object.hasOwn(FAMILY_JOIN_MODES,f?.join_mode??'')?f.join_mode:f?.is_open?'open':'invite';
 // A minimum level for an open family or one taking requests (1 Oct 2026): farmers below it cannot join or ask. An invitation
 // still works for anyone from level 10. No minimum (null) is the level Farm Families open at.
-export const FAMILY_MIN_LEVELS=Object.freeze([FAMILY_MIN_LEVEL,15,20,25,30,40,50,60,75,100]);
+// Any whole level from 10 to 999 (29 Oct 2026, the owner: "laat mensen 1 tot 999 invoeren (eigen getal)", then "Default value: 10
+// (min 10 ivm family opens at 10)"; families_min_level_check allows 1 to 999). 10, the level families open at, is no minimum.
+export const FAMILY_MIN_LEVEL_MAX=999;
+export const familyMinLevelOk=level=>Number.isInteger(level)&&level>=FAMILY_MIN_LEVEL&&level<=FAMILY_MIN_LEVEL_MAX;
 export const familyMinLevel=f=>Math.max(FAMILY_MIN_LEVEL,Number(f?.min_level)||0);
 // Away too long (17 Oct 2026, the owner; the family stays at most 10): a member who has not played for the family's number of days
 // leaves the family automatically, 7, 14, 30, 60 or 90 days, 30 for every family until its leader or a co-leader picks another in
@@ -6148,7 +6151,7 @@ export function familyMutate(original,state,player,action,now,options={}){
    family.join_mode=action.mode;family.is_open=action.mode==='open';refreshFamilyRequests(c,now);
    result={message:{open:'Anyone can now join your family.',request:'Farmers can now ask to join. You decide.',invite:'Farmers can now join only by invitation.',closed:'Your family is now closed to new farmers.'}[action.mode]};
   }else if(type==='family_min_level'){
-   manager();const level=Number(action.level);if(!FAMILY_MIN_LEVELS.includes(level))throw new Error('Choose a minimum level.');
+   manager();const level=Number(action.level);if(!familyMinLevelOk(level))throw new Error(`Choose a minimum level from ${FAMILY_MIN_LEVEL} to ${FAMILY_MIN_LEVEL_MAX}.`);
    family.min_level=level>FAMILY_MIN_LEVEL?level:null;
    result={message:`Farmers from level ${level} can now join.`};
   }else if(type==='family_shirt'){

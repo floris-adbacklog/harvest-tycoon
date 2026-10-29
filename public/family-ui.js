@@ -10,7 +10,7 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVEL_MAX,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
@@ -212,7 +212,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>
-  ${f.mode==='open'||f.mode==='request'?`<section class="family-card family-open-row"><div><strong>Minimum level</strong><p>${f.mode==='open'?'Farmers below this level cannot join.':'Farmers below this level cannot ask to join.'} You can still invite anyone.</p></div><select data-family-min-level aria-label="Minimum level" ${disabled(false)}>${FAMILY_MIN_LEVELS.map(n=>`<option value="${n}" ${(f.minLevel??FAMILY_MIN_LEVEL)===n?'selected':''}>${n===FAMILY_MIN_LEVEL?`Any level (${n}+)`:`Level ${n}+`}</option>`).join('')}</select></section>`:''}
+  ${f.mode==='open'||f.mode==='request'?`<section class="family-card family-open-row"><div><strong>Minimum level</strong><p>${f.mode==='open'?'Farmers below this level cannot join.':'Farmers below this level cannot ask to join.'} You can still invite anyone.</p></div><label class="family-min-level"><span>Level</span><input type="number" data-family-min-level min="${FAMILY_MIN_LEVEL}" max="${FAMILY_MIN_LEVEL_MAX}" step="1" inputmode="numeric" value="${f.minLevel??FAMILY_MIN_LEVEL}" aria-label="Minimum level" ${disabled(false)}></label></section>`:''}
   ${f.shirt!==undefined?shirtPicker(f):''}
   ${f.idleDays?`<section class="family-card family-open-row"><div><strong>Away too long</strong><p>${idleRule(f.idleDays)}</p></div><select data-family-idle-days aria-label="Away too long" ${disabled(false)}>${FAMILY_IDLE_DAYS.map(n=>`<option value="${n}" ${f.idleDays===n?'selected':''}>${n} days</option>`).join('')}</select></section>`:''}
   ${leave}`;
@@ -280,7 +280,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    };
   }
   content.querySelector('[data-family-mode]')?.addEventListener('change',event=>act({type:'family_join_mode',mode:event.currentTarget.value}));
-  content.querySelector('[data-family-min-level]')?.addEventListener('change',event=>act({type:'family_min_level',level:Number(event.currentTarget.value)}));
+  // Any whole level from 10 to 999 (29 Oct 2026, the owner), kept within those when typed past them; saved on Enter or on leaving the field.
+  content.querySelector('[data-family-min-level]')?.addEventListener('change',event=>{const field=event.currentTarget,typed=Math.round(Number(field.value)),level=Number.isFinite(typed)&&field.value!==''?Math.min(FAMILY_MIN_LEVEL_MAX,Math.max(FAMILY_MIN_LEVEL,typed)):FAMILY_MIN_LEVEL;field.value=String(level);act({type:'family_min_level',level});});
   content.querySelectorAll('[data-family-shirt]').forEach(b=>b.addEventListener('click',()=>{const shirt=b.dataset.familyShirt||null;if(shirt!==(view.family.shirt??null))void act({type:'family_shirt',shirt});}));
   content.querySelector('[data-family-idle-days]')?.addEventListener('change',event=>act({type:'family_idle_days',days:Number(event.currentTarget.value)}));
   inviteSearch.mount(content);bindEmblemPickers(content);

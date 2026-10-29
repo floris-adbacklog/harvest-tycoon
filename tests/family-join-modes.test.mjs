@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVELS,familyMinLevel,familyProfile,FAMILY_JOIN_MODES,FAMILY_REQUEST_LIFETIME,familyJoinMode,emptyFamilyContext,familyMutate,familyPublicView,createFarm,normalizeFarm,xpForLevel} from '../public/farm-state.js';
+import {FAMILY_MIN_LEVEL,FAMILY_MIN_LEVEL_MAX,familyMinLevelOk,familyMinLevel,familyProfile,FAMILY_JOIN_MODES,FAMILY_REQUEST_LIFETIME,familyJoinMode,emptyFamilyContext,familyMutate,familyPublicView,createFarm,normalizeFarm,xpForLevel} from '../public/farm-state.js';
 import {familyChanges} from '../supabase/functions/farm-api/family-service.js';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const now=Date.parse('2026-09-26T12:00:00Z');
@@ -86,10 +86,11 @@ test('the database: join_mode beside is_open, a requests table only the server r
 test('a minimum level for an open family or one taking requests: below it no Join or Ask; an invitation still works',()=>{
  const at=level=>{const s=createFarm(now);s.xp=xpForLevel(level);return normalizeFarm(s,now);};
  const go=(c,p,a,level=FAMILY_MIN_LEVEL)=>familyMutate(c,at(level),p,a,now,{uuid});
- assert.equal(FAMILY_MIN_LEVELS[0],FAMILY_MIN_LEVEL);assert.equal(familyMinLevel({}),FAMILY_MIN_LEVEL,'no minimum: the level families open at');
+ assert.equal(FAMILY_MIN_LEVEL,10);assert.equal(FAMILY_MIN_LEVEL_MAX,999);assert.ok(familyMinLevelOk(10)&&familyMinLevelOk(17)&&familyMinLevelOk(999));assert.ok(!familyMinLevelOk(9)&&!familyMinLevelOk(1000)&&!familyMinLevelOk(12.5));assert.equal(familyMinLevel({}),FAMILY_MIN_LEVEL,'no minimum: the level families open at');
  let c=family();assert.equal(c.families[0].min_level,null);
  assert.throws(()=>run(c,'bo',{type:'family_min_level',level:20}),/Join a family first/);
- assert.throws(()=>run(c,'lea',{type:'family_min_level',level:17}),/Choose a minimum level/);
+ assert.throws(()=>run(c,'lea',{type:'family_min_level',level:9}),/Choose a minimum level from 10 to 999/);assert.throws(()=>run(c,'lea',{type:'family_min_level',level:1000}),/Choose a minimum level/);
+ assert.equal(run(c,'lea',{type:'family_min_level',level:17}).context.families[0].min_level,17,'any whole level (29 Oct 2026)');
  c=run(c,'lea',{type:'family_min_level',level:20}).context;assert.equal(c.families[0].min_level,20);
  assert.equal(go(c,'bo',{type:'family_join',familyId:fid(c)},19).result.error,'This family is for farmers from level 20.');
  assert.equal(familyCurrentName(go(c,'bo',{type:'family_join',familyId:fid(c)},20).context,'bo'),'Meadow Friends','level 20 joins');
@@ -104,7 +105,7 @@ test('a minimum level for an open family or one taking requests: below it no Joi
  assert.equal(familyProfile(c,fid(c),'cas',at(12),now).minLevel,20);assert.equal(familyProfile(c,fid(c),'cas',at(12),now).viewer.level,12);
  const ui=read('public/family-ui.js'),profile=read('public/family-profile.js');
  assert.match(ui,/f\.mode==='open'\|\|f\.mode==='request'\?`<section class="family-card family-open-row"><div><strong>Minimum level<\/strong>/,'only for open and request');
- assert.match(ui,/act\(\{type:'family_min_level',level:Number\(event\.currentTarget\.value\)\}\)/);
+ assert.match(ui,/<input type="number" data-family-min-level min="\$\{FAMILY_MIN_LEVEL\}" max="\$\{FAMILY_MIN_LEVEL_MAX\}" step="1"/);assert.match(ui,/Math\.min\(FAMILY_MIN_LEVEL_MAX,Math\.max\(FAMILY_MIN_LEVEL,typed\)\)/);assert.match(ui,/act\(\{type:'family_min_level',level\}\)/);
  assert.match(ui,/low\(f\)\?`<span class="family-mode-chip">From level \$\{f\.minLevel\}<\/span>`/);
  assert.match(profile,/return \{note:`This family is for farmers from level \$\{p\.minLevel\}\.`\}/);
  const sql=read('supabase/family-min-level.sql');
