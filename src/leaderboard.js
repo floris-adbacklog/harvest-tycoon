@@ -6,7 +6,7 @@ import {familyBadge} from '../public/family-badge.js';
 import {rankArt} from '../public/rank-art.js';
 import {art} from '../public/visual-icons.js';
 import {rankArtKey} from '../public/rank-picker.js';
-import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem,otherWorldItem,WORLD_TWO_LEVEL} from '../public/farm-state.js';
+import {CROPS,CROP_LEVELS,MASTERY_TIERS,ITEMS,RECIPES,BUILDING_LEVELS,QUESTS,worldTwoItem,worldThreeItem,otherWorldItem,WORLD_TWO_LEVEL,WORLD_THREE_LEVEL} from '../public/farm-state.js';
 import {ONLINE_WINDOW} from './presence.js';
 import {countLines} from './player-counts.js';
 import {ownText} from '../public/i18n.js';
@@ -16,8 +16,10 @@ const goodLevel=key=>Math.min(...Object.values(RECIPES).filter(r=>r.building!=='
 const byLevel=(a,b)=>goodLevel(a)-goodLevel(b)||ITEMS[a].name.localeCompare(ITEMS[b].name);
 // World II's goods (30 Sep 2026) are boards of their own, under Village, which only a farmer from level 100 sees (src/ui.js). The 13 goods
 // of its later places (Oct 2026, noBoard) have none: the Village row holds the first fourteen and Villagers helped.
-const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom&&!otherWorldItem(key)).sort(byLevel);   // the harbour's goods (27 Oct 2026) have no board yet
+const GOOD_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&!ITEMS[key].heirloom&&!otherWorldItem(key)).sort(byLevel);
 const VILLAGE_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&worldTwoItem(key)&&!ITEMS[key].noBoard).sort(byLevel);
+// World III's goods (29 Oct 2026): every harbour good a board of its own, under Harbour, which only a farmer from level 200 sees.
+const HARBOUR_BOARDS=Object.keys(ITEMS).filter(key=>!CROPS[key]&&worldThreeItem(key)).sort(byLevel);   // noBoard (game/farm-state.js) was "none yet"
 export const LEADERBOARD_CATEGORIES=Object.freeze({
  level:{label:'Highest level',heading:'Level',unit:'level',description:'Your farmer level, earned through farming experience.'},
  currency:{label:'Most coins',heading:'Coins',unit:'coins',description:'Current coin balance. Spending coins can change your position.'},
@@ -48,7 +50,12 @@ export const LEADERBOARD_CATEGORIES=Object.freeze({
  // Village events (20 Oct 2026): events finished in a village league (player_stats.village_events_finished, supabase/world-two-leagues-a.sql).
  // They count in Events too; that board's own description stays without the village, since every farmer reads it.
  village_events_finished:{label:'Most village events finished',heading:'Village events',unit:'village events finished',group:'village',description:`Events you finished in a village league, from level ${WORLD_TWO_LEVEL}. They count in Events too.`},
- ...Object.fromEntries(VILLAGE_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'village',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} made for and in the village.`}]))
+ ...Object.fromEntries(VILLAGE_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'village',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} made for and in the village.`}])),
+ // The harbour (29 Oct 2026, the owner: "zoals village"): ships sent (stats.ships_sent, player_stats.ships_sent), events finished in a
+ // harbour league (player_stats.harbour_events_finished) and every harbour good (goods_made): supabase/leaderboard-harbour.sql.
+ ships_sent:{label:'Most ships sent',heading:'Ships sent',unit:'ships sent',group:'harbour',description:'Ships you loaded and sent off from the harbour.'},
+ harbour_events_finished:{label:'Most harbour events finished',heading:'Harbour events',unit:'harbour events finished',group:'harbour',description:`Events you finished in a harbour league, from level ${WORLD_THREE_LEVEL}. They count in Events too.`},
+ ...Object.fromEntries(HARBOUR_BOARDS.map(key=>[`made_${key}`,{label:`${ITEMS[key].name} made`,heading:ITEMS[key].name,unit:`${ITEMS[key].name.toLowerCase()} made`,group:'harbour',good:key,description:`Lifetime ${ITEMS[key].name.toLowerCase()} made in the harbour.`}]))
 });
 function categoryFor(key){if(!Object.hasOwn(LEADERBOARD_CATEGORIES,key))throw new Error('Choose a valid leaderboard category.');return LEADERBOARD_CATEGORIES[key];}
 // A good's board reads one key of goods_made ("goods_made->bread" to the database); every other board is its own column.

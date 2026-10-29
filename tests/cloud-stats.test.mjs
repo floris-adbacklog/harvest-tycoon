@@ -11,12 +11,14 @@ import {LEADERBOARD_CATEGORIES,rankedRows,scoreOf} from '../src/leaderboard.js';
 import {CROPS,ITEMS} from '../public/farm-state.js';
 test('every crop has its own board; only public metrics can be selected',async()=>{
  for(const crop of Object.keys(CROPS))assert(LEADERBOARD_CATEGORIES['harvested_'+crop],crop);
- // Heirlooms (Seed Lab) have no boards, nor the 13 goods of World II's later places (Oct 2026, noBoard).
- const goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!ITEMS[k].noBoard);
- assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,17+Object.keys(CROPS).length+goods.length,'seventeen boards (Villagers helped the sixteenth, Village events the seventeenth) plus one per crop and one per good');
- // World II's goods are under Village, the farm's under By good (30 Sep 2026).
- for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,ITEMS[good].world===2?'village':'goods',good);
- assert.deepEqual(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard&&LEADERBOARD_CATEGORIES['made_'+k]),[],'no board for a good marked noBoard');
+ // Heirlooms (Seed Lab) have no boards, nor the 13 goods of World II's later places (Oct 2026, noBoard). Every harbour good has one
+ // (29 Oct 2026, under Harbour), noBoard or not.
+ const goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&(!ITEMS[k].noBoard||ITEMS[k].world===3));
+ assert.equal(Object.keys(LEADERBOARD_CATEGORIES).length,19+Object.keys(CROPS).length+goods.length,'nineteen boards (Villagers helped, Village events, Ships sent and Harbour events the last four) plus one per crop and one per good');
+ // World II's goods are under Village, World III's under Harbour, the farm's under By good (30 Sep 2026).
+ for(const good of goods)assert.equal(LEADERBOARD_CATEGORIES['made_'+good]?.group,ITEMS[good].world===2?'village':ITEMS[good].world===3?'harbour':'goods',good);
+ assert.deepEqual(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard&&ITEMS[k].world===2&&LEADERBOARD_CATEGORIES['made_'+k]),[],'no board for a village good marked noBoard');
+ assert.equal(LEADERBOARD_CATEGORIES.ships_sent.group,'harbour');assert.equal(LEADERBOARD_CATEGORIES.harbour_events_finished.group,'harbour');
  assert.equal(Object.keys(ITEMS).filter(k=>ITEMS[k].noBoard&&ITEMS[k].world===2).length,13);   // and the harbour's 8 (27 Oct 2026)
  for(const key of ['events_finished','best_streak','farm_fields','chores_done','helping_rounds','estate_projects','building_upgrades','quests_done'])assert(LEADERBOARD_CATEGORIES[key],`${key} board`);
  for(const category of ['diamonds','harvested_grain','state','__proto__'])await assert.rejects(fetchLeaderboard({from(){throw new Error('Should not query');}},'self',category),/valid leaderboard/);

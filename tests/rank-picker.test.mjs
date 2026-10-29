@@ -9,10 +9,14 @@ const art=key=>`<i data-art="${key}"></i>`;
 
 test('every board has a chip: fifteen main boards, "By crop" and "By good" chips and one chip per crop and per good',()=>{
  // Goods with a board (World II's later goods have none, Oct 2026); Villagers helped and Village events are small chips in the Village row.
- const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!ITEMS[k].noBoard).length;
+ const html=rankPickerMarkup(LEADERBOARD_CATEGORIES,art),goods=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&(!ITEMS[k].noBoard||ITEMS[k].world===3)).length;
  const keys=[...html.matchAll(/data-rank="([a-z_]+)"/g)].map(m=>m[1]);
  assert.deepEqual(keys.sort(),Object.keys(LEADERBOARD_CATEGORIES).sort(),'nothing lost from the old dropdown');
- assert.equal(keys.length,17+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods+2);
+ assert.equal(keys.length,19+Object.keys(CROPS).length+goods);assert.match(html,/data-rank-crops/);assert.equal([...html.matchAll(/rank-chip-small/g)].length,Object.keys(CROPS).length+goods+4);
+ // The Harbour row (29 Oct 2026): hidden until level 200, Ships sent then Harbour events first.
+ assert.match(html,/data-rank-harbour aria-pressed="false" aria-expanded="false" aria-controls="rank-harbour" hidden>/);
+ const harbour=html.slice(html.indexOf('id="rank-harbour"'));
+ assert.deepEqual([...harbour.matchAll(/data-rank="([a-z_]+)"/g)].slice(0,2).map(m=>m[1]),['ships_sent','harbour_events_finished']);
  // Village events (20 Oct 2026): a small chip in the Village row right after Villagers helped, with the events' picture.
  assert.equal(RANK_ART.village_events_finished,'live-events');
  const village=html.slice(html.indexOf('id="rank-village"'));

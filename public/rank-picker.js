@@ -1,6 +1,6 @@
 // The leaderboard's "Rank by" choice: the main boards as chips, and a "By crop" and a "By good" chip that each open a row of boards.
 // It replaces a 19-item native dropdown. The chosen board is still kept in a hidden field, so the rest of the leaderboard code is unchanged.
-export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'medal-gold',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse',building_upgrades:'hammer',quests_done:'quests',villagers_helped:'villagemarket',village_events_finished:'live-events'});
+export const RANK_ART=Object.freeze({level:'xp',currency:'coins',harvested_crops:'harvest',goods_produced:'bread',items_sold:'market',badges:'medal-gold',deliveries:'cart',events_finished:'live-events',best_streak:'streak',farm_fields:'estate',chores_done:'chores',helping_rounds:'helping-hand',estate_projects:'farmhouse',building_upgrades:'hammer',quests_done:'quests',villagers_helped:'villagemarket',village_events_finished:'live-events',ships_sent:'harbour-badge',harbour_events_finished:'live-events'});
 // A crop board shows the crop, a good's board the good.
 export const rankArtKey=key=>RANK_ART[key]??(key.startsWith('harvested_')?key.slice(10):key.startsWith('made_')?key.slice(5):'trophy');
 // "By crop" and "By good": each chip opens its own row of boards and remembers the last one you looked at there.
@@ -8,7 +8,9 @@ const GROUPS=Object.freeze({
  crops:{toggle:'data-rank-crops',row:'rank-crops',label:'By crop',art:'wheat',label2:'Choose a crop',first:'harvested_wheat'},
  goods:{toggle:'data-rank-goods',row:'rank-goods',label:'By good',art:'bread',label2:'Choose a good',first:'made_bread'},
  // World II: the village's boards, a chip that is hidden until the farmer reaches level 100 (src/ui.js). Villagers helped first (Oct 2026).
- village:{toggle:'data-rank-village',row:'rank-village',label:'Village',art:'village-badge',label2:'Choose a village board',first:'villagers_helped',hidden:true}
+ village:{toggle:'data-rank-village',row:'rank-village',label:'Village',art:'village-badge',label2:'Choose a village board',first:'villagers_helped',hidden:true},
+ // World III (29 Oct 2026, the owner: "zoals village"): the harbour's boards, hidden until level 200 (src/ui.js). Ships sent first.
+ harbour:{toggle:'data-rank-harbour',row:'rank-harbour',label:'Harbour',art:'harbour-badge',label2:'Choose a harbour board',first:'ships_sent',hidden:true}
 });
 const groupOf=(categories,key)=>categories[key]?.group??null;
 const chip=(art,key,label,extra='')=>`<button type="button" class="rank-chip ${extra}" data-rank="${key}" aria-pressed="false">${art}<span>${label}</span></button>`;
@@ -24,7 +26,7 @@ export function rankPickerMarkup(categories,art){
 // {rank: 'level'} for a chip, {crops: true} for "By crop" or {group: 'goods'} for "By good". A row can be opened and closed on its own:
 // closing it keeps the board you were looking at.
 export function nextRank(categories,state,tap){
- let {category}=state;const last={crops:state.lastCrop??GROUPS.crops.first,goods:state.lastGood??GROUPS.goods.first,village:state.lastVillage??GROUPS.village.first};
+ let {category}=state;const last={crops:state.lastCrop??GROUPS.crops.first,goods:state.lastGood??GROUPS.goods.first,village:state.lastVillage??GROUPS.village.first,harbour:state.lastHarbour??GROUPS.harbour.first};
  let open=state.open===undefined||state.open===true?groupOf(categories,category):state.open||null;
  const group=tap.crops?'crops':Object.hasOwn(GROUPS,tap.group??'')?tap.group:null;
  if(group){
@@ -32,12 +34,12 @@ export function nextRank(categories,state,tap){
   else if(Object.hasOwn(categories,last[group])){category=last[group];open=group;}
  }else if(Object.hasOwn(categories,tap.rank)){category=tap.rank;open=groupOf(categories,category);}
  const now=groupOf(categories,category);if(now)last[now]=category;
- return {category,lastCrop:last.crops,lastGood:last.goods,lastVillage:last.village,open,showCrops:open==='crops',showGoods:open==='goods',showVillage:open==='village',changed:category!==state.category};
+ return {category,lastCrop:last.crops,lastGood:last.goods,lastVillage:last.village,lastHarbour:last.harbour,open,showCrops:open==='crops',showGoods:open==='goods',showVillage:open==='village',showHarbour:open==='harbour',changed:category!==state.category};
 }
 
 // Wires the chips inside `root` to the hidden field and reports real changes.
 export function bindRankPicker(root,{categories,field,onChange}){
- let state={category:field.value||'level',lastCrop:GROUPS.crops.first,lastGood:GROUPS.goods.first,lastVillage:GROUPS.village.first,open:groupOf(categories,field.value||'level')};
+ let state={category:field.value||'level',lastCrop:GROUPS.crops.first,lastGood:GROUPS.goods.first,lastVillage:GROUPS.village.first,lastHarbour:GROUPS.harbour.first,open:groupOf(categories,field.value||'level')};
  const paint=()=>{
   for(const button of root.querySelectorAll('[data-rank]'))button.setAttribute('aria-pressed',String(button.dataset.rank===state.category));
   for(const [name,g] of Object.entries(GROUPS)){
@@ -47,10 +49,10 @@ export function bindRankPicker(root,{categories,field,onChange}){
   }
  };
  root.addEventListener('click',event=>{
-  const button=event.target.closest?.('[data-rank],[data-rank-crops],[data-rank-goods],[data-rank-village]');if(!button)return;
-  const tap=button.hasAttribute('data-rank-crops')?{crops:true}:button.hasAttribute('data-rank-goods')?{group:'goods'}:button.hasAttribute('data-rank-village')?{group:'village'}:{rank:button.dataset.rank};
+  const button=event.target.closest?.('[data-rank],[data-rank-crops],[data-rank-goods],[data-rank-village],[data-rank-harbour]');if(!button)return;
+  const tap=button.hasAttribute('data-rank-crops')?{crops:true}:button.hasAttribute('data-rank-goods')?{group:'goods'}:button.hasAttribute('data-rank-village')?{group:'village'}:button.hasAttribute('data-rank-harbour')?{group:'harbour'}:{rank:button.dataset.rank};
   const next=nextRank(categories,state,tap);
-  state={category:next.category,lastCrop:next.lastCrop,lastGood:next.lastGood,lastVillage:next.lastVillage,open:next.open};field.value=next.category;paint();
+  state={category:next.category,lastCrop:next.lastCrop,lastGood:next.lastGood,lastVillage:next.lastVillage,lastHarbour:next.lastHarbour,open:next.open};field.value=next.category;paint();
   // On a phone the chips scroll sideways: keep the chosen one in view.
   root.querySelector(`[data-rank="${next.category}"]`)?.scrollIntoView?.({inline:'center',block:'nearest',behavior:'smooth'});
   if(next.changed)onChange(next.category);
@@ -59,5 +61,7 @@ export function bindRankPicker(root,{categories,field,onChange}){
  return {
   // From level 100 the Village chip shows (World II's boards); below it, it stays hidden and its row closed.
   showVillage(on){const toggle=root.querySelector('[data-rank-village]');if(toggle)toggle.hidden=!on;if(!on&&state.open==='village'){state={...state,open:null};paint();}},
+  // From level 200 the Harbour chip shows (World III's boards), the same way.
+  showHarbour(on){const toggle=root.querySelector('[data-rank-harbour]');if(toggle)toggle.hidden=!on;if(!on&&state.open==='harbour'){state={...state,open:null};paint();}},
   select(key){state=nextRank(categories,state,{rank:key});field.value=state.category;paint();}};
 }
