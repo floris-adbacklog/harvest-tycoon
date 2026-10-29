@@ -282,18 +282,21 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false,ha
  // The active boosts in one small pill under the top bar (phone and computer): a picture and the time left for each, so it is clear
  // which ones run (26 Sep 2026: pictures instead of "2× XP · 45m"). The pill is rebuilt only when the set changes; the times tick.
  let pillKey='';
+ // The phone layout (mobile-ui.js mobileLayout's query) and a time in its largest unit, rounded (59m stays 59m; under a minute, seconds).
+ const phoneLayout=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false;
+ const shortTime=ms=>{const H=3600000,D=24*H;return formatDuration(ms>=D?Math.round(ms/D)*D:ms>=H?Math.round(ms/H)*H:ms);};
  function tick(){
   const now=farmNow(),chips=[],isVip=vipActive(state,now);
   if(previousVip&&!isVip&&observedExpiry===state.vipExpiresAt)track('vip_expired');
   previousVip=isVip;observedExpiry=state.vipExpiresAt??0;
-  if(isVip)chips.push({id:'vip',picture:'vip',label:'VIP',time:formatDuration(state.vipExpiresAt-now)});
+  if(isVip)chips.push({id:'vip',picture:'vip',label:'VIP',time:formatDuration(state.vipExpiresAt-now),left:state.vipExpiresAt-now});
   const vipStatus=document.querySelector('[data-vip-status]');if(vipStatus&&isVip)vipStatus.textContent=`VIP · ${formatDuration(state.vipExpiresAt-now)} left`;
 
   // The Double XP weekend (27 Oct 2026) leads the pill with its name and time left; the farm's own Double XP waits until after it, so
   // its chip shows again once the weekend is over.
-  const weekend=xpWeekend(now);if(weekend)chips.push({id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration(weekend.endsAt-now),named:true});
+  const weekend=xpWeekend(now);if(weekend)chips.push({id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration(weekend.endsAt-now),left:weekend.endsAt-now,named:true});
   for(const [id,label,until,picture] of [['xp','2× XP',weekend?0:state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
-   if(until>now)chips.push({id,picture,label,time:formatDuration(until-now)});
+   if(until>now)chips.push({id,picture,label,time:formatDuration(until-now),left:until-now});
    // The Farmhand's card (Power-ups) ticks.
    document.querySelectorAll(`[data-boost-time="${id}"]`).forEach(el=>{if(until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;});
   }
@@ -303,7 +306,10 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false,ha
   if(state.boosts.upgradeCredits)chips.push({id:'upgrade',picture:'hammer',label:'50% upgrade voucher',time:'50%'});
   const pill=$('active-boosts'),key=chips.map(c=>c.id).join(',');pill.hidden=!chips.length;
   if(key!==pillKey){pillKey=key;pill.innerHTML=chips.map(c=>`<span class="active-boost${c.named?' is-named':''}" data-active-boost="${c.id}" title="${c.label}">${art(c.picture)}${c.named?`<em>${c.label}</em>`:''}<b></b></span>`).join('');refreshArt();}
-  for(const c of chips){const time=pill.querySelector(`[data-active-boost="${c.id}"] b`);if(time&&time.textContent!==c.time)time.textContent=c.time;}
+  // On a phone each chip shows its largest unit only (29 Oct 2026, the owner: five boosts made a full-width pill with a second row):
+  // 2d 23h is 3d, 1h 59m is 2h, under an hour the minutes. The screen reader's line keeps the whole time.
+  const short=phoneLayout();
+  for(const c of chips){const time=pill.querySelector(`[data-active-boost="${c.id}"] b`),shown=short&&c.left>0?shortTime(c.left):c.time;if(time&&time.textContent!==shown)time.textContent=shown;}
   pill.setAttribute('aria-label',chips.length?`Active boosts: ${chips.map(c=>c.id==='upgrade'?c.label:`${c.label}, ${c.time} left`).join('; ')}. Open the shop.`:'View active boosts');
   if($('boost-dialog').open&&signature()!==lastStatus)render();
  }

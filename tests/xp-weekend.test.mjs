@@ -129,7 +129,7 @@ test('SQL: the admin only (a Google session), 1 to 72 hours, now or within 14 da
 
 test('on screen: the pill names the weekend with its time left, the shop says Included, the gift says after the weekend; no middle dots',()=>{
  const ui=read('public/boosts-ui.js');
- assert.match(ui,/const weekend=xpWeekend\(now\);if\(weekend\)chips\.push\(\{id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration\(weekend\.endsAt-now\),named:true\}\);/);
+ assert.match(ui,/const weekend=xpWeekend\(now\);if\(weekend\)chips\.push\(\{id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration\(weekend\.endsAt-now\),left:weekend\.endsAt-now,named:true\}\);/);
  assert.match(ui,/chip\('included',`Included in the \$\{XP_WEEKEND_NAME\}`\)/);assert.match(ui,/Yours: \$\{formatDuration\(status\.waiting\)\} after the weekend/);
  const retention=read('public/retention-ui.js');
  assert.match(retention,/\$\{after\?' after the weekend':''\}/);assert.doesNotMatch(retention,/xpUntil/,'XP shown doubled by xpDoubled: the weekend too');
