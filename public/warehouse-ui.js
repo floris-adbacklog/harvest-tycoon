@@ -1,6 +1,7 @@
 import {ITEMS,CROPS,PRODUCTS,HEIRLOOMS,SEASON_CROPS,VILLAGE_GOODS,HARBOUR_GOODS,harbourWarehouseLevel,harbourWarehouseNext,harbourWarehouseRoom,worldThreeOpen,storedCount,warehouseCapacity,warehouseLevel,warehouseUpgrade,warehouseFull,warehouseNearFull,
  levelOf,worldTwoOpen,WAREHOUSE_MAX_LEVEL} from './farm-state.js';
 import {art,refreshArt} from './visual-icons.js';
+import {setDialogBadge} from './dialog-shell.js';
 // The Warehouse (22 Oct 2026, the owner's plan: plan-warehouse/voorstel.md with his choices). Its window shows every item in storage, grouped
 // as the Market groups them, how full it is ("312 / 500") and the next upgrade; a tap on the building, its pin, the Market's heading, More or
 // Buildings opens it. Where bringing something in waits because it is full (a harvest, a sweep, a Collect, the tractor), one note says so
@@ -73,6 +74,8 @@ export function createWarehouseUI({state,runAction,openMarket,notify,onChange,ha
  const dialog=()=>$('warehouse-dialog');
  function render(){
   const d=dialog();if(!d?.open)return;
+  // In the harbour the window's picture is the harbour warehouse (29 Oct 2026, the owner: it showed the farm's red barn).
+  setDialogBadge(d,harbour?'harbourwarehouse':'warehouse');
   $('warehouse-content').innerHTML=warehouseContent(state,{harbour});
   $('warehouse-market').onclick=()=>{d.close();openMarket(marketTab());};
   const go=$('warehouse-upgrade-go');if(go&&go.dataset.cost)go.onclick=upgrade;

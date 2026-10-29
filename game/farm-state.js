@@ -4933,7 +4933,7 @@ function stampStarterOffer(state,levelBefore,now){
 // ask first; the three time-skips are one tap (public/village-shop-ui.js).
 export const PRICES_CHANGED='Prices have changed. Reload the game to see current prices.';
 export const VILLAGER_CALLS_PER_DAY=3,LANDMARK_COINS_PER_DIAMOND=500;
-export const VILLAGE_SHOP=Object.freeze(Object.fromEntries(Object.entries({   // the tab sorts the cards by price (cheap to dear, the Farmhand in at 150); at the same price, this order
+export const VILLAGE_SHOP=Object.freeze(Object.fromEntries(Object.entries({   // the tab sorts the cards by price (cheap to dear); at the same price, this order
  villager:{name:'Next villager now',level:WORLD_TWO_LEVEL,cost:10,art:'bell'},
  casts:{name:'Five casts now',level:LAKE_LEVEL,cost:10,art:'villagelake'},
  tilecart:{name:'Roof tile cart',level:BUILDING_LEVELS.kiln,cost:20,art:'rooftile',goods:{rooftile:40}},
@@ -5097,8 +5097,8 @@ export function landmarkSupplies(state,id,expectedCost,expectedGoods){
 // Village tab. Ship back now (one tap): a quay's next ship docks at once, never the container ship or the world voyage (they bring
 // diamonds of their own). 100 diamonds, not the town boat's 30: what a ship adds over selling its cargo at the Market (200,000 coins at
 // level 200, 600,000 at 300) stays near the coin pack's 100 diamonds. Harbour supplies (asks first): everything the harbour master's work
-// still needs, at Landmark supplies' 1 diamond for every 500 coins of goods; its coins stay its own tap. The Farmhand's card shows there
-// too (it already works in the harbour places). Both count in the harbour's own numbers (HARBOUR_ACTIONS: harbour_diamonds_spent, never
+// still needs, at Landmark supplies' 1 diamond for every 500 coins of goods; its coins stay its own tap. The Farmhand works in the harbour
+// places too, from Power-ups (29 Oct 2026: not in this tab). Both count in the harbour's own numbers (HARBOUR_ACTIONS: harbour_diamonds_spent, never
 // the farm's diamonds_spent or boosts_used).
 export const HARBOUR_SHOP=Object.freeze({
  ship:Object.freeze({name:'Ship back now',level:WORLD_THREE_LEVEL,cost:100,art:'harbour-badge'}),

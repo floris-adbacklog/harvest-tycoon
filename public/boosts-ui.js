@@ -158,11 +158,13 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false,ha
   };
   const shown=worldTwo?Object.keys(VILLAGE_SHOP).map(id=>villageShopStatus(state,id,farmNow())).filter(s=>s.shown):[];
   // Cheap to dear (the owner, 20 Oct 2026), Landmark supplies by its price of the moment; with everything handed in (0) it goes last. The
-  // sort is stable: at the same price the VILLAGE_SHOP order, and Landmark supplies at exactly 150 before the Farmhand.
-  const villageCards=[...shown.map(s=>[s.cost||Infinity,villageCard(s)]),[BOOSTS.farmhand.cost,boostCard(['farmhand',BOOSTS.farmhand])]].sort((a,b)=>a[0]-b[0]).map(([,html])=>html).join('');
-  // The Harbour tab (28 Oct 2026, the owner's choices 1A, 1+2+4, 3a): Ship back now, Harbour supplies and the Farmhand, cheap to dear.
+  // sort is stable: at the same price the VILLAGE_SHOP order. The Farmhand is only in Power-ups (29 Oct 2026, the owner: three times in
+  // the shop was confusing; it works in every world all the same).
+  const worldCards=(list,world)=>list.map(s=>[s.cost||Infinity,villageCard(s,world)]).sort((a,b)=>a[0]-b[0]).map(([,html])=>html).join('');
+  const villageCards=worldCards(shown,'village');
+  // The Harbour tab (28 Oct 2026, the owner's choices 1A, 1+2, 3a): Ship back now and Harbour supplies, cheap to dear.
   const harbourShown=worldThree?Object.keys(HARBOUR_SHOP).map(id=>harbourShopStatus(state,id,farmNow())).filter(s=>s.shown):[];
-  const harbourCards=[...harbourShown.map(s=>[s.cost||Infinity,villageCard(s,'harbour')]),[BOOSTS.farmhand.cost,boostCard(['farmhand',BOOSTS.farmhand])]].sort((a,b)=>a[0]-b[0]).map(([,html])=>html).join('');
+  const harbourCards=worldCards(harbourShown,'harbour');
   // An open field or batch picker stays open when a crop ripens or the farm updates (16 Oct 2026, public/keep-folds.js).
   keepFolds($('boost-catalog'),`<section class="shop-section" id="shop-finish"><h3 class="shop-heading">Finish now</h3><div class="shop-list">${cropCard}${batchCard}${entries.filter(([id])=>finishNow.includes(id)).map(boostCard).join('')}</div></section><section class="shop-section" id="shop-boosts"><h3 class="shop-heading">Power-ups</h3><div class="shop-list">${powerUps}</div></section>`
    +(worldTwo?`<section class="shop-section" id="shop-village"><h3 class="shop-heading">Village</h3><div class="shop-list">${villageCards}</div></section>`:'')
@@ -292,7 +294,7 @@ export function createBoostsUI({state,runAction,onChange,notify,village=false,ha
   const weekend=xpWeekend(now);if(weekend)chips.push({id:'xpweekend',picture:'double-xp',label:XP_WEEKEND_NAME,time:formatDuration(weekend.endsAt-now),named:true});
   for(const [id,label,until,picture] of [['xp','2× XP',weekend?0:state.boosts.xpUntil,'double-xp'],['harvest','2× harvest',state.boosts.harvestUntil,'double-harvest'],['coins','2× coins',state.boosts.coinsUntil,'double-coins'],['farmhand','Farmhand',state.boosts.farmhandUntil,'farmhand']]){
    if(until>now)chips.push({id,picture,label,time:formatDuration(until-now)});
-   // The Farmhand's card is in Power-ups and in the Village tab: each one ticks.
+   // The Farmhand's card (Power-ups) ticks.
    document.querySelectorAll(`[data-boost-time="${id}"]`).forEach(el=>{if(until>now)el.textContent=`Active · ${formatDuration(until-now)} left`;});
   }
   // The Sale's time left ticks; when it ends the shop shows the packs as they are again.

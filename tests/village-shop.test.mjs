@@ -279,14 +279,14 @@ test('the shop window: a fifth tab from level 100, opened on it in the village; 
  assert.ok(read('public/game.js').includes("window.harvestShop.packs=()=>boosts.open('diamond-store');"));
  assert.ok(read('src/payment-ui.js').includes('(window.harvestShop?.packs??window.harvestShop?.open)?.()'));
  // The order on the tab (the sort in boosts-ui.js): by price, the Farmhand in at 150, Landmark supplies at its price of the moment.
- assert.ok(ui.includes('[...shown.map(s=>[s.cost||Infinity,villageCard(s)]),[BOOSTS.farmhand.cost,boostCard([\'farmhand\',BOOSTS.farmhand])]].sort((a,b)=>a[0]-b[0])'));
- const order=s=>[...Object.keys(VILLAGE_SHOP).map(id=>villageShopStatus(s,id,now)).filter(x=>x.shown).map(x=>[x.cost||Infinity,x.id]),[BOOSTS.farmhand.cost,'farmhand']].sort((a,b)=>a[0]-b[0]).map(([,id])=>id);
+ assert.ok(ui.includes('list.map(s=>[s.cost||Infinity,villageCard(s,world)]).sort((a,b)=>a[0]-b[0])'));assert.ok(ui.includes("const villageCards=worldCards(shown,'village');"));   // the Farmhand only in Power-ups (29 Oct 2026)
+ const order=s=>Object.keys(VILLAGE_SHOP).map(id=>villageShopStatus(s,id,now)).filter(x=>x.shown).map(x=>[x.cost||Infinity,x.id]).sort((a,b)=>a[0]-b[0]).map(([,id])=>id);
  const s=world(165,{stock:{rooftile:331,plank:300,ironbar:40}});
- assert.deepEqual(order(s),['villager','casts','tilecart','boat','supplycart','farmhand','landmark']);
- act(s,{type:'landmark_give',landmark:'windpump'});assert.deepEqual(order(s),['villager','casts','tilecart','boat','supplycart','landmark','farmhand']);
+ assert.deepEqual(order(s),['villager','casts','tilecart','boat','supplycart','landmark']);
+ act(s,{type:'landmark_give',landmark:'windpump'});assert.deepEqual(order(s),['villager','casts','tilecart','boat','supplycart','landmark']);
  act(s,statusAction(s,'landmark'));assert.deepEqual(order(s).at(-1),'landmark');
- assert.deepEqual(order(world(100)),['villager','casts','farmhand']);
- assert.deepEqual(order(world(118)),['villager','casts','tilecart','supplycart','farmhand']);
+ assert.deepEqual(order(world(100)),['villager','casts']);
+ assert.deepEqual(order(world(118)),['villager','casts','tilecart','supplycart']);
  // The lines and the messages.
  assert.equal(villageLine({id:'supplycart'}),'40 planks and 10 iron bars into your barn, right away.');
  assert.equal(villageLine(villageShopStatus(s,'landmark',now)),'All the goods the Wind pump still needs, handed in right away. 1 diamond for every 500 coins they are worth.');

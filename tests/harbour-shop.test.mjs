@@ -78,15 +78,15 @@ test('the buys are harbour actions, wait for the server, and show in the player 
  for(const [action,text] of [[m.harbourShopAction(m.harbourShopStatus(s,'ship',now)),'Called a ship to the quay with diamonds'],[m.harbourShopAction(m.harbourShopStatus(s,'supplies',now)),'Bought the goods for the Ropewalk with diamonds']]){
   const before=snapshot(s),result=act(s,action,now),[row]=farmLog(action,before,s,result);assert.equal(row.category,'diamonds');assert.ok(row.text.startsWith(text),row.text);}
 });
-test('the shop window: a Harbour tab after the Village one, opened on it in the harbour; the cards cheap to dear with the Farmhand',()=>{
+test('the shop window: a Harbour tab after the Village one, opened on it in the harbour; the cards cheap to dear, the Farmhand only in Power-ups',()=>{
  const html=read('public/farm.html'),ui=read('public/boosts-ui.js');
  assert.match(html,/data-shop-jump="shop-village"[^>]*hidden>.*?<\/button><button type="button" data-shop-jump="shop-harbour" aria-controls="shop-harbour" aria-pressed="false" hidden><i data-game-art="harbour-badge"><\/i><span>Harbour<\/span><\/button><\/nav>/);
  assert.match(read('public/shop.css'),/#boost-dialog\[data-shop-tab\]:not\(\[data-shop-tab="shop-harbour"\]\) #shop-harbour\{display:none\}/);
  assert.ok(ui.includes("harbour&&worldThreeOpen(state)?'shop-harbour':village&&worldTwoOpen(state)?'shop-village':firstShopTab()"));
  assert.match(read('public/game.js'),/boosts=createBoostsUI\(\{[^\n]*,village:villageWorld,harbour:harbourWorld\}\);/);
  const {s,now}=farm(205,{works:['office']});skipped(s,now);
- const order=[...Object.keys(m.HARBOUR_SHOP).map(id=>m.harbourShopStatus(s,id,now)).filter(x=>x.shown).map(x=>[x.cost||Infinity,x.id]),[m.BOOSTS.farmhand.cost,'farmhand']].sort((a,b)=>a[0]-b[0]).map(([,id])=>id);
- assert.deepEqual(order,['ship','supplies','farmhand']);
+ const order=Object.keys(m.HARBOUR_SHOP).map(id=>m.harbourShopStatus(s,id,now)).filter(x=>x.shown).map(x=>[x.cost||Infinity,x.id]).sort((a,b)=>a[0]-b[0]).map(([,id])=>id);
+ assert.deepEqual(order,['ship','supplies']);assert.ok(read('public/boosts-ui.js').includes("const harbourCards=worldCards(harbourShown,'harbour');"),'the Farmhand only in Power-ups (29 Oct 2026)');
  assert.equal(harbourLine({id:'ship'}),'The quay’s next ship docks right away.');assert.equal(harbourMessage('ship'),'A new ship is at the quay.');
  assert.equal(untilText('ship',3*H),'Next ship in 3h');
  assert.match(waitButton(m.harbourShopStatus(s,'ship',now)),/data-wait-buy="ship" data-quay="0" aria-label="Buy Ship back now for 100 diamonds"/);
