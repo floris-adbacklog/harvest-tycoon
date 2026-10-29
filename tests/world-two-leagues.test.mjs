@@ -159,6 +159,6 @@ test('the event screen: the league card\'s world in the rules, the village line,
  // Since 20 Oct 2026 (the owner) the league is set when you join, so reaching 100 mid-event is one case of the plain rule.
  assert.match(ui,/Your league is set when you join an event \(your first action that counts\), and you finish that event in that league, even if you level up\./);
  assert.doesNotMatch(ui,/during an event and you finish that event in the Valley Legends/);
- assert.match(ui,/From level \$\{WORLD_TWO_LEVEL\} your league is a village league, with goals in the village\. Each village event you finish counts in Village events and in Events finished\./);
+ assert.match(ui,/From level \$\{WORLD_TWO_LEVEL\} your league is a village league, with goals in the village\. <span>Half of the time the goal comes from the farm instead\.<\/span> Each village event you finish counts in Village events and in Events finished\./);   // older worlds' goals (29 Oct 2026)
  for(const where of ['Final standings · ${esc(ownTitle(e))}','<h3>${esc(ownTitle(e))}</h3>','<strong>${esc(ownTitle(e))}</strong>'])assert.ok(ui.includes(where),where);
 });

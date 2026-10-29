@@ -194,5 +194,9 @@
  "varying vec3 vMeadow;",
  "a volatility changed",
  "league {0} of the pick is not a harbour goal: {1}",
- "the league check is not 0..16"
+ "the league check is not 0..16",
+ "hour {0} league {1}: {2} is not one of its goals",
+ "hour {0}: a farm league's goal changed",
+ "hour {0}: not {1} leagues",
+ "no higher league drew another goal in 48 hours"
 ]

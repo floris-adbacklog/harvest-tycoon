@@ -6,6 +6,7 @@
 import {writeFileSync} from 'node:fs';
 // The 5-hour pick and the hourly pick that ran use the pools and titles from before one crop a harvest (22 Oct 2026); the hourly pick
 // of supabase/one-crop.sql (scripts/one-crop-sql.mjs) uses today's (HOUR_PICK_BODY_ONE_CROP).
+import {EVENT_HOUR_OLDER,EVENT_HOUR_MIX} from '../public/event-goals.js';
 import {EVENT_GOAL_POOLS as ALL_GOAL_POOLS,EVENT_GOAL_TITLES_BEFORE_ONE_CROP as EVENT_GOAL_TITLES,EVENT_HOUR_POOLS_BEFORE_ONE_CROP as ALL_HOUR_POOLS,EVENT_HOUR_POOLS as ALL_POOLS_NOW,EVENT_GOAL_TITLES as TITLES_NOW} from '../public/event-goals.js';
 // The functions this file writes are the live ones, made for the farm's six leagues and the village's six (EVENT_LEAGUES 0..11). The
 // harbour's five (27 Oct 2026, 12..16) come with a patch of their own, so these stay exactly as they run.
@@ -103,6 +104,18 @@ export const HOUR_PICK_BODY=hourPickBody(poolsWithTitles(EVENT_HOUR_POOLS,EVENT_
 export const HOUR_PICK_BODY_ONE_CROP=hourPickBody(poolsWithTitles(HOUR_POOLS_NOW,TITLES_NOW));
 // The same pick with the harbour's five leagues too (29 Oct 2026, EVENT_LEAGUES 12..16): scripts/harbour-leagues-sql.mjs.
 export const HOUR_PICK_BODY_HARBOUR=hourPickBody(poolsWithTitles(ALL_POOLS_NOW,TITLES_NOW));
+// Older worlds' goals in the higher leagues (29 Oct 2026, the owner: option 2; public/event-goals.js EVENT_HOUR_MIX): each league
+// first draws where its goal comes from (its own pool, or an older world's top pool), on a hash of its own, and then the goal as
+// before. A league of the farm always draws 'own', so its goal is the same as before; so is any league's when it draws 'own'.
+const olderWithTitles=Object.fromEntries(Object.entries(EVENT_HOUR_OLDER).map(([world,pool])=>[world,poolsWithTitles([pool],TITLES_NOW)[0]]));
+export const HOUR_PICK_BODY_MIX=hourPickBody(poolsWithTitles(ALL_POOLS_NOW,TITLES_NOW))
+ .replace(" grp int:=(n%5)::int; lg int; r bigint; pool jsonb;",` older constant jsonb:='${JSON.stringify(olderWithTitles).replaceAll("'","''")}';
+ mix constant jsonb:='${JSON.stringify(EVENT_HOUR_MIX)}';
+ grp int:=(n%5)::int; lg int; r bigint; src text; pool jsonb;`)
+ .replace("  pool:=pools->lg->grp;\n",`  -- Where this league's goal comes from this hour (29 Oct 2026): its own pool, or an older world's (the farm's, the village's).
+  src:=mix->lg->>((abs(hashtextextended('harvest-hour-source:'||n||':'||lg,0))%jsonb_array_length(mix->lg))::int);
+  pool:=case when src='own' then pools->lg->grp else older->src->grp end;\n`);
+if(!HOUR_PICK_BODY_MIX.includes("older->src->grp")||!HOUR_PICK_BODY_MIX.includes('mix constant jsonb'))throw Error('HOUR_PICK_BODY_MIX: the hour pick changed');
 export const HOUR_PICK_SQL=`create or replace function public.harvest_event_pick(n bigint)
  returns jsonb language plpgsql stable set search_path to '' as $function$${HOUR_PICK_BODY}$function$;`;
 export const HOUR_PICK_SQL_ONE_CROP=`create or replace function public.harvest_event_pick(n bigint)

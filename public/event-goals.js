@@ -237,3 +237,15 @@ const hourPools=factor=>Object.freeze(EVENT_GOAL_POOLS.map(league=>Object.freeze
  group.filter(g=>!HOUR_LEFT_OUT[g.stat]).map(({stat,targets})=>Object.freeze({stat,target:Math.min(stat==='lake_fish'?LAKE_FISH_PER_HOUR:Infinity,nice(targets[1]/HOUR_SHARE))*(stat==='harvested'?factor:1)})))))));
 export const EVENT_HOUR_POOLS=hourPools(HARVEST_GOAL_FACTOR),EVENT_HOUR_POOLS_BEFORE_ONE_CROP=hourPools(1);
 export const EVENT_GOAL_TITLES_BEFORE_ONE_CROP=Object.freeze({...EVENT_GOAL_TITLES,tended:[['Tender care','A little care makes every harvest bigger.'],['Walk the rows','Look after every crop, row by row.']]});
+// Older worlds' goals in the higher leagues (29 Oct 2026, the owner: "de vorige kunnen ook nog gehaald worden", option 2): a league's
+// hourly goal comes half of the time from its own world's pool, as before, and half of the time from the worlds before it: a village
+// league's other half from the farm, a harbour league's a quarter from the village and a quarter from the farm. An older world's goal
+// is the one its own top league has (the Valley Legends', the Village Legends'), never scaled further. harvest_event_pick draws one of
+// a league's EVENT_HOUR_MIX entries ('own', or an older world's number), then the kind of play of the hour in that pool, so a farm
+// goal keeps its farm title. scripts/hour-mix-sql.mjs writes it.
+const topLeague=world=>EVENT_LEAGUES.filter(l=>l.world===world).at(-1).index;
+export const EVENT_HOUR_OLDER=Object.freeze(Object.fromEntries([1,2].map(world=>[world,EVENT_HOUR_POOLS[topLeague(world)]])));
+export const EVENT_HOUR_MIX=Object.freeze(EVENT_LEAGUES.map(({world})=>Object.freeze(world===1?['own','own','own','own']:world===2?['own','own','1','1']:['own','own','2','1'])));
+// Where a league's goals come from, and how often (the wiki, the tests): its own world's pool and the older worlds' top pools.
+export const hourGoalSources=league=>{const mix=EVENT_HOUR_MIX[league],world=EVENT_LEAGUES[league].world;
+ return [...new Set(mix)].map(src=>({world:src==='own'?world:Number(src),share:mix.filter(s=>s===src).length/mix.length,pool:src==='own'?EVENT_HOUR_POOLS[league]:EVENT_HOUR_OLDER[src]}));};
