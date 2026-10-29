@@ -110,7 +110,7 @@ const SECTION_ART={
  'sec-a-new-day':'bell',
  'sec-together-is-better':'family-members','sec-ranks-and-the-top-farmer':'rank-gold','sec-the-family-chest':'family-chest-wood','sec-the-family-order':'family-weekly-order',
  'sec-the-weekly-tournament':'family-tournament','sec-family-level':'trophy','sec-your-family-flag':'family-barn','sec-the-family-pages':'family-management',
- 'sec-collecting-rewards':'collect-all','sec-family-chat':'chat','sec-events-together':'live-events','sec-changing-family':'invite-friends','sec-away-too-long':'letter',
+ 'sec-sharing-goods-and-coins':'family-sharing','sec-collecting-rewards':'collect-all','sec-family-chat':'chat','sec-events-together':'live-events','sec-changing-family':'invite-friends','sec-away-too-long':'letter',
  'sec-a-new-event-every-hour':'live-events','sec-how-it-works':'quests','sec-leagues':'trophy',
  'sec-tractor':'tractor','sec-farm-chores':'chores','sec-a-helping-hand':'helping-hand','sec-fishing-pond':'fishingpond','sec-fish-book-page-2':'fish-goldencarp',
  'sec-your-second-world':'village-badge','sec-golden-briefs':'letter','sec-landmarks':'landmark-windpump','sec-villagers-requests':'supply-cart','sec-market-week':'villagemarket',
@@ -553,10 +553,20 @@ const BODIES={
   +section('Your family flag',`<p>When you are in a Farm family, its flag stands by your Family Hall: the family emblem in the family colour, with the family level on it.</p>`)
   +section('The family pages',facts([
    ['family-weekly-order','This week',`A big order for the whole family. Everyone delivers what they can. Every full line pays a quarter of the coins, XP and diamonds to everyone who delivered at least ${number(FAMILY_CONFIG.MIN_CONTRIB_POINTS)} points’ worth, when the week ends; the whole order pays everything at once. Deliveries cannot be taken back.`],
-   ['family-sharing','Sharing',`From level 10 you share with your family every day: up to ${SHARE_LIMIT} helps and ${SHARE_LIMIT} gifts. Help a member with coins: it costs you your level × 25 coins (level 10: ${number(helpCoins(10))}, level 30: ${number(helpCoins(30))}) and they get all of it. Gifts and requests hold up to 5 crops or goods for every 10 levels (level 10: ${maxShare(10)}, level 30: ${maxShare(30)}). Ask once a day: a request stays open for ${REQUEST_DAYS} days, until your family has filled it. Everyone adds 1, 5 or all they have, as often as they like, and every part arrives at once.`],
+   ['family-sharing','Sharing','Give coins, send gifts and ask your family for goods. See Sharing goods and coins below.'],
    ['family-tournament','Tournament',`Every week families compete; your deliveries count as points. The prize pool grows with every family taking part: ${FAMILY_CONFIG.TOURNAMENT_FIRST_MIN} diamonds for one family, ${FAMILY_CONFIG.TOURNAMENT_FIRST_MIN*2} for two, ${FAMILY_CONFIG.TOURNAMENT_FIRST_MIN*3} for three and ${FAMILY_CONFIG.TOURNAMENT_PER_EXTRA_FAMILY*2} more for every family after that (up to ${number(FAMILY_CONFIG.TOURNAMENT_FIRST_MAX*2)}). The top ten families share it, from ${FAMILY_CONFIG.TOURNAMENT_SHARES[0]}% for first place down to ${FAMILY_CONFIG.TOURNAMENT_SHARES.at(-1)}% for tenth. A family's prize is shared by what each member delivered.`],
    ['family-members','Members','See who is online, who has been away for a day or more and how much everyone did this week. The leader or a co-leader can invite farmers.'],
    ['family-rank-top','Stats','The week in numbers: your family’s place, what every farmer put in and your last weeks.']
+  ]))
+  // Family Sharing's rules (29 Oct 2026, the owner: a heading of their own). The numbers are social-ui.js's, which harvest_social checks
+  // too: 3 a day of each, one of each to the same farmer, 3 of each received, and only World I's own crops and goods.
+  +section('Sharing goods and coins',`<p>${h.lvl(10)} Family members help each other every day from the Sharing tab of your Farm family. Sharing opens when you are level 10, your farm is 48 hours old and you have been in the family for 24 hours. The farmer you share with needs the same. Everything comes from your own farm and arrives right away.</p>`+facts([
+   ['coins','Give coins',`Help gives a member your level × 25 coins (level 10: ${number(helpCoins(10))}, level 30: ${number(helpCoins(30))}, level 50: ${number(helpCoins(50))}). They come out of your coins and the member gets all of them.`],
+   ['gift','Send a gift',`Send any crop or good from your storage: up to 5 for every 10 levels (level 10: ${maxShare(10)}, level 30: ${maxShare(30)}, level 50: ${maxShare(50)}).`],
+   ['letter','Ask for goods',`Once a day, ask your family for up to that many of one crop or good. You have one request open at a time. It stays open for ${REQUEST_DAYS} days, or until it is full. Everyone adds 1, 5 or all they have, as often as they like, and every part arrives at once.`],
+   ['family-sharing','Daily limits',`Up to ${SHARE_LIMIT} helps and ${SHARE_LIMIT} gifts a day, and one of each to the same farmer. A farmer receives up to ${SHARE_LIMIT} helps and ${SHARE_LIMIT} gifts a day. Giving to a request has no limit. Everything starts again at midnight UTC.`],
+   // The village only from level 100 and the harbour from 200, as everywhere in How to play.
+   ['lock','What stays with you',`Heirlooms from the Seed Lab and crops from the Season Pass cannot be shared.${h.level==null||h.level>=WORLD_THREE_LEVEL?' <span>Goods from the village and the harbour stay in their world.</span>':h.level>=WORLD_TWO_LEVEL?' <span>Goods from the village stay in the village.</span>':''}`]
   ]))
   +section('Collecting rewards',`<p>Chest, order and tournament rewards wait on the Family screen until you collect them, for ${C.REWARD_WEEKS} weeks after their week ends. They stay yours if you change family.</p>`)
   // Share in chat (20 Oct 2026, the owner's option 1; farm-state.js familyShareState): the rule on the page that explains families.
