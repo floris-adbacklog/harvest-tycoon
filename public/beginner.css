@@ -212,3 +212,24 @@ html.calm-start .tool-dock .tools,html.calm-start .tool-dock>.tools{grid-templat
 .beginner-mobile-prize{display:inline-flex;align-items:center;gap:3px;flex:none;padding:3px 8px 3px 5px;border-radius:999px;background:#e3f3fd;color:#1f5877;font:700 13px/1 'DM Sans',sans-serif}
 .beginner-mobile-prize>:is(.game-art,img,svg){width:16px;height:16px}
 .next-goal-mobile .beginner-mobile-prize{display:none}
+/* Step 2's Sell all (29 Oct 2026): on the guide card a green button with the coin, on a phone a green button at the banner's end. */
+.beginner-sell,.beginner-mobile-sell{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.beginner-sell>.game-art,.beginner-mobile-sell>.game-art{width:18px;height:18px;flex:0 0 18px}
+.beginner-mobile-sell{display:none}
+.beginner-mobile-sell[hidden]{display:none!important}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){
+ .beginner-mobile.has-sell{inset-inline-end:calc(14px + 156px);width:calc(100% - 28px - 156px)}
+ .beginner-mobile-sell{display:inline-flex;position:absolute;z-index:6;top:calc(var(--mobile-top) + 5px);inset-inline-end:14px;width:148px;min-height:44px;margin:0;padding:6px 8px;border-radius:13px;font-size:13px;white-space:nowrap}
+ .beginner-mobile[hidden]~.beginner-mobile-sell{display:none}
+ .beginner-mobile.has-sell .beginner-mobile-prize{display:none}
+ .beginner-mobile.has-sell #beginner-mobile-copy{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset}
+}
+/* Landscape phones: the banner starts after the side buttons and stays narrow, so Sell all stands right after it. */
+@media(max-height:550px) and (orientation:landscape) and (max-width:900px),(max-height:550px) and (orientation:landscape) and (pointer:coarse){
+ .beginner-mobile.has-sell{--sell-banner:min(258px,calc(100% - 94px - env(safe-area-inset-left) - 170px));width:var(--sell-banner);inset-inline-end:auto}
+ .beginner-mobile-sell{inset-inline-start:calc(94px + env(safe-area-inset-left) + min(258px,calc(100% - 94px - env(safe-area-inset-left) - 170px)) + 8px);inset-inline-end:auto}
+}
+/* The short computer frame puts Show me beside the title; with Sell all too, the two buttons get their own row under the text. */
+@media(min-width:901px) and (max-height:660px),(min-width:901px) and (max-width:1040px) and (max-height:780px){
+ .beginner-card.has-sell #quest-body{grid-template-areas:"title title" "text text" "help help" "bar xp" "prize prize" "all all"}
+}

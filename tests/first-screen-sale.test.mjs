@@ -50,7 +50,7 @@ test('Show me scrolls a button into view when a sticky part of its own window co
 test('after the guide\'s first sale the Market closes and the coins fly to the coin counter',()=>{
  const ui=read('public/economy-ui.js');
  assert.match(ui,/^import \{flyHarvest,bump\} from '\.\/harvest-fly\.js';$/m,'the harvest\'s own flight');
- assert.match(ui,/const tapped=\[\.\.\.document\.querySelectorAll\(key==='category'\?'#sell-all':/,'from the button that was tapped');
+ assert.match(ui,/const tapped=from\?\?\[\.\.\.document\.querySelectorAll\(key==='category'\?'#sell-all':/,'from the button that was tapped');
  assert.ok(ui.indexOf('const tapped=')<ui.indexOf("marketSelling=true;renderMarket();\n  try{"),'read before the list is drawn again');
  assert.match(ui,/onChange\(\);notify\(r\.firstSale\?`Double coins for your first sale! \+\$\{number\(r\.coins\)\} coins\.`:`Sold! \+\$\{number\(r\.coins\)\} coins for your next harvest\.`\);\n   if\(r\.guide\?\.some\(step=>step\.step==='sell'\)\)firstSale\(tapped\);/,'only the sale that finishes the guide step');
  assert.match(ui,/function firstSale\(from\)\{\n  \$\('market-dialog'\)\.close\(\);/,'the window closes even when motion is reduced');

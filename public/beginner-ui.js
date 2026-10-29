@@ -1,4 +1,4 @@
-import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress,productionJobs,formatDuration,levelOf} from './farm-state.js';
+import {BEGINNER_QUESTS,BEGINNER_REWARD,BEGINNER_STEP_XP,beginnerProgress,productionJobs,formatDuration,levelOf,sellableStock} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art} from './visual-icons.js';
 import {nextGoal,actNow,readyAllAt} from './next-goal.js';
@@ -66,7 +66,9 @@ const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
 // Quests at that quest; openToday(id): Today at that daily challenge (Plan F, 13 Oct 2026), where it is claimed.
 // village: the game shows the village (World II), which has its own quests: no farm goal there. phone(): the phone layout (the same query as
 // mobile-ui.js mobileLayout, which this file cannot import: it asks the browser as it loads).
-export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,onStep=null,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
+// sellFirst(from): sells the first basket's corn as Sell all in Market does (game.js, economy-ui.js sell), the coins flying from the rect from.
+// autoSell: inside CrazyGames the first basket sells itself.
+export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,onStep=null,sellFirst=null,autoSell=false,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
  let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0,goalDay='',calm;
  // The calm start's step on <html>; what came glows for CALM_GLOW_MS (only after a step during play, never as the farm opens).
@@ -127,6 +129,11 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   // Steps 1-9 finish themselves (farm-state.js advanceBeginner); the button is only there when a step waits, which is the last one.
   $('claim-reward').hidden=!current?.ready;$('claim-reward').disabled=busy||!current?.ready;$('claim-reward').textContent=complete?'Guide complete':done===9?`Claim ${BEGINNER_REWARD} diamonds`:'Complete step';
   $('beginner-help').hidden=complete;$('beginner-help').textContent=current?.ready?'Take a look':'Show me';
+  // Step 2 sells right from the guide (29 Oct 2026, the CrazyGames launch: two thirds of its new farmers harvested and left within seconds,
+  // their corn unsold): one green button on the card, and on a phone beside the banner. Market stays lit for the farmer who goes there.
+  const corn=current?.id==='sell'&&!village&&sellFirst?sellableStock(state,'corn',farmNow()):0;
+  for(const id of ['beginner-sell','beginner-mobile-sell']){const el=$(id);if(!el)continue;el.hidden=!corn;el.disabled=selling;if(corn&&el.dataset.count!==String(corn)){el.dataset.count=String(corn);el.innerHTML=`${art('coins')}<span>Sell all ${corn}</span>`;}}
+  $('beginner-mobile')?.classList.toggle('has-sell',corn>0);document.querySelector('.beginner-card')?.classList.toggle('has-sell',corn>0);
   document.querySelector('.beginner-prize').classList.toggle('claimed',complete);
   $('beginner-prize-title').textContent=complete?`${BEGINNER_REWARD} diamonds earned`:`${BEGINNER_REWARD} diamonds`;
   $('beginner-prize-note').textContent=complete?'Well done, farmer!':'After all 10 steps';
@@ -149,6 +156,9 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   catch(error){notify(error.message);}
   finally{busy=false;refresh();if(dialog.open)(dialog.querySelector('[data-beginner-claim]:not(:disabled)')??dialog.querySelector('[data-beginner-help]')??dialog.querySelector('.close-dialog')).focus({preventScroll:true});}
  }
+ let selling=false;
+ async function sellCorn(from){if(selling||!sellFirst)return;selling=true;refresh();try{await sellFirst(from);}finally{selling=false;refresh();}}
+ for(const id of ['beginner-sell','beginner-mobile-sell'])$(id)?.addEventListener('click',event=>void sellCorn(event.currentTarget.getBoundingClientRect()));
  function help(){const current=beginnerProgress(state).find(q=>q.current);if(!current)return;dialog.close();guide(current.guide);}
  $('claim-reward').addEventListener('click',claim);$('beginner-help').addEventListener('click',help);$('all-quests-mobile').addEventListener('click',open);$('beginner-mobile').addEventListener('click',open);
  dialog.addEventListener('click',event=>{if(event.target.closest('[data-beginner-claim]'))claim();if(event.target.closest('[data-beginner-help]'))help();});
@@ -169,6 +179,8 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
    if(from)confettiFrom(from.getBoundingClientRect(),{count:28});
    for(const el of [$('beginner-mobile'),document.querySelector('.beginner-card')]){if(!el)continue;el.classList.remove('just-done');void el.offsetWidth;el.classList.add('just-done');}
   }
+  // Inside CrazyGames the first basket sells itself (29 Oct 2026): the coins fly from Market, where the harvest just landed.
+  if(autoSell&&!village&&steps.some(step=>step.step==='harvest')&&current?.id==='sell')setTimeout(()=>{if(beginnerProgress(state).find(q=>q.current)?.id==='sell')void sellCorn([...document.querySelectorAll('#market-button')].map(el=>el.getBoundingClientRect()).find(r=>r.width));},900);
   if(current?.index===BEGINNER_QUESTS.length-1&&current.ready&&!finaleShown){finaleShown=true;open();}
  }
  // ---- The pointer by itself (A12) ----

@@ -465,7 +465,7 @@ if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHin
    notify(back?`${number(r.count)} ${ITEMS[key].name} back in your Warehouse.`:`In the shipping bin: ${number(r.count)} ${ITEMS[key].name}. ${number(r.total)} coins at 00:00 UTC.`);
   }catch(e){notify(e.message);}finally{marketSelling=false;renderMarket();}
  }
- async function sell(key='category',quantity){
+ async function sell(key='category',quantity,from=null){
   if(marketSelling||confirmingSale)return;
   // Selling a whole tab is one tap that empties the barn, so it asks first. Selling one item stays a single tap.
   if(key==='category'){
@@ -474,7 +474,7 @@ if(key==='familyhall'){if(!buildingEligible(state,key)){notify(buildingUnlockHin
    if(!sure)return;
   }
   // Where the coins fly from after the first sale: the button that was tapped, read before the list is drawn again.
-  const tapped=[...document.querySelectorAll(key==='category'?'#sell-all':`#market-items [data-sell-item-all="${key}"],#market-items [data-sell="${key}"]`)].map(b=>b.getBoundingClientRect()).find(b=>b.width&&b.height);
+  const tapped=from??[...document.querySelectorAll(key==='category'?'#sell-all':`#market-items [data-sell-item-all="${key}"],#market-items [data-sell="${key}"]`)].map(b=>b.getBoundingClientRect()).find(b=>b.width&&b.height);
   const day=renderedMarketDay||utcDay(farmNow()),category=marketTab;marketSelling=true;renderMarket();
   try{
    const r=await runAction(key==='category'?{type:'sell',category,day}:{type:'sell',item:key,day,...(category==='village'||category==='harbour'?{category}:{}),...(quantity===undefined?{}:{quantity})});
