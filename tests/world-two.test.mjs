@@ -557,7 +557,7 @@ test('the Village Fields sow with natural fertilizer and coins, like the Glassho
   s.inventory.fertilizer=1;s.coins=100;assert.throws(()=>act(s,{type:'produce',recipe:'sowpotatoes'},r.readyAt),{message:'You need 120 coins for this batch.'});
   s.buildings.villagefields.level=10;assert.equal(recipeDuration(s,'sowpotatoes',r.readyAt),864000,'14.4 minutes at level 10');
  }
- assert.deepEqual(['sowpotatoes','sowflax','sowlavender','sowsaffron'].map(id=>[RECIPES[id].coins,RECIPES[id].duration/60000,RECIPES[id].xp,RECIPE_LEVELS[id]]),[[120,45,15,110],[200,75,25,123],[400,180,60,132],[1100,360,120,158]]);
+ assert.deepEqual(['sowpotatoes','sowflax','sowlavender','sowsaffron'].map(id=>[RECIPES[id].coins,RECIPES[id].duration/60000,RECIPES[id].xp,RECIPE_LEVELS[id]]),[[120,45,45,110],[200,75,75,123],[400,180,180,132],[1100,360,360,158]]);
 });
 
 test('pasty lunches are packed lunches without apples, from the Miners’ Canteen',()=>{
@@ -885,9 +885,9 @@ test('Phase 4 data: the ruby ring at 154, saffron and saffron buns at 158, as th
   {name:'Saffron',sell:650,village:true,world:2,crop:true,noBoard:true},{name:'Ruby ring',sell:14000,village:true,world:2,noBoard:true},{name:'Saffron bun',sell:2100,village:true,world:2,noBoard:true}]);
  for(const k of ['saffron','rubyring','saffronbun']){assert.ok(villageGood(k)&&worldTwoItem(k),k);assert.ok(![CROPS,PRODUCTS,HEIRLOOMS].some(m=>Object.hasOwn(m,k)),k);}
  assert.deepEqual([RECIPES.rubyring,RECIPES.sowsaffron,RECIPES.saffronbun],[
-  {building:'jeweller',name:'Set a ruby ring',input:{silverbar:2,gemstone:2},output:{rubyring:1},duration:12600000,xp:105,minLevel:154},
-  {building:'villagefields',name:'Sow saffron',input:{fertilizer:2},coins:1100,output:{saffron:8},duration:21600000,xp:120,minLevel:158},
-  {building:'canteen',name:'Bake saffron buns',input:{saffron:4,flour:4,eggs:2},output:{saffronbun:2},duration:3600000,xp:30,minLevel:158}]);
+  {building:'jeweller',name:'Set a ruby ring',input:{silverbar:2,gemstone:2},output:{rubyring:1},duration:12600000,xp:210,minLevel:154},
+  {building:'villagefields',name:'Sow saffron',input:{fertilizer:2},coins:1100,output:{saffron:8},duration:21600000,xp:360,minLevel:158},
+  {building:'canteen',name:'Bake saffron buns',input:{saffron:4,flour:4,eggs:2},output:{saffronbun:2},duration:3600000,xp:60,minLevel:158}]);
  assert.deepEqual([RECIPE_LEVELS.rubyring,RECIPE_LEVELS.sowsaffron,RECIPE_LEVELS.saffronbun],[154,158,158]);
  assert.deepEqual(['rubyring','sowsaffron','saffronbun'].map(id=>recipeValue(id)),[{input:7840,output:11200,added:3360},{input:1516,output:4160,added:2644},{input:2352,output:3360,added:1008}]);
  assert.ok(!Object.keys(RECIPES).some(id=>Object.keys(VILLAGE_GOODS).slice(12).some(k=>RECIPES[id].output[k])&&RECIPES[id].building==='factory'),'never a Factory version');
@@ -901,7 +901,7 @@ test('rubies finally have a use: two rubies and two silver bars make a ruby ring
   const s=mode==='guided'?farm(154):legacyFarm(154);for(const k of Object.keys(s.inventory))s.inventory[k]=0;Object.assign(s.inventory,{silverbar:2,gemstone:2});
   const produced=s.stats.produced??0,batches=s.stats.village_batches??0,r=act(s,{type:'produce',recipe:'rubyring'});
   assert.equal(r.readyAt-now,mode==='guided'?30000:recipeDuration(s,'rubyring',now),'the first ring of a guided farm is quick (tests/first-batch.test.mjs)');
-  assert.deepEqual(act(s,{type:'collect',building:'jeweller'},r.readyAt),{building:'jeweller',items:{rubyring:1},xp:105});
+  assert.deepEqual(act(s,{type:'collect',building:'jeweller'},r.readyAt),{building:'jeweller',items:{rubyring:1},xp:210});
   assert.deepEqual([s.inventory.rubyring,s.inventory.silverbar,s.inventory.gemstone,s.stats.made_rubyring,s.stats.village_batches-batches,s.stats.produced??0],[1,0,0,1,1,produced],mode);
   const none=mode==='guided'?farm(160):legacyFarm(160);none.buildings.jeweller.built=false;Object.assign(none.inventory,{silverbar:2,gemstone:2});
   assert.equal(itemAvailable(none,'rubyring'),false);assert.throws(()=>act(none,{type:'produce',recipe:'rubyring'}),/Unlock this recipe first/);
@@ -915,10 +915,10 @@ test('saffron: 2 fertilizer and 1,100 coins sow 8 saffron, ripe after 6 hours, s
   assert.throws(()=>act(early,{type:'produce',recipe:'saffronbun'}),{message:'Unlock this recipe first. Reach level 158.'},mode);
   const s=mode==='guided'?farm(158):legacyFarm(158);for(const k of Object.keys(s.inventory))s.inventory[k]=0;s.inventory.fertilizer=2;s.coins=1100;
   const r=act(s,{type:'produce',recipe:'sowsaffron'});assert.deepEqual([s.coins,s.inventory.fertilizer],[0,0]);
-  assert.deepEqual(act(s,{type:'collect',building:'villagefields'},r.readyAt),{building:'villagefields',items:{saffron:8},xp:120});assert.equal(s.stats.made_saffron,8);
+  assert.deepEqual(act(s,{type:'collect',building:'villagefields'},r.readyAt),{building:'villagefields',items:{saffron:8},xp:360});assert.equal(s.stats.made_saffron,8);
   s.inventory.fertilizer=2;s.coins=1099;assert.throws(()=>act(s,{type:'produce',recipe:'sowsaffron'},r.readyAt),{message:'You need 1100 coins for this batch.'});
   Object.assign(s.inventory,{saffron:4,flour:4,eggs:2});const b=act(s,{type:'produce',recipe:'saffronbun'},r.readyAt);
-  assert.deepEqual(act(s,{type:'collect',building:'canteen'},b.readyAt),{building:'canteen',items:{saffronbun:2},xp:30});
+  assert.deepEqual(act(s,{type:'collect',building:'canteen'},b.readyAt),{building:'canteen',items:{saffronbun:2},xp:60});
   assert.deepEqual([s.inventory.saffron,s.inventory.flour,s.inventory.eggs,s.inventory.saffronbun,s.stats.made_saffronbun],[0,0,0,2,2],mode);
   // Sold at the Village market only; Sell all at the farm leaves it.
   s.inventory.saffron=5;assert.throws(()=>act(s,{type:'sell',item:'saffron'},b.readyAt),/Village market/);

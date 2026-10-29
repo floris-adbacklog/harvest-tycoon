@@ -34,20 +34,13 @@ function sweep(s,rounds,check){
  }
 }
 
-test('village XP stays at 30 an hour, and per coin added never above the farm\'s best recipe of levels 54-99',()=>{
- const perCoins=id=>RECIPES[id].xp/recipeValue(id).added*100;
- const farm=Object.keys(RECIPES).filter(id=>RECIPE_LEVELS[id]>=54&&RECIPE_LEVELS[id]<=99);
- const best=Math.max(...farm.map(perCoins));assert.ok(best>14&&best<14.3,`about 14.15 (goat browse), got ${best}`);
- const village=Object.keys(RECIPES).filter(id=>worldTwoBuilding(RECIPES[id].building));
- assert.equal(village.length,24);
- for(const id of village){
-  const r=RECIPES[id];
-  assert.ok(r.xp/(r.duration/HOUR)<=31,`${id}: ${r.xp/(r.duration/HOUR)} XP an hour`);
-  // The Village Fields (Oct 2026, the owner's choice 7a): 20 XP a slot-hour, like the Glasshouse's sowing.
-  if(r.building==='villagefields')assert.ok(r.xp/(r.duration/HOUR)<=21,`${id}: the Fields pay 20 XP an hour`);
-  assert.ok(perCoins(id)<=best,`${id}: ${perCoins(id).toFixed(2)} XP per 100 coins added`);
- }
- assert.equal(RECIPES.smeltiron.xp,20,'smelting iron adds little value, so 20 (30 would be 19.7 per 100 coins)');
+// 29 Oct 2026 (the owner's option 1): a higher world gives more XP for the same time. One rule: XP = the batch's minutes, times 1 in
+// World II and 2 in World III (World I gives about half a minute's worth). Before, both paid about 30 a slot-hour, the Village Fields 20.
+test('XP follows the world: 1 a minute of the batch in the village, 2 in the harbour',()=>{
+ const village=Object.keys(RECIPES).filter(id=>worldTwoBuilding(RECIPES[id].building)),harbour=Object.keys(RECIPES).filter(id=>RECIPES[id].building&&BUILDINGS[RECIPES[id].building]?.world===3);
+ assert.equal(village.length,24);assert.equal(harbour.length,20);
+ for(const id of village)assert.equal(RECIPES[id].xp,Math.round(RECIPES[id].duration/60000),id);
+ for(const id of harbour)assert.equal(RECIPES[id].xp,Math.round(RECIPES[id].duration/60000*2),id);
 });
 
 test('a later recipe in the same village place pays at least as well an hour',()=>{

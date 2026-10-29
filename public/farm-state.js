@@ -375,60 +375,61 @@ const MASS_RECIPES=Object.fromEntries([
 // XP about 30 a slot-hour since Oct 2026 (was 50-80, more than any farm recipe of levels 54-99), smelting iron 20: it adds little value,
 // and XP follows the value added (tests/balance-world-two.test.mjs).
 const VILLAGE_RECIPES=Object.freeze({
- digiron:{building:'mine',name:'Dig for iron',input:{packedlunch:1},output:{ironore:5,stone:4},duration:1800000,xp:15,minLevel:100},
- chop:{building:'lumbercamp',name:'Chop logs',input:{packedlunch:1},output:{timber:6},duration:1800000,xp:15,minLevel:100},
- saw:{building:'lumbercamp',name:'Saw planks',input:{timber:3},output:{plank:2},duration:1200000,xp:10,minLevel:100},
- smeltiron:{building:'smithy',name:'Smelt an iron bar',input:{ironore:4,timber:2},output:{ironbar:1},duration:3600000,xp:20,minLevel:102},
- forgepickaxe:{building:'smithy',name:'Forge pickaxes',input:{ironbar:2,plank:2},output:{pickaxe:4},duration:1800000,xp:15,minLevel:102},
- digsilver:{building:'mine',name:'Dig for silver',input:{pickaxe:2,packedlunch:2},output:{silverore:6,stone:8},duration:2700000,xp:23,minLevel:105},
- smeltsilver:{building:'smithy',name:'Smelt a silver bar',input:{silverore:4,timber:2},output:{silverbar:1},duration:5400000,xp:45,minLevel:105},
- mastertools:{building:'smithy',name:'Forge master tools',input:{ironbar:2,silverbar:2,plank:2},output:{mastertools:1},duration:14400000,xp:120,minLevel:108},
- heirloomflour:{building:'villagemill',name:'Grind heirloom flour',input:{goldenwheat:2},output:{heirloomflour:3},duration:3600000,xp:30,minLevel:112},
- digdeep:{building:'mine',name:'Dig deep for rubies',input:{pickaxe:2,packedlunch:2},output:{gemstone:1,stone:8},duration:7200000,xp:60,minLevel:115},
+ digiron:{building:'mine',name:'Dig for iron',input:{packedlunch:1},output:{ironore:5,stone:4},duration:1800000,xp:30,minLevel:100},
+ chop:{building:'lumbercamp',name:'Chop logs',input:{packedlunch:1},output:{timber:6},duration:1800000,xp:30,minLevel:100},
+ saw:{building:'lumbercamp',name:'Saw planks',input:{timber:3},output:{plank:2},duration:1200000,xp:20,minLevel:100},
+ smeltiron:{building:'smithy',name:'Smelt an iron bar',input:{ironore:4,timber:2},output:{ironbar:1},duration:3600000,xp:60,minLevel:102},
+ forgepickaxe:{building:'smithy',name:'Forge pickaxes',input:{ironbar:2,plank:2},output:{pickaxe:4},duration:1800000,xp:30,minLevel:102},
+ digsilver:{building:'mine',name:'Dig for silver',input:{pickaxe:2,packedlunch:2},output:{silverore:6,stone:8},duration:2700000,xp:45,minLevel:105},
+ smeltsilver:{building:'smithy',name:'Smelt a silver bar',input:{silverore:4,timber:2},output:{silverbar:1},duration:5400000,xp:90,minLevel:105},
+ mastertools:{building:'smithy',name:'Forge master tools',input:{ironbar:2,silverbar:2,plank:2},output:{mastertools:1},duration:14400000,xp:240,minLevel:108},
+ heirloomflour:{building:'villagemill',name:'Grind heirloom flour',input:{goldenwheat:2},output:{heirloomflour:3},duration:3600000,xp:60,minLevel:112},
+ digdeep:{building:'mine',name:'Dig deep for rubies',input:{pickaxe:2,packedlunch:2},output:{gemstone:1,stone:8},duration:7200000,xp:120,minLevel:115},
  // The Village Fields (Oct 2026) grow the village's crops as the Glasshouse grows the farm's: natural fertilizer and coins a batch, no
  // field, 20 XP a slot-hour. The Miners' Canteen bakes packed lunches from potatoes and flour: the first lunch without apples.
- sowpotatoes:{building:'villagefields',name:'Sow potatoes',input:{fertilizer:1},coins:120,output:{potatoes:10},duration:2700000,xp:15,minLevel:110},
- pastylunch:{building:'canteen',name:'Bake pasty lunches',input:{potatoes:10,flour:4},output:{packedlunch:4},duration:1800000,xp:15,minLevel:113},
+ sowpotatoes:{building:'villagefields',name:'Sow potatoes',input:{fertilizer:1},coins:120,output:{potatoes:10},duration:2700000,xp:45,minLevel:110},
+ pastylunch:{building:'canteen',name:'Bake pasty lunches',input:{potatoes:10,flour:4},output:{packedlunch:4},duration:1800000,xp:30,minLevel:113},
  // Levels 118-128: clay dug with a packed lunch and fired into roof tiles, flax woven into linen, and builder's crates for the farm.
- digclay:{building:'kiln',name:'Dig clay',input:{packedlunch:1},output:{clay:8},duration:1500000,xp:12,minLevel:118},
- rooftile:{building:'kiln',name:'Fire roof tiles',input:{clay:6,timber:2},output:{rooftile:4},duration:1800000,xp:15,minLevel:118},
- sowflax:{building:'villagefields',name:'Sow flax',input:{fertilizer:1},coins:200,output:{flax:10},duration:4500000,xp:25,minLevel:123},
- linen:{building:'linenloft',name:'Weave linen',input:{flax:6},output:{linen:2},duration:1800000,xp:15,minLevel:125},
- builderscrate:{building:'lumbercamp',name:'Pack a builder’s crate',input:{plank:10,rooftile:6,ironbar:2},output:{builderscrate:1},duration:7200000,xp:60,minLevel:128},
+ digclay:{building:'kiln',name:'Dig clay',input:{packedlunch:1},output:{clay:8},duration:1500000,xp:25,minLevel:118},
+ rooftile:{building:'kiln',name:'Fire roof tiles',input:{clay:6,timber:2},output:{rooftile:4},duration:1800000,xp:30,minLevel:118},
+ sowflax:{building:'villagefields',name:'Sow flax',input:{fertilizer:1},coins:200,output:{flax:10},duration:4500000,xp:75,minLevel:123},
+ linen:{building:'linenloft',name:'Weave linen',input:{flax:6},output:{linen:2},duration:1800000,xp:30,minLevel:125},
+ builderscrate:{building:'lumbercamp',name:'Pack a builder’s crate',input:{plank:10,rooftile:6,ironbar:2},output:{builderscrate:1},duration:7200000,xp:120,minLevel:128},
  // Levels 132-150: lavender, its soap and sachets (goat milk and beeswax from the farm), and silver candlesticks from the farm's candles.
- sowlavender:{building:'villagefields',name:'Sow lavender',input:{fertilizer:2},coins:400,output:{lavender:15},duration:10800000,xp:60,minLevel:132},
- lavendersoap:{building:'soapmaker',name:'Make lavender soap',input:{lavender:4,goatmilk:2,beeswax:2},output:{lavendersoap:4},duration:3600000,xp:30,minLevel:135},
- scentedsachet:{building:'soapmaker',name:'Sew scented sachets',input:{lavender:4,linen:2},output:{scentedsachet:4},duration:3600000,xp:30,minLevel:138},
- silvercandlestick:{building:'jeweller',name:'Make a silver candlestick',input:{silverbar:2,candles:2},output:{silvercandlestick:1},duration:10800000,xp:90,minLevel:150},
+ sowlavender:{building:'villagefields',name:'Sow lavender',input:{fertilizer:2},coins:400,output:{lavender:15},duration:10800000,xp:180,minLevel:132},
+ lavendersoap:{building:'soapmaker',name:'Make lavender soap',input:{lavender:4,goatmilk:2,beeswax:2},output:{lavendersoap:4},duration:3600000,xp:60,minLevel:135},
+ scentedsachet:{building:'soapmaker',name:'Sew scented sachets',input:{lavender:4,linen:2},output:{scentedsachet:4},duration:3600000,xp:60,minLevel:138},
+ silvercandlestick:{building:'jeweller',name:'Make a silver candlestick',input:{silverbar:2,candles:2},output:{silvercandlestick:1},duration:10800000,xp:180,minLevel:150},
  // Levels 154-158: rubies from digging deep are set in rings at the Jeweller, and saffron, the village's slowest crop (6 hours), goes
  // into the canteen's saffron buns. Rings and buns are what the town boat and the last landmarks ask for.
- rubyring:{building:'jeweller',name:'Set a ruby ring',input:{silverbar:2,gemstone:2},output:{rubyring:1},duration:12600000,xp:105,minLevel:154},
- sowsaffron:{building:'villagefields',name:'Sow saffron',input:{fertilizer:2},coins:1100,output:{saffron:8},duration:21600000,xp:120,minLevel:158},
- saffronbun:{building:'canteen',name:'Bake saffron buns',input:{saffron:4,flour:4,eggs:2},output:{saffronbun:2},duration:3600000,xp:30,minLevel:158}
+ rubyring:{building:'jeweller',name:'Set a ruby ring',input:{silverbar:2,gemstone:2},output:{rubyring:1},duration:12600000,xp:210,minLevel:154},
+ sowsaffron:{building:'villagefields',name:'Sow saffron',input:{fertilizer:2},coins:1100,output:{saffron:8},duration:21600000,xp:360,minLevel:158},
+ saffronbun:{building:'canteen',name:'Bake saffron buns',input:{saffron:4,flour:4,eggs:2},output:{saffronbun:2},duration:3600000,xp:60,minLevel:158}
 });
-// World III (27 Oct 2026, plan 15.1): the harbour's recipes, about 30 XP a slot-hour, each later one in a place paying at least as well.
+// World III (27 Oct 2026, plan 15.1): the harbour's recipes, 2 XP a minute of the batch (29 Oct 2026, the owner's option 1; was about
+// 30 a slot-hour, the same as World II).
 const HARBOUR_RECIPES=Object.freeze({
- twistrope:{building:'ropewalk',name:'Twist rope',input:{flax:12,linen:2},output:{rope:2},duration:2700000,xp:23,minLevel:204},
- makebarrels:{building:'cooperage',name:'Make barrels',input:{plank:8,ironbar:2},output:{barrel:3},duration:2700000,xp:23,minLevel:210},
- bakebiscuits:{building:'galley',name:'Bake ship’s biscuits',input:{bread:6,cheese:2},output:{shipsbiscuits:4},duration:2700000,xp:23,minLevel:216},
- weavesailcloth:{building:'ropewalk',name:'Weave sailcloth',input:{linen:4,rope:2},output:{sailcloth:1},duration:5400000,xp:45,minLevel:222},
- packprovisions:{building:'galley',name:'Pack a provisions crate',input:{barrel:2,shipsbiscuits:6,cheese:6},output:{provisions:1},duration:9000000,xp:75,minLevel:224},
- forgeanchor:{building:'harbourforge',name:'Forge an anchor',input:{ironbar:6,rope:2},output:{anchor:1},duration:7200000,xp:60,minLevel:240},
- tienet:{building:'ropewalk',name:'Tie a fishing net',input:{rope:3,linen:2},output:{fishingnet:1},duration:5400000,xp:45,minLevel:250},
- forgechain:{building:'harbourforge',name:'Forge an anchor chain',input:{ironbar:8,silverbar:2},output:{anchorchain:1},duration:9000000,xp:75,minLevel:262},
+ twistrope:{building:'ropewalk',name:'Twist rope',input:{flax:12,linen:2},output:{rope:2},duration:2700000,xp:90,minLevel:204},
+ makebarrels:{building:'cooperage',name:'Make barrels',input:{plank:8,ironbar:2},output:{barrel:3},duration:2700000,xp:90,minLevel:210},
+ bakebiscuits:{building:'galley',name:'Bake ship’s biscuits',input:{bread:6,cheese:2},output:{shipsbiscuits:4},duration:2700000,xp:90,minLevel:216},
+ weavesailcloth:{building:'ropewalk',name:'Weave sailcloth',input:{linen:4,rope:2},output:{sailcloth:1},duration:5400000,xp:180,minLevel:222},
+ packprovisions:{building:'galley',name:'Pack a provisions crate',input:{barrel:2,shipsbiscuits:6,cheese:6},output:{provisions:1},duration:9000000,xp:300,minLevel:224},
+ forgeanchor:{building:'harbourforge',name:'Forge an anchor',input:{ironbar:6,rope:2},output:{anchor:1},duration:7200000,xp:240,minLevel:240},
+ tienet:{building:'ropewalk',name:'Tie a fishing net',input:{rope:3,linen:2},output:{fishingnet:1},duration:5400000,xp:180,minLevel:250},
+ forgechain:{building:'harbourforge',name:'Forge an anchor chain',input:{ironbar:8,silverbar:2},output:{anchorchain:1},duration:9000000,xp:300,minLevel:262},
  // The three later places (27 Oct 2026): 30 XP an hour of making, as the first eight; at least 2 of every ingredient, as every mixed recipe.
- makelantern:{building:'chandlery',name:'Make a ship’s lantern',input:{candles:4,ironbar:2},output:{shiplantern:2},duration:7200000,xp:60,minLevel:228},
- boiltar:{building:'chandlery',name:'Boil ship’s tar',input:{oil:4,barrel:2},output:{shiptar:2},duration:10800000,xp:90,minLevel:246},
- mixpaint:{building:'paintshop',name:'Mix ship paint',input:{oil:2,berries:20,clay:8},output:{shippaint:2},duration:7200000,xp:60,minLevel:254},
- carvefigurehead:{building:'paintshop',name:'Carve a figurehead',input:{plank:40,shippaint:4,gemstone:2},output:{figurehead:2},duration:28800000,xp:240,minLevel:272},
- makecompass:{building:'instruments',name:'Make a compass',input:{silverbar:2,ironbar:2,gemstone:2},output:{compass:2},duration:10800000,xp:90,minLevel:266},
- castbell:{building:'instruments',name:'Cast a ship’s bell',input:{silverbar:2,ironbar:4,rope:2},output:{shipsbell:1},duration:10800000,xp:90,minLevel:284},
- tinstew:{building:'cannery',name:'Tin stew',input:{stew:2,ironbar:2},output:{tinnedstew:3},duration:3600000,xp:30,minLevel:236},
- tinfruit:{building:'cannery',name:'Tin fruit',input:{berrypreserves:4,ironbar:2},output:{tinnedfruit:3},duration:5400000,xp:45,minLevel:258},
- packspices:{building:'tradinghouse',name:'Pack a spice crate',input:{saffron:4,lavender:8,plank:4},output:{spicecrate:1},duration:5400000,xp:45,minLevel:248},
- packperfume:{building:'tradinghouse',name:'Pack a perfume crate',input:{lavendersoap:4,scentedsachet:4,plank:4},output:{perfumecrate:1},duration:5400000,xp:45,minLevel:262},
- carveoars:{building:'boatyard',name:'Carve oars',input:{timber:10,plank:6},output:{oars:2},duration:2700000,xp:23,minLevel:276},
- buildrowboat:{building:'boatyard',name:'Build a rowboat',input:{plank:40,rope:4,shippaint:2},output:{rowboat:1},duration:21600000,xp:180,minLevel:288}
+ makelantern:{building:'chandlery',name:'Make a ship’s lantern',input:{candles:4,ironbar:2},output:{shiplantern:2},duration:7200000,xp:240,minLevel:228},
+ boiltar:{building:'chandlery',name:'Boil ship’s tar',input:{oil:4,barrel:2},output:{shiptar:2},duration:10800000,xp:360,minLevel:246},
+ mixpaint:{building:'paintshop',name:'Mix ship paint',input:{oil:2,berries:20,clay:8},output:{shippaint:2},duration:7200000,xp:240,minLevel:254},
+ carvefigurehead:{building:'paintshop',name:'Carve a figurehead',input:{plank:40,shippaint:4,gemstone:2},output:{figurehead:2},duration:28800000,xp:960,minLevel:272},
+ makecompass:{building:'instruments',name:'Make a compass',input:{silverbar:2,ironbar:2,gemstone:2},output:{compass:2},duration:10800000,xp:360,minLevel:266},
+ castbell:{building:'instruments',name:'Cast a ship’s bell',input:{silverbar:2,ironbar:4,rope:2},output:{shipsbell:1},duration:10800000,xp:360,minLevel:284},
+ tinstew:{building:'cannery',name:'Tin stew',input:{stew:2,ironbar:2},output:{tinnedstew:3},duration:3600000,xp:120,minLevel:236},
+ tinfruit:{building:'cannery',name:'Tin fruit',input:{berrypreserves:4,ironbar:2},output:{tinnedfruit:3},duration:5400000,xp:180,minLevel:258},
+ packspices:{building:'tradinghouse',name:'Pack a spice crate',input:{saffron:4,lavender:8,plank:4},output:{spicecrate:1},duration:5400000,xp:180,minLevel:248},
+ packperfume:{building:'tradinghouse',name:'Pack a perfume crate',input:{lavendersoap:4,scentedsachet:4,plank:4},output:{perfumecrate:1},duration:5400000,xp:180,minLevel:262},
+ carveoars:{building:'boatyard',name:'Carve oars',input:{timber:10,plank:6},output:{oars:2},duration:2700000,xp:90,minLevel:276},
+ buildrowboat:{building:'boatyard',name:'Build a rowboat',input:{plank:40,rope:4,shippaint:2},output:{rowboat:1},duration:21600000,xp:720,minLevel:288}
 });
 export const RECIPES=Object.freeze({...BASE_RECIPES,...MASS_RECIPES,...VILLAGE_RECIPES,...HARBOUR_RECIPES});
 // How big a Factory batch is on this farm (26 Sep 2026): twice the level of the building that normally makes the good, up to ×20;
