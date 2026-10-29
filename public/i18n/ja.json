@@ -4901,6 +4901,7 @@
 "Ships pay 2.1 times instead of 2.":"船の支払いが2倍から2.1倍になります。",
 "Ships pay 2.2 times.":"船の支払いが2.2倍になります。",
 "Ships pay {0} times what their cargo is worth. Load them bit by bit; a full ship sails at once. A new ship docks {1} later.":"船は積み荷の価値の{0}倍を支払います。少しずつ積みましょう。満載になった船はすぐに出航します。新しい船は{1}後に入港します。",
+"Ships, quays and harbour works":"船、埠頭、港の工事",
 "Shipshape":"ばっちり整頓",
 "Shipyard":"造船所",
 "Ship’s bell":"船の鐘",

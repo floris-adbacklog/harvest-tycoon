@@ -13,7 +13,7 @@ import {createSeasonUI} from './season-ui.js';
 import {createLookSettings} from './look-settings.js';
 import {renderWiki} from './wiki-ui.js';
 import {createProgressionUI,progressionSnapshot,progressionChange,nextUnlock} from './progression-ui.js';
-import {worldThreeOpen,harbourWorkDone,buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
+import {worldThreeOpen,harbourWorkDone,harbourWork,shipReady,buildingEligible,buildingCost,featureUnlocked,featureUnlockHint,ENDGAME_PLACES,endgameInSight,worldTwoOpen,villageGood,villageBrief,villageSquareReady,recipeUnlocked,VILLAGE_LANDMARKS,villageLandmark,landmarkDone,WORLD_TWO_LEVEL,WORLD_TWO_TEASER,passPhase,marketQuote,marketPay} from './farm-state.js';
 import {createLoadingScreen,startLoadingTips,VILLAGE_LOADING_TIPS,LOADING_TIPS,PASS_LOADING_TIP,startFailure,noteOnDevice} from './loading-screen.js';
 import {createFarmRenderer,startErrorText,androidPhoneApp} from './farm-start.js';
 import {gpuName,graphicsChoice,chooseGraphics,graphicsTrouble,markRun,endRun,lastRunCrashed,rendererOptions,shadowSize,graphicsMode,pixelRatioFor,HEALTHY_MS,RUN_KEY,GRAPHICS_KEY,OLD_GRAPHICS_KEY,CRASHES_FOR_SIMPLE,slowPhone,probeGpu,NEW_FARM_LEVEL,lighterStep,setLighter,choseFull,createSpeedCheck,CHECK_AFTER_MS,CHECK_UNTIL_MS} from './graphics-mode.js';
@@ -1895,7 +1895,13 @@ function updateUI(){
  const worldTwo=worldTwoOpen(state),villageReady=worldTwo&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===2&&economy.status(k).kind==='ready').length+(villageBrief(state)?.ready||villageLandmark(state)?.ready?1:0):0;
  // My farm only beside the Village (23 Oct 2026, the owner: "haal my farm button weg tenzij je het dorp hebt"): it is the way back from it.
  $('farm-button').hidden=!worldTwo;$('village-button').hidden=!worldTwo;$('village-button').classList.toggle('active',villageWorld&&!harbourWorld);$('farm-button').classList.toggle('active',!villageWorld);
- $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld||!worldTwo;$('farm-menu-entry').hidden=!villageWorld;
+ $('village-count').hidden=villageWorld||!villageReady;$('village-count').textContent=villageReady;$('village-menu-entry').hidden=villageWorld&&!harbourWorld||!worldTwo;$('farm-menu-entry').hidden=!villageWorld;
+ // World III (29 Oct 2026, the owner: "bij wereld I en wereld II mis ik nog harbour icoon in de zijbalk"): the Harbour tool beside the
+ // Village once the harbour is open, lit in the harbour, and The Harbour in the More menu of the other two worlds. Its count: the harbour
+ // places with a batch ready, and the office when a ship can sail or a work be finished. In the harbour, More offers both other worlds.
+ const worldThree=worldThreeOpen(state),harbourReady=worldThree&&economy?Object.keys(BUILDINGS).filter(k=>BUILDINGS[k].world===3&&economy.status(k).kind==='ready').length+((state.harbour?.quays??[]).some((_,i)=>shipReady(state,i))||harbourWork(state)?.ready?1:0):0;
+ $('harbour-button').hidden=!worldThree;$('harbour-button').classList.toggle('active',harbourWorld);
+ $('harbour-count').hidden=harbourWorld||!harbourReady;$('harbour-count').textContent=harbourReady;$('harbour-menu-entry').hidden=harbourWorld||!worldThree;
  if(!sessionTracked){sessionTracked=true;track('game_session',{level:lvl,returning:(state.stats?.harvested??0)>=5});}
  trackTotals(lvl);
  {const next=unlockEntries(state).filter(e=>!e.unlocked&&e.level===lvl+1).map(e=>e.name);$('journal-button').title=next.length?`Level ${lvl+1} unlocks: ${next.slice(0,3).join(', ')}${next.length>3?'…':''}`:'Farm journal & level rewards';}
@@ -2582,6 +2588,7 @@ function bindUI(){
  // renderWiki's {from}, where it was opened from for its way back (the chat's wiki chip: "‹ Chat", src/chat-ui.js).
  window.harvestWiki=(id,anchor='',options={})=>{openDialog('help-dialog');renderWiki(state,id,anchor,options);};
  $('village-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!villageWorld||harbourWorld)travel('village');});
+ $('harbour-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(!harbourWorld)travel('harbour');});
  // My farm: back to the farm's own view. No toast (18 Oct 2026, the owner: the camera move shows it).
  $('farm-button').addEventListener('click',()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());if(villageWorld){travel('farm');return;}resetView();});
  document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));

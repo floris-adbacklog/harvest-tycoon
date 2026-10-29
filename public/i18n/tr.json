@@ -4901,6 +4901,7 @@
 "Ships pay 2.1 times instead of 2.":"Gemiler 2 yerine 2,1 katını öder.",
 "Ships pay 2.2 times.":"Gemiler 2,2 katını öder.",
 "Ships pay {0} times what their cargo is worth. Load them bit by bit; a full ship sails at once. A new ship docks {1} later.":"Gemiler yüklerinin değerini şu kat öder: {0}×. Onları azar azar yükle; dolu gemi hemen yola çıkar. Yeni gemi {1} sonra yanaşır.",
+"Ships, quays and harbour works":"Gemiler, rıhtımlar ve liman işleri",
 "Shipshape":"Pırıl pırıl",
 "Shipyard":"Tersane",
 "Ship’s bell":"Gemi çanı",

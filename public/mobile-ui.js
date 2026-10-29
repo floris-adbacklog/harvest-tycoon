@@ -56,7 +56,10 @@ export function createMobileUI({openUtility,resetView}){
   // The Village's tile and the More dot instead.
   const villageTile=$('village-menu-entry');villageTile?.classList.toggle('has-dot',Boolean(villageTile&&!villageTile.hidden&&!($('village-count')?.hidden??true)));
   const villageWaiting=mobileLayout.matches&&Boolean(villageTile?.classList.contains('has-dot'));
-  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!villageWaiting&&!medalWaiting&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;
+  // World III (29 Oct 2026): the same for The Harbour's tile.
+  const harbourTile=$('harbour-menu-entry');harbourTile?.classList.toggle('has-dot',Boolean(harbourTile&&!harbourTile.hidden&&!($('harbour-count')?.hidden??true)));
+  const harbourWaiting=mobileLayout.matches&&Boolean(harbourTile?.classList.contains('has-dot'));
+  $('more-dot').hidden=gift.hidden&&($('events-dot')?.hidden??true)&&!menu.querySelector('[data-menu-utility="stall"]')?.classList.contains('has-dot')&&!villageWaiting&&!harbourWaiting&&!medalWaiting&&!passWaiting&&!familyWaiting&&!chatWaiting&&!emailWaiting;
   $('tasks-button').setAttribute('aria-label',quests.hidden?'Open quests':'Open quests, rewards ready');
   $('buildings-button').setAttribute('aria-label',batches.hidden?'Open buildings':`Open buildings, ${batches.textContent} batches ready`);
  }

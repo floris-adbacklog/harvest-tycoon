@@ -281,7 +281,7 @@ test('on a phone the village\'s count lights The Village in More and the More bu
  const mobile=read('public/mobile-ui.js');
  assert.match(mobile,/const villageTile=\$\('village-menu-entry'\);villageTile\?\.classList\.toggle\('has-dot',Boolean\(villageTile&&!villageTile\.hidden&&!\(\$\('village-count'\)\?\.hidden\?\?true\)\)\);/);
  assert.match(mobile,/const villageWaiting=mobileLayout\.matches&&Boolean\(villageTile\?\.classList\.contains\('has-dot'\)\);/);
- assert.match(mobile,/&&!villageWaiting&&!medalWaiting&&/);
+ assert.match(mobile,/&&!villageWaiting&&(!harbourWaiting&&)?!medalWaiting&&/);
  assert.match(read('public/mobile.css'),/\.side-tools #village-button\{display:none\}/,'why: the Village side tool is hidden on phones');
 });
 
