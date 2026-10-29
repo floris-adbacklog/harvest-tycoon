@@ -80,7 +80,7 @@ test('served as Markdown text, out of search results, open to fetch, made on eve
  const rules=JSON.parse(read('vercel.json')).headers,md=rules.find(r=>r.source==='/(.*)\\.md'),get=(r,k)=>r.headers.find(h=>h.key===k)?.value;
  assert.equal(get(md,'Content-Type'),'text/markdown; charset=utf-8');assert.equal(get(md,'X-Robots-Tag'),'noindex');
  assert.equal(get(rules.find(r=>r.source==='/llms.txt'),'Content-Type'),'text/plain; charset=utf-8');
- assert.doesNotMatch(read('public/robots.txt'),/Disallow:\s*\/(?:\s|$)|\.md|llms/,'robots.txt stops none of it');
+ assert.doesNotMatch(read('public/robots.txt'),/^Disallow:\s*(?:\/\s*$|.*\.md|.*llms)/m,'robots.txt stops none of it');
  assert.match(read('scripts/build-static.mjs'),/const \{buildAiMarkdown\}=await import\('\.\/build-ai-markdown\.mjs'\);const ai=buildAiMarkdown\('dist-static'\);\nconsole\.log\(`Markdown copies:[^\n]*\nconsole\.log\('Standalone static game ready/);
 });
 

@@ -1,5 +1,169 @@
+# Harvest Tycoon wants to be found, quoted and learned from.
+# Every search engine, AI assistant and crawler may read the whole site.
+# The one exception is /farm.html: the game's frame, an empty screen on its own (players start at /play.html).
+# A bot reads only the group with its own name, so every group repeats that line.
+# Every page also has a plain Markdown copy (add .md), all listed per language in:
+#   https://www.harvesttycoon.com/llms.txt
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+
 User-agent: *
-# The farm itself (/farm.html) only works inside the signed-in page; on its own it is an empty screen.
+Allow: /
+Disallow: /farm.html
+
+User-agent: GPTBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /farm.html
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Claude-User
+Allow: /
+Disallow: /farm.html
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /farm.html
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /farm.html
+
+User-agent: Googlebot
+Allow: /
+Disallow: /farm.html
+
+User-agent: GoogleOther
+Allow: /
+Disallow: /farm.html
+
+User-agent: Bingbot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Applebot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /farm.html
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /farm.html
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /farm.html
+
+User-agent: FacebookBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: meta-externalagent
+Allow: /
+Disallow: /farm.html
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+Disallow: /farm.html
+
+User-agent: Bytespider
+Allow: /
+Disallow: /farm.html
+
+User-agent: CCBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Diffbot
+Allow: /
+Disallow: /farm.html
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /farm.html
+
+User-agent: YouBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: AI2Bot
+Allow: /
+Disallow: /farm.html
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: MistralAI-User
+Allow: /
+Disallow: /farm.html
+
+User-agent: GrokBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: DeepseekBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: PetalBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: YandexBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /farm.html
+
+User-agent: archive.org_bot
+Allow: /
+Disallow: /farm.html
+
+User-agent: LinkedInBot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Twitterbot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Slackbot
+Allow: /
+Disallow: /farm.html
+
+User-agent: Discordbot
+Allow: /
+Disallow: /farm.html
+
+User-agent: WhatsApp
+Allow: /
+Disallow: /farm.html
+
+User-agent: TelegramBot
+Allow: /
 Disallow: /farm.html
 
 Sitemap: https://www.harvesttycoon.com/sitemap.xml
