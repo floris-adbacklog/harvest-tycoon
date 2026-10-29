@@ -6,7 +6,7 @@
 -- check rolls all of it back. Running it twice changes nothing. Afterwards game/farm-state.js LIVE_EVENT_LEAGUES goes to 17.
 begin;
 set local lock_timeout='5s';
-do $guard$ declare want jsonb:='{"harvest_event_league(integer)":["ea594ad4aeb110d5858de5cdaf68ddbe","e19e42b79daa42cf0500ea2f162e98c4"],"harvest_event_league_for(integer,jsonb,smallint)":["72ba9cc06862bab8a5778cecd96fbaa7","b826a3f124157a0f30f898ffcac60c56"],"harvest_event_pick(bigint)":["f2998fc6536299b3c248254eec3c9e33","662d444e40f2d89fff524fbd551f023f"],"harvest_event_progress()":["bc6993b96e0a611798e3eecf1dddb439","2c1dffefdfb202d6aab1c51e598a078d"],"harvest_event_settle(uuid)":["00f76feae437a07cbf80cc6619fb7b14","40ac09c06665fa8007fef93e13ad30e4"]}'; k text; have text; begin
+do $guard$ declare want jsonb:='{"harvest_event_league(integer)":["ea594ad4aeb110d5858de5cdaf68ddbe","e19e42b79daa42cf0500ea2f162e98c4"],"harvest_event_league_for(integer,jsonb,smallint)":["72ba9cc06862bab8a5778cecd96fbaa7","6f555349b3ad8f6e8f81125e74089636"],"harvest_event_pick(bigint)":["f2998fc6536299b3c248254eec3c9e33","662d444e40f2d89fff524fbd551f023f"],"harvest_event_progress()":["bc6993b96e0a611798e3eecf1dddb439","2c1dffefdfb202d6aab1c51e598a078d"],"harvest_event_settle(uuid)":["00f76feae437a07cbf80cc6619fb7b14","40ac09c06665fa8007fef93e13ad30e4"]}'; k text; have text; begin
  for k in select jsonb_object_keys(want) loop
   select md5(prosrc) into have from pg_proc where oid=to_regprocedure('public.'||k);
   if have is null or not (want->k) ? have then raise exception 'public.% is not the one this file expects (md5 %); read the live definition first', k, have; end if;
@@ -24,9 +24,9 @@ create or replace function public.harvest_event_league(p_level integer)
  select (case when coalesce(p_level,0)>=300 then 16 when p_level>=281 then 15 when p_level>=261 then 14 when p_level>=241 then 13 when p_level>=221 then 12 when p_level>=201 then 11 when p_level>=181 then 10 when p_level>=161 then 9 when p_level>=141 then 8 when p_level>=121 then 7 when p_level>=100 then 6 when p_level>=90 then 5 when p_level>=75 then 4 when p_level>=60 then 3 when p_level>=45 then 2 when p_level>=30 then 1 else 0 end)::smallint
 $function$;
 
-create or replace function public.harvest_event_league_for(p_level integer, p_leagues jsonb, p_world smallint)
+create or replace function public.harvest_event_league_for(p_level integer, p_leagues jsonb, p_world smallint default null::smallint)
  returns smallint language sql immutable set search_path to '' as $function$
- select least(public.harvest_event_league(p_level),(case when jsonb_typeof(p_leagues)='array' and jsonb_array_length(p_leagues)>0 then jsonb_array_length(p_leagues) else 6 end)-1,case when p_world=1 then 5 when p_world=2 then 11 else 16 end)::smallint
+ select least(public.harvest_event_league(p_level),(case when jsonb_typeof(p_leagues)='array' and jsonb_array_length(p_leagues)>0 then jsonb_array_length(p_leagues) else 6 end)-1,case when p_world=1 then 5 when p_world=3 then 16 else 11 end)::smallint
 $function$;
 
 create or replace function public.harvest_event_pick(n bigint)
@@ -184,7 +184,7 @@ begin
 end $function$;
 
 -- After-check, in the same transaction.
-do $after$ declare want jsonb:='{"harvest_event_league(integer)":"e19e42b79daa42cf0500ea2f162e98c4","harvest_event_league_for(integer,jsonb,smallint)":"b826a3f124157a0f30f898ffcac60c56","harvest_event_pick(bigint)":"662d444e40f2d89fff524fbd551f023f","harvest_event_progress()":"2c1dffefdfb202d6aab1c51e598a078d","harvest_event_settle(uuid)":"40ac09c06665fa8007fef93e13ad30e4"}'; k text; t jsonb; lv int; lg int; o jsonb; begin
+do $after$ declare want jsonb:='{"harvest_event_league(integer)":"e19e42b79daa42cf0500ea2f162e98c4","harvest_event_league_for(integer,jsonb,smallint)":"6f555349b3ad8f6e8f81125e74089636","harvest_event_pick(bigint)":"662d444e40f2d89fff524fbd551f023f","harvest_event_progress()":"2c1dffefdfb202d6aab1c51e598a078d","harvest_event_settle(uuid)":"40ac09c06665fa8007fef93e13ad30e4"}'; k text; t jsonb; lv int; lg int; o jsonb; begin
  for k in select jsonb_object_keys(want) loop
   if (select md5(prosrc) from pg_proc where oid=to_regprocedure('public.'||k)) is distinct from want->>k then raise exception 'public.% did not come out as generated', k; end if;
  end loop;
@@ -196,9 +196,9 @@ do $after$ declare want jsonb:='{"harvest_event_league(integer)":"e19e42b79daa42
  for lv,lg in select * from (values (14,0),(15,0),(29,0),(30,1),(44,1),(45,2),(59,2),(60,3),(74,3),(75,4),(89,4),(90,5),(99,5),(100,6),(120,6),(121,7),(140,7),(141,8),(160,8),(161,9),(180,9),(181,10),(200,10),(201,11),(220,11),(221,12),(240,12),(241,13),(260,13),(261,14),(280,14),(281,15),(299,15),(300,16),(999,16)) c(lv,lg) loop
   if public.harvest_event_league(lv)<>lg then raise exception 'harvest_event_league(%) is not %', lv, lg; end if;
  end loop;
- -- The worlds: 1 stays in the farm's leagues, 2 in the village's, 3 reaches the harbour's; an event of 12 leagues stops at 11.
+ -- The worlds: 1 stays in the farm's leagues, 2 (and none) in the village's, 3 reaches the harbour's; an event of 12 leagues stops at 11.
  if public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,1::smallint)<>5 or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,2::smallint)<>11
-  or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,3::smallint)<>16 or public.harvest_event_league_for(230,'[1,2,3,4,5,6,7,8,9,10,11,12]'::jsonb,3::smallint)<>11
+  or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,3::smallint)<>16 or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb)<>11 or public.harvest_event_league_for(230,'[1,2,3,4,5,6,7,8,9,10,11,12]'::jsonb,3::smallint)<>11
   then raise exception 'harvest_event_league_for is not as expected'; end if;
  -- The pick: 17 leagues of one goal each, and the harbour's goals are harbour goals.
  t:=public.harvest_event_pick(floor(extract(epoch from now())/3600)::bigint+3);

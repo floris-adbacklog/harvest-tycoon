@@ -5,7 +5,8 @@
 // What changes, each from the body read live on 29 Oct 2026 (md5(prosrc), the text between the $function$ markers):
 // - the league check on live_event_players (0..16) and its world check (1, 2 or 3);
 // - harvest_event_league: 221+ the harbour's leagues;
-// - harvest_event_league_for: a farmer who joined in the harbour (world 3) can be in its leagues; worlds 1 and 2 as before;
+// - harvest_event_league_for: a farmer who joined in the harbour (world 3) can be in its leagues; worlds 1 and 2 and a row without
+//   one (NULL, from before 20 Oct 2026) as before;
 // - harvest_event_pick: the hour pools of all 17 leagues (the first 12 exactly as they run);
 // - harvest_event_progress: world 3 when the farmer joins in a harbour league, and the harbour's goals count for their own actions
 //   (ship loads, harbour batches, harbour sales, harbour upgrades, seal pats; the made_* goods already count on collect);
@@ -44,7 +45,7 @@ if(FERTILIZE_MD5!==LIVE_MD5['harvest_event_progress()']||LEAGUE_AT_JOIN_MD5['har
 
 // The new bodies.
 export const LEAGUE_BODY=leagueBody(EVENT_LEAGUES);
-export const LEAGUE_FOR_BODY=swap(LIVE_LEAGUE_FOR,'case when p_world=1 then 5 else 11 end',`case when p_world=1 then 5 when p_world=2 then ${LAST_VILLAGE} else ${LAST} end`);
+export const LEAGUE_FOR_BODY=swap(LIVE_LEAGUE_FOR,'case when p_world=1 then 5 else 11 end',`case when p_world=1 then 5 when p_world=3 then ${LAST} else ${LAST_VILLAGE} end`);
 export const PICK_BODY=HOUR_PICK_BODY_HARBOUR;
 // The harbour's goals and the actions that move them (farm-state.js: shipLoad, collect of a harbour place, the Harbour market's sell,
 // an upgrade of a harbour place, sealPat). Every stat of the harbour's hour pools is either here or a made_* good (counted on collect).
@@ -76,7 +77,7 @@ export const HARBOUR_HOUR_STATS=Object.freeze(harbourStats);
 
 const HEADS={
  'harvest_event_league(integer)':`public.harvest_event_league(p_level integer)\n returns smallint language sql immutable set search_path to ''`,
- 'harvest_event_league_for(integer,jsonb,smallint)':`public.harvest_event_league_for(p_level integer, p_leagues jsonb, p_world smallint)\n returns smallint language sql immutable set search_path to ''`,
+ 'harvest_event_league_for(integer,jsonb,smallint)':`public.harvest_event_league_for(p_level integer, p_leagues jsonb, p_world smallint default null::smallint)\n returns smallint language sql immutable set search_path to ''`,
  'harvest_event_pick(bigint)':`public.harvest_event_pick(n bigint)\n returns jsonb language plpgsql stable set search_path to ''`,
  'harvest_event_progress()':`public.harvest_event_progress()\n returns trigger language plpgsql set search_path to ''`,
  'harvest_event_settle(uuid)':`public.harvest_event_settle(p_event uuid)\n returns void language plpgsql set search_path to ''`
@@ -126,9 +127,9 @@ do $after$ declare want jsonb:='${afterWant}'; k text; t jsonb; lv int; lg int; 
  for lv,lg in select * from (values ${CHECK.map(([l,i])=>`(${l},${i})`).join(',')}) c(lv,lg) loop
   if public.harvest_event_league(lv)<>lg then raise exception 'harvest_event_league(%) is not %', lv, lg; end if;
  end loop;
- -- The worlds: 1 stays in the farm's leagues, 2 in the village's, 3 reaches the harbour's; an event of 12 leagues stops at 11.
+ -- The worlds: 1 stays in the farm's leagues, 2 (and none) in the village's, 3 reaches the harbour's; an event of 12 leagues stops at 11.
  if public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,1::smallint)<>5 or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,2::smallint)<>${LAST_VILLAGE}
-  or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,3::smallint)<>${LAST} or public.harvest_event_league_for(230,'[1,2,3,4,5,6,7,8,9,10,11,12]'::jsonb,3::smallint)<>${LAST_VILLAGE}
+  or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb,3::smallint)<>${LAST} or public.harvest_event_league_for(300,'[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'::jsonb)<>${LAST_VILLAGE} or public.harvest_event_league_for(230,'[1,2,3,4,5,6,7,8,9,10,11,12]'::jsonb,3::smallint)<>${LAST_VILLAGE}
   then raise exception 'harvest_event_league_for is not as expected'; end if;
  -- The pick: ${LAST+1} leagues of one goal each, and the harbour's goals are harbour goals.
  t:=public.harvest_event_pick(floor(extract(epoch from now())/3600)::bigint+3);

@@ -21,7 +21,8 @@ test('harvest_event_league: every level in the league the game shows; worlds 1 a
   const want=eventLeague(level).index,m=LEAGUE_BODY.match(/case (.*) else 0 end/)[1].split(' when ').map(s=>s.replace(/^when /,'').match(/>=(\d+) then (\d+)/)).map(([,from,i])=>[+from,+i]);
   assert.equal(m.find(([from])=>level>=from)?.[1]??0,want,`level ${level}`);
  }
- assert.match(LEAGUE_FOR_BODY,/case when p_world=1 then 5 when p_world=2 then 11 else 16 end/);
+ assert.match(LEAGUE_FOR_BODY,/case when p_world=1 then 5 when p_world=3 then 16 else 11 end/);   // a NULL world (rows from before 20 Oct 2026) as before
+ assert.match(read('supabase/harbour-leagues.sql'),/p_world smallint default null::smallint\)/);   // the live default stays
 });
 test('the pick: all 17 leagues, the first 12 exactly as they run today',()=>{
  const pools=body=>JSON.parse(body.match(/pools constant jsonb:='(.*)';/)[1].replaceAll("''","'"));
