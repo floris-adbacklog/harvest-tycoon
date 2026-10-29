@@ -32,8 +32,8 @@ test('the berths: a container ship every 2 days from the Deep quay and a world v
  assert.equal(act(s,{type:'flagship_name',name:' Sea  Breeze '},now).name,'Sea Breeze');assert.throws(()=>act(s,{type:'flagship_name',name:'<b>'},now));
  const {s:early,now:n2}=farm(290,{works:m.HARBOUR_WORKS.filter(w=>w.id!=='launch').map(w=>w.id)});assert.throws(()=>act(early,{type:'flagship_name',name:'Gull'},n2),/Launch/);
 });
-test('the leagues shown without an event are the live events\' (12 until the harbour\'s SQL runs)',()=>{
- assert.equal(m.LIVE_EVENT_LEAGUES,12);assert.equal(m.liveEventLeague(250).id,'village');assert.equal(m.liveEventLeague(50).id,m.eventLeague(50).id);
+test('the leagues shown without an event are the live events\' (17 since supabase/harbour-leagues.sql ran)',()=>{
+ assert.equal(m.LIVE_EVENT_LEAGUES,17);assert.equal(m.liveEventLeague(250).id,'crane');assert.equal(m.liveEventLeague(210).id,'village');assert.equal(m.liveEventLeague(50).id,m.eventLeague(50).id);
 });
 test('every harbour quest can be finished: an upgrade count within 10 places × 9 levels, and the harbour warehouse gives its XP',()=>{
  const places=Object.keys(m.BUILDINGS).filter(m.worldThreeBuilding).length;

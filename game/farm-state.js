@@ -5750,7 +5750,7 @@ export const EVENT_LEAGUES=Object.freeze([
 export const eventLeague=level=>EVENT_LEAGUES.reduce((found,l)=>Number(level)>=l.from?l:found,EVENT_LEAGUES[0]);
 // How many leagues the live events have (28 Oct 2026, review): 12 until the harbour's leagues' SQL has run, then 17. A screen that shows
 // a farmer's league without an event at hand (the bonus overview, the rules) shows the one the events would put them in.
-export const LIVE_EVENT_LEAGUES=12;
+export const LIVE_EVENT_LEAGUES=17;
 export const liveEventLeague=level=>EVENT_LEAGUES[Math.min(eventLeague(level).index,LIVE_EVENT_LEAGUES-1)];
 // An event only has the leagues it was made with (20 Oct 2026): one made before the village leagues (6 entries, or none at all)
 // keeps a farmer of 100+ in the Valley Legends, with the Legends' goals and coins. The database does the same
