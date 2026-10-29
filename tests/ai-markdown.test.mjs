@@ -49,6 +49,7 @@ function site(){
  const url=(path,alts=false)=>`<url><loc>${SITE}${path}</loc>${alts?`<xhtml:link rel="alternate" hreflang="en" href="${SITE}/"/><xhtml:link rel="alternate" hreflang="es" href="${SITE}/es/"/>`:''}</url>`;
  writeFileSync(join(dir,'sitemap.xml'),`<urlset>${url('/',true)}${url('/es/',true)}${url('/wiki')}${url('/wiki/crops')}</urlset>`);
  writeFileSync(join(dir,'llms.txt'),'# Harvest Tycoon\n\n> A farming game.\n\n## Facts\n- Free.\n\n## Pages\n- [Play](https://www.harvesttycoon.com/)\n');
+ writeFileSync(join(dir,'robots.txt'),'User-agent: *\nAllow: /\n');
  return dir;
 }
 
@@ -67,6 +68,12 @@ test('a whole site: one copy a page, links between the copies, languages and llm
   assert.match(llms,/^# Harvest Tycoon\n\n> A farming game\.\n\n## Facts\n- Free\.\n\n## How to read this site/,'the facts stay on top; the old list of HTML pages goes');
   assert.match(llms,/^## English \(en\)\n\n### Main pages\n- \[Home\]\(https:\/\/www\.harvesttycoon\.com\/index\.md\): Home described\n\n### Game wiki\n- \[Wiki\]/m);
   assert.match(llms,/^## Español \(es\)\n\n### Main pages\n- \[Inicio\]\(https:\/\/www\.harvesttycoon\.com\/es\/index\.md\)/m);
+  // The files for machines at the end (29 Oct 2026), and ai-catalog.json made from the same pages.
+  assert.match(llms,/\n## Machine-readable\n\n- \[Sitemap\]\(https:\/\/www\.harvesttycoon\.com\/sitemap\.xml\): every page of the site in its 2 languages[^\n]*\n- \[robots\.txt\]\(https:\/\/www\.harvesttycoon\.com\/robots\.txt\)[^\n]*\n- \[AI catalog\]\(https:\/\/www\.harvesttycoon\.com\/ai-catalog\.json\)[^\n]*\n$/);
+  const catalog=JSON.parse(readFileSync(join(dir,'ai-catalog.json'),'utf8'));
+  assert.equal(catalog.host.documentationUrl,`${SITE}/llms.txt`);
+  assert.deepEqual(catalog.entries.map(e=>e.identifier.split(':').at(-1)),['llms','home','wiki','sitemap','robots'],'only pages that exist');
+  assert.deepEqual(catalog.entries[1].languages,['en','es']);assert.equal(catalog.entries[1].markdown,`${SITE}/index.md`);
   const again=buildAiMarkdown(dir);assert.deepEqual(again,report);assert.equal(readFileSync(join(dir,'llms.txt'),'utf8'),llms,'the same file every time');
   // A page that loses its words, or a sitemap page with no built page, stops the deploy.
   writeFileSync(join(dir,'wiki','crops.html'),readFileSync(join(dir,'wiki','crops.html'),'utf8').replace('<main>','<main><p>'+'extra words here '.repeat(10)+'</p>'));

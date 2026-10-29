@@ -241,6 +241,34 @@ const LANG_NAME=code=>{try{const n=new Intl.DisplayNames([code],{type:'language'
 const CATEGORY=path=>/^\/(?:[a-z]{2}\/)?guides(?:\/|$)/.test(path)?'Guides':path==='/wiki'||path.startsWith('/wiki/')?'Game wiki':/^\/(?:[a-z]{2}\/)?(?:privacy|partners)$/.test(path)?'Privacy and partners':'Main pages';
 const CATEGORY_ORDER=['Main pages','Guides','Game wiki','Privacy and partners'];
 
+// The end of llms.txt: the files for machines (29 Oct 2026, the owner, after an example). One sitemap holds every page in every language.
+const MACHINE_READABLE=languages=>['## Machine-readable','',
+ `- [Sitemap](${SITE}/sitemap.xml): every page of the site in its ${languages} languages, each with its other languages. The Markdown copies are not in it: this file lists them.`,
+ `- [robots.txt](${SITE}/robots.txt): every search engine and AI crawler may read the whole site; search, AI answers and training are welcome.`,
+ `- [AI catalog](${SITE}/ai-catalog.json): the same overview, machine-readable.`].join('\n');
+// ai-catalog.json: who we are and the main ways in, each with its description from its own page and its languages.
+export function aiCatalog(written,langs,now){
+ const page=path=>written.find(p=>p.path===path);
+ const languagesOf=p=>[...new Set([p.lang,...Object.keys(p.alternates??{})])].filter(l=>langs.includes(l)).sort((a,b)=>(a!=='en')-(b!=='en')||a.localeCompare(b));
+ const entry=(id,path,displayName,tags)=>{const p=page(path);return p&&{identifier:`urn:air:www.harvesttycoon.com:site:${id}`,displayName,type:'text/html',url:p.canonical,markdown:SITE+p.file,description:p.description||p.title,languages:languagesOf(p),tags};};
+ const updatedAt=now.toISOString().replace(/\.\d{3}Z$/,'Z');
+ return {specVersion:'1.0',
+  host:{displayName:'Harvest Tycoon',identifier:'did:web:www.harvesttycoon.com',documentationUrl:`${SITE}/llms.txt`,logoUrl:`${SITE}/assets/harvest-tycoon-logo.webp`},
+  entries:[
+   {identifier:'urn:air:www.harvesttycoon.com:docs:llms',displayName:'Harvest Tycoon for language models',type:'text/markdown',url:`${SITE}/llms.txt`,
+    description:'Facts about Harvest Tycoon, a free 3D farming game for the browser, Android and iPhone, and every page of the site as a Markdown copy, in every language.',
+    tags:['harvest-tycoon','farming-game','browser-game','free-to-play'],
+    representativeQueries:['Free farming game in the browser','Farming game without download','How do I play Harvest Tycoon?','Best crops in Harvest Tycoon'],updatedAt},
+   entry('home','/','Harvest Tycoon website',['website','play']),
+   entry('guides','/guides','Harvest Tycoon guides',['guides','tips']),
+   entry('wiki','/wiki','Harvest Tycoon wiki',['wiki','rules']),
+   entry('app','/app','Harvest Tycoon apps',['android','iphone','app']),
+   entry('support','/support','Help and support',['support','contact']),
+   {identifier:'urn:air:www.harvesttycoon.com:site:sitemap',displayName:'Sitemap',type:'application/xml',url:`${SITE}/sitemap.xml`,description:`Every page of the site in its ${langs.length} languages, each with its other languages.`,tags:['sitemap']},
+   {identifier:'urn:air:www.harvesttycoon.com:site:robots',displayName:'robots.txt',type:'text/plain',url:`${SITE}/robots.txt`,description:'Every search engine and AI crawler may read the whole site; search, AI answers and training are welcome.',tags:['robots','ai-policy']}
+  ].filter(Boolean)};
+}
+
 // Builds every copy and llms.txt in dist (dist-static). Returns the report; throws when a check fails.
 export function buildAiMarkdown(dist){
  const xml=readFileSync(join(dist,'sitemap.xml'),'utf8');
@@ -303,8 +331,10 @@ export function buildAiMarkdown(dist){
   const parts=CATEGORY_ORDER.map(cat=>{const list=mine.filter(p=>CATEGORY(p.path)===cat);return list.length?`### ${cat}\n${list.map(p=>`- [${p.title}](${SITE}${p.file}): ${p.description||p.title}`).join('\n')}`:'';}).filter(Boolean);
   return `## ${LANG_NAME(lang)} (${lang})\n\n${parts.join('\n\n')}`;
  });
- const llms=`${intro}\n\n## How to read this site\n- Every public page has a Markdown copy of its own text (not a summary): the page's address with ${EXT} (the home page /index${EXT}, a language's home /xx/index${EXT}). They are made from the pages on every deploy.\n- The links inside a copy go to the other copies, so the whole site can be read from here. Each copy starts with its title, address, language, description and the same page in other languages.\n- The game wiki is in English only; the guides, the home page, the app page and help and support are in ${langs.length} languages.\n\n${sections.join('\n\n')}\n`;
+ const llms=`${intro}\n\n## How to read this site\n- Every public page has a Markdown copy of its own text (not a summary): the page's address with ${EXT} (the home page /index${EXT}, a language's home /xx/index${EXT}). They are made from the pages on every deploy.\n- The links inside a copy go to the other copies, so the whole site can be read from here. Each copy starts with its title, address, language, description and the same page in other languages.\n- The game wiki is in English only; the guides, the home page, the app page and help and support are in ${langs.length} languages.\n\n${sections.join('\n\n')}\n\n${MACHINE_READABLE(langs.length)}\n`;
  writeFileSync(join(dist,'llms.txt'),llms);
+ // ai-catalog.json (29 Oct 2026, the owner, after an example): the same overview for machines, made from the same pages.
+ writeFileSync(join(dist,'ai-catalog.json'),JSON.stringify(aiCatalog(written,langs,new Date()),null,2)+'\n');
  const report=validate(dist,written,llms);
  return {pages:written.length,languages:langs.length,...report};
 }
@@ -313,6 +343,10 @@ export function buildAiMarkdown(dist){
 export function validate(dist,written,llms){
  const problems=[];
  const exists=url=>{const u=new URL(url);return u.origin===SITE&&existsSync(join(dist,decodeURIComponent(u.pathname).slice(1)));};
+ // The machine-readable files llms.txt and the catalog name are all there.
+ for(const [,url] of llms.matchAll(/^- \[[^\]]+\]\((https:\/\/www\.harvesttycoon\.com\/[^)\s]+\.(?:xml|txt|json))\)/gm))if(!exists(url))problems.push(`llms.txt names ${url}, which does not exist`);
+ if(existsSync(join(dist,'ai-catalog.json'))){const catalog=JSON.parse(readFileSync(join(dist,'ai-catalog.json'),'utf8'));
+  for(const e of catalog.entries){const u=new URL(e.url);const file=/\.(?:xml|txt|json)$/.test(u.pathname)?u.pathname.slice(1):pageFile(u.pathname);if(u.origin!==SITE||!existsSync(join(dist,file)))problems.push(`ai-catalog.json names ${e.url}, which does not exist`);}}
  const files=new Set();
  for(const p of written){
   if(files.has(p.file))problems.push(`${p.file} is made twice`);files.add(p.file);
