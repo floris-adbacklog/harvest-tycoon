@@ -46,4 +46,9 @@ const {applyStructuredData}=await import('./structured-data.mjs');applyStructure
 // (/, /xx/): it stays as it is, and the website sends its files with no-cache.
 const {cacheBust}=await import('./cache-bust.mjs');
 for(const {page,versioned,mapped} of cacheBust('dist-static',['farm.html','discord.html','crazygames.html','kongregate.html']))console.log(`${page}: ${versioned} addresses versioned, ${mapped} in its import map.`);
+// The website as Markdown for AI tools (29 Oct 2026, scripts/build-ai-markdown.mjs): a copy of every sitemap page's own text beside it
+// (/wiki/crops → /wiki/crops.md) and /llms.txt listing them per language, from the pages as they are now, so last but for the version
+// marks above (they touch only the game's own pages). Its checks stop the deploy when a page, a link or a language is wrong.
+const {buildAiMarkdown}=await import('./build-ai-markdown.mjs');const ai=buildAiMarkdown('dist-static');
+console.log(`Markdown copies: ${ai.pages} pages in ${ai.languages} languages, all checked; llms.txt lists ${ai.links}.`);
 console.log('Standalone static game ready in dist-static/. No application server is required.');
