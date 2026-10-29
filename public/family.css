@@ -888,3 +888,8 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-dialog .family-tournament-title>span:last-child{padding:0;border:0;border-radius:0;background:none}
 #family-dialog .family-member .family-role,#family-dialog .family-member .family-top{padding:0;border-radius:0;background:none;font-weight:700;font-size:12px;color:#7a5410}
 #family-dialog .family-member-bar{height:4px}
+/* The family badge beside a farmer's name in the leaderboard and the event standings (29 Oct 2026, public/family-badge.js). */
+.name-family{display:inline-flex;align-items:center;vertical-align:middle;margin-inline-start:5px;cursor:pointer;border-radius:6px}
+.name-family>.family-emblem{width:20px;height:20px;border-radius:6px}
+.name-family>.family-emblem .game-art{width:15px;height:15px}
+.name-family:hover>.family-emblem{box-shadow:0 0 0 2px #cfdcb9}

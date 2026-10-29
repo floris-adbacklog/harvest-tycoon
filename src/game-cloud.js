@@ -8,6 +8,7 @@ import {addSettingsCopyLinks,addFeedbackCopyLink} from '../public/settings-nav.j
 import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
+import {loadFamilies} from '../public/family-badge.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
@@ -125,7 +126,9 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
   let boardRequest=0,board=null,boardPage=0;
   // The board keeps its page when it refreshes (every 30 seconds); a new board, or opening it again, starts on page 1.
-  const drawBoard=()=>renderLeaderboard(ui.results,{...board,page:boardPage,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id),page=>{boardPage=page;drawBoard();ui.results.scrollIntoView?.({block:'start'});});
+  const drawBoard=()=>{renderLeaderboard(ui.results,{...board,page:boardPage,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id),page=>{boardPage=page;drawBoard();ui.results.scrollIntoView?.({block:'start'});});
+   // The family badges (29 Oct 2026, public/family-badge.js): the farmers on this board, read once a minute; drawn again when one came in.
+   const shown=board;void loadFamilies([...(board?.rows??[]).map(r=>r.player_id),board?.own?.player_id]).then(changed=>{if(changed&&ui?.open&&board===shown)drawBoard();});};
   // The last board of each kind shows at once when it opens again (or was read in the background after the farm opened), while
   // the newest loads; a board never seen shows placeholder rows (1 Oct 2026).
   const boardCache=new Map();

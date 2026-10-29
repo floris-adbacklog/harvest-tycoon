@@ -2,6 +2,7 @@ import {avatarImage} from '../public/player-avatars.js';
 import {framed,lookBadge} from '../public/look-marks.js';
 import {vipBadge,refreshVipBadges} from '../public/vip-ui.js';
 import {staffRole,staffBadge} from './staff-badge.js';
+import {familyBadge} from '../public/family-badge.js';
 import {rankArt} from '../public/rank-art.js';
 import {art} from '../public/visual-icons.js';
 import {rankArtKey} from '../public/rank-picker.js';
@@ -105,13 +106,14 @@ export function rankedRows(rows,category='level'){
 // your own row in gold with You beside the name; when your row is not on the page shown (another page, or outside the top 100) it is
 // pinned under the list as a row of its own, with Show to go to your page. The board's name stays the table's caption for a screen reader.
 // The farmer in a row: the face with its frame and online dot, the name as typed (17 Oct 2026, in its own kept span: the badges after it
-// are the game's and are translated), the VIP mark, the staff mark and the season badge, and You on your own row.
+// are the game's and are translated), the VIP mark, the staff mark, the season badge and the family badge (public/family-badge.js), and You
+// on your own row.
 function farmerCell(row,{playerId,onPlayer,now}){
  const strong=document.createElement(onPlayer?'button':'strong'),small=document.createElement('small');
  const typed=document.createElement('span');typed.setAttribute('translate','no');typed.textContent=row.username;strong.append(typed);
  if(onPlayer){strong.type='button';strong.className='player-name-link';strong.setAttribute('aria-haspopup','dialog');strong.setAttribute('aria-label',ownText(`View ${row.username}'s profile`,[row.username]));strong.onclick=()=>onPlayer(row.player_id);}
  const dot=document.createElement('span');dot.className='online-dot';dot.dataset.onlinePlayer=row.player_id;dot.setAttribute('role','img');
- const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));const seasonBadge=lookBadge(row.look);if(seasonBadge)strong.insertAdjacentHTML('beforeend',seasonBadge);
+ const vip=vipBadge(row.vip_expires_at,now);if(vip)strong.insertAdjacentHTML('beforeend',vip);const role=staffRole(row.player_id);if(role)strong.insertAdjacentHTML('beforeend',staffBadge(role));const seasonBadge=lookBadge(row.look);if(seasonBadge)strong.insertAdjacentHTML('beforeend',seasonBadge);const family=familyBadge(row.player_id);if(family)strong.insertAdjacentHTML('beforeend',family);
  small.className='leaderboard-you';small.textContent=row.player_id===playerId?'You':'';
  const identity=document.createElement('div');identity.className='leaderboard-farmer';identity.innerHTML=`<span class="leaderboard-portrait">${framed(row.look,avatarImage(row.avatar_id))}</span>`;identity.firstElementChild.append(dot);
  const copy=document.createElement('div');copy.className='leaderboard-name';copy.append(strong);if(small.textContent)copy.append(small);identity.append(copy);

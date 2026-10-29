@@ -1,6 +1,7 @@
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
+import {familyBadge,loadFamilies} from './family-badge.js';
 import {farmNow} from './farm-client.js';
 import {placeLabel} from './place-label.js';
 import {skeleton} from './skeleton.js';
@@ -159,7 +160,7 @@ export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:
   // Every goal done is finished: the first three get a trophy, everyone else who finished a tick. Each row shows the server's coins
   // and diamonds for that place.
   const label=r=>r.podium?placeLabel(r.rank):r.finished?'✓ Finished':`${r.progress}% done`;
-  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="${esc(ownText(`Open ${r.username}’s profile`,[r.username]))}"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`${r.coins?`<b>${art('coins')}${num(r.coins)}</b>`:''}${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" translate="no" aria-label="${esc(ownText(`${r.username}: ${r.progress}% done`,[r.username]))}"></progress>`}</span></article>`;
+  const row=r=>`<article class="family-list-row event-standing ${r.podium?`is-podium is-rank-${r.rank}`:''} ${r.isYou?'is-you':''}"><span class="event-rank">${r.podium?art(MEDALS[r.rank-1]):r.rank}</span><button type="button" class="event-standing-who" data-event-profile="${esc(r.playerId)}" aria-label="${esc(ownText(`Open ${r.username}’s profile`,[r.username]))}"><span class="family-member-portrait">${avatarImage(r.avatarId)}</span><div><strong>${ownWords(r.username)}${vipBadge(r.vipExpiresAt,farmNow())}${familyBadge(r.playerId)}${r.isYou?' (you)':''}</strong><span>${label(r)}</span></div></button><span class="event-standing-reward">${r.finished?`${r.coins?`<b>${art('coins')}${num(r.coins)}</b>`:''}${r.diamonds?`<b>${art('diamonds')}${num(r.diamonds)}</b>`:''}`:`<progress class="event-mini" max="100" value="${r.progress}" translate="no" aria-label="${esc(ownText(`${r.username}: ${r.progress}% done`,[r.username]))}"></progress>`}</span></article>`;
   const league=s.league?leagueOf(e).name:'';
   return `<div class="event-section-head"><h3 class="event-section-title">${final?`Final standings · ${esc(ownTitle(e))}`:'Top farmers'}</h3>${league?`<span class="event-league-name">${league}</span>`:''}</div><p class="event-summary">${final?`${num(s.total)} farmer${s.total===1?'':'s'} took part.`:eventPrizes(e.rewards).paysCoins?'Prizes if the event ended now. The first three to finish in your league win the most coins and diamonds.':'Prizes if the event ended now. The first three to finish in your league win the most diamonds.'}</p><div class="family-member-list event-standings">${s.top.map(row).join('')}${s.you?`<p class="event-standings-gap" aria-hidden="true">···</p>${row(s.you)}`:''}</div>`;
  }
@@ -208,6 +209,8 @@ export function createLiveEventsUI({state,notify,refreshFarm,onClaimed,document:
   dialog.querySelectorAll('[data-event-profile]').forEach(b=>b.onclick=()=>window.harvestProfiles?.open(b.dataset.eventProfile,{back:'Back to the event'}));
   refreshVipBadges(dialog,farmNow());
   refreshArt();
+  // The family badges of the farmers in the standings (29 Oct 2026, public/family-badge.js): drawn again once they came in.
+  void loadFamilies([...dialog.querySelectorAll('[data-event-profile]')].map(b=>b.dataset.eventProfile)).then(changed=>{if(changed&&dialog.open)render();});
  }
  async function claim(b){
   if(busy)return;busy=true;b.disabled=true;
