@@ -14,7 +14,7 @@ test('six guides at /guides, each a page of its own in the sitemap',()=>{
  const dir=mkdtempSync(join(tmpdir(),'guides-'));
  try{
   writeFileSync(join(dir,'sitemap.xml'),'<urlset>\n</urlset>');
-  assert.equal(buildGuides(dir),7);buildGuides(dir);
+  assert.equal(buildGuides(dir,{languages:['en']}),7);buildGuides(dir,{languages:['en']});
   const map=readFileSync(join(dir,'sitemap.xml'),'utf8');
   assert.equal((map.match(/<loc>https:\/\/www\.harvesttycoon\.com\/guides<\/loc>/g)??[]).length,1,'once, even built twice');
   for(const g of GUIDES){
@@ -44,7 +44,34 @@ test('their numbers are the game\'s own, so they stay true',()=>{
 test('served at /guides, in the Markdown copies and llms.txt as their own part, and linked from the wiki',()=>{
  const rewrites=JSON.parse(read('vercel.json')).rewrites;
  assert.deepEqual(rewrites.filter(r=>r.source.startsWith('/guides')).map(r=>[r.source,r.destination]),[['/guides','/guides/index.html'],['/guides/','/guides/index.html'],['/guides/:slug([a-z-]+)','/guides/:slug.html']]);
+ const codes='cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh';
+ assert.deepEqual(rewrites.filter(r=>r.source.includes(')/guides')).map(r=>[r.source,r.destination]),[[`/:lang(${codes})/guides`,'/:lang/guides/index.html'],[`/:lang(${codes})/guides/`,'/:lang/guides/index.html'],[`/:lang(${codes})/guides/:slug([a-z-]+)`,'/:lang/guides/:slug.html']]);
  assert.match(read('scripts/build-static.mjs'),/await buildWiki\('dist-static'\);\n[^\n]*\nconst \{buildGuides\}=await import\('\.\/build-guides\.mjs'\);buildGuides\('dist-static'\);/);
  assert.match(read('scripts/build-ai-markdown.mjs'),/const CATEGORY_ORDER=\['Main pages','Guides','Game wiki','Privacy and partners'\];/);
  assert.match(read('scripts/build-wiki.mjs'),/ <a href="\/wiki">Game wiki<\/a>\n <a href="\/guides">Guides<\/a>\n/);
+});
+
+// 29 Oct 2026 (the owner: "alle 15"): every guide in every ready language, from the game's translations, each naming all of them.
+test('every guide in all 16 languages: translated words, the game\'s own numbers, its own address and the others named',async()=>{
+ const {READY}=await import('../scripts/build-languages.mjs');
+ const dir=mkdtempSync(join(tmpdir(),'guides-all-'));
+ try{
+  writeFileSync(join(dir,'sitemap.xml'),'<urlset>\n</urlset>');
+  assert.equal(buildGuides(dir),7*READY.length,'a missing translation would stop it');
+  const map=readFileSync(join(dir,'sitemap.xml'),'utf8');
+  for(const code of READY){
+   const base=code==='en'?'':`/${code}`;
+   assert.ok(map.includes(`<loc>https://www.harvesttycoon.com${base}/guides/best-crops-by-level</loc>`),code);
+   const html=readFileSync(join(dir,`${base.slice(1)}${base?'/':''}guides/best-crops-by-level.html`),'utf8');
+   assert.match(html,new RegExp(`<html lang="${code}"`));
+   assert.match(html,new RegExp(`<link rel="canonical" href="https://www\\.harvesttycoon\\.com${base}/guides/best-crops-by-level">`));
+   for(const other of READY)assert.ok(html.includes(`hreflang="${other}"`),`${code} names ${other}`);
+   if(code!=='en'){
+    assert.doesNotMatch(html,/Which crop to plant depends on how long/,`${code} is translated`);
+    assert.match(html,new RegExp(`href="/${code}/guides/earn-coins-fast"`),'links stay in the language');
+    assert.match(html,/href="\/wiki\/crops/,'the wiki is English only');
+   }
+  }
+  const ru=readFileSync(join(dir,'ru','guides','best-crops-by-level.html'),'utf8');assert.match(ru,/2 ч/,'hours the language\'s way');
+ }finally{rmSync(dir,{recursive:true,force:true});}
 });

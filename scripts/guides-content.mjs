@@ -38,7 +38,7 @@ export const GUIDES=[
    +section('Start in a minute',steps(['Go to <a href="/">harvesttycoon.com</a>.','Tap Create account and choose how you sign in.','Your farm opens with a short guide. Follow it to plant, harvest and make your first sale.',`Finish the ${BEGINNER_QUESTS.length} steps of the guide for ${BEGINNER_REWARD} diamonds.`]))
    +section('One farm on every device',`<p>Your farm belongs to your account, not to the device. Sign in the same way on your phone, your tablet and your computer and you play the same farm everywhere: what you planted on your phone is growing on your computer. Sign in the way you did the first time: another way of signing in can start a new farm.</p>`)
    +section('Like an app, without the store',`<p>On a phone you can put the game on your home screen, so it opens full screen in one tap:</p>`+list(['<strong>Android:</strong> in Chrome, tap the menu (⋮) and choose “Install app” or “Add to Home screen”.','<strong>iPhone and iPad:</strong> in Safari, tap Share, then “Add to Home Screen”.','<strong>Computer:</strong> in Chrome or Edge, click the install icon at the right of the address bar.'])
-    +`<p>Prefer a store app? Harvest Tycoon is also free on Google Play for Android and in the App Store for iPhone and iPad: see <a href="/app">Get the app</a>. It is the same game and the same farm.</p>`)
+    +`<p>Prefer a store app? Harvest Tycoon is also free on Google Play for Android and in the App Store for iPhone and iPad: see <a href="/app">Get the app</a>: it is the same game and the same farm.</p>`)
    +section('Free to play',`<p>You can play the whole game for free. Diamonds, the game’s special currency, come from the daily gift, quests, level-ups, events and more; you can also buy them, or a pass with extra rewards, but you never have to. The wiki explains ${wiki('diamonds','how to earn diamonds')}.</p>`)
    +section('Read next',list([guide('beginners-first-hour','Your first hour on the farm'),guide('best-crops-by-level','The best crops for every level'),wiki('getting-started','Getting started in the wiki')]));
   }},
@@ -80,9 +80,9 @@ export const GUIDES=[
    +section('Every crop',table(['Crop','Opens at level','Seed','Sells for','Grows in','With water and care','Earns per harvest','Per field per hour (water and care)'],
      all.map(c=>[c.name,c.level,`${number(c.seed)}`,`${number(c.sell)}`,wikiTime(c.plain),wikiTime(c.regrow?c.again:c.cared)+(c.regrow?' (grows back)':''),number(c.perHarvest),`about ${number(c.perHour)}`]))
     +'<p>Coins per field. Seed and sale prices are the usual ones; the Market’s price of the day is a little higher or lower.</p>')
-   +section('While you play',`<p>Plant the quickest crops you have and water and care for them: they earn the most per field per hour. Early on that is ${all.filter(c=>c.level===1).map(c=>c.name.toLowerCase()).join(' and ')}, then ${CROPS.lettuce.name.toLowerCase()} from level ${CROP_LEVELS.lettuce} and ${CROPS.barley.name.toLowerCase()} from level ${CROP_LEVELS.barley}.</p>`)
+   +section('While you play',`<p>Plant the quickest crops you have and water and care for them: they earn the most per field per hour. Early on that is ${CROPS.wheat.name.toLowerCase()} and ${CROPS.corn.name.toLowerCase()}, then ${CROPS.lettuce.name.toLowerCase()} from level ${CROP_LEVELS.lettuce} and ${CROPS.barley.name.toLowerCase()} from level ${CROP_LEVELS.barley}.</p>`)
    +section('While you are away',`<p>Pick a crop that is ready when you come back: a field earns nothing while it waits for you. Going to bed? A crop of 8 to 24 hours fills the night. Away for an hour or two? Pick one of about that length.</p>`)
-   +section('Trees and bushes',`<p>Trees and bushes cost a lot to plant but grow back after every harvest, so you only buy them once. ${all.filter(c=>c.regrow).map(c=>`${c.name} (level ${c.level})`).join(', ')}. Water and care them every time, and pick them yourself to start the next harvest.</p>`)
+   +section('Trees and bushes',`<p>Trees and bushes cost a lot to plant but grow back after every harvest, so you only buy them once. Water and care them every time, and pick them yourself to start the next harvest.</p>`+list(all.filter(c=>c.regrow).map(c=>`${c.name}: level ${c.level}`)))
    +section('More fields, more coins',`<p>You start with ${STARTER_FIELDS} fields and can have up to ${MAX_PLOTS}. Every field you add earns as much as the others, so new fields pay for themselves quickly. See ${wiki('crops','Fields and crops','sec-more-fields')}.</p>`)
    +section('Read next',list([guide('earn-coins-fast','How to earn coins fast'),wiki('crops','Fields and crops in the wiki')]));
   }},
@@ -116,4 +116,8 @@ export const GUIDES=[
    +section('Try it',`<p>Harvest Tycoon is free and runs in your browser. <a href="/">Start your farm</a>, or read the ${wiki('getting-started','wiki')} first.</p>`);
   }}
 ];
+// The words around the guides (scripts/build-guides.mjs and the wiki's page they sit in), here so scripts/i18n-extract.mjs collects
+// them for the translated guides (/es/guides, ...): the page's own buttons and labels, and its title after the guide's.
+export const GUIDE_WORDS=Object.freeze({guides:'Guides',more:'More guides',crumb:'Breadcrumb',play:'Play free',ready:'Ready to start your own farm? It’s free to play.',
+ playGame:'Play Harvest Tycoon',wiki:'Looking for the details of every crop, building and recipe? See the',wikiLink:'farm wiki',wikiCrumb:'Wiki',title:title=>`${title} — Harvest Tycoon`});
 export const GUIDES_INDEX={title:'Harvest Tycoon guides: tips for your farm',heading:'Guides',description:'Guides to playing Harvest Tycoon: playing in your browser, your first hour, earning coins, the best crops for every level, farming with friends and what makes a good farming game.'};

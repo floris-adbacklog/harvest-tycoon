@@ -19,7 +19,9 @@ export const SOURCES=[
  ...list('public/',f=>f.endsWith('.js')),
  ...list('src/',f=>f.endsWith('.js')),
  // mail-text.js holds the code email already written in every language: it is not translated through the catalog.
- ...list('supabase/functions/farm-api/',f=>f.endsWith('.js')&&f!=='farm-state.js'&&f!=='mail-text.js')
+ ...list('supabase/functions/farm-api/',f=>f.endsWith('.js')&&f!=='farm-state.js'&&f!=='mail-text.js'),
+ // The guides (/guides, 29 Oct 2026): written per language at deploy time (scripts/build-guides.mjs) from these translations.
+ 'scripts/guides-content.mjs'
 ].filter(file=>!SKIP.test(file));
 // The CrazyGames page (Oct 2026) shows the same loading screen and a pause card of its own. The support page (3 Oct 2026) is written
 // per language at deploy time from these translations (scripts/build-languages.mjs), like the sign-in page.

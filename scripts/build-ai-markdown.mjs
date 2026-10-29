@@ -20,11 +20,11 @@ import {dirname,join} from 'node:path';
 export const SITE='https://www.harvesttycoon.com';
 export const EXT='.md';
 // The page's address → its built file in dist-static (as vercel.json's rewrites serve them; cleanUrls is off).
-const SECTIONS=['/wiki','/guides'];
+const SECTIONS=/^\/(?:[a-z]{2}\/)?(?:wiki|guides)$/;
 export function pageFile(path){
  if(path==='/')return 'index.html';
  if(path.endsWith('/'))return `${path.slice(1)}index.html`;
- if(SECTIONS.includes(path))return `${path.slice(1)}/index.html`;   // a section's front page (vercel.json: /wiki, /guides)
+ if(SECTIONS.test(path))return `${path.slice(1)}/index.html`;   // a section's front page (vercel.json: /wiki, /guides, /es/guides)
  return `${path.slice(1)}.html`;
 }
 // The page's address → its Markdown copy's address.
@@ -238,7 +238,7 @@ export function sitemapPages(xml){
  return pages;
 }
 const LANG_NAME=code=>{try{const n=new Intl.DisplayNames([code],{type:'language'}).of(code);return n&&n!==code?n[0].toLocaleUpperCase(code)+n.slice(1):code;}catch{return code;}};
-const CATEGORY=path=>path==='/guides'||path.startsWith('/guides/')?'Guides':path==='/wiki'||path.startsWith('/wiki/')?'Game wiki':/^\/(?:[a-z]{2}\/)?(?:privacy|partners)$/.test(path)?'Privacy and partners':'Main pages';
+const CATEGORY=path=>/^\/(?:[a-z]{2}\/)?guides(?:\/|$)/.test(path)?'Guides':path==='/wiki'||path.startsWith('/wiki/')?'Game wiki':/^\/(?:[a-z]{2}\/)?(?:privacy|partners)$/.test(path)?'Privacy and partners':'Main pages';
 const CATEGORY_ORDER=['Main pages','Guides','Game wiki','Privacy and partners'];
 
 // Builds every copy and llms.txt in dist (dist-static). Returns the report; throws when a check fails.
@@ -274,7 +274,9 @@ export function buildAiMarkdown(dist){
   return u.href;
  };
  // The site's pages at the end of every copy, in the page's language where that language has them.
- const sitePages=lang=>pages.filter(q=>q.lang===lang&&CATEGORY(q.path)==='Main pages').concat(pages.filter(q=>q.lang==='en'&&CATEGORY(q.path)!=='Main pages'&&(q.path==='/wiki'||q.path==='/guides'||!['Game wiki','Guides'].includes(CATEGORY(q.path)))));
+ const guidesIndex=lang=>pages.find(q=>q.lang===lang&&/^\/(?:[a-z]{2}\/)?guides$/.test(q.path))??pages.find(q=>q.path==='/guides');
+ const sitePages=lang=>[...pages.filter(q=>q.lang===lang&&CATEGORY(q.path)==='Main pages'),...[guidesIndex(lang)].filter(Boolean),
+  ...pages.filter(q=>q.lang==='en'&&(q.path==='/wiki'||CATEGORY(q.path)==='Privacy and partners'))];
  const written=[];
  for(const p of pages){
   const body=find(p.doc,n=>n.tag==='main')??find(p.doc,n=>n.tag==='body')??p.doc;
@@ -301,7 +303,7 @@ export function buildAiMarkdown(dist){
   const parts=CATEGORY_ORDER.map(cat=>{const list=mine.filter(p=>CATEGORY(p.path)===cat);return list.length?`### ${cat}\n${list.map(p=>`- [${p.title}](${SITE}${p.file}): ${p.description||p.title}`).join('\n')}`:'';}).filter(Boolean);
   return `## ${LANG_NAME(lang)} (${lang})\n\n${parts.join('\n\n')}`;
  });
- const llms=`${intro}\n\n## How to read this site\n- Every public page has a Markdown copy of its own text (not a summary): the page's address with ${EXT} (the home page /index${EXT}, a language's home /xx/index${EXT}). They are made from the pages on every deploy.\n- The links inside a copy go to the other copies, so the whole site can be read from here. Each copy starts with its title, address, language, description and the same page in other languages.\n- The guides and the game wiki are in English only; the home page, the app page and help and support are in ${langs.length} languages.\n\n${sections.join('\n\n')}\n`;
+ const llms=`${intro}\n\n## How to read this site\n- Every public page has a Markdown copy of its own text (not a summary): the page's address with ${EXT} (the home page /index${EXT}, a language's home /xx/index${EXT}). They are made from the pages on every deploy.\n- The links inside a copy go to the other copies, so the whole site can be read from here. Each copy starts with its title, address, language, description and the same page in other languages.\n- The game wiki is in English only; the guides, the home page, the app page and help and support are in ${langs.length} languages.\n\n${sections.join('\n\n')}\n`;
  writeFileSync(join(dist,'llms.txt'),llms);
  const report=validate(dist,written,llms);
  return {pages:written.length,languages:langs.length,...report};

@@ -162,6 +162,18 @@
     {
       "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/app/",
       "destination": "/:lang/app.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/guides",
+      "destination": "/:lang/guides/index.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/guides/",
+      "destination": "/:lang/guides/index.html"
+    },
+    {
+      "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/guides/:slug([a-z-]+)",
+      "destination": "/:lang/guides/:slug.html"
     }
   ],
   "headers": [
