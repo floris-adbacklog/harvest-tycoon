@@ -92,6 +92,8 @@ export const SOUND_CUES=Object.freeze({
  eventwin:{notes:[392,523.25,659.25,783.99,1046.5],step:.09,duration:.5,volume:.12},
  // A pass tier collected (24 Oct 2026, sound-kit.js tierclaim): two soft notes up.
  tierclaim:{notes:[1046.5,1567.98],step:.09,duration:.35,volume:.08},
+ // Seed Lab heirlooms collected (28 Oct 2026, sound-kit.js heirloom): a pop and two warm notes up.
+ heirloom:{notes:[783.99,1046.5],step:.1,duration:.4,volume:.085},
  bell:{notes:[392,329.63,261.63],step:.3,duration:.6,volume:.07},
  // The Fishing pond (11 Oct 2026, pond-ui.js plays them itself): the cast, a nibble, the bite, a fish landed and one that slipped off.
  cast:{notes:[520,330],step:.06,duration:.18,volume:.05,type:'triangle',glide:.7},
@@ -126,7 +128,9 @@ export function soundForAction(action,result,beforeLevel,afterLevel){
   // A landmark (Oct 2026): goods handed in are crates going on, finishing it is a lasting improvement; turning a boat cargo down is quiet.
   landmark_give:'produce',landmark_finish:'improve',
   // A pet's find (20 Oct 2026): a small pick-up.
-  pet_pat:'collect'}[action.type]??null;
+  pet_pat:'collect',
+  // Seed Lab heirlooms collected (28 Oct 2026, the owner): their own sound.
+  lab_collect:'heirloom'}[action.type]??null;
 }
 // A sweep's snip per field (Oct 2026): step n of the sweep (from 0) is a step higher on a pentatonic scale, up to an octave and then
 // it stays there; every sweep starts low again.

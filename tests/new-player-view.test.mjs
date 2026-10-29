@@ -18,7 +18,11 @@ test('a new farmer starts zoomed in on their fields until the guide\'s first fou
 test('the first minute: fields up close on every screen, the sickle shows itself, level 2 is a toast and the guide points to the Market',()=>{
  const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8'),game=read('public/game.js'),progression=read('public/progression-ui.js'),beginner=read('public/beginner-ui.js');
  assert.match(game,/\|\|!\(state\.stats\.harvested>0\)\?'fields':'home'/,'a computer starts on the fields until the first harvest');
- assert.match(game,/if\(!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='harvest'\)firstBasketGhost\(\);/,'the sickle shows by itself on a new farm');
+ assert.match(game,/if\(!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)&&beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='harvest'\)\{setTool\('harvest',false\);firstBasketGhost\(\);\}/,'the sickle shows by itself on a new farm, with Harvest in the hand');
+ // 28 Oct 2026 (the CrazyGames launch): until the first harvest a tap or sweep on a field that is not ripe does nothing but point to the corn.
+ assert.match(game,/const firstHarvestOnly=\(\)=>!villageWorld&&!adminView&&!\(state\.stats\.harvested>0\)&&state\.plots\.some\(p=>p\.crop&&farmNow\(\)>=p\.readyAt\);/,'first harvest only while ripe corn waits');
+ assert.match(game,/if\(!forcedAction&&action!=='harvest'&&firstHarvestOnly\(\)\)\{toast\(FIRST_HARVEST_HINT\);firstBasketGhost\(\);return \{error:'nothing to do yet'\};\}/,'a tap elsewhere plants nothing and shows the way');
+ assert.match(game,/if\(firstHarvestOnly\(\)&&a!=='harvest'\)return null;/,'a sweep elsewhere moves the farm');
  assert.match(game,/if\(firstBasket&&!villageWorld\)firstBasketGhost\(\);/,'and still from Show me');
  // 11 Oct 2026 (Part A A11): with the first basket the level-2 line says the next step; otherwise it names the Feed Mill (7 Oct 2026).
  assert.match(progression,/if\(notify&&p\.leveled&&!p\.catchUp&&p\.level===2&&!p\.avatars\?\.length\)\{notify\(beginnerProgress\(state\)\.find\(q=>q\.current\)\?\.id==='sell'\?'Level 2! Next: sell your corn in Market\. Your first sale pays double\.':p\.entries\.some\(e=>e\.id==='building:mill'\)\?'Level 2! You can now build the Feed Mill and buy a new field\.':`Level \$\{p\.level\}! One harvest at a time, your farm is growing\.`\);return;\}/,'level 2 says the next step, or names the Feed Mill and the new field');

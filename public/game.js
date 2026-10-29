@@ -1697,6 +1697,7 @@ async function interact(id,forcedAction){
  const plot=state.plots[id];
  // A tap does what the field can use now (fieldTapAction): care once it is ready, water, harvest or plant.
  const action=forcedAction??fieldTapAction(plot,farmNow(),selectedTool,toolPicked);
+ if(!forcedAction&&action!=='harvest'&&firstHarvestOnly()){toast(FIRST_HARVEST_HINT);firstBasketGhost();return {error:'nothing to do yet'};}
  // Water chosen on a crop past its watering time (7 Oct 2026): nothing happens, and the toast says why, in the guide with what to do.
  // A crop that already had its care gets the usual line below (when it is ready), not advice to give care.
  if(!action&&selectedTool==='water'&&toolPicked){const why=plot.watered?'Already watered. Your crop is growing nicely.':beginnerProgress(state).some(q=>q.id==='water'&&!q.done)?WATER_FIRST_MINUTE:plot.tended?'':'Water right after planting. This crop is past that; give it extra care instead.';if(why){toast(why);return {error:'too late to water'};}}
@@ -1736,8 +1737,13 @@ let sweepRun=null,lastPointer=null,pointerDx=0;
 const sweepTool=createSweepTool({reducedMotion}),sweepGhost=createSweepGhost({reducedMotion});
 // Step 1's see-through sickle over the ripe starter corn, until the first harvest (Show me, and by itself on a brand-new farm).
 const firstBasketGhost=()=>sweepGhost.start(()=>{if(state.stats.harvested>0)return null;const ids=state.plots.map((p,i)=>p.crop&&farmNow()>=p.readyAt?i:-1).filter(i=>i>=0).slice(0,3);return ids.length?ids.map(i=>toScreen(plots[i].x,.7,plots[i].z)):null;});
+// Until the very first harvest (28 Oct 2026, the CrazyGames launch: a third of its new farmers planted, watered or cared for fields and
+// never harvested, then left): with ripe corn on the farm, a tap or a sweep only harvests. A tap elsewhere says where the ripe corn is and
+// the sickle shows the way again; nothing is planted and no coins go.
+const firstHarvestOnly=()=>!villageWorld&&!adminView&&!(state.stats.harvested>0)&&state.plots.some(p=>p.crop&&farmNow()>=p.readyAt);
+const FIRST_HARVEST_HINT='Harvest the ripe corn first: tap or sweep over the golden fields.';
 // What a drag from this field does (plant, harvest, water or care), or nothing: then the drag moves the farm.
-function sweepAction(target){if(adminView)return null;const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool,toolPicked):null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
+function sweepAction(target){if(adminView)return null;const p=state.plots[target.id],a=p?fieldTapAction(p,farmNow(),selectedTool,toolPicked):null;if(firstHarvestOnly()&&a!=='harvest')return null;return a==='plant'||a==='harvest'||a==='water'||a==='tend'?a:null;}
 function startSweep(action){
  const run={action,handle:client.sweep(action,selectedCrop),before:progressionSnapshot(state),medals:medalsWaiting(state),level:levelProgress(state).level,count:0,tilt:Math.abs(pointerDx)>1.5?(pointerDx<0?.55:-.55):0,flights:[]};
  // With a mouse the tool is in the hand from the first field on (the cursor itself hides meanwhile).
@@ -2252,11 +2258,12 @@ function measureVillage(spots,margin=26){
 }
 // World II's props, landmarks and the Village Fields (Oct 2026, village-scene.js) arrive after the village is on screen, like the farm's
 // extra scenery: the trip is not slower, and if any of it fails the village simply shows without it.
-let villageGroup=null,villageExtras=null;
+let villageGroup=null,villageExtras=null,fieldStatus=null,villageMillRotor=null,villageMillSpeed=0;
 async function addVillageExtras(){
  try{
   if(harbourWorld)return;
-  const {loadVillageExtras,createVillageFields}=await import('./village-scene.js');
+  const {loadVillageExtras,createVillageFields,villageFieldStatus,villageMillSails}=await import('./village-scene.js');fieldStatus=villageFieldStatus;
+  try{villageMillRotor=villageMillSails(villageGroup);}catch(error){console.warn('The Village Windmill\'s sails stay still.',error);}
   villageExtras=await loadVillageExtras(villageGroup);scene.add(villageExtras.group);
   // The Fields' lid (11 Oct 2026, the owner's review: only a tap by their name, at the plot's south-west corner, opened them) takes the
   // place of their block on their place: a tap anywhere on the plot finds the place as a tap on the block did, and it shows, greys and
@@ -2275,6 +2282,11 @@ function syncVillageExtras(){
  for(const [key,mesh] of villageExtras.places)mesh.visible=state.buildings[key]?.built===true;
  const fields=state.buildings.villagefields?.built===true;
  villageExtras.fields?.show(crop=>fields&&recipeUnlocked(state,`sow${crop}`));
+}
+// The Village Fields' crops grow with their batches (28 Oct 2026, village-scene.js grow): on load and in the half-second tick.
+function growVillageFields(){
+ const f=villageExtras?.fields;if(!f?.grow||!fieldStatus)return;
+ if(f.grow(fieldStatus(productionJobs(state.buildings.villagefields),farmNow()),{reducedMotion}))renderer.shadowMap.needsUpdate=true;
 }
 // "Show me" on the golden brief (Oct 2026): the village's normal view, moved so the place is in the middle (as far as the mountains let
 // it: resize keeps every view inside them), and its name lights up for a moment. On an upright phone the Lumber Camp across the lake
@@ -2673,7 +2685,7 @@ function frame(now){
  // frames' work, so it is drawn again only when the farm changed (updateUI, a field, a building, the layout, the sun's turn, a crop that
  // moves) and else every SHADOWS_EVERY for the crops that grow; what walks has a soft shadow of its own (soft-shadow.js).
  if(renderer.shadowMap.needsUpdate)lastShadows=now;
- if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();if(now-lastShadows>SHADOWS_EVERY){renderer.shadowMap.needsUpdate=true;lastShadows=now;}lastTick=now;}
+ if(now-lastTick>500){if(productionSounds.check(state.buildings,farmNow()))farmAudio.play('ready');if(villageWorld)growVillageFields();plots.forEach((_,i)=>drawCrop(i));positionLabels();positionBuildingLabels();economy.tick();retention.tick();growth.tick();boosts.tick();rookie.tick();activities.tick();beginner?.tick();atmosphere?.tick();syncVillageExtras();villageArrivals(now);icons();if(now-lastShadows>SHADOWS_EVERY){renderer.shadowMap.needsUpdate=true;lastShadows=now;}lastTick=now;}
  // Phones, tablets and the apps (13 Oct 2026, Android vitals): under a window opened with showModal the farm is drawn once a second,
  // not 30 times (public/windows.js farmRests); the 500 ms tick above still runs, so the windows' own timers keep going.
  const drawGap=now-lastDraw;if(farmRests(handheld||mobileLayout.matches,now-lastDraw,modalOpen))return;lastDraw=now;
@@ -2682,7 +2694,9 @@ function frame(now){
  if(!reducedMotion){familyFlag?.tick(now/1000);
   // The sails turn only while the Windmill is making something: they pick up speed and slow down again gently.
   if(windmillRotor){const busy=buildingBusy('windmill');windmillSpeed+=((busy?.28:0)-windmillSpeed)*Math.min(1,dt*.8);windmillRotor.rotation.z-=dt*windmillSpeed;}
-  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(cropMotion?.animate()){cropsMoving=true;if(now-lastShadows>CROP_SHADOWS){renderer.shadowMap.needsUpdate=true;lastShadows=now;}}else if(cropsMoving){cropsMoving=false;renderer.shadowMap.needsUpdate=true;lastShadows=now;}
+  // The Village Windmill's sails the same way (28 Oct 2026, village-scene.js villageMillSails); they face along x, so they turn about it.
+  if(villageMillRotor){const busy=buildingBusy('villagemill');villageMillSpeed+=((busy?.28:0)-villageMillSpeed)*Math.min(1,dt*.8);villageMillRotor.rotation.x-=dt*villageMillSpeed;}
+  const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(villageExtras?.fields?.animate?.())renderer.shadowMap.needsUpdate=true;if(cropMotion?.animate()){cropsMoving=true;if(now-lastShadows>CROP_SHADOWS){renderer.shadowMap.needsUpdate=true;lastShadows=now;}}else if(cropsMoving){cropsMoving=false;renderer.shadowMap.needsUpdate=true;lastShadows=now;}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
  renderer.render(scene,camera);
@@ -2929,7 +2943,8 @@ async function init(){
   farmInView?.();
   // A brand-new farm (6 Oct 2026): the sickle shows by itself where to sweep, as Show me does, until the first harvest. 11% of new farmers
   // tapped growing wheat or an empty field instead, got no harvest and left.
-  if(!villageWorld&&!adminView&&!(state.stats.harvested>0)&&beginnerProgress(state).find(q=>q.current)?.id==='harvest')firstBasketGhost();
+  // With the Harvest tool in the hand (28 Oct 2026): Plant was chosen and the first step says harvest.
+  if(!villageWorld&&!adminView&&!(state.stats.harvested>0)&&beginnerProgress(state).find(q=>q.current)?.id==='harvest'){setTool('harvest',false);firstBasketGhost();}
  // Oct 2026: the comeback chest is a row of its own above the gift; `current` is both as they are when the card really opens (it waits
  // for other dialogs), so one collected in Today meanwhile is not offered twice.
  // 17 Oct 2026: Join again, for a farmer who left their family for being away too long (the family action, as in the Family window).

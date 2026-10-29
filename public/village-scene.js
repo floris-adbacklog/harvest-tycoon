@@ -4,6 +4,7 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {sharePalette,paletteImage,download} from './model-atlas.js';
 import {wildflowerGeometry,wildflowerMaterial} from './scene-polish.js';
+import {growthStage,hop} from './crop-growth.js';
 
 // World II, The Village (30 Sep 2026): the village of the ITHappy Studios Village pack, as its own scene. One GLB holds every model
 // once (meshopt-compressed, one shared palette texture) and a layout says where each stands (scripts/build-village.mjs); each model
@@ -461,6 +462,7 @@ export async function createVillageFields(village){
    if(part.bloom!=null){
     mesh=new THREE.InstancedMesh(wildflowerGeometry(),wildflowerMaterial(),list.length);const colour=new THREE.Color(part.bloom);
     list.forEach((s,i)=>{mesh.setMatrixAt(i,m.compose(at.set(s.x,root(s.x,s.z)+lift+(part.lift??0),s.z),q.setFromAxisAngle(up,s.yaw),size.set(s.size,s.size,s.size)));mesh.setColorAt(i,colour);});
+    mesh.userData.bases=list.map(s=>({x:s.x,y:root(s.x,s.z)+lift+(part.lift??0),z:s.z,yaw:s.yaw,w:s.size,h:s.size}));mesh.userData.bloom=true;
    }else{
     const {geometry,material}=unitModel(models.get(part.model),part.bare),wide=part.wide??1;
     if(part.color!=null){material.map=null;material.color.setHex(part.color);}
@@ -468,6 +470,7 @@ export async function createVillageFields(village){
     if(part.sky){const normal=geometry.getAttribute('normal');for(let i=0;i<normal.count;i++)normal.setXYZ(i,0,1,0);}
     mesh=new THREE.InstancedMesh(geometry,material,list.length);
     list.forEach((s,i)=>mesh.setMatrixAt(i,m.compose(at.set(s.x,root(s.x,s.z)+lift,s.z),q.setFromAxisAngle(up,s.yaw),size.set(s.size*wide,s.size,s.size*wide))));
+    mesh.userData.bases=list.map(s=>({x:s.x,y:root(s.x,s.z)+lift,z:s.z,yaw:s.yaw,w:s.size*wide,h:s.size}));mesh.userData.bloom=part.color!=null;   // the lavender's lilac spikes are its flowers
    }
    mesh.name=`fields-${crop}-${n}`;mesh.receiveShadow=true;mesh.computeBoundingSphere();rows.add(mesh);
   }
@@ -485,6 +488,52 @@ export async function createVillageFields(village){
   }
   group.add(rows);strips.set(crop,rows);
  }
+ // Growing with what is sown (28 Oct 2026, the owner: World II's crops should feel like the farm's): each strip shows its crop as the
+ // Fields' batches of it stand (villageFieldStatus): bare soil with nothing sown, then sprouts that grow in the farm's steps
+ // (crop-growth.js growthStage, a small hop at each), and the full crop with its flowers (the wildflowers and the lavender's lilac spikes)
+ // when a batch is ready (the farm's ripe wiggle).
+ // Collecting picks the plants (they go down into the soil, as a harvested field's do on the farm), and a batch still growing behind it
+ // comes up again from a sprout. Looks only: farm-state.js keeps the rules.
+ const looks=new Map(),moving=new Map(),clockNow=()=>performance.now()/1000;
+ const draw=(crop,stage,scale,{up:u=1,wide=1,sink=0}={})=>{
+  const rows=strips.get(crop);
+  for(const mesh of rows.children){
+   const bases=mesh.userData.bases;if(!bases)continue;
+   const shown=stage!=='empty'&&(!mesh.userData.bloom||stage==='ripe');mesh.visible=shown;if(!shown)continue;
+   bases.forEach((b,i)=>mesh.setMatrixAt(i,m.compose(at.set(b.x,b.y-sink*b.h,b.z),q.setFromAxisAngle(up,b.yaw),size.set(b.w*scale*wide,b.h*scale*u,b.w*scale*wide))));
+   mesh.instanceMatrix.needsUpdate=true;
+  }
+ };
+ // status: {crop: {stage, grown}}; reducedMotion: no hops and no picking. True when the picture changed (the shadows are drawn again).
+ const grow=(status,{reducedMotion=false}={})=>{
+  let changed=false;const t=clockNow();
+  for(const crop of strips.keys()){
+   const now=status?.[crop]??{stage:'empty',grown:0},was=looks.get(crop),scale=growthStage(now.grown,now.stage==='ripe').scale;
+   if(was&&was.stage===now.stage&&Math.abs(was.scale-scale)<.01)continue;
+   looks.set(crop,{stage:now.stage,scale});changed=true;
+   const kind=!was||reducedMotion?null:was.stage==='ripe'&&now.stage!=='ripe'?'pick':was.stage===now.stage?null:was.stage==='empty'?'plant':now.stage==='ripe'?'ripe':'stage';
+   if(kind)moving.set(crop,{kind,start:t,from:was});else{moving.delete(crop);draw(crop,now.stage,now.stage==='empty'?0:scale);}
+  }
+  return changed;
+ };
+ // Each frame while something hops or is picked. True while it moves.
+ const animate=()=>{
+  if(!moving.size)return false;const t=clockNow();
+  for(const [crop,move] of moving){
+   const look=looks.get(crop),elapsed=t-move.start;
+   if(move.kind==='pick'){
+    // The picked crop goes down into the soil in half a second; then what grows behind it (if anything) comes up as a new planting.
+    const k=Math.min(1,elapsed/.5);
+    if(k<1){draw(crop,move.from.stage,move.from.scale,{up:1-k*.8,sink:k*.4});continue;}
+    if(look.stage==='empty'){moving.delete(crop);draw(crop,'empty',0);}else moving.set(crop,{kind:'plant',start:t});
+    continue;
+   }
+   const h=hop(move.kind,elapsed);
+   if(!h){moving.delete(crop);draw(crop,look.stage,look.scale);continue;}
+   draw(crop,look.stage,look.scale*h.grow,{up:h.up,wide:h.wide});
+  }
+  return true;
+ };
  // The tap target (11 Oct 2026, the owner's review: only a tap by the name, at the plot's south-west corner, opened the Fields): an
  // invisible lid FIELD_LID over the ground across the whole fenced plot, over the fence and the tallest crop, with sides down to the
  // ground. game.js hangs it on the Fields' place, so a tap anywhere on the soil, the crops or the fence opens their window, as a tap on a
@@ -495,5 +544,38 @@ export async function createVillageFields(village){
  const tap=fieldTap(village,p,ground);
  // The pack's bare plot goes once the new one stands (if any of the above failed, it stays as it was).
  const bare=village.getObjectByName('landscape_004');if(bare)bare.visible=false;
- return {group,show:open=>{for(const [crop,rows] of strips)rows.visible=open(crop);},tap};
+ return {group,show:open=>{for(const [crop,rows] of strips)rows.visible=open(crop);},tap,grow,animate};
+}
+// The Village Windmill's sails (28 Oct 2026, the owner: they turn while it makes something, as the farm's Windmill's do). The pack's mill
+// (Building_016, one model) has its sails in the same mesh as its tower: they are the triangles in the thin plane at its front (the
+// last 4.5% of its length along x), so they are cut out into a mesh of their own (the same vertices, its own index) that turns about the
+// middle of the sails. Null when the mill is not there.
+export function villageMillSails(village){
+ let mill=null;village.traverse(o=>{if(!mill&&o.isInstancedMesh&&o.name==='Building_016')mill=o;});
+ if(!mill||mill.count<1||!mill.geometry.index)return null;
+ const g=mill.geometry,pos=g.getAttribute('position'),index=g.index;g.computeBoundingBox();
+ const b=g.boundingBox,front=b.max.x-.045*(b.max.x-b.min.x),keep=[],sails=[];
+ for(let i=0;i<index.count;i+=3){const tri=[index.getX(i),index.getX(i+1),index.getX(i+2)];(tri.every(v=>pos.getX(v)>=front)?sails:keep).push(...tri);}
+ if(!sails.length||!keep.length)return null;
+ const box=new THREE.Box3(),v=new THREE.Vector3();for(const k of sails)box.expandByPoint(v.fromBufferAttribute(pos,k));
+ const hub=box.getCenter(new THREE.Vector3()),cut=new THREE.BufferGeometry();
+ for(const [name,attribute] of Object.entries(g.attributes))cut.setAttribute(name,attribute);
+ cut.setIndex(sails);g.setIndex(keep);
+ const blades=new THREE.Mesh(cut,mill.material);blades.position.copy(hub).negate();blades.castShadow=mill.castShadow;blades.receiveShadow=mill.receiveShadow;blades.name='villagemill-sails';
+ const rotor=new THREE.Group();rotor.position.copy(hub);rotor.add(blades);
+ const at=new THREE.Matrix4();mill.getMatrixAt(0,at);
+ const holder=new THREE.Group();holder.matrixAutoUpdate=false;holder.matrix.copy(mill.matrix).multiply(at);holder.add(rotor);mill.parent.add(holder);
+ return rotor;
+}
+// How each crop of the Village Fields stands (28 Oct 2026): its batches (productionJobs of the Fields) at now. A ready batch shows the
+// full crop; else the batch furthest along grows (0 to 1 of its time); none: bare soil.
+export function villageFieldStatus(jobs,now){
+ const out={};
+ for(const crop of Object.keys(VILLAGE_FIELD_CROPS)){
+  const mine=(jobs??[]).filter(j=>j?.recipe===`sow${crop}`);
+  if(!mine.length)out[crop]={stage:'empty',grown:0};
+  else if(mine.some(j=>j.readyAt<=now))out[crop]={stage:'ripe',grown:1};
+  else{const grown=Math.max(...mine.map(j=>Math.min(1,Math.max(0,(now-j.startedAt)/Math.max(1,j.readyAt-j.startedAt)))));out[crop]={stage:growthStage(grown,false).stage,grown};}
+ }
+ return out;
 }

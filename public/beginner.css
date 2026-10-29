@@ -139,6 +139,9 @@
 #stock-count.is-worth{display:flex;align-items:center;gap:2px;width:auto;min-width:0;padding:0 6px 0 2px;border-radius:999px;white-space:nowrap;background:#fff1c4;color:#6b4712}
 #stock-count.is-worth .game-art{width:14px;height:14px;flex:none}
 @media(prefers-reduced-motion:reduce){.side-tool.guide-next>span{animation:none}}
+/* 28 Oct 2026 (the CrazyGames launch: two in three of its new farmers harvested and never found the Market): on a computer the lit Market
+   is half again as big until the first sale; in a small window it was a 28 px icon at the edge. */
+@media(min-width:901px) and (min-height:551px),(min-width:901px) and (pointer:fine){#market-button.guide-next{scale:1.5;transform-origin:left top;margin:2px 0 20px 4px;position:relative;z-index:8}}
 /* Quiet until the first sale (13 Oct 2026, beginner-ui.js): only the Market carries a mark. Quests' number and the "!" on Today and More
    wait for the first sale, and before the first harvest the Market shows no stock number (starter stock that cannot be sold yet). */
 #game.first-sale-waits :is(#task-dot,#today-dot,#more-dot),#game.first-harvest-waits #stock-count{display:none}
@@ -198,7 +201,8 @@ html.calm-start .tool-dock .tools,html.calm-start .tool-dock>.tools{grid-templat
 .spotlight.is-all{background:#241c0c4d}
 .spotlight-hole{position:absolute;border-radius:24px;box-shadow:0 0 0 200vmax #241c0c4d,inset 0 0 0 3px #ffe08199;transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
 .spotlight[hidden],.spotlight-hole[hidden],.spotlight-skip[hidden]{display:none}
-.spotlight-skip{position:absolute;z-index:7;top:calc(var(--mobile-top,96px) + 62px);left:50%;translate:-50% 0;min-height:34px;padding:6px 14px;border:1px solid #e6ddd1;border-radius:999px;background:#fffdf5e6;color:#5b4520;font:700 13px/1 'DM Sans',sans-serif;cursor:pointer}
+/* 28 Oct 2026 (the CrazyGames launch): bottom left, small, not over the place to tap or the guide's card. */
+.spotlight-skip{position:absolute;z-index:7;bottom:calc(var(--mobile-bottom,0px) + 12px);left:12px;min-height:28px;padding:4px 10px;border:1px solid #e6ddd1;border-radius:999px;background:#fffdf5cc;color:#7a6440;font:700 11px/1 'DM Sans',sans-serif;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.spotlight-hole{transition:none}}
 
 /* ---- The guide's line on a phone shows the way to its prize (24 Oct 2026, the owner: "De beginner guide moet duidelijker zijn", 1+2+3) ----
