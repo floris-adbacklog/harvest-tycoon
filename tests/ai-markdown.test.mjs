@@ -11,7 +11,7 @@ test('addresses: each page has one copy beside it, and its built file is the one
  assert.equal(markdownPath('/'),'/index.md');assert.equal(markdownPath('/es/'),'/es/index.md');
  assert.equal(markdownPath('/app'),'/app.md');assert.equal(markdownPath('/es/support'),'/es/support.md');
  assert.equal(markdownPath('/wiki'),'/wiki.md');assert.equal(markdownPath('/wiki/crops'),'/wiki/crops.md');
- assert.equal(pageFile('/'),'index.html');assert.equal(pageFile('/es/'),'es/index.html');assert.equal(pageFile('/wiki'),'wiki/index.html');
+ assert.equal(pageFile('/'),'index.html');assert.equal(pageFile('/es/'),'es/index.html');assert.equal(pageFile('/wiki'),'wiki/index.html');assert.equal(pageFile('/guides'),'guides/index.html');assert.equal(pageFile('/guides/earn-coins-fast'),'guides/earn-coins-fast.html');
  assert.equal(pageFile('/wiki/crops'),'wiki/crops.html');assert.equal(pageFile('/es/app'),'es/app.html');
 });
 

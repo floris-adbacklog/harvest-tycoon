@@ -33,6 +33,8 @@ if(!discord.includes(`content="${version}"`))throw new Error('discord.html lost 
 writeFileSync('dist-static/discord.html',discord);
 // The public farm wiki (/wiki), made from the game rules on every deploy.
 const {buildWiki}=await import('./build-wiki.mjs');await buildWiki('dist-static');
+// The guides (/guides, 29 Oct 2026): five guides and what makes a good farming game, in the wiki's page, into the sitemap too.
+const {buildGuides}=await import('./build-guides.mjs');buildGuides('dist-static');
 // The App Store badges on every page (7 Oct 2026): to the iPhone app's App Store page once Apple has approved it (APP_STORE_URL in
 // public/game-links.js); until then they stay on the app page, and the pages say the iPhone app is coming soon (8 Oct 2026).
 const {APP_STORE_URL}=await import('../public/game-links.js');const {applyAppStore}=await import('./app-store-links.mjs');

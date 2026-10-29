@@ -132,6 +132,18 @@
       "destination": "/wiki/:topic.html"
     },
     {
+      "source": "/guides",
+      "destination": "/guides/index.html"
+    },
+    {
+      "source": "/guides/",
+      "destination": "/guides/index.html"
+    },
+    {
+      "source": "/guides/:slug([a-z-]+)",
+      "destination": "/guides/:slug.html"
+    },
+    {
       "source": "/:lang(cs|de|es|fr|id|hu|nl|pt|tr|ru|uk|hi|ja|ar|zh)/",
       "destination": "/:lang/index.html"
     },
