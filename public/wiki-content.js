@@ -139,7 +139,8 @@ const table=(head,rows,cls='')=>`<div class="wiki-table-wrap"><table class="wiki
 // nobody is signed in, the name is plain text.
 const ADMINS=Object.freeze({gerard:{id:'c1194a46-dfdf-47f7-abd2-c59279681702',name:'Gerard'},tony:{id:'e8e4c7c3-c06f-408c-9fe6-1cfa7d2b3ae8',name:'Tony'}});
 const adminName=(h,a)=>h.level!=null?`<a href="#" class="wiki-profile-link" role="button" data-player-profile="${a.id}" translate="no">${a.name}</a>`:`<span translate="no">${a.name}</span>`;
-const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong><p>${text}</p></div></li>`).join('')}</ul>`;
+// A fact's text is one paragraph, or a list of its own (a checklist, 29 Oct 2026: Who can share).
+const facts=list=>`<ul class="wiki-facts">${list.map(([picture,title,text])=>`<li>${art(picture)}<div><strong>${title}</strong>${String(text).startsWith('<ul')?text:`<p>${text}</p>`}</div></li>`).join('')}</ul>`;
 
 export const cropLevel=key=>CROP_LEVELS[key]??CROPS[key].minLevel??1;
 export const buildingLevel=key=>BUILDING_LEVELS[key]??BUILDINGS[key].minLevel??1;
@@ -560,7 +561,9 @@ const BODIES={
   ]))
   // Family Sharing's rules (29 Oct 2026, the owner: a heading of their own). The numbers are social-ui.js's, which harvest_social checks
   // too: 3 a day of each, one of each to the same farmer, 3 of each received, and only World I's own crops and goods.
-  +section('Sharing goods and coins',`<p>${h.lvl(10)} Family members help each other every day from the Sharing tab of your Farm family. Sharing opens when you are level 10, your farm is 48 hours old and you have been in the family for 24 hours. The farmer you share with needs the same. Everything comes from your own farm and arrives right away.</p>`+facts([
+  +section('Sharing goods and coins',`<p>${h.lvl(10)} Family members help each other every day from the Sharing tab of your Farm family. Everything comes from your own farm and arrives right away.</p>`+facts([
+   // Who can share first, as a checklist (29 Oct 2026, the owner: "het gaat vooral om wie mag delen"); harvest_social checks all four.
+   ['family-members','Who can share',`<ul class="wiki-checks"><li>You are level 10 or higher.</li><li>Your farm is at least 48 hours old.</li><li>You have been in this family for at least 24 hours.</li><li>The farmer you help or send a gift to must meet all three too.</li></ul>`],
    ['coins','Give coins',`Help gives a member your level × 25 coins (level 10: ${number(helpCoins(10))}, level 30: ${number(helpCoins(30))}, level 50: ${number(helpCoins(50))}). They come out of your coins and the member gets all of them.`],
    ['gift','Send a gift',`Send any crop or good from your storage: up to 5 for every 10 levels (level 10: ${maxShare(10)}, level 30: ${maxShare(30)}, level 50: ${maxShare(50)}).`],
    ['letter','Ask for goods',`Once a day, ask your family for up to that many of one crop or good. You have one request open at a time. It stays open for ${REQUEST_DAYS} days, or until it is full. Everyone adds 1, 5 or all they have, as often as they like, and every part arrives at once.`],

@@ -446,3 +446,4 @@ html[data-portal] .wiki-copy{display:none!important}
 .guide-list a:hover{border-color:#cfdcb9}
 .guide-list strong{font:700 17px/1.25 'Outfit',sans-serif;color:#3d3a26}
 .guide-list span{color:#5d5641;font-size:14px;line-height:1.5}
+.wiki-facts .wiki-checks{display:block;margin:4px 0 0;padding:0 0 0 18px;list-style:disc;color:#5d5641;font-size:13.5px;line-height:1.5}.wiki-facts .wiki-checks li{display:list-item;padding:0;margin:2px 0 0;border:0;border-radius:0;background:none;box-shadow:none}
