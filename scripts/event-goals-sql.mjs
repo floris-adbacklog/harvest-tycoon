@@ -101,6 +101,8 @@ begin
 end `;
 export const HOUR_PICK_BODY=hourPickBody(poolsWithTitles(EVENT_HOUR_POOLS,EVENT_GOAL_TITLES));
 export const HOUR_PICK_BODY_ONE_CROP=hourPickBody(poolsWithTitles(HOUR_POOLS_NOW,TITLES_NOW));
+// The same pick with the harbour's five leagues too (29 Oct 2026, EVENT_LEAGUES 12..16): scripts/harbour-leagues-sql.mjs.
+export const HOUR_PICK_BODY_HARBOUR=hourPickBody(poolsWithTitles(ALL_POOLS_NOW,TITLES_NOW));
 export const HOUR_PICK_SQL=`create or replace function public.harvest_event_pick(n bigint)
  returns jsonb language plpgsql stable set search_path to '' as $function$${HOUR_PICK_BODY}$function$;`;
 export const HOUR_PICK_SQL_ONE_CROP=`create or replace function public.harvest_event_pick(n bigint)

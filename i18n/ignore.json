@@ -191,5 +191,8 @@
  "{0} is not the body read on 27 Oct 2026 (md5 {1} instead of {2})",
  "{0} is not the body read on 27 Oct 2026: read the live definition before running this file",
  "{0}: the patched body is not the one expected (md5 {1})",
- "varying vec3 vMeadow;"
+ "varying vec3 vMeadow;",
+ "a volatility changed",
+ "league {0} of the pick is not a harbour goal: {1}",
+ "the league check is not 0..16"
 ]
