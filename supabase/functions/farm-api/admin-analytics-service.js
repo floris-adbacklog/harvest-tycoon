@@ -219,12 +219,23 @@ export async function handleAdminPlayers({admin,user,now=Date.now(),page=1000}){
 const ACTIVITY=[['harvested','Crops harvested'],['planted','Crops planted'],['watered','Crops watered'],['tended','Crops cared for'],['produced','Goods made'],['sold','Items sold'],
  ['deliveries','Orders delivered'],['dailies','Daily tasks'],['chores','Farm chores'],['activity_rounds','Helping hand rounds'],['tractor','Tractor fields'],['upgrades','Upgrades'],
  ['expansions','Field expansions'],['projects','Estate projects'],['boosts_used','Boosts used'],['pets_patted','Pets patted']];
+// Where one farmer came from (29 Oct 2026): the same first-touch rule as Growth's "Where new farmers come from" (admin_source_stats,
+// supabase/player-attribution.sql), so the farmer's page and Growth name it alike: our link (src), a partner's link, a friend's invite,
+// utm tags, an ad click id, the website they came from, else direct; no row at all is "unknown". The details beside it say what was
+// recorded on the first visit.
+export function farmerSource(a,partnerCode=null,invited=false){
+ const key=a?.src?`src:${a.src}`:partnerCode?`partner:${partnerCode}`:invited?'invite':a?.utm_source?`utm:${String(a.utm_source).toLowerCase()}${a.utm_campaign!=null?` / ${a.utm_campaign}`:''}`
+  :a?.has_fbclid?'ad:meta':a?.has_ttclid?'ad:tiktok':a?.has_gclid?'ad:google':a?.referrer_host?`site:${a.referrer_host}`:a?'direct':'unknown';
+ if(!a)return {key};
+ return {key,utm:[a.utm_source,a.utm_medium,a.utm_campaign,a.utm_content].some(v=>v!=null)?{source:a.utm_source,medium:a.utm_medium,campaign:a.utm_campaign,content:a.utm_content}:null,
+  referrer:a.referrer_host??null,landing:a.landing_path??null,inApp:a.in_app??null,clicks:[a.has_fbclid&&'fbclid',a.has_ttclid&&'ttclid',a.has_gclid&&'gclid'].filter(Boolean),at:a.created_at??null};
+}
 export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
  if(!(await isStaff(admin,user)))return respond(user,{error:'Not authorized.'},403);
  if(!/^[0-9a-f-]{36}$/i.test(String(playerId??'')))return respond(user,{error:'Unknown farmer.'},400);
  const owner=isSuperadmin(user),id=String(playerId);
  const quiet=promise=>Promise.resolve(promise).then(found=>found?.error?null:found).catch(()=>null);
- const [account,stat,farm,purchases,eventsJoined,eventsFinished,messages,reports,sanction,invitedBy,invited,inviteCode,membership,authUser]=await Promise.all([
+ const [account,stat,farm,purchases,eventsJoined,eventsFinished,messages,reports,sanction,invitedBy,invited,inviteCode,membership,authUser,attribution,partner]=await Promise.all([
   admin.rpc('admin_player_accounts',{p_player:id}),
   admin.from('player_stats').select('player_id,username,level,currency,last_active_at,vip_expires_at,avatar_id,events_finished').eq('player_id',id).maybeSingle(),
   admin.from('player_farms').select('state').eq('player_id',id).maybeSingle(),
@@ -241,7 +252,10 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   quiet(admin.from('player_invite_codes').select('closed_at').eq('player_id',id).maybeSingle()),
   quiet(admin.from('family_members').select('family_id,role').eq('player_id',id).is('left_at',null).limit(1)),
   // The email address, for the admin only (to change it for a farmer who signed up with a typo, admin-service.js handleAdminEmail).
-  owner?quiet(Promise.resolve().then(()=>admin.auth.admin.getUserById(id))):null
+  owner?quiet(Promise.resolve().then(()=>admin.auth.admin.getUserById(id))):null,
+  // Where they came from (29 Oct 2026, the owner: on the farmer's own page too, not only in Growth), for the admin only like Growth.
+  owner?quiet(admin.from('player_attribution').select('src,utm_source,utm_medium,utm_campaign,utm_content,referrer_host,has_fbclid,has_ttclid,has_gclid,in_app,landing_path,created_at').eq('player_id',id).maybeSingle()):null,
+  owner?quiet(admin.from('partner_referrals').select('code').eq('player_id',id).maybeSingle()):null
  ]);
  for(const found of [account,stat,farm])if(found.error)throw found.error;
  const a=account.data?.[0];if(!a)return respond(user,{error:'Unknown farmer.'},404);
@@ -270,6 +284,7 @@ export async function handleAdminPlayer({admin,user,playerId,now=Date.now()}){
   language:a.language??null,
   // Which accounts share the network: the admin only (22 Oct 2026, the owner: moderators must not see second accounts).
   ...(owner?{sameNetwork:!a.ip?null:shared.map(row=>({playerId:row.player_id,username:row.username??null,everPlayed:row.username!=null})),email:authUser?.data?.user?.email??null,country:a.country??null,ip:a.ip??null,device:deviceName(a.device),userAgent:a.device??null,seenAt:a.seen_at??null,
+   source:farmerSource(attribution?.data??null,partner?.data?.code??null,inviter!=null),
    starter:{offeredAt:num(state?.starterOffer?.unlockedAt)||null,bought:state?.starterPackClaimed===true},
    purchases:(purchases?.data??[]).map(p=>({pack:p.pack,status:p.status,euros:num(p.amount_cents)/100,diamonds:num(p.diamonds),test:!p.livemode,createdAt:p.created_at}))}:{})};
  return respond(user,{player,owner});

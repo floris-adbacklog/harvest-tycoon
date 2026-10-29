@@ -72,6 +72,14 @@ const PURCHASE={credited:'Paid',test_paid:'Test payment',pending:'Checkout opene
 // The Halloween Pass (Oct 2026) holds no diamonds of its own: it goes by its name.
 const pack=id=>id==='starter'?'Starter Pack':id==='offer'?'Special offer':id==='pass'?'Halloween Pass':id==='season'?'Season Pass':`${number(id)} diamonds`;
 const fact=(label,value)=>`<div><dt>${label}</dt><dd>${value}</dd></div>`;
+// One farmer's source (29 Oct 2026): the name Growth gives it, then the utm tags, the website, the page they landed on, the app they
+// opened the link in and the ad click ids, as the first visit recorded them.
+function sourceFact(s){
+ const {label,note}=sourceLabel(s?.key),u=s?.utm;
+ const details=[note,u?`utm ${[u.source,u.medium,u.campaign,u.content].map(v=>v??'–').join(' / ')}`:'',s?.referrer?`from ${s.referrer}`:'',s?.landing&&s.landing!=='/'?`landed on ${s.landing}`:'',
+  s?.inApp?`in the ${s.inApp} app`:'',s?.clicks?.length?s.clicks.join(', '):''].filter(Boolean);
+ return `${esc(label)}${details.length?` <small>(${esc(details.join('; '))})</small>`:''}`;
+}
 export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
  const since=iso=>time(iso)==null?'—':`${esc(dateTime(iso))} <small>(${esc(ago(iso,now))})</small>`;
  const next=guideSteps[p.guide],sameNetwork=p.sameNetwork;
@@ -87,6 +95,8 @@ export function playerDetail(p,{guideSteps=[],now=Date.now(),owner=false}={}){
   fact('Days played',`${number(p.daysPlayed)} <small>(streak ${number(p.streak)}, best ${number(p.bestStreak)})</small>`),
   ...('ip' in p?[fact('Country',esc(country(p.country)??'Not known yet')),fact('IP address',p.ip?esc(p.ip):'—'),
    fact('Device',p.device?`<span title="${esc(p.userAgent??'')}">${esc(p.device)}</span>`:'—')]:[]),
+  // Where they came from (29 Oct 2026, the admin only): named as in Growth (sourceLabel), with what the first visit recorded.
+  ...('source' in p?[fact('Came from',sourceFact(p.source))]:[]),
   ...!('sameNetwork' in p)?[]:[fact('Same network as',!sameNetwork?'Not known':sameNetwork.length?sameNetwork.map(o=>`<button type="button" class="admin-link" data-player="${esc(o.playerId)}">${esc(name(o))}</button>`).join(', '):'Nobody else')]
  ].join('');
  const progress=[
