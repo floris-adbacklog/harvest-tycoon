@@ -79,7 +79,7 @@ test('admin-view.css only acts in the admin view and hides the play-only parts, 
  const selectors=[...css.replace(/@media[^{]*\{/g,'').matchAll(/([^{}]+)\{[^}]*\}/g)].flatMap(([,s])=>s.split(/,(?![^(]*\))/).map(x=>x.trim()).filter(Boolean));
  assert.ok(selectors.length>20);
  for(const s of selectors)assert.ok(s.startsWith('html[data-admin-view]'),`unscoped: ${s}`);
- for(const part of ['.coin-counter','#diamond-button','#rookie-button','#pass-button','#starter-pack-chip','#offer-chip','.beginner-card','#beginner-mobile','.tool-dock','.context-hint','.bottom-note','.touch-instructions','#active-boosts','#more-dot','[data-menu-action="all-quests-mobile"]'])assert.ok(css.includes(part),part);
+ for(const part of ['.coin-counter','#rookie-button','#pass-button','#starter-pack-chip','#offer-chip','.beginner-card','#beginner-mobile','.tool-dock','.context-hint','.bottom-note','.touch-instructions','#active-boosts','#more-dot','[data-menu-action="all-quests-mobile"]'])assert.ok(css.includes(part),part);
  assert.doesNotMatch(css,/\.bottom-hud\{[^}]*display:none/);assert.doesNotMatch(css,/env\(safe-area-inset-bottom/);
  // My farm, How to play, Chat, Admin panel, More: in that order on a phone and on a computer.
  const order=['#farm-button','#admin-help-tool','#admin-chat-tool','#admin-admin-tool','#more-button'].map(id=>Number(new RegExp(`html\\[data-admin-view\\] ${id}\\{order:(\\d)\\}`).exec(css)?.[1]));
@@ -202,4 +202,15 @@ test('admins stay off every board and get no gifts; their Family window and invi
  assert.match(api,/const showcase=isAdminAccount\(user\)&&\['family','family_profile','invite'\]\.includes\(body\.operation\);\n\s+const state=showcase\?createShowcaseFarm\(now,\{family:/);
  const s=createShowcaseFarm(NOW);assert.equal(s.visitors.current,null,'no visitor to serve');
  const later=structuredClone(s);normalizeFarm(later,NOW+12*3600000);assert.equal(later.visitors.current,null);
+});
+
+// 29 Oct 2026, the owner ("ja alleen bekijken"): the shop opens in the admin view, every buy in it off.
+test('the admin view keeps the shop button and locks every buy in the shop', async ()=>{
+ const css=read('public/admin-view.css'),view=read('src/admin-view.js');
+ assert.doesNotMatch(css,/#diamond-button/,'the shop button stays');
+ const {SHOP_BUYS}=await import('../src/admin-view.js');
+ for(const sel of ['[data-diamond-pack]','[data-buy-boost]','[data-buy-coins]','[data-buy-village]','[data-buy-harbour]','[data-buy-vip]','#finish-one-crop','#finish-one-batch'])assert.ok(SHOP_BUYS.includes(sel),sel);
+ // Every buy button the shop draws is in the list.
+ const shop=read('public/boosts-ui.js');for(const [,attr] of shop.matchAll(/querySelectorAll\('\[(data-buy-[a-z]+|data-diamond-pack)\]'\)/g))assert.ok(SHOP_BUYS.includes(`[${attr}]`),attr);
+ assert.match(view,/event\.preventDefault\(\);event\.stopImmediatePropagation\(\);/);assert.match(view,/const shopWatch=lockShop\(\$\('boost-dialog'\),win\);/);
 });

@@ -1,7 +1,9 @@
 /* The admin view (3 Oct 2026, src/admin-view.js): only on an admin account's showcase farm, which src/game-cloud.js marks with
    data-admin-view before the page shows. Coins, diamonds and everything to buy or play step aside; the topbar shows the farmers online
-   and the open chat reports, the menu is My farm, How to play, Chat, Admin panel and More. Every rule starts with html[data-admin-view]. */
-html[data-admin-view] .resources>:is(.coin-counter,#diamond-button,#rookie-button,#pass-button,#season-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
+   and the open chat reports, the menu is My farm, How to play, Chat, Admin panel and More. Every rule starts with html[data-admin-view].
+   29 Oct 2026, the owner ("ja alleen bekijken"): the diamond button stays, so the shop with its Village and Harbour tabs can be looked at;
+   every buy in it is off (src/admin-view.js lockShop). */
+html[data-admin-view] .resources>:is(.coin-counter,#rookie-button,#pass-button,#season-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
 html[data-admin-view] :is(#starter-pack-button,#offer-button,#event-rail,#active-boosts,.beginner-card,#beginner-mobile,#next-goal-card,#next-goal-mobile,#next-goal-claim-mobile,.touch-instructions,#more-dot),
 html[data-admin-view] .bottom-hud>:is(.tool-dock,.context-hint,.bottom-note),
 html[data-admin-view] .mobile-menu-grid>:is([data-menu-action="all-quests-mobile"],#pass-menu-entry,#season-menu-entry,[data-menu-action="boosts-button"]){display:none!important}
@@ -57,3 +59,4 @@ html[data-admin-view] #admin-chat-tool em{min-width:20px;padding:0 4px;width:aut
 @media(max-width:340px){html[data-admin-view] .resources .admin-stat>.game-art{display:none}html[data-admin-view] .side-tools .side-tool b{font-size:10px}}
 /* The fields of the showcase without their little timers (3 Oct 2026): forty "1d" badges only cluttered a farm nobody plays on. */
 html[data-admin-view] .plot-label{display:none!important}
+html[data-admin-view] #boost-dialog .admin-shop-note{margin:0 0 12px;padding:9px 12px;border:2px solid #e3d4ba;border-radius:12px;background:#fff6e2;color:#6b5a32;font-size:13px;font-weight:700;text-align:center}

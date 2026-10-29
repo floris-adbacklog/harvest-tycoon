@@ -22,8 +22,20 @@ export function markAdminView(doc=document){
 // "37", or "–" while unknown or when it could not be read (a password session has no admin powers: the reports answer "Not authorized").
 export const statText=n=>Number.isFinite(n)?n.toLocaleString('en-US'):'–';
 const inTime=(ask,win)=>new Promise((resolve,reject)=>{const timer=win.setTimeout(()=>reject(new Error('No answer.')),ADMIN_WAIT_MS);Promise.resolve().then(ask).then(resolve,reject).finally(()=>win.clearTimeout(timer));});
+// The shop to look at (29 Oct 2026, the owner: "ja alleen bekijken"): every button that buys or spends in it (public/boosts-ui.js) is
+// off in the admin view, and a tap on one does nothing: no diamonds, no coins, no checkout. The tabs and the cards stay to look at.
+export const SHOP_BUYS='[data-diamond-pack],[data-buy-boost],[data-buy-coins],[data-buy-village],[data-buy-harbour],[data-buy-vip],#finish-one-crop,#finish-one-batch';
+export function lockShop(shop,win=window){
+ if(!shop)return null;
+ const lock=()=>{for(const b of shop.querySelectorAll(SHOP_BUYS)){if(!b.disabled)b.disabled=true;b.title='Admin view: look only';}
+  if(!shop.querySelector('.admin-shop-note')){const note=shop.ownerDocument.createElement('p');note.className='admin-shop-note';note.setAttribute('translate','no');note.textContent='Admin view: look only. Buying is off.';(shop.querySelector('.dialog-heading')??shop.firstElementChild)?.after(note);}};
+ shop.addEventListener('click',event=>{if(event.target.closest?.(SHOP_BUYS)){event.preventDefault();event.stopImmediatePropagation();}},true);
+ const watch=new win.MutationObserver(lock);watch.observe(shop,{childList:true,subtree:true});lock();
+ return watch;
+}
 export function startAdminView({bridge,doc=document,win=window}){
  const $=id=>doc.getElementById(id);
+ const shopWatch=lockShop($('boost-dialog'),win);
  // The admin's powers come with a Google session (src/admin-dashboard.js role); a password session has the view without them.
  const powers=()=>Boolean(win.harvestStaff?.role?.());
  // The topbar: two numbers in place of coins and diamonds. A tap opens the Admin dashboard there (src/admin-dashboard.js open); without
@@ -74,7 +86,7 @@ export function startAdminView({bridge,doc=document,win=window}){
  const dashboard=$('admin-dashboard-dialog'),onClose=()=>void refresh();dashboard?.addEventListener('close',onClose);
  const timer=win.setInterval(refresh,ADMIN_REFRESH_MS),onVisible=()=>{if(!doc.hidden)void refresh();};
  doc.addEventListener('visibilitychange',onVisible);
- win.addEventListener('pagehide',()=>{win.clearInterval(timer);watch.disconnect();doc.removeEventListener('visibilitychange',onVisible);dashboard?.removeEventListener('close',onClose);},{once:true});
+ win.addEventListener('pagehide',()=>{win.clearInterval(timer);watch.disconnect();shopWatch?.disconnect();doc.removeEventListener('visibilitychange',onVisible);dashboard?.removeEventListener('close',onClose);},{once:true});
  if(!hadPowers)void refresh();
  return {refresh,mirror};
 }
