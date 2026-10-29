@@ -27,6 +27,7 @@ import {currentSeason,seasonUpcoming,seasonPhase,seasonTotals,SEASON_POINTS,SEAS
 import {portal as portalAround,privacyContact} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
 import {wikiLink,parseWikiLink,wikiLinksIn} from './wiki-link.js';
+import {APP_STORE_URL} from './game-links.js';
 // A link to one spot of the wiki (Oct 2026): public/wiki-link.js, here too for whoever has the wiki at hand.
 export {wikiLink,parseWikiLink,wikiLinksIn};
 
@@ -163,6 +164,11 @@ const itemTarget=key=>CROPS[key]?['crops',`crop-${key}`]:HEIRLOOMS[key]?['estate
 // once notify-hourly's config says appPush; read from the page around the game when not given), else push reminders are left out too;
 // play, appStore: in the app, it sells through Google Play or the App Store (app 1.1, Oct 2026; read from the page when not given); web:
 // the Galaxy Store app, which sells through Stripe like the website (Oct 2026)}.
+// The two stores' badges (29 Oct 2026), as in the website's footers: Google Play with the wiki as its source, the App Store page without
+// its country (every visitor lands in their own store, scripts/app-store-links.mjs).
+const STORE_BADGES='<p class="wiki-stores">'
+ +'<a href="https://play.google.com/store/apps/details?id=com.harvesttycoon.app&amp;referrer=utm_source%3Dwebsite%26utm_medium%3Dwiki" target="_blank" rel="noopener"><img src="/assets/badges/google-play-en.webp" alt="Get it on Google Play" width="135" height="40" loading="lazy" decoding="async"></a>'
+ +`<a href="${APP_STORE_URL.replace(/\/[a-z]{2}(?:-[a-z]{2})?\/app\//,'/app/')}" target="_blank" rel="noopener"><img src="/assets/badges/app-store-en.webp" alt="Download on the App Store" width="120" height="40" loading="lazy" decoding="async"></a></p>`;
 function helpers(ctx){
  const around=ctx.portal??portalAround(),level=ctx.level??null,href=ctx.href??(id=>`/wiki/${id}`),now=ctx.now??Date.now(),portal=Boolean(around),app=Boolean(ctx.app??androidApp());
  // Which portal (Oct 2026): Kongregate and Discord have their own lines where CrazyGames' talk about guests and CrazyGames' log-in
@@ -398,6 +404,10 @@ const BODIES={
   ]))
   +section('Saved for you',h.signedIn?h.signedIn.saved:h.portal?PORTAL_SAVED:'<p>Your farm is saved to your account, so you can play on your phone and your computer. You need an internet connection to play.</p>')
   +(!h.install?'':section('Play it as an app',facts([
+   // Our own apps (29 Oct 2026, the owner: the wiki said only how to install the web app): Google Play and the App Store, with their
+   // own badges, where the web app is offered (not in our apps, not on the portals).
+   ['farm','Our app','Harvest Tycoon is also an app: on Google Play for Android phones and tablets, and in the App Store for iPhone and iPad. Sign in the way you do here and your farm is there.']
+  ])+STORE_BADGES+facts([
    ['farm','Why the app','One tap from your home screen, without the browser bar. Reminders when your farm needs you, a number on the icon for new messages, and press and hold the icon for Chat, Daily gift and the leaderboard.']
   ])+'<ul class="wiki-list wiki-app-steps"><li><strong>Android:</strong> in Chrome, tap the menu (⋮) and choose “Install app” or “Add to Home screen”.</li><li><strong>iPhone and iPad:</strong> in Safari, tap Share, then “Add to Home Screen”, then “Add”.</li><li><strong>Computer:</strong> in Chrome or Edge, click the install icon at the right of the address bar.</li></ul>'
   // Install the app (30 Sep 2026): one tap where the browser can install it (Android, Chrome and Edge on a computer). Shown by

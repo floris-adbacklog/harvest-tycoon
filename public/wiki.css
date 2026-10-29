@@ -53,6 +53,9 @@
 .wiki-app-steps{display:grid;gap:10px;margin:20px 0}
 /* Install the app: only where one tap installs it (public/wiki-ui.js, scripts/build-wiki.mjs); the same brown button as the game. */
 .wiki-install{margin:0 0 20px}
+/* Our app in the two stores (29 Oct 2026): their own badges side by side, under the fact that names them. */
+.wiki-stores{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 20px}
+.wiki-stores img{display:block;height:40px;width:auto}
 .wiki-install-button{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#61573f;border:1px solid #504833;color:#fffdf0;font:inherit;font-size:14px;font-weight:700;border-radius:11px;padding:13px 20px;box-shadow:0 3px 0 #443d2b;cursor:pointer}
 .wiki-install-button:hover:not(:disabled){background:#6d6247}
 .wiki-install-button:disabled{opacity:.6;cursor:default}
