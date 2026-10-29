@@ -195,6 +195,21 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
  // The Season Pass's look of a sender (Oct 2026): from the last read of their messages, so a new message of theirs shows it too.
  const nameInColour=(name,look)=>{const colour=lookColor(look);return colour?`<span class="look-name" style="color:${colour}">${esc(name)}</span>`:esc(name);};
  const looks=new Map(),lookOf=m=>{if(m.sender_look&&typeof m.sender_look==='object')looks.set(m.sender,m.sender_look);return looks.get(m.sender)??{};};
+ // The family badge beside a sender's name (29 Oct 2026, the owner: "Toon naast chat family badge als je erop klikt open family
+ // profile"): the family's emblem, its name on hover; a tap opens its profile (data-family-view, as the View of a shared family card).
+ // Not in the family's own chat, where everyone is in it. Asked once per sender, and again for all on screen after a minute.
+ const senderFamilies=new Map();let familiesAt=0;
+ const familyBadge=m=>{
+  const f=senderFamilies.get(m.sender);if(!f||tab==='family')return '';
+  const e=FAMILY_EMBLEMS.find(x=>x.id===String(f.emblem))??FAMILY_EMBLEMS[0];
+  return `<button type="button" class="chat-family" data-family-view="${esc(f.id)}" translate="no" title="${esc(f.name)}" aria-label="${esc(f.name)}"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span></button>`;
+ };
+ async function freshSenderFamilies(ids,all=false){
+  const wanted=[...new Set(ids)].filter(id=>id&&(all||!senderFamilies.has(id)));if(!wanted.length)return;if(all)familiesAt=Date.now();
+  let found;try{found=await chat.families?.(wanted);}catch{return;}if(!found)return;
+  let changed=false;for(const [id,f] of found){if(JSON.stringify(senderFamilies.get(id)??null)!==JSON.stringify(f)){changed=true;}senderFamilies.set(id,f);}
+  if(changed&&dialog.open&&!disposed)paint();
+ }
  async function freshFaces(ids,all=false){
   const wanted=[...new Set(ids)].filter(id=>id&&(all||!faces.has(id)));if(!wanted.length)return;if(all)facesAt=Date.now();
   let found;try{found=await chat.faces(wanted);}catch{return;}
@@ -330,7 +345,7 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
   const text=`${bodyHtml(m)}${m.edited_at?` <span class="chat-edited" title="${esc(exact(m.edited_at))}">(${m.edited_by_moderator?'edited by a moderator':'edited'})</span>`:''}`,tr=`${translate?' has-translate':''}${mentionsMe(m,me)?' is-mention':''}`;
   // A second message in a row: only the text (the name is there for a screen reader), the time on hover.
   if(cont)return `<li class="chat-msg is-cont${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}"><span aria-hidden="true"></span><div class="chat-msg-main"><p class="chat-text" title="${esc(exact(m.created_at))}"><span class="chat-sr">${ownWords(m.sender_name)}: </span>${text}</p></div>${more}${translate}</li>`;
-  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar',m.sender_name)}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,nameInColour(m.sender_name,lookOf(m)),'chat-name',m.sender_name)}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}${lookBadge(lookOf(m))}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
+  return `<li class="chat-msg${mine?' is-mine':''}${tr}" data-id="${esc(m.id)}">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,avatarImage(faceOf(m)),'chat-avatar',m.sender_name)}<div class="chat-msg-main"><div class="chat-msg-top">${profileButton(m.sender,`Open ${m.sender_name}’s profile`,nameInColour(m.sender_name,lookOf(m)),'chat-name',m.sender_name)}${m.sender_vip?VIP:''}${m.sender_staff?staffBadge(staffRole(m.sender)??'moderator','chat-mod'):''}${lookBadge(lookOf(m))}${familyBadge(m)}<time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at)}</time>${more}</div>${groupLine(m)}<p class="chat-text">${text}</p></div>${translate}</li>`;
  }
  function threadRow(t){
   return `<li><button type="button" class="chat-thread${t.unread?' is-unread':''}" data-thread="${esc(t.channel)}"><span class="chat-avatar">${avatarImage(t.otherAvatar)}</span><span class="chat-thread-copy"><strong>${ownWords(t.otherName)}${t.otherVip?VIP:''}</strong><small>${t.last?.mine?'You: ':''}<span translate="no">${esc(t.last?.body??'')}</span></small></span><span class="chat-thread-side"><time datetime="${esc(t.lastAt)}" title="${esc(exact(t.lastAt))}">${ago(t.lastAt)}</time>${t.unread?`<b class="chat-count">${pillText(t.unread)}</b>`:''}</span></button></li>`;
@@ -454,7 +469,7 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
   if(kept){messages=kept.rows;more=kept.more;busy=false;}else{busy=true;more=false;}
   paint();
   try{const rows=await chat.messages(name,PAGE);if(ticket!==loading)return;messages=rows;more=rows.length>=PAGE;}catch(error){if(ticket===loading){if(!kept)messages=[];note(error.message);}}
-  if(ticket!==loading)return;busy=false;keepRecent(name);paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');
+  if(ticket!==loading)return;busy=false;keepRecent(name);paint();markRead(name);void freshFaces(messages.map(m=>m.sender),Date.now()-facesAt>60000);freshFamilies('open');void freshSenderFamilies(messages.map(m=>m.sender),Date.now()-familiesAt>60000);
  }
  function show(next,{keepThread=false}={}){
   keepRecent(channelOf());tab=next;if(!keepThread)thread=null;messages=[];more=false;found=null;findInput.value='';picked.clear();closePicks();load();
@@ -518,7 +533,7 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
   // A farmer joined or was removed from your own family (its chat's join and kick cards): your family's card is out of date, and so is
   // who you are to it. A new family card: every card on screen is asked for again, the new one with them.
   if((m.kind==='join'||m.kind==='kick')&&m.channel===overview.family?.channel){familyLive.changed();freshFamilies('changed');}
-  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,Math.max(100,messages.length+1));paint();void freshFaces([m.sender]);if(m.kind==='family_share')freshFamilies('open');}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
+  if(showing(m.channel)){if(!messages.some(x=>x.id===m.id)){messages=[m,...messages].slice(0,Math.max(100,messages.length+1));paint();void freshFaces([m.sender]);void freshSenderFamilies([m.sender]);if(m.kind==='family_share')freshFamilies('open');}if(m.sender!==me)markRead(m.channel);if(m.channel.startsWith('dm:')||m.channel==='crew')scheduleOverview();return;}
   if(m.sender===me)return;
   if(m.channel==='global'){overview.unread.global=Math.min(99,(overview.unread.global??0)+1);if(forMe)overview.unread.mentions=Math.min(99,(overview.unread.mentions??0)+1);}
   else if(m.channel===overview.family?.channel)overview.unread.family=Math.min(99,(overview.unread.family??0)+1);

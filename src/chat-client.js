@@ -93,6 +93,16 @@ export function createChatClient(supabase,{playerId,alive=()=>true}){
   setPrivate:on=>rpc('chat_set_private',{p_on:on}),
   // The admin only: a notice in Notifications for every in-game purchase (supabase/purchase-alerts.sql).
   setPurchaseAlerts:on=>rpc('chat_set_purchase_alerts',{p_on:on}),
+  // The farm family of each sender (29 Oct 2026, supabase/chat-families.sql): its id, name and emblem, for the badge beside their name;
+  // null for one in no family. Before that file has run (or when the read fails): null for the whole call, and the chat shows no badge.
+  async families(ids){
+   const unique=[...new Set(ids.filter(Boolean))].slice(0,100);if(!unique.length)return new Map();
+   const {data,error}=await supabase.rpc('chat_families',{p_players:unique});
+   if(error)return null;
+   const found=new Map(unique.map(id=>[id,null]));
+   for(const r of data??[])found.set(r.player_id,{id:r.family_id,name:r.name,emblem:r.emblem});
+   return found;
+  },
   // Farmers' pictures (the same public table as the leaderboard), for the staff dashboard's lists.
   async faces(ids){
    const unique=[...new Set(ids.filter(Boolean))];if(!unique.length)return new Map();

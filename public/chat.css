@@ -76,6 +76,11 @@ span.chat-avatar{cursor:default}
 .chat-name{min-width:0;padding:0;border:0;background:none;color:#3d382a;font:700 14px/1.2 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .chat-name:hover{text-decoration:underline;text-underline-offset:2px}
 .chat-mod{display:inline-flex;flex-shrink:0}
+/* The family badge beside a name (29 Oct 2026): the family's emblem, small; a tap opens the family's profile. */
+.chat-family{display:inline-flex;flex-shrink:0;padding:0;border:0;background:none;cursor:pointer;border-radius:7px}
+.chat-family>.family-emblem{width:20px;height:20px;border-radius:6px}
+.chat-family>.family-emblem .game-art{width:15px;height:15px}
+.chat-family:hover>.family-emblem,.chat-family:focus-visible>.family-emblem{box-shadow:0 0 0 2px #cfdcb9}
 .chat-mod .game-art{width:17px;height:17px}
 .chat-msg-top time{margin-inline-start:auto;flex-shrink:0;color:#9a8d7c;font-size:12px;font-variant-numeric:tabular-nums}
 .chat-more{flex-shrink:0;display:grid;place-items:center;width:28px;height:24px;margin:-2px -4px -2px 0;padding:0;border:0;border-radius:8px;background:none;color:#9a8d7c;cursor:pointer}
