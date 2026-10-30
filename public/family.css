@@ -919,3 +919,6 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-dialog .family-own-emblem-note{min-height:0;font-size:13px;color:#9b4a33}
 #family-dialog .family-own-emblem-note:empty{display:none}
 .family-emblem-report{margin-top:6px;font-size:12px;color:#8a7d68}
+/* A family's own picture beside a name (30 Oct 2026): inside the same rim as the built-in emblems, not filling the tile edge to edge. */
+.name-family>.family-emblem.is-own{padding:2px;border:1px solid #d9c7a4;background:#f7f0e3;box-sizing:border-box}
+.name-family>.family-emblem.is-own>.family-emblem-own{border-radius:4px}

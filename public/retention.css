@@ -1877,3 +1877,7 @@ html[data-portal] .feedback-copy{display:none!important}
 #utility-dialog .tractor-tile.is-asking .tractor-ask-buttons .tractor-job-cost .game-art{width:15px;height:15px}
 #utility-dialog .tractor-tile.is-asking .tractor-ask-buttons>.tractor-other{justify-content:center;width:40px;padding:4px}
 #utility-dialog .tractor-tile.is-asking .tractor-ask-buttons>.tractor-other .game-art{width:24px;height:24px}
+/* In the event standings the VIP star, the season badge and the family badge all sit in the middle of the name's line (30 Oct 2026:
+   the star stood higher than the family badge). */
+.event-standing strong :is(.vip-badge,.look-badge,.name-family){vertical-align:middle}
+.event-standing strong .vip-badge img{display:block}
