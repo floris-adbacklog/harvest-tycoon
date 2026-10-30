@@ -27,7 +27,7 @@ test('pending checkouts poll without announcing rewards; closing cancels polling
  const f=fixture({payments:async()=>({status:'pending'})});await settle();assert.equal(f.dialog.dataset.state,'pending');assert.equal(f.timers.size,1);assert.equal(f.confirmations,0);f.dialog.close();assert.equal(f.timers.size,0);
 });
 test('network errors show safe feedback and permit checking again',async()=>{
- let requests=0;const f=fixture({payments:async()=>{if(++requests===1)throw Error('private upstream details');return {status:'credited',pack:'starter',diamonds:300};}});await settle();assert.equal(f.dialog.dataset.state,'error');assert.doesNotMatch(f.node('.payment-message').textContent,/private/);assert.equal(f.node('[data-retry]').disabled,false);f.node('[data-retry]').onclick();await settle();assert.equal(f.dialog.dataset.state,'credited');assert.match(f.node('.payment-message').textContent,/10,000 coins/);assert.equal(f.confirmations,1);
+ let requests=0;const f=fixture({payments:async()=>{if(++requests===1)throw Error('private upstream details');return {status:'credited',pack:'starter',diamonds:300,coins:10000};}});   // a checkout from before 30 Oct 2026: its own 10,000 coinsawait settle();assert.equal(f.dialog.dataset.state,'error');assert.doesNotMatch(f.node('.payment-message').textContent,/private/);assert.equal(f.node('[data-retry]').disabled,false);f.node('[data-retry]').onclick();await settle();assert.equal(f.dialog.dataset.state,'credited');assert.match(f.node('.payment-message').textContent,/10,000 coins/);assert.equal(f.confirmations,1);
 });
 test('expired checkout stops checking and points back to the shop',async()=>{
  const f=fixture({payments:async()=>({status:'expired'})});await settle();assert.equal(f.node('[data-retry]').hidden,true);assert.equal(f.timers.size,0);assert.match(f.node('.payment-message').textContent,/new checkout/);assert.equal(f.confirmations,0);
@@ -47,4 +47,17 @@ test('a Halloween Pass bought before its season says when it starts; bought in t
  const open=fixture({payments:async()=>({status:'credited',pack:'pass',diamonds:0,coins:0,serverNow:PASS.startsAt+H}),refresh:async()=>{},globals});await settle();
  assert.equal(open.node('.payment-message').textContent,'The paid rewards are open. Collect each one in the Halloween Pass.');
  assert.doesNotMatch(open.node('.payment-message').textContent,/diamonds/,'no "0 diamonds"');
+});
+// 30 Oct 2026: the Starter Pack gives 100,000 coins (game/payments.js); a checkout with no coin count shows the new amount.
+test('a Starter Pack bought now says 100,000 coins',async()=>{
+ const f=fixture({payments:async()=>({status:'credited',pack:'starter',diamonds:500,coins:100000})});await settle();
+ assert.match(f.node('.payment-message').textContent,/^100,000 coins, 500 diamonds and one of every crop/);
+});
+test('the Starter Pack: 100,000 coins now, and a checkout opened with 10,000 still pays out what it showed',async()=>{
+ const p=await import('../game/payments.js');
+ assert.equal(p.PAYMENT_PACKS.starter.coins,100000);assert.equal(p.STARTER_COINS_BEFORE,10000);
+ const src=(await import('node:fs')).readFileSync(new URL('../game/payments.js',import.meta.url),'utf8');
+ assert.equal((src.match(/!coinsFit\(purchase,pack\)/g)||[]).length,4,'Stripe, Google Play, the App Store and Kreds');
+ const sql=(await import('node:fs')).readFileSync(new URL('../supabase/starter-pack-coins.sql',import.meta.url),'utf8');
+ assert.match(sql,/\(coins = ANY \(ARRAY\[10000, 100000\]\)\) AND \(amount_cents = 299\)/);
 });
