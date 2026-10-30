@@ -165,6 +165,9 @@ export const HARBOUR_GOODS=Object.freeze({
  anchor:{name:'Anchor',sell:10500,harbour:true,world:3,noBoard:true},
  fishingnet:{name:'Fishing net',sell:8640,harbour:true,world:3,noBoard:true},
  anchorchain:{name:'Anchor chain',sell:14850,harbour:true,world:3,noBoard:true},
+ // Shipwright tools (30 Oct 2026, the owner: farm buildings to level 20 with World III, "hetzelfde als 11-15"): what master tools are to
+ // levels 11-15, for levels 16-20. Never asked by a ship (HARBOUR_NEVER_ASKED).
+ shipwrighttools:{name:'Shipwright tools',sell:39000,harbour:true,world:3,noBoard:true},
  // The three later places' goods (27 Oct 2026, the owner: "Doe 1"), priced as the first eight: what goes in at 0.8 of its price, plus 46%.
  shiplantern:{name:'Ship’s lantern',sell:4310,harbour:true,world:3,noBoard:true},
  shiptar:{name:'Ship’s tar',sell:6700,harbour:true,world:3,noBoard:true},
@@ -416,6 +419,7 @@ const HARBOUR_RECIPES=Object.freeze({
  packprovisions:{building:'galley',name:'Pack a provisions crate',input:{barrel:2,shipsbiscuits:6,cheese:6},output:{provisions:1},duration:9000000,xp:300,minLevel:224},
  forgeanchor:{building:'harbourforge',name:'Forge an anchor',input:{ironbar:6,rope:2},output:{anchor:1},duration:7200000,xp:240,minLevel:240},
  tienet:{building:'ropewalk',name:'Tie a fishing net',input:{rope:3,linen:2},output:{fishingnet:1},duration:5400000,xp:180,minLevel:250},
+ shipwrighttools:{building:'harbourforge',name:'Forge shipwright tools',input:{anchor:2,ironbar:4,rope:2},output:{shipwrighttools:1},duration:14400000,xp:480,minLevel:240},
  forgechain:{building:'harbourforge',name:'Forge an anchor chain',input:{ironbar:8,silverbar:2},output:{anchorchain:1},duration:9000000,xp:300,minLevel:262},
  // The three later places (27 Oct 2026): 30 XP an hour of making, as the first eight; at least 2 of every ingredient, as every mixed recipe.
  makelantern:{building:'chandlery',name:'Make a ship’s lantern',input:{candles:4,ironbar:2},output:{shiplantern:2},duration:7200000,xp:240,minLevel:228},
@@ -1013,12 +1017,13 @@ export const BASE_BUILDING_LEVEL=10;
 // building in the game was above level 7. ESTATE_UPGRADES below is kept only for the price ladder's top (its first step).
 export const MAX_BUILDING_LEVEL=10;
 // World II (30 Sep 2026): the farm's production buildings grow past level 10 with master tools from the village's Smithy, one level
-// at farm level 108, 120, 140, 160 and 180 (TOP_BUILDING_LEVEL 15). Every level above 10 gives each batch a 10% chance to come out
-// double (50% at level 15): a level-100 farm is held back by its fields, not by slots or speed, so more of those would add little.
+// at farm level 108, 120, 140, 160 and 180 (to level 15), and with World III (30 Oct 2026, the owner: "hetzelfde als 11-15") on to
+// level 20 with shipwright tools from the Harbour forge, at farm level 240, 255, 270, 285 and 300 (TOP_BUILDING_LEVEL 20, HARBOUR_UPGRADES). Every level above 10 gives each batch a 10% chance to come out
+// double (50% at level 15, every batch at level 20): a level-100 farm is held back by its fields, not by slots or speed, so more of those would add little.
 // Levels 11-15 keep 10 slots. The Factory and the village's own places stop at 10. Below level 100 nothing of this shows: a level-10
 // building reads as fully upgraded, as before.
 export const WORLD_TWO_LEVEL=100,WORLD_TWO_TOP=200,WORLD_TWO_TEASER=90;
-export const TOP_BUILDING_LEVEL=15;
+export const TOP_BUILDING_LEVEL=20,WORLD_TWO_TOP_BUILDING=15;
 export const DOUBLE_BATCH_PER_LEVEL=.1;
 export const MASTER_UPGRADES=Object.freeze([
  {level:108,coins:750000,materials:{mastertools:1,plank:20,stone:30}},
@@ -1027,14 +1032,24 @@ export const MASTER_UPGRADES=Object.freeze([
  {level:160,coins:1700000,materials:{mastertools:4,plank:80,stone:120}},
  {level:180,coins:2200000,materials:{mastertools:5,plank:100,stone:150}}
 ].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
+// Levels 16-20 (World III): the same steps on, with shipwright tools; only once World III is open (worldThreeOpen).
+export const HARBOUR_UPGRADES=Object.freeze([
+ {level:240,coins:2900000,materials:{shipwrighttools:1,plank:120,stone:180}},
+ {level:255,coins:3800000,materials:{shipwrighttools:2,plank:140,stone:210}},
+ {level:270,coins:4900000,materials:{shipwrighttools:3,plank:160,stone:240}},
+ {level:285,coins:6400000,materials:{shipwrighttools:4,plank:180,stone:270}},
+ {level:300,coins:8300000,materials:{shipwrighttools:5,plank:200,stone:300}}
+].map(step=>Object.freeze({...step,materials:Object.freeze(step.materials)})));
+export const BEYOND_UPGRADES=Object.freeze([...MASTER_UPGRADES,...HARBOUR_UPGRADES]);
 export const beyondMaxBuilding=key=>BUILDINGS[key]?.type==='production'&&key!=='factory'&&!otherWorldBuilding(key);
 export const worldTwoOpen=state=>levelOf(state)>=WORLD_TWO_LEVEL;
 // The next step past level 10 for this building (with the farm level it needs), or null: none below level 100, none for the Factory
-// or the village's places, none at level 15.
+// or the village's places, none at level 20; from level 15 on only once World III is open.
 export function masterUpgrade(state,key){
  if(!beyondMaxBuilding(key)||!worldTwoOpen(state))return null;
- const level=state.buildings?.[key]?.level??1;
- return level>=MAX_BUILDING_LEVEL?MASTER_UPGRADES[level-MAX_BUILDING_LEVEL]??null:null;
+ const level=state.buildings?.[key]?.level??1,i=level-MAX_BUILDING_LEVEL;
+ if(level<MAX_BUILDING_LEVEL||i>=MASTER_UPGRADES.length&&!worldThreeOpen(state))return null;
+ return BEYOND_UPGRADES[i]??null;
 }
 export const doubleBatchChance=level=>Math.round(Math.max(0,Math.min(TOP_BUILDING_LEVEL,level)-MAX_BUILDING_LEVEL)*DOUBLE_BATCH_PER_LEVEL*100)/100;
 // The Factory is one shared workshop for every good: a slot every two levels, up to five (reached at level 9), and half the
@@ -1094,7 +1109,7 @@ export const BUILDING_COSTS=Object.freeze({mill:100,dairy:300,windmill:700,baker
  ropewalk:4000000,cooperage:5000000,galley:6000000,chandlery:7000000,cannery:8000000,harbourforge:8000000,tradinghouse:10000000,paintshop:9000000,instruments:12000000,boatyard:14000000});
 export const RECIPE_LEVELS=Object.freeze({trufflehunt:29,truffleomelette:30,vegetablefeast:36,eggs:1,feed:2,wheatfeed:2,milk:4,barleyfeed:5,grainmeal:6,flour:6,windfeed:18,bread:8,cheese:9,fertilizer:14,salad:11,vegetables:13,windflour:14,stew:12,pie:13,pickles:15,beangratin:16,oil:17,orchardsalad:20,applejuice:21,applepie:22,orchardjuice:26,berrysmoothie:23,berrycheesecake:33,applecompote:24,berrypreserves:24,applevinegar:24,pickledbeans:25,berrytart:38,harvesthamper:35,squashsoup:32,hives:34,wool:37,grazewool:39,glasscauliflower:40,glasspumpkin:41,glassredcabbage:42,yarn:43,glasssquash:44,cloth:45,cider:47,glasssunflower:48,goatmilk:54,goatcheese:55,goatbrowse:56,candles:58,blanket:60,milkdonkeys:64,donkeymilksoap:64,donkeycheese:69,bathbasket:77,cherryjam:67,cherrypie:68,prizeproduce:80,packedlunch:100,digiron:100,chop:100,saw:100,smeltiron:102,forgepickaxe:102,digsilver:105,smeltsilver:105,mastertools:108,goldenloaf:112,heirloomflour:112,heirloompie:115,digdeep:115,
  sowpotatoes:110,pastylunch:113,digclay:118,rooftile:118,sowflax:123,linen:125,builderscrate:128,sowlavender:132,lavendersoap:135,scentedsachet:138,silvercandlestick:150,rubyring:154,sowsaffron:158,saffronbun:158,
-  twistrope:204,makebarrels:210,bakebiscuits:216,weavesailcloth:222,packprovisions:224,forgeanchor:240,tienet:250,forgechain:262,
+  twistrope:204,makebarrels:210,bakebiscuits:216,weavesailcloth:222,packprovisions:224,forgeanchor:240,shipwrighttools:240,tienet:250,forgechain:262,
   makelantern:228,boiltar:246,mixpaint:254,carvefigurehead:272,makecompass:266,castbell:284,
   tinstew:236,tinfruit:258,packspices:248,packperfume:262,carveoars:276,buildrowboat:288});
 // The Fishing pond (11 Oct 2026, part C): POND_OPEN is its one switch. While it is false the pond is built but hidden: it is in no list
@@ -2993,6 +3008,7 @@ export function landmarkFinish(state,id){
 // goods bit by bit, then pay the coins (5,000 XP each). The harbour's places (Ropewalk, Cooperage, Galley, Harbour forge) are four of
 // them. Everything counts in the harbour's own numbers, never the farm's (otherWorldAction, harbour_* stats).
 export const WORLD_THREE_LEVEL=200,WORLD_THREE_TOP=300;
+export const HARBOUR_NEVER_ASKED=Object.freeze(['shipwrighttools']);
 // Once the harbour is open (level 200 and the Great Hall) a save holds the harbour's goods and places (normalizeFarm); before that it
 // keeps the live shape, so a level-200 farm without the Hall loads the same in old code (28 Oct 2026).
 export const harbourEra=state=>levelOf(state)>=WORLD_THREE_LEVEL&&landmarkDone(state,'greathall')||Object.keys(HARBOUR_GOODS).some(k=>Object.hasOwn(state.inventory??{},k));
@@ -3057,7 +3073,7 @@ const SHIP_HARBOUR_FROM=216;
 function shipOrder(state,serial,kind='ship'){
  const big=BERTH[kind],roll=n=>mixBits(calendarHash(`ship-v1:${serial}:${n}`)),target=shipValue(levelOf(state))*(big?.size??1),kinds=big?.kinds??(kind==='voyage'?6:4);
  const farm=SHIP_FARM().filter(k=>itemAvailable(state,k)),village=SHIP_VILLAGE().filter(k=>itemAvailable(state,k));
- const harbour=levelOf(state)>=SHIP_HARBOUR_FROM?Object.keys(HARBOUR_GOODS).filter(k=>itemAvailable(state,k)):[];
+ const harbour=levelOf(state)>=SHIP_HARBOUR_FROM?Object.keys(HARBOUR_GOODS).filter(k=>!HARBOUR_NEVER_ASKED.includes(k)&&itemAvailable(state,k)):[];
  if(!farm.length||!village.length)return null;
  const pick=(list,n)=>list.splice(roll(n)%list.length,1)[0],keys=[pick(farm,0),pick(village,1)];
  const rest=[...farm,...village];if(harbour.length&&roll(2)%2)keys.push(pick(harbour,3));
@@ -3116,7 +3132,7 @@ export function shipSwap(state,quay,ship,input,item){
  if(typeof item!=='string'||!Object.hasOwn(s.input,item))throw new Error('Choose a line of this ship.');
  if(s.loaded[item]>0)throw new Error('Something of that line is already on board.');
  const world=harbourGood(item)?3:worldTwoItem(item)?2:1;
- const pool=(world===3?Object.keys(HARBOUR_GOODS):world===2?SHIP_VILLAGE():SHIP_FARM()).filter(k=>!Object.hasOwn(s.input,k)&&itemAvailable(state,k));
+ const pool=(world===3?Object.keys(HARBOUR_GOODS).filter(k=>!HARBOUR_NEVER_ASKED.includes(k)):world===2?SHIP_VILLAGE():SHIP_FARM()).filter(k=>!Object.hasOwn(s.input,k)&&itemAvailable(state,k));
  if(!pool.length)throw new Error('There is nothing else of that kind to ask for yet.');
  const next=pool[mixBits(calendarHash(`ship-swap-v1:${s.id}`))%pool.length],worth=s.input[item]*ITEMS[item].sell;
  const count=Math.max(1,Math.min(SHIP_LINE_MAX,Math.round(worth/ITEMS[next].sell)));

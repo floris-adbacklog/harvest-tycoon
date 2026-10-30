@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {otherWorldBuilding,createFarm,normalizeFarm,applyFarmAction,xpForLevel,levelOf,unlockEntries,upgradeCost,upgradeRequirements,upgradeGoods,marketHighlights,familyOrder,
  buildingRecipes,marketItems,villageBrief,villageSquareReady,villageRequestGoods,villagePlaceBefore,itemAvailable,questXp,
- BUILDINGS,BUILDING_COSTS,BUILDING_LEVELS,RECIPE_LEVELS,RECIPES,ITEMS,VILLAGE_GOODS,MASTER_UPGRADES,MAX_BUILDING_LEVEL,TOP_BUILDING_LEVEL,WORLD_TWO_LEVEL,
+ BUILDINGS,BUILDING_COSTS,BUILDING_LEVELS,RECIPE_LEVELS,RECIPES,ITEMS,VILLAGE_GOODS,MASTER_UPGRADES,MAX_BUILDING_LEVEL,TOP_BUILDING_LEVEL,WORLD_TWO_TOP_BUILDING,WORLD_TWO_LEVEL,
  VILLAGE_BRIEFS,VILLAGE_BUILD_XP,VILLAGE_UPGRADE_GOODS,VILLAGE_QUESTS,VILLAGERS,VILLAGE_REQUEST_WAIT,QUESTS,DAILY_POOLS,
  villageGood,worldTwoItem,worldTwoBuilding,beyondMaxBuilding,masterUpgrade,doubleBatchChance,worldTwoOpen,recipeLevel,buildingUnlocked,recipeUnlocked,
  CROPS,PRODUCTS,HEIRLOOMS,STARTER_PACK_CROPS,VILLAGE_LANDMARKS,VILLAGE_REQUEST_BOARDS_MAX,VILLAGE_WEEK_LEVEL,VILLAGE_WEEK_TARGET,VILLAGE_CRATE_DIAMONDS,
@@ -110,7 +110,8 @@ test('a packed lunch from the farm starts every trip: the chain from the Kitchen
 });
 
 test('past level 10 with master tools: one level at farm level 108, 120, 140, 160 and 180, up to 15',()=>{
- assert.equal(TOP_BUILDING_LEVEL,15);assert.deepEqual(MASTER_UPGRADES.map(u=>u.level),[108,120,140,160,180]);
+ // Since 30 Oct 2026 World III takes them on to 20 (tests/levels-twenty.test.mjs); World II's own top is 15.
+ assert.equal(TOP_BUILDING_LEVEL,20);assert.equal(WORLD_TWO_TOP_BUILDING,15);assert.deepEqual(MASTER_UPGRADES.map(u=>u.level),[108,120,140,160,180]);
  assert.deepEqual(MASTER_UPGRADES.map(u=>u.materials.mastertools),[1,2,3,4,5]);
  assert.ok(beyondMaxBuilding('bakery')&&!beyondMaxBuilding('factory')&&!beyondMaxBuilding('mine')&&!beyondMaxBuilding('farmhouse'));
  const s=farm(105);
@@ -129,7 +130,7 @@ test('past level 10 with master tools: one level at farm level 108, 120, 140, 16
 });
 
 test('every level past 10 gives a batch a 10% chance to come out double, decided when it starts',()=>{
- assert.deepEqual([9,10,11,13,15,20].map(doubleBatchChance),[0,0,.1,.3,.5,.5]);
+ assert.deepEqual([9,10,11,13,15,20,25].map(doubleBatchChance),[0,0,.1,.3,.5,1,1],'every batch double at 20 (World III, 30 Oct 2026)');
  const s=farm(120);s.buildings.bakery.level=12;s.buildings.bakery.beyond=2;Object.assign(s.inventory,{flour:40,milk:20});
  const lucky=act(s,{type:'produce',recipe:'bread'},now,()=>.1);assert.equal(lucky.double,true);
  const plain=act(s,{type:'produce',recipe:'bread'},now,()=>.25);assert.equal(plain.double,undefined);
