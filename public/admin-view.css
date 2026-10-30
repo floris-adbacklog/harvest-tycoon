@@ -6,7 +6,7 @@
 html[data-admin-view] .resources>:is(.coin-counter,#rookie-button,#pass-button,#season-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
 html[data-admin-view] :is(#starter-pack-button,#offer-button,#event-rail,#active-boosts,.beginner-card,#beginner-mobile,#next-goal-card,#next-goal-mobile,#next-goal-claim-mobile,.touch-instructions,#more-dot),
 html[data-admin-view] .bottom-hud>:is(.tool-dock,.context-hint,.bottom-note),
-html[data-admin-view] .mobile-menu-grid>:is([data-menu-action="all-quests-mobile"],#pass-menu-entry,#season-menu-entry,[data-menu-action="boosts-button"]){display:none!important}
+html[data-admin-view] .mobile-menu-grid>:is([data-menu-action="all-quests-mobile"],#pass-menu-entry,#season-menu-entry){display:none!important}
 /* The two numbers, in the coin pill's look: a big number with a short word under it. Red while a report waits, quiet at none. */
 html[data-admin-view] .resources .admin-stat{display:flex;align-items:center;gap:8px;height:53px;min-width:118px;padding:0 15px 0 10px;background:var(--cream);border:1px solid #dfd4ca;border-radius:16px;box-shadow:var(--shadow);color:#4d4635;font-variant-numeric:tabular-nums;cursor:pointer;text-align:start}
 html[data-admin-view] .resources .admin-stat:not([aria-disabled="true"]):hover{background:#f8f1e7}
@@ -60,3 +60,6 @@ html[data-admin-view] #admin-chat-tool em{min-width:20px;padding:0 4px;width:aut
 /* The fields of the showcase without their little timers (3 Oct 2026): forty "1d" badges only cluttered a farm nobody plays on. */
 html[data-admin-view] .plot-label{display:none!important}
 html[data-admin-view] #boost-dialog .admin-shop-note{margin:0 0 12px;padding:9px 12px;border:2px solid #e3d4ba;border-radius:12px;background:#fff6e2;color:#6b5a32;font-size:13px;font-weight:700;text-align:center}
+/* On a phone the shop's diamond pill would take a row of its own under the two numbers (29 Oct 2026, the owner's screenshot): there it
+   steps aside and the shop is in More, as Boosts; computers keep the pill. */
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){html[data-admin-view] .resources>#diamond-button{display:none!important}}

@@ -207,7 +207,9 @@ test('admins stay off every board and get no gifts; their Family window and invi
 // 29 Oct 2026, the owner ("ja alleen bekijken"): the shop opens in the admin view, every buy in it off.
 test('the admin view keeps the shop button and locks every buy in the shop', async ()=>{
  const css=read('public/admin-view.css'),view=read('src/admin-view.js');
- assert.doesNotMatch(css,/#diamond-button/,'the shop button stays');
+ assert.doesNotMatch(css.replace(/@media[^{]*\{html\[data-admin-view\] \.resources>#diamond-button\{display:none!important\}\}/,''),/#diamond-button/,'the shop button stays on a computer');
+ assert.match(css,/@media\(max-width:900px\),\(max-height:550px\) and \(pointer:coarse\)\{html\[data-admin-view\] \.resources>#diamond-button\{display:none!important\}\}/,'on a phone it is in More');
+ assert.doesNotMatch(css,/\[data-menu-action="boosts-button"\]/,'More keeps Boosts');
  const {SHOP_BUYS}=await import('../src/admin-view.js');
  for(const sel of ['[data-diamond-pack]','[data-buy-boost]','[data-buy-coins]','[data-buy-village]','[data-buy-harbour]','[data-buy-vip]','#finish-one-crop','#finish-one-batch'])assert.ok(SHOP_BUYS.includes(sel),sel);
  // Every buy button the shop draws is in the list.
