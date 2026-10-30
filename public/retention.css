@@ -1860,3 +1860,10 @@ html[data-portal] .feedback-copy{display:none!important}
 .stream-countdown-clock{margin:0;font-size:clamp(4.5rem,13vw,9rem);line-height:1;font-weight:700;color:#3f2806;font-variant-numeric:tabular-nums}
 .stream-countdown-note{margin:0;font-size:clamp(1.1rem,2.4vw,1.6rem);font-weight:700;color:#5b4520}
 .stream-countdown.is-live .stream-countdown-clock{color:#3f8a4a}
+/* Phones (30 Oct 2026, a player: "Bole…" and the family badge cut off): the name keeps its room. The staff mark is its shield alone (the
+   label stays its title and is still read out), and your own row says You by its gold, without the pill. */
+@media(max-width:600px){
+ #leaderboard-dialog .leaderboard-name .staff-badge{gap:0;padding:2px;font-size:0}
+ #leaderboard-dialog .leaderboard-name .staff-badge .game-art{width:16px;height:16px}
+ #leaderboard-dialog .leaderboard-you{display:none}
+}

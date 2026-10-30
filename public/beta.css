@@ -160,3 +160,6 @@
 }
 /* What you can do now is filled light green, not only edged (23 Oct 2026, the owner: "het helemaal lichtgroen maken valt meer op"). */
 .chore-card.is-ready,.mastery-list .mastery-card.is-ready{background:#eef7e3}
+/* The bonus line wraps inside its own column (30 Oct 2026: "+2 lettuce 80% chance" ran under "every 30m" on a phone). */
+.chore-card .chore-rewards>span.chore-bonus{white-space:normal;flex-wrap:wrap;row-gap:3px;max-width:100%;box-sizing:border-box}
+.chore-card .chore-rewards>span.chore-bonus b{white-space:nowrap}
