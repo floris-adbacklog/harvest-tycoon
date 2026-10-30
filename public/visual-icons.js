@@ -102,9 +102,7 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 // opens later and Visit farm.
 for(const key of ['shipping-bin','friendship-heart'])webpPictures.add(key);
 // World III, the harbour (27 Oct 2026, the owner's ChatGPT pictures): its badge, the harbour master and the first harbour goods.
-for(const key of ['harbour-badge','harbour-master','harbour-crate','seal-pet','rope','barrel','shipsbiscuits','sailcloth','provisions','anchor','fishingnet','anchorchain']){pictures[key]=key;webpPictures.add(key);}
-// Shipwright tools (30 Oct 2026, levels 16-20) show the master tools' picture until a painted one of their own comes.
-pictures.shipwrighttools='mastertools';
+for(const key of ['harbour-badge','harbour-master','harbour-crate','seal-pet','rope','barrel','shipsbiscuits','sailcloth','provisions','anchor','fishingnet','anchorchain','shipwrighttools']){pictures[key]=key;webpPictures.add(key);}   // shipwright tools: 30 Oct 2026, the owner's ChatGPT picture
 // The harbour's pins: the harbour master on the office, the seal, and each place's picture (27 Oct 2026, the owner's ChatGPT pictures,
 // 512 px; plan-wereld-3/chatgpt/extra-plekken and plekken-8-10).
 Object.assign(pictures,{harbouroffice:'harbour-master',harbourseal:'seal-pet',ropewalk:'ropewalk',cooperage:'cooperage',galley:'galley',harbourforge:'harbourforge',chandlery:'chandlery',paintshop:'paintshop',instruments:'instruments',
