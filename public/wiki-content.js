@@ -997,7 +997,8 @@ const INDEX=[
  {topic:'buildings',label:BUILDINGS.familyhall.name,art:'familyhall-model',text:BUILDINGS.familyhall.name.toLowerCase(),anchor:'building-familyhall'},
  // The Fishing pond (11 Oct 2026), once it is open: its name, the fish and the book, single words like the Farmhouse's.
  ...(POND_OPEN?[{topic:'helpers',label:FEATURE_NAMES.fishing,art:'fishingpond',text:[FEATURE_NAMES.fishing.toLowerCase(),'fishing','fish','pond','book','float','rod',...Object.values(FISH).map(f=>f.name.toLowerCase())].join(' '),anchor:'sec-fishing-pond'}]:[]),
- ...PLAYER_AVATARS.filter(a=>a.level||avatarGoal(a.id)).map(a=>({topic:'account',label:a.name,art:'settings',text:`${a.name} avatar`.toLowerCase(),anchor:'sec-avatars'})),
+ // The avatars past level 100 (30 Oct 2026) are found from level 100 on, like World II itself ("Stone" is a village good).
+ ...PLAYER_AVATARS.filter(a=>a.level||avatarGoal(a.id)).map(a=>({topic:'account',label:a.name,art:'settings',text:`${a.name} avatar`.toLowerCase(),anchor:'sec-avatars',...(a.level>100?{minLevel:100}:{})})),
  ...Object.entries(BUILDINGS).filter(([,b])=>b.type==='production').map(([k,b])=>({topic:worldThreeBuilding(k)?'harbour':worldTwoBuilding(k)?'village':'buildings',label:b.name,art:k,text:b.name.toLowerCase(),anchor:worldThreeBuilding(k)?HARBOUR_SPOT:`building-${k}`})),
  // The Pier and the town boat, and the landmarks (Oct 2026): single English words, like the Farmhouse's entry. The Village topic is hidden
  // below level 100, so nothing of them is found there.
@@ -1012,6 +1013,6 @@ export const wikiSearchIndex=()=>INDEX.map(entry=>({...entry,topicTitle:TOPIC[en
 export function wikiSearch(query,{level=null}={}){
  const words=String(query).toLowerCase().trim().split(/\s+/).filter(Boolean);if(!words.length)return [];
  const seen=new Set(),hits=[];
- for(const entry of INDEX){if(!topicShown(entry.topic,{level})||!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
+ for(const entry of INDEX){if(!topicShown(entry.topic,{level})||(entry.minLevel&&level!=null&&level<entry.minLevel)||!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
  return hits.slice(0,12);
 }
