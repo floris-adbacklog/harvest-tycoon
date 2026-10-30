@@ -106,3 +106,24 @@ test('the new texts are in all 15 languages',()=>{
   for(const text of ['Your own emblem','Report this emblem','Upload for {0} diamonds','The picture must be square.','Uploaded an own family emblem'])assert.ok(t[text],`${code}: ${text}`);
  }
 });
+
+// 30 Oct 2026: the first live upload (106 KB of JSON) came back 413, as farm-api took 4 KB for every request; the toast sat behind the
+// window, so the leader saw nothing. Now only this action may be bigger, the card says what went wrong, and the own picture is the
+// first (picked) tile of the emblem row.
+test('a full 100 KB picture fits the request limit; every other request keeps 4 KB',async()=>{
+ const {EMBLEM_BODY_MAX,EMBLEM_MAX_BYTES}=await import('../supabase/functions/farm-api/emblem-upload.js');
+ const body=JSON.stringify({operation:'action',requestId:'3f2a9c1e-5b7d-4e8f-9a0b-1c2d3e4f5a6b',revision:123456,action:{type:'family_emblem_upload',image:'A'.repeat(Math.ceil(EMBLEM_MAX_BYTES/3)*4)}});
+ assert.ok(body.length<=EMBLEM_BODY_MAX,`${body.length} fits ${EMBLEM_BODY_MAX}`);assert.ok(EMBLEM_BODY_MAX<150000);
+ const api=read('supabase/functions/farm-api/index.ts');
+ assert.match(api,new RegExp(`const EMBLEM_BODY_MAX=${EMBLEM_BODY_MAX};`),'the same limit in index.ts');
+ assert.match(api,/let body:any,parsed=false;if\(raw\.length<=EMBLEM_BODY_MAX\)\{try\{body=JSON\.parse\(raw\);parsed=true;\}catch\{\}\}/);
+ assert.match(api,/const bodyMax=parsed&&body\?\.operation==='action'&&body\?\.action\?\.type==='family_emblem_upload'\?EMBLEM_BODY_MAX:4096;/);
+ assert.match(api,/if\(raw\.length>bodyMax\)return reply\(\{error:'Request is too large\.'\},413\);/);
+});
+test('the emblem row starts with the own picture while it is the emblem, and leaving it asks first',()=>{
+ const ui=read('public/family-ui.js');
+ assert.match(ui,/const lookChoices=f=>\[\.\.\.\(customEmblemPath\(f\.emblem\)\?\[\{id:f\.emblem,own:true\}\]:\[\]\),\.\.\.familyEmblemChoices\(view\.seasonEmblems\?\?\[\]\)\];/);
+ assert.match(ui,/emblemPickerMarkup\(\{emblems:lookChoices\(f\),checkedId:f\.emblem,legend:'Choose an emblem',nameOf:e=>e\.own\?'Your own emblem':emblemName\(e\)/);
+ assert.match(ui,/customEmblemPath\(f\.emblem\)&&!await confirmAction\(\{title:'Replace your own emblem\?'/);
+ assert.match(ui,/if\(!await act\(\{type:'family_emblem_upload',image:picked\.data\}\)\)\{[^\n]*n\.textContent=error\|\|'That did not work\. Please try again\.'/);
+});

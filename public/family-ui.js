@@ -10,7 +10,7 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVEL_MAX,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_UPLOAD_COST,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVEL_MAX,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_UPLOAD_COST,customEmblemPath,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
 import {emblemMarkup} from './family-emblem-art.js';
 import {portal} from './portal.js';
@@ -220,6 +220,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  const shirtPicker=f=>{const colour=(FAMILY_EMBLEMS.find(x=>x.id===f.emblem)??FAMILY_EMBLEMS[0]).color;
   return `<section class="family-card family-shirt"><div><strong>Family shirt</strong><p>In your family's colour, with its emblem. Members can wear it in My farmer.</p></div>
   <div class="family-shirt-cuts" role="group" aria-label="Family shirt">${[...FAMILY_SHIRTS,null].map(id=>`<button type="button" class="family-shirt-cut${id?'':' is-none'}" data-family-shirt="${id??''}" aria-pressed="${(f.shirt??null)===id}" style="--family-color:${colour}"><span class="family-shirt-swatch" aria-hidden="true"></span><span>${id?SHIRT_NAMES[id]:'None'}</span></button>`).join('')}</div></section>`;};
+ // The family's own picture comes first while it is the emblem (30 Oct 2026, the owner), so it shows as picked among the others.
+ const lookChoices=f=>[...(customEmblemPath(f.emblem)?[{id:f.emblem,own:true}]:[]),...familyEmblemChoices(view.seasonEmblems??[])];
  // The gear in the header (settings): look and name, who can join, and leaving (quietly at the bottom).
  function settings(){
   const f=view.family,renameLater=f.renameAt>farmNow();
@@ -229,7 +231,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const leave=`<section class="family-leave"><h3>Leave this family</h3><p>${solo?'You are its only member, so you can join another family straight away.':'You can join or start another family straight away.'} Your points this week stay here.${f.leader&&!solo?' The longest-standing member becomes leader.':''}</p>${actionButton('family_leave','Leave family')}</section>`;
   if(!f.manager)return `${header}<p class="family-notice">Your family leader and co-leaders can invite farmers, choose the emblem and rename the family.</p>${leave}`;
   return `${header}
-  <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:familyEmblemChoices(view.seasonEmblems??[]),checkedId:f.emblem,legend:'Choose an emblem',nameOf:emblemName,tile:emblem,esc})}
+  <form data-family-look class="family-card family-look"><h3>Look and name</h3>${emblemPickerMarkup({emblems:lookChoices(f),checkedId:f.emblem,legend:'Choose an emblem',nameOf:e=>e.own?'Your own emblem':emblemName(e),tile:emblem,esc})}
   <label for="family-rename">Family name</label><input id="family-rename" name="name" value="${esc(f.name)}" minlength="3" maxlength="20" required ${renameLater?'disabled':''}><small>${renameLater?`You can rename again in ${formatDuration(f.renameAt-farmNow())}.`:'You can rename once every seven days.'}</small>
   <div class="family-look-save" data-look-save hidden><button type="button" class="link-button" data-look-undo>Undo</button><button class="primary-button">Save changes</button></div></form>
   <section class="family-card family-open-row"><div><strong>Who can join</strong><p>${MODE_HELP[f.mode]??MODE_HELP.invite}</p></div><select data-family-mode aria-label="Who can join" ${disabled(false)}>${Object.entries(FAMILY_JOIN_MODES).map(([k,label])=>`<option value="${k}" ${f.mode===k?'selected':''}>${label}</option>`).join('')}</select></section>
@@ -297,6 +299,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
    look.querySelector('[data-look-undo]').onclick=()=>{(look.querySelector(`input[name="emblem"][value="${f.emblem}"]`)??{}).checked=true;input.value=f.name;look.querySelector('[data-emblem-picker]').dispatchEvent(new Event('change',{bubbles:true}));sync();};
    look.onsubmit=async event=>{
     event.preventDefault();const emblemId=picked(),newName=name();
+    // Another emblem in place of the own picture: the picture goes for good, so ask first.
+    if(emblemId!==f.emblem&&customEmblemPath(f.emblem)&&!await confirmAction({title:'Replace your own emblem?',description:`Your own picture is removed. Uploading one again costs ${FAMILY_EMBLEM_UPLOAD_COST} diamonds.`,confirmLabel:'Replace it',cancelLabel:'Keep mine',tone:'danger'}))return;
     if(emblemId!==f.emblem&&!await act({type:'family_emblem',emblem:emblemId}))return;
     if(!input.disabled&&newName!==f.name)await act({type:'family_rename',name:newName});
    };
@@ -314,7 +318,8 @@ export function createFamilyUI({state,runAction,notify,isReady}){
     if(!picked||!rights.checked)return;
     if((state.diamonds??0)<FAMILY_EMBLEM_UPLOAD_COST){note.textContent=`You need ${FAMILY_EMBLEM_UPLOAD_COST} diamonds for your own emblem.`;return;}
     if(!await confirmAction({title:'Use this picture as your emblem?',description:`It replaces your family's emblem at once and costs ${FAMILY_EMBLEM_UPLOAD_COST} diamonds.`,confirmLabel:`Upload for ${FAMILY_EMBLEM_UPLOAD_COST} diamonds`,cancelLabel:'Not now',picture:'family-management'}))return;
-    await act({type:'family_emblem_upload',image:picked.data});
+    // A refused upload says why in the card itself (the toast sits behind this window).
+    if(!await act({type:'family_emblem_upload',image:picked.data})){const shown=content.querySelector('[data-own-emblem]');if(shown){shown.open=true;const n=shown.querySelector('[data-own-emblem-note]');if(n)n.textContent=error||'That did not work. Please try again.';}}
    });
   }
   content.querySelector('[data-family-mode]')?.addEventListener('change',event=>act({type:'family_join_mode',mode:event.currentTarget.value}));

@@ -5,6 +5,8 @@ import {customEmblemPath,FAMILY_EMBLEMS} from './farm-state.js';
 // square PNG or WebP of 128 to 512 pixels and at most 100 KB; the file's own bytes say what it is, never its name or the browser.
 export const EMBLEM_BUCKET='family-emblems';
 export const EMBLEM_MAX_BYTES=102400,EMBLEM_MIN_SIDE=128,EMBLEM_MAX_SIDE=512;
+// The whole request with such a picture: its base64 (4/3 of the bytes) and the rest of the action, well under 150 KB.
+export const EMBLEM_BODY_MAX=Math.ceil(EMBLEM_MAX_BYTES*4/3)+4096;
 const fail=message=>{throw Object.assign(new Error(message),{code:'EMBLEM_REJECTED'});};
 const u32be=(b,i)=>((b[i]<<24)>>>0)+(b[i+1]<<16)+(b[i+2]<<8)+b[i+3];
 const ascii=(b,i,n)=>String.fromCharCode(...b.slice(i,i+n));

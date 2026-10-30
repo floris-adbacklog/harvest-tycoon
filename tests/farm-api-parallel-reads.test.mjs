@@ -164,3 +164,10 @@ test('the account check itself is unchanged: the verified account, the admin\'s 
  assert.match(SOURCE,/const active=await \(mine\?\.session\?\?admin\.rpc\('harvest_session_active',\{p_player:user\.id,p_session:claims\.session_id\}\)\);/);
  assert.match(SOURCE,/const FARM_OPERATIONS=new Set\(\['load','action','family','family_profile','invite'\]\);/);
 });
+// 30 Oct 2026: an own family emblem (a 100 KB picture as base64) is the one request past 4 KB that gets in; a load that big still does not.
+test('an own emblem upload of a full 100 KB picture gets past the size check; other requests keep 4 KB',async()=>{
+ const api=farmApi(),r=await api.send(null,{raw:JSON.stringify({operation:'action',requestId:'3f2a9c1e-5b7d-4e8f-9a0b-1c2d3e4f5a6b',action:{type:'family_emblem_upload',image:'A'.repeat(136536)}})});
+ assert.notEqual(r.status,413,JSON.stringify(r.data).slice(0,120));
+ const load=farmApi(),l=await load.send(null,{raw:JSON.stringify({operation:'load',pad:'x'.repeat(136536)})});
+ assert.deepEqual([l.status,l.data],[413,{error:'Request is too large.'}]);
+});

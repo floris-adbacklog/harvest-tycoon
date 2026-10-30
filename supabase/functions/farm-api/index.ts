@@ -69,7 +69,14 @@ Deno.serve(async(req)=>{
   // that same player; otherwise everything is asked again for the verified account, as before.
   const started=Date.now(),timed=Math.random()<TIMING_SHARE,marks:Record<string,number>={},mark=(name:string)=>{if(timed)marks[name]=Date.now()-started;};
   const raw=await req.text();
-  let body:any,parsed=false;if(raw.length<=4096){try{body=JSON.parse(raw);parsed=true;}catch{}}
+  // Every request fits in 4 KB, except a family's own emblem (30 Oct 2026): its picture (at most 100 KB, base64) comes along, so that
+  // one action may be up to EMBLEM_BODY_MAX (emblem-upload.js keeps the same number, tests/family-emblem-upload.test.mjs). Anything
+  // bigger is not even read as JSON.
+  const EMBLEM_BODY_MAX=140630;
+  let body:any,parsed=false;if(raw.length<=EMBLEM_BODY_MAX){try{body=JSON.parse(raw);parsed=true;}catch{}}
+  const bodyMax=parsed&&body?.operation==='action'&&body?.action?.type==='family_emblem_upload'?EMBLEM_BODY_MAX:4096;
+  // Past its own limit a request is not read at all (no early reads start for it); the 413 below answers it after the account check.
+  if(raw.length>bodyMax){body=undefined;parsed=false;}
   let claims:any={};try{claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))??{};}catch{}
   const named=typeof claims.sub==='string'&&/^[0-9a-f-]{36}$/i.test(claims.sub)?claims.sub:null;
   const early=named&&claims.session_id?{
@@ -95,7 +102,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='kongregate')user.app_metadata={...user.app_metadata,provider:'kongregate'};
   // And for a Discord account (Oct 2026, discord-auth): signed in through Discord, a made-up address, the bonus quietly.
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
-  if(raw.length>4096)return reply({error:'Request is too large.'},413);
+  if(raw.length>bodyMax)return reply({error:'Request is too large.'},413);
   if(!parsed)return reply({error:'Invalid request.'},400);
   if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read

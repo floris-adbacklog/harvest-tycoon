@@ -81,7 +81,8 @@ test('the arrows follow the width of the row and stop watching once the dialog r
 test('both emblem forms use the picker, and the dialog is not re-rendered under a farmer who is using the arrows',()=>{
  const ui=read('public/family-ui.js');
  assert.match(ui,/emblemPickerMarkup\(\{emblems:familyEmblemChoices\(\),checkedId:FAMILY_EMBLEM_DEFAULT,legend:'Choose your emblem'/,'7 Oct 2026: the 40 family emblems, then the 60 game icons');
- assert.match(ui,/emblemPickerMarkup\(\{emblems:familyEmblemChoices\(view\.seasonEmblems\?\?\[\]\),checkedId:f\.emblem,legend:'Choose an emblem'/,'the same 100 in Family settings: every family can pick any of them again');
+ assert.match(ui,/emblemPickerMarkup\(\{emblems:lookChoices\(f\),checkedId:f\.emblem,legend:'Choose an emblem'/,'the same 100 in Family settings: every family can pick any of them again');
+ assert.match(ui,/const lookChoices=f=>\[\.\.\.\(customEmblemPath\(f\.emblem\)\?\[\{id:f\.emblem,own:true\}\]:\[\]\),\.\.\.familyEmblemChoices\(view\.seasonEmblems\?\?\[\]\)\];/,'(30 Oct 2026: after the own picture, when there is one)');
  assert(!/<div class="family-emblems">/.test(ui),'no second, hand-written grid');
  assert.match(ui,/inviteSearch\.mount\(content\);bindEmblemPickers\(content\);/);
  assert.match(ui,/closest\('\[data-emblem-picker\]'\)/);
