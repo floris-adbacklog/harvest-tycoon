@@ -1,9 +1,10 @@
-import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,PETS,HARBOUR_WORKS,HARBOUR_QUESTS,levelOf,recipeFor} from './farm-state.js';
+import {ITEMS,BUILDINGS,CROPS,BOOSTS,IMPROVEMENTS,VILLAGE_LANDMARKS,VILLAGE_SHOP,FISH,LAKE_FISH,PETS,HARBOUR_WORKS,HARBOUR_QUESTS,NEIGHBOURS,VILLAGE_QUESTS,ACTIVE_STATIONS,levelOf,recipeFor} from './farm-state.js';
+import {DECOR} from './farm-map.js';
 import {isStaff,isSuperadmin} from './admin-service.js';
 
 // A log per farmer (26 Sep 2026): what they did and what it gave or cost, with the time, in categories. The farmer reads their own
 // on their profile; the admin and the moderators read everyone's, except purchases with real money, which only the farmer and the
-// admin see. Rows live in player_logs (supabase/player-logs.sql) for 90 days. Planting, watering, care and harvesting are not
+// admin see. Rows live in player_logs (supabase/player-logs.sql) for 60 days (90 until 30 Oct 2026). Planting, watering, care and harvesting are not
 // logged one by one: they are three quarters of all actions and would fill the log without saying much. Writing happens after the
 // reply (EdgeRuntime.waitUntil in index.ts), so the game never waits for it, and it never costs an extra request.
 export const LOG_CATEGORIES=Object.freeze(['account','farm','production','market','rewards','diamonds','social','staff','purchase']);
@@ -117,6 +118,28 @@ const FARM_ACTIONS={
  lake_casts:['diamonds',()=>'Bought five lake casts with diamonds'],
  landmark_supplies:['diamonds',a=>`Bought the goods for the ${landmark(a.landmark)} with diamonds`],
  // The Harbour tab of the diamond shop (28 Oct 2026).
+ // 30 Oct 2026 (the owner: "Breid logs uit met relevante dingen zoals coins spent"): every action that gives or costs coins, diamonds or
+ // goods has its line now; only planting, watering, care and harvesting stay out (they count in the day's totals below).
+ tractor:['farm',(a,s,r)=>{const n=r?.count??0,c=number(n),crop=CROPS[a.crop]?.name.toLowerCase()??'crops';
+  if(a.mode==='plant')return n===1?`The tractor planted ${crop} on ${c} field`:`The tractor planted ${crop} on ${c} fields`;
+  if(a.mode==='water')return n===1?`The tractor watered ${c} field`:`The tractor watered ${c} fields`;
+  if(a.mode==='harvest')return n===1?`The tractor harvested ${c} field`:`The tractor harvested ${c} fields`;
+  if(a.mode==='tend')return n===1?`The tractor gave care to ${c} field`:`The tractor gave care to ${c} fields`;
+  if(a.mode==='fertilize')return n===1?`The tractor fertilized ${c} field`:`The tractor fertilized ${c} fields`;
+  return 'Used the tractor';}],
+ fertilize:['farm',(a,s,r)=>{const n=r?.count??(a.ids?.length??1);return n===1?`Fertilized ${number(n)} field`:`Fertilized ${number(n)} fields`;}],
+ layout_buy:['farm',(a)=>`Bought and placed ${DECOR[a.kind]?.name.toLowerCase()??'a decoration'}`],
+ layout_purchase:['farm',(a,s,r)=>`Bought ${number(r?.count??a.count??1)} × ${DECOR[a.kind]?.name.toLowerCase()??'decoration'} for later`],
+ layout_draw:['farm',()=>'Changed paths, fences or flowers'],
+ season_claim:['rewards',(a)=>`Claimed a Season Pass reward (tier ${number(Number(a.tier)+1)})`],
+ season_chest:['rewards',()=>'Opened the Season Pass chest'],
+ season_skip:['diamonds',()=>'Skipped a Season Pass tier'],
+ bin_add:['market',(a)=>`Put ${number(a.count)} ${itemName(a.item)} in the shipping bin`],
+ bin_take:['market',(a)=>`Took ${itemName(a.item)} back from the shipping bin`],
+ donkey_cart_buy:['market',(a)=>`Bought ${itemName(a.item)} from the cart trader`],
+ neighbour_gift:['social',(a)=>`Gave ${itemName(a.item)} to ${NEIGHBOURS[a.neighbour]?.name??'a neighbour'}`],
+ village_quest:['rewards',(a)=>`Claimed the village quest “${VILLAGE_QUESTS[a.id]?.title??''}”`],
+ activity_start:['production',(a)=>`Started a helping hand at the ${ACTIVE_STATIONS[a.station]?.name??'farm'}`],
  ship_now:['diamonds',()=>'Called a ship to the quay with diamonds'],
  harbour_supplies:['diamonds',a=>`Bought the goods for the ${HARBOUR_WORKS.find(w=>w.id===a.work)?.name??'harbour work'} with diamonds`]
 };
@@ -127,6 +150,29 @@ const FAMILY_ACTIONS={family_create:'Started a family',family_join:'Joined a fam
  family_rename:'Renamed the family',family_emblem:'Changed the family emblem',family_open:'Changed who can join the family'};
 
 const line=(category,action,text,detail)=>({category,action,text:(detail?`${text} · ${detail}`:text).slice(0,240)});
+// The day's totals (30 Oct 2026, the owner: option 2): every farm action adds what it gave and what it cost to state.dayTally, planting,
+// watering, care and harvesting too, on the server only (farm-api, after the action, before the save). The first action of a new UTC
+// day writes the last day's totals as one line, at noon UTC of that day (so it falls on that day in every time zone) and, written after
+// it, above that day's lines in the log; today's come with the log itself (handlePlayerLog today).
+export const utcDayOf=ms=>new Date(ms).toISOString().slice(0,10);
+export function dayTotalParts(t){
+ const parts=[],add=(n,text)=>{if(n>0)parts.push(text);};
+ add(t?.coinsIn,`+${number(t?.coinsIn)} ${t?.coinsIn===1?'coin':'coins'}`);add(t?.coinsOut,`−${number(t?.coinsOut)} ${t?.coinsOut===1?'coin':'coins'}`);
+ add(t?.diamondsIn,`+${number(t?.diamondsIn)} ${t?.diamondsIn===1?'diamond':'diamonds'}`);add(t?.diamondsOut,`−${number(t?.diamondsOut)} ${t?.diamondsOut===1?'diamond':'diamonds'}`);
+ add(t?.xp,`+${number(t?.xp)} XP`);
+ return parts.join(' · ');
+}
+export function dayTotalLine(t){const parts=dayTotalParts(t);return parts?line('account','day_total','Day total',parts):null;}
+export function tallyDay(state,before,after,now=Date.now()){
+ const day=utcDayOf(now),rows=[];let t=state.dayTally;
+ if(t&&t.day!==day){const row=dayTotalLine(t);if(row&&/^\d{4}-\d{2}-\d{2}$/.test(t.day))rows.push({...row,at:`${t.day}T12:00:00.000Z`});t=null;}
+ if(!t||typeof t!=='object')t={day,coinsIn:0,coinsOut:0,diamondsIn:0,diamondsOut:0,xp:0};
+ const coins=(after.coins??0)-(before.coins??0),diamonds=(after.diamonds??0)-(before.diamonds??0),xp=(after.xp??0)-(before.xp??0);
+ if(coins>0)t.coinsIn+=coins;else t.coinsOut-=coins;
+ if(diamonds>0)t.diamondsIn+=diamonds;else t.diamondsOut-=diamonds;
+ if(xp>0)t.xp+=xp;
+ state.dayTally=t;return rows;
+}
 // The log lines for one farm action: the action itself (when it is one worth logging) and a level reached on the way.
 export function farmLog(action,before,state,result){
  const rows=[],after=snapshot(state),known=FARM_ACTIONS[action?.type];
@@ -195,7 +241,7 @@ export function adminGrantLog(granted){
 // Adds the lines for one farmer; a problem only costs the log lines, never the action.
 export async function writeLog(admin,playerId,rows,byPlayer=null){
  if(!rows?.length||!playerId)return;
- try{const saved=await admin.from('player_logs').insert(rows.map(r=>({player_id:playerId,category:r.category,action:r.action,text:r.text,by_player:byPlayer})));if(saved.error)console.error('Log failed',saved.error.code);}
+ try{const saved=await admin.from('player_logs').insert(rows.map(r=>({player_id:playerId,category:r.category,action:r.action,text:r.text,by_player:byPlayer,...(r.at?{created_at:r.at}:{})})));if(saved.error)console.error('Log failed',saved.error.code);}
  catch(error){console.error('Log failed',error?.name);}
 }
 
@@ -208,7 +254,7 @@ export async function handlePlayerLog({admin,user,body}){
  if(!own&&!(await isStaff(admin,user)))return respond({error:'Not authorized.'},403);
  const category=body?.category&&LOG_CATEGORIES.includes(body.category)?body.category:null,purchases=own||isSuperadmin(user);
  if(category==='purchase'&&!purchases)return respond({entries:[],more:false,categories:LOG_CATEGORIES.filter(c=>c!=='purchase')});
- let query=admin.from('player_logs').select('id,created_at,category,text,by_player').eq('player_id',playerId).order('id',{ascending:false}).limit(LOG_PAGE+1);
+ let query=admin.from('player_logs').select('id,created_at,category,action,text,by_player').eq('player_id',playerId).order('id',{ascending:false}).limit(LOG_PAGE+1);
  if(category)query=query.eq('category',category);else if(!purchases)query=query.neq('category','purchase');
  if(Number.isSafeInteger(Number(body?.before))&&Number(body.before)>0)query=query.lt('id',Number(body.before));
  const found=await query;if(found.error)throw found.error;
@@ -216,5 +262,8 @@ export async function handlePlayerLog({admin,user,body}){
  const staffIds=[...new Set(shown.map(r=>r.by_player).filter(Boolean))];
  let names=new Map();
  if(staffIds.length){const people=await admin.from('player_stats').select('player_id,username').in('player_id',staffIds);if(!people.error)names=new Map((people.data??[]).map(p=>[p.player_id,p.username]));}
- return respond({entries:shown.map(r=>({id:r.id,at:r.created_at,category:r.category,text:r.text,by:r.by_player?names.get(r.by_player)??'Staff':null})),more,categories:purchases?LOG_CATEGORIES:LOG_CATEGORIES.filter(c=>c!=='purchase')});
+ // Today's totals (30 Oct 2026) head the first page of All and Account, from the farm itself.
+ let today=null;
+ if(!(Number(body?.before)>0)&&(!category||category==='account'))try{const farm=await admin.from('player_farms').select('tally:state->dayTally').eq('player_id',playerId).maybeSingle();const t=farm?.data?.tally;if(t?.day===utcDayOf(Date.now()))today=dayTotalLine(t)?.text??null;}catch{}   // without it the log reads as before
+ return respond({entries:shown.map(r=>({id:r.id,at:r.created_at,category:r.category,action:r.action,text:r.text,by:r.by_player?names.get(r.by_player)??'Staff':null})),more,today,categories:purchases?LOG_CATEGORIES:LOG_CATEGORIES.filter(c=>c!=='purchase')});
 }

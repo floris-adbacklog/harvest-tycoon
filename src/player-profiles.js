@@ -83,6 +83,8 @@ export function renderLogEntries(entries,now=Date.now()){
  for(const e of entries){
   const at=Date.parse(e.at),label=logDay(at,now);
   if(label!==day){if(day!==null)html+='</ol>';html+=`<h4 class="farmer-log-day">${esc(label)}</h4><ol class="farmer-log-list">`;day=label;}
+  // A day's totals (30 Oct 2026, farm-api player-log.js tallyDay): the day's first line, without a time.
+  if(e.action==='day_total'){html+=`<li class="farmer-log-row is-day-total" data-log-category="${esc(e.category)}">${art('coins')}<div><p>${esc(e.text)}</p></div></li>`;continue;}
   html+=`<li class="farmer-log-row" data-log-category="${esc(e.category)}"><span class="farmer-log-dot" aria-hidden="true"></span><div><p>${esc(e.text)}</p><small><time datetime="${esc(e.at)}">${new Date(at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</time> · ${esc(LOG_LABELS[e.category]??e.category)}${e.by?` ${ownLine(`· by ${e.by}`,[e.by])}`:''}</small></div></li>`;
  }
  return day===null?'':html+'</ol>';
@@ -104,7 +106,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  search.innerHTML='<label for="farmer-search-input">Find a farmer</label><div class="farmer-search-control"><input id="farmer-search-input" type="search" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Search by player name…" aria-describedby="farmer-search-status"><button type="button" class="small-button" id="farmer-search-clear" hidden>Clear</button></div><p id="farmer-search-status" role="status">Enter at least 2 characters to search all farmers.</p><div id="farmer-search-results"></div>';
  (board.querySelector('.rank-drawer')??board.querySelector('.leaderboard-filter')).before(search);
  const dialog=document.createElement('dialog');dialog.id='player-profile-dialog';dialog.className='game-dialog farmer-profile-dialog is-sheet is-m';dialog.setAttribute('aria-labelledby','farmer-profile-title');
- dialog.innerHTML='<div class="dialog-heading"><button type="button" class="small-button farmer-profile-back back-round">Back to leaderboard</button><span class="dialog-badge farmer-profile-badge" aria-hidden="true"></span><div class="dialog-titles"><h2 id="farmer-profile-title">Farmer profile</h2><p class="dialog-sub" id="farmer-profile-sub" hidden></p></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><details id="farmer-log" class="farmer-log farmer-fold" aria-labelledby="farmer-log-title" hidden><summary><h3 class="farmer-section-title" id="farmer-log-title"><span class="farmer-log-icon"></span>Farm log</h3><span class="farmer-fold-count">Last 90 days</span><svg class="farmer-fold-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary><div class="farmer-fold-body"><div class="farmer-log-filters" role="group" aria-label="Show"></div><div class="farmer-log-entries" aria-live="polite"></div><button type="button" class="small-button farmer-log-more" hidden>Show older</button></div></details><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p>';
+ dialog.innerHTML='<div class="dialog-heading"><button type="button" class="small-button farmer-profile-back back-round">Back to leaderboard</button><span class="dialog-badge farmer-profile-badge" aria-hidden="true"></span><div class="dialog-titles"><h2 id="farmer-profile-title">Farmer profile</h2><p class="dialog-sub" id="farmer-profile-sub" hidden></p></div><button class="icon-button farmer-profile-close" aria-label="Close player profile">×</button></div><div id="farmer-staff-view" class="farmer-staff-view" hidden><button type="button" class="small-button" data-staff-view>Open in dashboard</button></div><div id="admin-grant" class="admin-grant" hidden></div><div id="farmer-profile-content" aria-busy="false"></div><details id="farmer-log" class="farmer-log farmer-fold" aria-labelledby="farmer-log-title" hidden><summary><h3 class="farmer-section-title" id="farmer-log-title"><span class="farmer-log-icon"></span>Farm log</h3><span class="farmer-fold-count">Last 60 days</span><svg class="farmer-fold-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary><div class="farmer-fold-body"><div class="farmer-log-filters" role="group" aria-label="Show"></div><div class="farmer-log-entries" aria-live="polite"></div><button type="button" class="small-button farmer-log-more" hidden>Show older</button></div></details><p id="farmer-profile-status" class="farmer-profile-status" role="status"></p>';
  document.body.append(dialog);
  const input=search.querySelector('input'),clear=search.querySelector('#farmer-search-clear'),results=search.querySelector('#farmer-search-results'),status=search.querySelector('#farmer-search-status');
  const content=dialog.querySelector('#farmer-profile-content'),profileStatus=dialog.querySelector('#farmer-profile-status'),adminGrant=dialog.querySelector('#admin-grant');
@@ -169,7 +171,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  }
  const logBox=dialog.querySelector('#farmer-log'),logEntries=logBox.querySelector('.farmer-log-entries'),logMore=logBox.querySelector('.farmer-log-more'),logFilters=logBox.querySelector('.farmer-log-filters');
  logBox.querySelector('.farmer-log-icon').innerHTML=art('log');
- const log={player:null,category:'all',entries:[],more:false,ticket:0};
+ const log={player:null,category:'all',entries:[],more:false,ticket:0,today:null};
  async function loadLog(older=false){
   const ticket=++log.ticket,player=log.player;if(!player)return;
   if(!older){log.entries=[];logEntries.innerHTML='<p class="farmer-empty">Reading the log…</p>';}
@@ -177,9 +179,10 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
   try{
    const data=await bridge.request({operation:'player_log',playerId:player,category:log.category==='all'?null:log.category,before:older?log.entries.at(-1)?.id:null});
    if(disposed||ticket!==log.ticket||log.player!==player||!dialog.open)return;
-   log.entries=[...log.entries,...(data.entries??[])];log.more=Boolean(data.more);
+   log.entries=[...log.entries,...(data.entries??[])];log.more=Boolean(data.more);if(!older)log.today=data.today??null;
    logFilters.innerHTML=['all',...(data.categories??[])].map(c=>`<button type="button" data-log-filter="${c}" aria-pressed="${c===log.category}">${esc(LOG_LABELS[c]??c)}</button>`).join('');
-   logEntries.innerHTML=log.entries.length?renderLogEntries(log.entries,Date.now()+clockOffset):`<p class="farmer-empty">${log.category==='all'?'Nothing in the log yet. It fills up as the farm is played.':'Nothing in this category yet.'}</p>`;
+   const shown=log.today?[{at:new Date(Date.now()+clockOffset).toISOString(),category:'account',action:'day_total',text:log.today},...log.entries]:log.entries;
+   logEntries.innerHTML=shown.length?renderLogEntries(shown,Date.now()+clockOffset):`<p class="farmer-empty">${log.category==='all'?'Nothing in the log yet. It fills up as the farm is played.':'Nothing in this category yet.'}</p>`;
    logMore.hidden=!log.more;
   }catch(error){if(ticket===log.ticket&&!older)logEntries.innerHTML=`<p class="farmer-empty">${esc(error.message)}</p>`;}
   finally{if(ticket===log.ticket)logMore.disabled=false;}
@@ -202,7 +205,8 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  dialog.addEventListener('close',()=>{++profileSequence;selected=null;if(shareSlot)window.harvestShareFarm?.reset(shareSlot.querySelector('.farm-share-box'));if(!disposed)(returnFocus?.isConnected?returnFocus:input).focus();});
  // From the leaderboard (the default) or from somewhere else, such as the Family Members list, which names its own way back.
  // back:null (the chat) shows no way back at all: closing the profile is the way back.
- async function open(playerId,{back='Back to leaderboard',gift=false}={}){
+ // log: open with the farm log unfolded and in view (30 Oct 2026, Settings › My log).
+ async function open(playerId,{back='Back to leaderboard',gift=false,log:showFarmLog=false}={}){
   if(disposed)return;returnFocus=document.activeElement;selected=playerId;profileUsername=null;statPage=0;++profileSequence;
   const backButton=dialog.querySelector('.farmer-profile-back');backButton.hidden=back===null;if(back!==null)backButton.textContent=back;
   dialog.querySelector('#farmer-profile-title').textContent='Farmer profile';
@@ -219,6 +223,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
   const granting=checkAdmin().then(admin=>{if(!disposed&&gift&&admin&&selected===playerId&&dialog.open){renderAdminGrant(playerId);return true;}return false;});
   // The profile first, the log right behind it (it sits below the profile).
   const loading=loadProfile(Boolean(cached));showLog(playerId);await loading;
+  if(showFarmLog&&!logBox.hidden){logBox.open=true;logBox.scrollIntoView?.({block:'start'});}
   if(await granting&&selected===playerId&&dialog.open){adminGrant.scrollIntoView?.({block:'center',behavior:'smooth'});adminGrant.querySelector('#admin-grant-diamonds')?.focus?.({preventScroll:true});}
  }
  // A family leader sees "Invite to <family>" on the profile of a farmer without a family (public/family-ui.js decides whether

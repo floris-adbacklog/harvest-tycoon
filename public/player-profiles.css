@@ -296,3 +296,7 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 #player-profile-dialog .farmer-actions .farmer-chat-report,#player-profile-dialog .farmer-actions .farmer-chat-report:not(:disabled){order:3;min-height:36px;padding:2px 6px;border:0;background:none;box-shadow:none;font-size:12px;font-weight:700;color:#8a4a3a}
 #player-profile-dialog .farmer-actions .farmer-chat-report:not(:disabled):hover{background:none;text-decoration:underline;text-underline-offset:3px}
 #player-profile-dialog .farmer-actions .farmer-chat-report .game-art{width:16px;height:16px}
+/* A day's totals (30 Oct 2026): the day's first line, a soft gold band with the coin, no time. */
+.farmer-log-row.is-day-total{align-items:center;background:#fdf6e3;border-top:0;border-bottom:1px solid #efe2c2}
+.farmer-log-row.is-day-total>.game-art{flex:none;width:20px;height:20px}
+.farmer-log-row.is-day-total p{font-weight:700;color:#5c4a1e}

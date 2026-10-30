@@ -18,7 +18,7 @@ test('a farm action becomes one readable line with what it gave or cost; field t
  const up=snapshot(s);applyFarmAction(s,{type:'upgrade',building:'mill'},now);
  assert.match(farmLog({type:'upgrade',building:'mill'},up,s,{})[0].text,/^Upgraded the Feed Mill to level \d+ · −[\d,]+ coins · \+15 XP$/);
  assert.deepEqual(farmLog({type:'field',id:0,action:'water'},snapshot(s),s,{}),[],'watering is not logged');
- for(const type of ['field','fields','tractor','fertilize','activity_start'])assert.deepEqual(farmLog({type},snapshot(s),s,{}),[],type);
+ for(const type of ['field','fields'])assert.deepEqual(farmLog({type},snapshot(s),s,{}),[],type);   // the tractor, fertilizing and a helping hand have their lines since 30 Oct 2026
  const low=snapshot(s);s.xp=xpForLevel(31);assert.deepEqual(farmLog({type:'quest',id:'x'},low,s,{}).map(r=>r.text),['Claimed a quest · +'+(xpForLevel(31)-low.xp).toLocaleString('en-US')+' XP','Reached level 31']);
  assert.ok(farmLog({type:'sell'},before,s,{}).every(r=>LOG_CATEGORIES.includes(r.category)&&r.text.length<=240));
 });
@@ -103,7 +103,7 @@ test('farm-api writes the lines after the reply, for actions, opening the game, 
  const api=read('supabase/functions/farm-api/index.ts');
  assert.match(api,/const later=\(work:Promise<unknown>\)=>\(globalThis as unknown as \{EdgeRuntime\?:\{waitUntil\?:\(p:Promise<unknown>\)=>void\}\}\)\.EdgeRuntime\?\.waitUntil\?\.\(work\);/);
  assert.match(api,/const before=snapshot\(state\);\n   let result;try\{result=applyFarmAction/);
- assert.match(api,/if\(saved\.data\)\{\n    mark\('commit'\);\n    if\(inviteReward\)[^\n]*\n    later\(writeLog\(admin,user\.id,farmLog\(body\.action,before,state,result\)\)\);\n    const answer=reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
+ assert.match(api,/if\(saved\.data\)\{\n    mark\('commit'\);\n    if\(inviteReward\)[^\n]*\n    later\(writeLog\(admin,user\.id,\[\.\.\.dayRows,\.\.\.farmLog\(body\.action,before,state,result\)\]\)\);\n    const answer=reply\(\{state,profile:\{\.\.\.profile,currency:state\.coins,level:levelOf\(state\)\},result/,'only once the save went through');
  assert.match(api,/const logged=loadLog\(\{away:now-\(Date\.parse\(row\.updated_at\)\|\|now\),gift:donations\.length\?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback,from:body\.opened\}\);/,'13 Oct 2026: with the reminder that opened the game');
  assert.equal((api.match(/later\(writeLog\(admin,user\.id,logged\)\);/g)??[]).length,2,'both ways a load can answer');
  assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('rename',/);assert.match(api,/later\(writeLog\(admin,user\.id,accountLog\('avatar','Picked a new face'\)\)\)/);

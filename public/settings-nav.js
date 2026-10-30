@@ -67,7 +67,9 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
   note.hidden=false;
  }
  const openAt=id=>{next=id||null;};
- nav.addEventListener('click',event=>{const row=event.target.closest('[data-settings-open]');if(row)show(row.dataset.settingsOpen);});
+ // A row that does something at once (30 Oct 2026, My log: the owner, "het tussenscherm kan eruit") presses its part's button instead of
+ // opening the part (data-settings-press).
+ nav.addEventListener('click',event=>{const row=event.target.closest('[data-settings-open]');if(!row)return;const part=parts().find(p=>p.id===row.dataset.settingsOpen),press=part?.dataset.settingsPress;if(press){dialog.querySelector(`#${press}`)?.click();return;}show(row.dataset.settingsOpen);});
  // Back on the list, the focus goes to the row of the part just left (it read open after show(null) cleared it, so found nothing).
  back.addEventListener('click',()=>{const left=open;show(null);nav.querySelector(`[data-settings-open="${esc(left)}"]`)?.focus({preventScroll:true});});
  const anchor=dialog.querySelector('#avatar-settings')??parts()[0];anchor?.before(note,nav);

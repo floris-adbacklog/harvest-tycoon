@@ -35,3 +35,6 @@ create trigger harvest_purchase_log after update of status on public.harvest_pur
 -- Lines older than 90 days go, every night at 03:23 UTC.
 select cron.unschedule('harvest-player-log-cleanup') where exists(select 1 from cron.job where jobname='harvest-player-log-cleanup');
 select cron.schedule('harvest-player-log-cleanup','23 3 * * *',$c$delete from public.player_logs where created_at<now()-interval '90 days'$c$);
+
+-- 30 Oct 2026 (the owner: "bewaar 60 dagen"): lines older than 60 days go, every night at 03:23 UTC (the same job, replaced).
+select cron.schedule('harvest-player-log-cleanup','23 3 * * *',$c$delete from public.player_logs where created_at<now()-interval '60 days'$c$);

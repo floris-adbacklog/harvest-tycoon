@@ -15,7 +15,7 @@ import {handleDeleteAccount} from './account-delete-service.js';
 import {handleAppleToken} from './apple-sign-in-service.js';
 import {recordSource} from './source-service.js';
 import {recordLoadStall} from './load-stall-service.js';
-import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog} from './player-log.js';
+import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog,tallyDay} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
 import {NO_EVENT_ACTIONS,setXpWeekend,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
@@ -354,6 +354,8 @@ Deno.serve(async(req)=>{
    mark('apply');
    // Invite a friend: the action that brings an invited farm to level 10 pays its reward in the same save.
    const inviteReward=inviteeReward(state,now);if(inviteReward)result.inviteReward=inviteReward;
+   // The day's totals (30 Oct 2026, player-log.js tallyDay): kept in the farm with this save; a new day's first action logs the last day's.
+   const dayRows=tallyDay(state,before,snapshot(state),now);
    // The tractor's diamond work counts for no event (NO_EVENT_ACTIONS): saved as no event action, so its stats only move the baselines.
    const receipts=[...row.receipts,{id:body.requestId,result,eventAction:NO_EVENT_ACTIONS.has(body.action.type)?null:body.action.type}].slice(-100);
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
@@ -361,7 +363,7 @@ Deno.serve(async(req)=>{
    if(saved.data){
     mark('commit');
     if(inviteReward)await qualifyInvite(admin,user.id,now).catch((error:{code?:string})=>console.error('Invite qualify failed',error?.code));
-    later(writeLog(admin,user.id,farmLog(body.action,before,state,result)));
+    later(writeLog(admin,user.id,[...dayRows,...farmLog(body.action,before,state,result)]));
     const answer=reply({state,profile:{...profile,currency:state.coins,level:levelOf(state)},result,revision:row.revision+1,serverNow:now,xpWeekend});
     mark('reply');if(timed)try{console.log(JSON.stringify({timing:'action',type:String(body.action.type).slice(0,40),attempt,...marks}));}catch{}
     return answer;
