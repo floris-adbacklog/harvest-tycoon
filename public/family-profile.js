@@ -6,7 +6,7 @@ import {skeleton} from './skeleton.js';
 import {art,refreshArt} from './visual-icons.js';
 import {avatarImage} from './player-avatars.js';
 import {vipBadge,refreshVipBadges} from './vip-ui.js';
-import {FAMILY_JOIN_MODES,FAMILY_MIN_LEVEL,FAMILY_RANKS} from './farm-state.js';
+import {FAMILY_JOIN_MODES,FAMILY_MIN_LEVEL,FAMILY_RANKS,customEmblemPath} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {rankArt} from './rank-art.js';
 import {placeLabel} from './place-label.js';
@@ -62,7 +62,7 @@ export function renderFamilyProfile(p,{emblem,now=Date.now(),profiles=true}){
  return `<section class="family-profile-hero">
   <span class="family-profile-emblem">${emblem(p.emblem)}<b class="family-level-badge" title="Family level ${s.level}">${s.level}</b></span>
   <div><h3 translate="no">${esc(p.name)}</h3><p>${num(p.members.length)} / ${num(p.maxMembers)} farmers · ${num(p.online)} online</p>
-   <div class="family-profile-tags"><span class="family-mode-chip">${esc(FAMILY_JOIN_MODES[p.mode]??'Invite only')}</span>${p.createdAt?`<small>Since ${day(p.createdAt)}</small>`:''}</div></div>
+   <div class="family-profile-tags"><span class="family-mode-chip">${esc(FAMILY_JOIN_MODES[p.mode]??'Invite only')}</span>${p.createdAt?`<small>Since ${day(p.createdAt)}</small>`:''}</div>${customEmblemPath(p.emblem)&&!p.viewer?.member?`<button type="button" class="link-button family-emblem-report" data-family-emblem-report>Report this emblem</button>`:''}</div>
  </section>
  <div class="family-profile-actions">${action.note?`<p class="family-notice">${esc(action.note)}</p>`:''}${action.button?`<button type="button" class="${action.button==='open'||action.button==='family_join'||action.button==='family_request'?'primary-button':'small-button'}" data-family-profile-action="${action.button}">${esc(action.label)}</button>`:''}</div>
  <section class="family-profile-level" aria-label="Family level">
@@ -94,6 +94,11 @@ export function createFamilyProfile({emblem,act,openFamily,request=body=>window.
   shown=p;
   content.innerHTML=renderFamilyProfile(p,{emblem,now:farmNow(),profiles:!!window.harvestProfiles});refreshArt();refreshVipBadges(content,farmNow());
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{dialog.close();window.harvestProfiles?.open(b.dataset.playerProfile,{back:null});});
+  // Report a family's own picture (30 Oct 2026): once per farmer per picture; the staff see it in Admin › Chat.
+  content.querySelector('[data-family-emblem-report]')?.addEventListener('click',async event=>{
+   const b=event.currentTarget;b.disabled=true;
+   try{await request({operation:'family_emblem_report',familyId:p.id});b.textContent='Thanks, we will look at it.';}catch(error){b.disabled=false;b.textContent=error.message||'That did not work. Please try again.';}
+  });
   content.querySelector('[data-family-profile-action]')?.addEventListener('click',async event=>{
    const type=event.currentTarget.dataset.familyProfileAction;
    if(type==='open'){dialog.close();openFamily();return;}

@@ -5,9 +5,10 @@ import {confirmAction} from '../public/confirm-dialog.js';
 import {ownWords,ownLine,ownText,setOwnText} from '../public/i18n.js';
 import {renderStatPages,bindStatPages} from './profile-stats.js';
 import {skeleton} from '../public/skeleton.js';
-import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook,GIFT_PASSES,giftPass} from '../game/farm-state.js';
+import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook,GIFT_PASSES,giftPass,customEmblemPath} from '../game/farm-state.js';
 import {framed,lookBadge,lookTitle,lookBackground,lookColor} from '../public/look-marks.js';
 import {keepFolds} from '../public/keep-folds.js';
+import {emblemColor,emblemInner} from '../public/family-emblem-art.js';
 
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const esc=escapeProfileText;
@@ -37,7 +38,7 @@ const masteryCard=({crop,tiers,best})=>`<div class="farmer-badge farmer-badge-${
 // with the emblem, the name as typed and the farmer's place in it; without one a quiet chip.
 function familyCard(family,emblem){
  if(!family?.name)return `<span class="farmer-family-none">${art('familyhall')}No family yet</span>`;
- const inner=`${emblem?`<span class="farmer-family-emblem" style="--family-color:${esc(emblem.color)}">${art(emblem.icon)}</span>`:art('familyhall')}<b>${ownWords(family.name)}</b>${family.role?`<small>${esc(family.role)}</small>`:''}`;
+ const inner=`${emblem?`<span class="farmer-family-emblem${emblem.own?' is-own':''}" style="--family-color:${esc(emblem.color)}">${emblem.inner}</span>`:art('familyhall')}<b>${ownWords(family.name)}</b>${family.role?`<small>${esc(family.role)}</small>`:''}`;
  return family.id?`<button type="button" class="farmer-family-open" data-family-profile="${esc(family.id)}" aria-label="${esc(ownText(`${family.name}: family profile`,[family.name]))}">${inner}<span class="farmer-family-more" aria-hidden="true">›</span></button>`:`<span class="farmer-family-open">${inner}</span>`;
 }
 const foldChevron='<svg class="farmer-fold-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>';
@@ -48,7 +49,7 @@ const foldChevron='<svg class="farmer-fold-chevron" viewBox="0 0 24 24" aria-hid
 // buttons as one compact row under it (yours: My farmer and Share my farm; someone else's: Send message, Invite, Report and Block),
 // the stat pages as compact chips, the medals in a fold (data-fold, kept open through the refresh: keepFolds) and the seasons small.
 export function renderPlayerProfile(player,now=Date.now(),{statPage=0,self=false,village=false}={}){
- const family=player.family,emblem=FAMILY_EMBLEMS.find(e=>e.id===family?.emblem);
+ const family=player.family,emblem=family?.emblem!=null?{color:emblemColor(family.emblem),inner:emblemInner(family.emblem),own:Boolean(customEmblemPath(family.emblem))}:null;
  const badges=player.badges??[],mastered=masteryByCrop(badges);
  // The Season Pass's looks (Oct 2026, public/look-marks.js): a background behind the face and name, a frame around the face, the name's
  // colour (as in the chat), a badge beside the name and a title under it; the badges of every season collected in their own row.

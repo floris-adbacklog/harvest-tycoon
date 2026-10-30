@@ -1,5 +1,6 @@
 import {art} from './visual-icons.js';
-import {formatDuration,FAMILY_EMBLEMS} from './farm-state.js';
+import {formatDuration} from './farm-state.js';
+import {emblemMarkup} from './family-emblem-art.js';
 import {t} from './i18n.js';
 // Welcome Back: after 30+ minutes away, one small celebration card (built like the gift and level-up popups)
 // with what is waiting on the farm and a single button that goes straight to it; on a new day also today's gift, collected
@@ -12,8 +13,7 @@ import {t} from './i18n.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function welcomeFamilyRow(offer){
  if(!offer?.familyId||!offer.name)return '';
- const e=FAMILY_EMBLEMS.find(x=>x.id===offer.emblem)??FAMILY_EMBLEMS[0];
- return `<div class="welcome-gift welcome-family" data-welcome-family><span class="welcome-gift-art"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span></span><span class="welcome-gift-copy"><strong translate="no">${esc(t('You left {0} after {1} days away.',offer.name,Number(offer.days)))}</strong></span><button type="button" class="small-button" data-rejoin-family>Join again</button></div>`;
+ return `<div class="welcome-gift welcome-family" data-welcome-family><span class="welcome-gift-art">${emblemMarkup(offer.emblem)}</span><span class="welcome-gift-copy"><strong translate="no">${esc(t('You left {0} after {1} days away.',offer.name,Number(offer.days)))}</strong></span><button type="button" class="small-button" data-rejoin-family>Join again</button></div>`;
 }
 const plural=(n,one,many)=>`${n} ${n===1?one:many}`;
 export function welcomeAction(summary){

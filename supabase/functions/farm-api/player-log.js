@@ -147,7 +147,7 @@ const FAMILY_ACTIONS={family_create:'Started a family',family_join:'Joined a fam
  family_decline_invite:'Declined a family invitation',family_leave:'Left the family',family_kick:'Removed a member from the family',
  family_promote:'Changed a member\'s role in the family',family_rank:'Changed a member\'s rank in the family',family_invite:'Invited a farmer to the family',family_cancel_invite:'Cancelled a family invitation',
  family_contribute:'Delivered to the Family Order',family_claim:'Claimed a family reward',family_tournament_goods:'Delivered goods for the family tournament',
- family_rename:'Renamed the family',family_emblem:'Changed the family emblem',family_open:'Changed who can join the family'};
+ family_rename:'Renamed the family',family_emblem:'Changed the family emblem',family_emblem_custom:'Uploaded an own family emblem',family_open:'Changed who can join the family'};
 
 const line=(category,action,text,detail)=>({category,action,text:(detail?`${text} · ${detail}`:text).slice(0,240)});
 // The day's totals (30 Oct 2026, the owner: option 2): every farm action adds what it gave and what it cost to state.dayTally, planting,

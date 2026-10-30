@@ -898,3 +898,24 @@ button.family-list-open:hover strong,button.family-podium-identity:hover strong,
 #family-dialog .family-min-level>input{flex:1;min-width:0;width:100%;height:38px;min-height:0;margin:0;padding:0 8px;border:1px solid #e4d9c8;border-radius:9px;background:#fff;color:#3f3827;font:inherit;font-variant-numeric:tabular-nums;text-align:center}
 #family-dialog .family-min-level:focus-within{border-color:#bfae93;background:#fff}
 @media(max-width:600px){#family-dialog .family-min-level{width:100%;box-sizing:border-box}}
+/* A family's own emblem (30 Oct 2026, family-emblem-art.js): the picture fills the tile, clipped to its round corners. Uploading it is a
+   fold low in Family settings (family-ui.js ownEmblemCard), shut until a leader opens it. */
+.family-emblem.is-own{overflow:hidden;padding:0}
+.family-emblem-own{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+#family-dialog .family-own-emblem{margin:16px 0 0;border:2px solid #e6ddd1;border-radius:16px;background:#fffdf4}
+.family-own-emblem>summary{display:flex;flex-direction:column;gap:2px;padding:12px 14px;cursor:pointer;list-style:none}
+.family-own-emblem>summary::-webkit-details-marker{display:none}
+.family-own-emblem>summary strong{font:600 15px 'Outfit',sans-serif;color:#453e28}
+.family-own-emblem>summary span{font-size:12px;color:#8a7d68}
+.family-own-emblem-body{display:grid;gap:12px;padding:0 14px 14px}
+#family-dialog .family-own-emblem-body p{margin:0;font-size:13px}
+.family-own-emblem-row{display:flex;align-items:center;gap:14px}
+.family-own-emblem-preview{display:inline-flex;width:64px;height:64px;flex-shrink:0;align-items:center;justify-content:center;overflow:hidden;border-radius:15px;background:#efe5d2;border:2px solid #e6ddd1}
+.family-own-emblem-preview img{width:100%;height:100%;object-fit:cover}
+.family-own-emblem-preview .game-art{width:40px;height:40px}
+#family-dialog .family-own-emblem-pick{display:inline-flex;align-items:center;margin:0;cursor:pointer}
+#family-dialog .family-own-emblem-rights{display:flex;align-items:flex-start;gap:10px;margin:0;font-size:13px;font-weight:400;line-height:1.45;color:#5d5442;cursor:pointer}
+#family-dialog .family-own-emblem-rights input{width:20px;height:20px;min-height:0;margin:1px 0 0;padding:0;flex:none;accent-color:#6f8f4e}
+#family-dialog .family-own-emblem-note{min-height:0;font-size:13px;color:#9b4a33}
+#family-dialog .family-own-emblem-note:empty{display:none}
+.family-emblem-report{margin-top:6px;font-size:12px;color:#8a7d68}

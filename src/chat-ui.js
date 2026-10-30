@@ -8,8 +8,9 @@ import {loadStaff,staffRole,staffBadge,STAFF_LABELS} from './staff-badge.js';
 // scrolled. A name or picture opens that farmer's profile. Data and live updates: bridge.chat (src/chat-client.js).
 import {avatarImage} from '../public/player-avatars.js';
 import {art,refreshArt} from '../public/visual-icons.js';
-import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EMBLEMS,FAMILY_MIN_LEVEL,familyWeek,giftMessageText} from '../public/farm-state.js';
+import {ITEMS,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_MIN_LEVEL,familyWeek,giftMessageText} from '../public/farm-state.js';
 import {familyShareButton} from '../public/family-profile.js';
+import {emblemMarkup} from '../public/family-emblem-art.js';
 import {createFamilyLive,familyCardIds} from './family-live.js';
 import {showCenterNotice} from '../public/center-notice.js';
 import {confirmAction,promptText} from '../public/confirm-dialog.js';
@@ -76,14 +77,14 @@ export const hiddenAsBlocked=(m,blocked)=>m.kind!=='chest'&&blocked.has(m.sender
 // when it cannot be had, the card shows its meta, which the database wrote from the family when it was shared. A family that is gone
 // keeps its name and emblem, quietly, with "This family is no longer around." and no button.
 export function familyShareCard(m,viewer={},now=Date.now(),live=null){
- const c={...(m.meta??{}),...(live&&!live.gone?live:{}),family:m.meta?.family},e=FAMILY_EMBLEMS.find(x=>x.id===String(c.emblem))??FAMILY_EMBLEMS[0],id=String(c.family??'');
+ const c={...(m.meta??{}),...(live&&!live.gone?live:{}),family:m.meta?.family},id=String(c.family??'');
  const top=`<div class="chat-request-top"><span class="chat-request-label">${art('family-members')}Farm Family</span><time datetime="${esc(m.created_at)}" title="${esc(exact(m.created_at))}">${ago(m.created_at,now)}</time></div>`;
- if(live?.gone)return `<li class="chat-request chat-family-share is-gone" data-id="${esc(m.id)}">${top}<div class="chat-request-body"><span class="chat-request-art chat-share-emblem"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-request-status">This family is no longer around.</small></div></div></li>`;
+ if(live?.gone)return `<li class="chat-request chat-family-share is-gone" data-id="${esc(m.id)}">${top}<div class="chat-request-body"><span class="chat-request-art chat-share-emblem">${emblemMarkup(c.emblem)}</span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-request-status">This family is no longer around.</small></div></div></li>`;
  const level=Math.max(1,Math.floor(Number(c.level))||1),members=Math.max(0,Math.floor(Number(c.members))||0),max=Math.max(1,Math.floor(Number(c.max))||10),minLevel=Math.floor(Number(c.minLevel))||FAMILY_MIN_LEVEL;
  const from=minLevel>FAMILY_MIN_LEVEL&&(c.mode==='open'||c.mode==='request')?`<span>From level ${minLevel}</span>`:'';
  const join=familyShareButton(c,{...viewer,now})==='join';
  const button=join?`<button type="button" class="primary-button chat-share-button" data-family-join="${esc(id)}">Join</button>`:`<button type="button" class="small-button chat-share-button" data-family-view="${esc(id)}">View</button>`;
- return `<li class="chat-request chat-family-share" data-id="${esc(m.id)}">${top}<div class="chat-request-body"><span class="chat-request-art chat-share-emblem"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span><b class="family-level-badge" title="Family level ${level}">${level}</b></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-share-facts"><span>Level ${level}</span><span>${members} / ${max} farmers</span>${from}</small><small class="chat-request-status">${ownLine(`Shared by ${m.sender_name}`,[m.sender_name])}</small></div></div>${button}</li>`;
+ return `<li class="chat-request chat-family-share" data-id="${esc(m.id)}">${top}<div class="chat-request-body"><span class="chat-request-art chat-share-emblem">${emblemMarkup(c.emblem)}<b class="family-level-badge" title="Family level ${level}">${level}</b></span><div><p class="chat-text chat-share-name" translate="no">${esc(c.name??'')}</p><small class="chat-share-facts"><span>Level ${level}</span><span>${members} / ${max} farmers</span>${from}</small><small class="chat-request-status">${ownLine(`Shared by ${m.sender_name}`,[m.sender_name])}</small></div></div>${button}</li>`;
 }
 // A group message from the admin (8 Oct 2026, supabase/chat-group-filters.sql): every copy carries who it was sent to (meta.group.filters,
 // as the database checked them), so the farmer reads an honest line above it: one pill per filter, in the game's own words (translated
@@ -201,8 +202,7 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
  const senderFamilies=new Map();let familiesAt=0;
  const familyBadge=m=>{
   const f=senderFamilies.get(m.sender);if(!f||tab==='family')return '';
-  const e=FAMILY_EMBLEMS.find(x=>x.id===String(f.emblem))??FAMILY_EMBLEMS[0];
-  return `<button type="button" class="chat-family" data-family-view="${esc(f.id)}" translate="no" title="${esc(f.name)}" aria-label="${esc(f.name)}"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span></button>`;
+  return `<button type="button" class="chat-family" data-family-view="${esc(f.id)}" translate="no" title="${esc(f.name)}" aria-label="${esc(f.name)}">${emblemMarkup(f.emblem)}</button>`;
  };
  async function freshSenderFamilies(ids,all=false){
   const wanted=[...new Set(ids)].filter(id=>id&&(all||!senderFamilies.has(id)));if(!wanted.length)return;if(all)familiesAt=Date.now();

@@ -171,3 +171,7 @@
 #admin-dashboard-dialog .admin-chart-svg .admin-chart-base{stroke:#d8ccb8;stroke-width:1;vector-effect:non-scaling-stroke}
 #admin-dashboard-dialog .admin-chart-svg text{font-size:12px;fill:#8a7a5c}
 #admin-dashboard-dialog .admin-chart-svg .admin-chart-max{font-weight:700;fill:#a08e6c}
+/* Families' own emblems (30 Oct 2026): the picture, the family (opens its profile) and how often it was reported. */
+#admin-dashboard-dialog .admin-emblem-list li{display:flex;align-items:center;gap:12px}
+#admin-dashboard-dialog .admin-emblem-list .family-emblem{width:44px;height:44px;border-radius:12px}
+#admin-dashboard-dialog .admin-emblem-list .admin-recent-copy{flex:1}

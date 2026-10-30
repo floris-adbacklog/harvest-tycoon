@@ -4,26 +4,30 @@
 import * as THREE from 'three';
 import {FAMILY_EMBLEMS} from './farm-state.js';
 import {artSource} from './visual-icons.js';
+import {ownEmblemUrl,emblemColor} from './family-emblem-art.js';
 
 const W=256,H=160;   // the cloth picture
 const images=new Map();
-function load(src){
- if(!images.has(src))images.set(src,new Promise(resolve=>{const img=new Image();img.decoding='async';img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=src;}));
+// A family's own picture comes from another address (the public bucket): asked with CORS, so the cloth stays usable as a texture.
+function load(src,cors=false){
+ if(!images.has(src))images.set(src,new Promise(resolve=>{const img=new Image();if(cors)img.crossOrigin='anonymous';img.decoding='async';img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=src;}));
  return images.get(src);
 }
 export function familyFlagKey(family){return family?.familyId?`${family.familyId}:${family.emblem}:${family.level??1}`:'';}
 const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16),c=[n>>16,n>>8&255,n&255].map(v=>Math.round(Math.min(255,Math.max(0,v*f))));return `rgb(${c.join(',')})`;};
 export async function drawFamilyCloth(canvas,family){
- const ctx=canvas.getContext('2d'),emblem=FAMILY_EMBLEMS.find(e=>e.id===family.emblem)??FAMILY_EMBLEMS[0];
+ const ctx=canvas.getContext('2d'),emblem=FAMILY_EMBLEMS.find(e=>e.id===family.emblem)??FAMILY_EMBLEMS[0],own=ownEmblemUrl(family.emblem),colour=emblemColor(family.emblem);
  // The family colour with a soft fold of light, a gold border and a darker hem.
- const grad=ctx.createLinearGradient(0,0,W,H);grad.addColorStop(0,shade(emblem.color,1.12));grad.addColorStop(1,shade(emblem.color,.88));
+ const grad=ctx.createLinearGradient(0,0,W,H);grad.addColorStop(0,shade(colour,1.12));grad.addColorStop(1,shade(colour,.88));
  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
  ctx.lineWidth=10;ctx.strokeStyle='#e9bd4c';ctx.strokeRect(5,5,W-10,H-10);
  ctx.lineWidth=2;ctx.strokeStyle='#9c6d1c';ctx.strokeRect(11,11,W-22,H-22);
  // The emblem on a cream round patch in the middle.
  const cx=W*.5,cy=H*.5,r=H*.34;
  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#fff6df';ctx.fill();ctx.lineWidth=5;ctx.strokeStyle='#e9bd4c';ctx.stroke();
- const source=artSource(emblem.icon),picture=source&&await load(source.src);
+ // The family's own picture (30 Oct 2026) fills the round patch.
+ if(own){const picture=await load(own,true);if(picture){ctx.save();ctx.beginPath();ctx.arc(cx,cy,r-4,0,Math.PI*2);ctx.clip();ctx.drawImage(picture,cx-r,cy-r,r*2,r*2);ctx.restore();}}
+ const source=own?null:artSource(emblem.icon),picture=source&&await load(source.src);
  if(picture){const cell=picture.naturalWidth/source.columns,sx=(source.index%source.columns)*cell,sy=Math.floor(source.index/source.columns)*cell,d=r*1.5;ctx.drawImage(picture,sx,sy,cell,cell,cx-d/2,cy-d/2,d,d);}
  // The family level in a gold badge at the free end.
  const bx=W*.84,by=H*.74,br=H*.13;

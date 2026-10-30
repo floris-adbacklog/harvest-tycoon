@@ -69,7 +69,7 @@ test('My farmer: a member wears it as a top while they are in a family, drawn in
  assert.match(creator,/const shirt=tab==='top'&&family\?\.shirt&&isOwned\(farmerPart\(FAMILY_SHIRT\)\)\?/);
  // farmer.js: one colour, the family's (its emblem's, as the flag), and the emblem on a patch on the chest, made once at the rest pose.
  const farmer=read('public/farmer.js');
- assert.match(farmer,/export const familyColour=emblem=>\(FAMILY_EMBLEMS\.find\(e=>e\.id===String\(emblem\)\)\?\?FAMILY_EMBLEMS\[0\]\)\.color;/);
+ assert.match(farmer,/export const familyColour=emblem=>emblemColor\(emblem\);/,'the emblem\'s colour, or cream behind an own picture (30 Oct 2026)');
  assert.match(farmer,/const worn=new Map\(\),patch=chestPatch\(root,bones,height\);/);
  assert.match(read('public/family-flag.js'),/emblem=FAMILY_EMBLEMS\.find\(e=>e\.id===family\.emblem\)\?\?FAMILY_EMBLEMS\[0\]/,'the flag\'s colour is the emblem\'s too');
 });

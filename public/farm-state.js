@@ -5664,6 +5664,12 @@ export function familyEmblemChoices(owned=[]){
  return [...season,...row(FAMILY_EMBLEM_ORDER,FAMILY_EMBLEMS.filter(e=>familyEmblemReal(e)&&!Object.hasOwn(SEASON_EMBLEMS,e.id))),...row(FAMILY_GAME_EMBLEM_ORDER,FAMILY_EMBLEMS.filter(e=>!familyEmblemReal(e)&&!Object.hasOwn(SEASON_EMBLEMS,e.id)))];
 }
 export const FAMILY_EMBLEM_DEFAULT=familyEmblemChoices()[0].id;
+// A family's own emblem (30 Oct 2026, the owner: "Maak het mogelijk om je eigen family emblem te uploaden mits juist formaat en kleine
+// bestandsgrootte", 100 diamanten, shown at once with a way to report it): a picture the leader or a co-leader uploads (farm-api
+// emblem-upload.js checks it and stores it), as 'custom:<family id>/<file>' in the family's emblem. The staff can remove it.
+export const FAMILY_EMBLEM_UPLOAD_COST=100;
+const CUSTOM_EMBLEM=/^custom:([0-9a-f-]{36})\/([0-9a-f-]{36})\.(png|webp)$/;
+export const customEmblemPath=emblem=>{const m=CUSTOM_EMBLEM.exec(String(emblem??''));return m?`${m[1]}/${m[2]}.${m[3]}`:null;};
 export const familyEmblemValid=id=>typeof id==='string'&&/^(0|[1-9]\d*)$/.test(id)&&Number(id)<FAMILY_EMBLEMS.length;   // ids 0-100
 // A season emblem: "If someone in your family has this emblem, your leader can pick it." Once picked it stays, also when that member
 // leaves. owned: the season emblems the family's members collected (farm-api reads them from their farms, family-service.js).
@@ -6142,6 +6148,13 @@ export function familyMutate(original,state,player,action,now,options={}){
    result={message:`${name} is now ${({coleader:'a co-leader',honorary:'an honorary member',member:'a member'})[action.rank]}.`};
   }else if(type==='family_rename'){
    manager();if(family.renamed_at&&now-family.renamed_at<config.RENAME_COOLDOWN_MS)throw new Error('You can rename your family once every seven days.');if(!validName(action.name))throw new Error('Use a valid 3–20 character family name.');const name=action.name.trim();if(c.families.some(f=>f.id!==family.id&&!f.deleted_at&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('That family name is taken.');family.name=name;family.renamed_at=now;result={message:'Family renamed.'};
+  }else if(type==='family_emblem_custom'){
+   // The picture is stored already (farm-api); here it costs the uploader the diamonds and becomes the emblem.
+   manager();const path=String(action.path??'');
+   if(customEmblemPath(`custom:${path}`)!==path||!path.startsWith(`${family.id}/`))throw new Error('Upload the picture again.');
+   if((state.diamonds??0)<FAMILY_EMBLEM_UPLOAD_COST)throw new Error(`You need ${FAMILY_EMBLEM_UPLOAD_COST} diamonds for your own emblem.`);
+   spendDiamonds(state,FAMILY_EMBLEM_UPLOAD_COST);
+   family.emblem=`custom:${path}`;result={message:'Your own family emblem is up.'};
   }else if(type==='family_emblem'){
    manager();if(!familyEmblemValid(action.emblem))throw new Error('Choose a family emblem.');
    if(!familyEmblemAllowed(action.emblem,{current:family.emblem,owned:[...(options.seasonEmblems??[]),...(SEASON_EMBLEMS[action.emblem]&&ownsLook(state,SEASON_EMBLEMS[action.emblem])?[action.emblem]:[])]}))throw new Error('Someone in your family needs this emblem from the Season Pass first.');

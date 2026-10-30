@@ -4,6 +4,7 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {download} from './model-atlas.js';
 import {farmerFiles,validFarmerConfig,DEFAULT_FARMER,FAMILY_SHIRT,FAMILY_SHIRTS} from './farmer-parts.js';
 import {FAMILY_EMBLEMS} from './farm-state.js';
+import {ownEmblemUrl,emblemColor} from './family-emblem-art.js';
 import {artSource} from './visual-icons.js';
 
 // The farmer every player makes for themselves (20 Oct 2026, the owner: "Doe 2"): ithappy Studios' Creative Characters, one skeleton
@@ -56,7 +57,7 @@ export function farmerMaterial(kind,shade=false){
 // with a little of the farm's baked shade, and the emblem on a small cream patch on the chest. family: {shirt, emblem} (the Family
 // read's view.family) or null: then the T-shirt in a plain cream until the family is known.
 const shirtMaterials=new Map(),patches=new Map();
-export const familyColour=emblem=>(FAMILY_EMBLEMS.find(e=>e.id===String(emblem))??FAMILY_EMBLEMS[0]).color;
+export const familyColour=emblem=>emblemColor(emblem);
 function shirtMaterial(colour){
  let m=shirtMaterials.get(colour);
  if(!m){m=new THREE.MeshStandardMaterial({color:new THREE.Color(colour),vertexColors:true,roughness:1,metalness:0});m.name='farmer-family-shirt';shirtMaterials.set(colour,m);}
@@ -69,7 +70,10 @@ function patchTexture(emblem){
   const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
   g.beginPath();g.arc(32,32,29,0,Math.PI*2);g.fillStyle='#fff6df';g.fill();g.lineWidth=4;g.strokeStyle='#e9bd4c';g.stroke();
   t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;patches.set(emblem,t);
-  const icon=(FAMILY_EMBLEMS.find(e=>e.id===String(emblem))??FAMILY_EMBLEMS[0]).icon,source=artSource(icon);
+  // A family's own picture (30 Oct 2026): asked with CORS, clipped round on the patch.
+  const own=ownEmblemUrl(emblem);
+  if(own){const img=new Image();img.crossOrigin='anonymous';img.decoding='async';img.onload=()=>{g.save();g.beginPath();g.arc(32,32,25,0,Math.PI*2);g.clip();g.drawImage(img,7,7,50,50);g.restore();t.needsUpdate=true;};img.src=own;}
+  const icon=(FAMILY_EMBLEMS.find(e=>e.id===String(emblem))??FAMILY_EMBLEMS[0]).icon,source=own?null:artSource(icon);
   if(source){const img=new Image();img.decoding='async';img.onload=()=>{const cell=img.naturalWidth/source.columns,sx=(source.index%source.columns)*cell,sy=Math.floor(source.index/source.columns)*cell;g.drawImage(img,sx,sy,cell,cell,13,13,38,38);t.needsUpdate=true;};img.src=source.src;}
  }
  return t;

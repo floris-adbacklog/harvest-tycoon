@@ -10,8 +10,10 @@ import {renderFamilyOrderRewards,orderShare,orderShareText} from './family-order
 import {renderFamilyTournament} from './family-tournament.js';
 import {renderFamilyStats} from './family-stats.js';
 import {createFamilyProfile,rankChip} from './family-profile.js';
-import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVEL_MAX,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
+import {FAMILY_CONFIG,FAMILY_LEVEL_BONUS,FAMILY_LEVEL_STEPS,FAMILY_MIN_LEVEL,FAMILY_MIN_LEVEL_MAX,FAMILY_CHEST_TIERS,FAMILY_CHEST_MIN,FAMILY_EVENT_BONUS,worldTwoItem,otherWorldItem,FAMILY_EMBLEMS,FAMILY_EMBLEM_UPLOAD_COST,SEASON_EMBLEMS,SEASON_LOOKS,FAMILY_EMBLEM_DEFAULT,familyEmblemChoices,FAMILY_JOIN_MODES,FAMILY_RANKS,FAMILY_MAX_COLEADERS,FAMILY_IDLE_DAYS,familyUnlocked,familyShareState,ITEMS,BUILDINGS,formatDuration,itemAvailable,itemUnlockLevel,itemBuilding,levelOf} from './farm-state.js';
 import {emblemPickerMarkup,bindEmblemPickers} from './emblem-picker.js';
+import {emblemMarkup} from './family-emblem-art.js';
+import {portal} from './portal.js';
 import {art,refreshArt} from './visual-icons.js';
 import {keepFolds} from './keep-folds.js';
 import {farmNow} from './farm-client.js';
@@ -29,7 +31,26 @@ const EMBLEM_NAMES={tractor:'Tractor',farm:'Farm',silo:'Silo',cart:'Delivery car
 const emblemName=e=>EMBLEM_NAMES[e.icon]??ITEMS[e.icon]?.name??SEASON_LOOKS[SEASON_EMBLEMS[e.id]]?.name??e.icon.charAt(0).toUpperCase()+e.icon.slice(1);
 // Who can join, in one plain sentence each (Family settings and the list of families).
 const MODE_HELP={open:'Anyone can find your family in the list and join straight away.',request:'Farmers ask to join from the list; you accept or decline.',invite:'Farmers join only when you invite them by their player name.',closed:'Nobody new can join, not even by invitation.'};
-const emblem=id=>{const e=FAMILY_EMBLEMS.find(x=>x.id===id)??FAMILY_EMBLEMS[0];return `<span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span>`;};
+// A built-in emblem or the family's own picture (30 Oct 2026, public/family-emblem-art.js).
+const emblem=id=>emblemMarkup(id);
+// Your own emblem (30 Oct 2026, the owner: 100 diamonds, a square PNG or WebP of 128-512 px and at most 100 KB; the copyright stays with
+// the farmer, who confirms they may use it). farm-api checks the picture again (emblem-upload.js) and takes the diamonds. Not on a portal.
+// Folded shut low in Family settings, never where a family is started (the owner: too advanced for new farmers).
+const ownEmblemCard=()=>`<details class="family-own-emblem" data-own-emblem data-fold="own-emblem"><summary><strong>Your own emblem</strong><span>Upload a picture for ${FAMILY_EMBLEM_UPLOAD_COST} diamonds</span></summary><div class="family-own-emblem-body"><p>Upload a square PNG or WebP picture, ${EMBLEM_MIN_SIDE} to ${EMBLEM_MAX_SIDE} pixels and at most 100 KB. It becomes your family's emblem at once and costs ${FAMILY_EMBLEM_UPLOAD_COST} diamonds.</p>
+ <div class="family-own-emblem-row"><span class="family-own-emblem-preview" data-own-emblem-preview>${art('family-management')}</span><label class="secondary-button family-own-emblem-pick"><input type="file" accept="image/png,image/webp" data-own-emblem-file hidden>Choose a picture</label></div>
+ <label class="family-own-emblem-rights"><input type="checkbox" data-own-emblem-rights> <span>I made this picture or I may use it. The copyright stays with me, and Harvest Tycoon may show it in the game. Offensive pictures or other people's work are removed, without a refund.</span></label>
+ <button type="button" class="primary-button" data-own-emblem-upload disabled>${art('diamonds')}Upload for ${FAMILY_EMBLEM_UPLOAD_COST} diamonds</button><p class="family-own-emblem-note" data-own-emblem-note role="status"></p></div></details>`;
+const EMBLEM_MIN_SIDE=128,EMBLEM_MAX_SIDE=512,EMBLEM_MAX_BYTES=102400;
+// The picture checked here too, before anything goes: its type, its size on disk and its sides.
+async function checkEmblemFile(file){
+ if(!file||!['image/png','image/webp'].includes(file.type))return {error:'Choose a PNG or WebP picture.'};
+ if(file.size>EMBLEM_MAX_BYTES)return {error:'Choose a PNG or WebP picture of at most 100 KB.'};
+ let w=0,h=0;try{const bitmap=await createImageBitmap(file);w=bitmap.width;h=bitmap.height;bitmap.close?.();}catch{return {error:'Choose a PNG or WebP picture.'};}
+ if(w!==h)return {error:'The picture must be square.'};
+ if(w<EMBLEM_MIN_SIDE||w>EMBLEM_MAX_SIDE)return {error:`The picture must be ${EMBLEM_MIN_SIDE} to ${EMBLEM_MAX_SIDE} pixels wide.`};
+ const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]??'');r.onerror=reject;r.readAsDataURL(file);});
+ return {data,url:URL.createObjectURL(file)};
+}
 // Join a family (6 Oct 2026): ten families at a time in the list's own order, Show more for the next ten. The family you asked to
 // join stays in the list wherever it stands, so its Cancel request is never hidden.
 export const FAMILY_BROWSE_PAGE=10;
@@ -215,6 +236,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   ${f.mode==='open'||f.mode==='request'?`<section class="family-card family-open-row"><div><strong>Minimum level</strong><p>${f.mode==='open'?'Farmers below this level cannot join.':'Farmers below this level cannot ask to join.'} You can still invite anyone.</p></div><label class="family-min-level"><span>Level</span><input type="number" data-family-min-level min="${FAMILY_MIN_LEVEL}" max="${FAMILY_MIN_LEVEL_MAX}" step="1" inputmode="numeric" value="${f.minLevel??FAMILY_MIN_LEVEL}" aria-label="Minimum level" ${disabled(false)}></label></section>`:''}
   ${f.shirt!==undefined?shirtPicker(f):''}
   ${f.idleDays?`<section class="family-card family-open-row"><div><strong>Away too long</strong><p>${idleRule(f.idleDays)}</p></div><select data-family-idle-days aria-label="Away too long" ${disabled(false)}>${FAMILY_IDLE_DAYS.map(n=>`<option value="${n}" ${f.idleDays===n?'selected':''}>${n} days</option>`).join('')}</select></section>`:''}
+  ${portal()?'':ownEmblemCard()}
   ${leave}`;
  }
  function render(){
@@ -278,6 +300,22 @@ export function createFamilyUI({state,runAction,notify,isReady}){
     if(emblemId!==f.emblem&&!await act({type:'family_emblem',emblem:emblemId}))return;
     if(!input.disabled&&newName!==f.name)await act({type:'family_rename',name:newName});
    };
+  }
+  const own=content.querySelector('[data-own-emblem]');
+  if(own){
+   let picked=null;const note=own.querySelector('[data-own-emblem-note]'),upload=own.querySelector('[data-own-emblem-upload]'),rights=own.querySelector('[data-own-emblem-rights]');
+   const ready=()=>{upload.disabled=!picked||!rights.checked||busy;};
+   own.querySelector('[data-own-emblem-file]').addEventListener('change',async event=>{
+    const checked=await checkEmblemFile(event.currentTarget.files?.[0]);picked=checked.error?null:checked;note.textContent=checked.error??'';
+    own.querySelector('[data-own-emblem-preview]').innerHTML=picked?`<img src="${picked.url}" alt="" width="64" height="64">`:art('family-management');ready();
+   });
+   rights.addEventListener('change',ready);
+   upload.addEventListener('click',async()=>{
+    if(!picked||!rights.checked)return;
+    if((state.diamonds??0)<FAMILY_EMBLEM_UPLOAD_COST){note.textContent=`You need ${FAMILY_EMBLEM_UPLOAD_COST} diamonds for your own emblem.`;return;}
+    if(!await confirmAction({title:'Use this picture as your emblem?',description:`It replaces your family's emblem at once and costs ${FAMILY_EMBLEM_UPLOAD_COST} diamonds.`,confirmLabel:`Upload for ${FAMILY_EMBLEM_UPLOAD_COST} diamonds`,cancelLabel:'Not now',picture:'family-management'}))return;
+    await act({type:'family_emblem_upload',image:picked.data});
+   });
   }
   content.querySelector('[data-family-mode]')?.addEventListener('change',event=>act({type:'family_join_mode',mode:event.currentTarget.value}));
   // Any whole level from 10 to 999 (29 Oct 2026, the owner), kept within those when typed past them; saved on Enter or on leaving the field.
