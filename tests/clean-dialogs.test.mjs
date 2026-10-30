@@ -56,13 +56,13 @@ test('no text below 12 px inside the windows (the map labels and the top bar kee
 
 // The leaderboard (30 Sep 2026): the top 100 in one light read, ten a page with Previous and Next, a jump to your own page, and a
 // quieter window (no intro line, the sync line only when something is wrong, no second line under each name).
-test('the leaderboard shows the top 100, ten a page, and keeps the window quiet',async()=>{
+test('the leaderboard shows the top 1000, ten a page, read a hundred at a time, and keeps the window quiet',async()=>{
  const board=read('src/leaderboard.js'),cloud=read('src/game-cloud.js'),ui=read('src/ui.js');
- const {BOARD_SIZE,BOARD_PAGE}=await import('../src/leaderboard.js');assert.equal(BOARD_SIZE,100);assert.equal(BOARD_PAGE,10);
+ const {BOARD_SIZE,BOARD_PAGE}=await import('../src/leaderboard.js');assert.equal(BOARD_SIZE,1000);assert.equal(BOARD_PAGE,10);   // the top 1000 since 30 Oct 2026 (tests/leaderboard-top-1000.test.mjs)
  assert.match(board,/const BOARD_FIELDS=\['player_id','username','level','last_active_at','vip_expires_at','avatar_id','look'\];/,'only what the board shows (and the Season Pass look, Oct 2026)');
- assert.match(board,/\.limit\(BOARD_SIZE\)/);assert.match(board,/slice\(shown\*BOARD_PAGE,\(shown\+1\)\*BOARD_PAGE\)/);
+ assert.match(board,/\.limit\(limit\)/);assert.match(board,/slice\(shown\*BOARD_PAGE,\(shown\+1\)\*BOARD_PAGE\)/);
  assert.match(board,/`Page \$\{shown\+1\} of \$\{pages\}`/);assert.match(board,/step\('‹ Previous',shown-1,'previous'\),where,step\('Next ›',shown\+1,'next'\)/);
- assert.match(board,/jump\.textContent='Show';jump\.onclick=\(\)=>onPage\(mine\);/,'your own page, when you are in the top 100');
+ assert.match(board,/jump\.textContent='Show';jump\.onclick=\(\)=>onPage\(mine\);/,'your own page, when you are in the top 1000');
  assert.match(board,/small\.textContent=row\.player_id===playerId\?'You':'';/,'no "Level 160" under every name');
  assert.match(cloud,/if\(!quiet&&!cached\|\|board\?\.category!==result\.category\)boardPage=0;board=result;boardCache\.set\(result\.category,result\);drawBoard\(\);/,'a refresh keeps the page, a new board starts on page 1');
  assert.match(cloud,/if\(cached\)\{board=cached;boardPage=0;drawBoard\(\);\}else if\(!quiet\)ui\.results\.innerHTML=skeleton\('Gathering the latest scores…',\{rows:6\}\);/,'the last board at once, placeholder rows the first time');

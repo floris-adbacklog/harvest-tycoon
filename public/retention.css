@@ -1881,3 +1881,6 @@ html[data-portal] .feedback-copy{display:none!important}
    the star stood higher than the family badge). */
 .event-standing strong :is(.vip-badge,.look-badge,.name-family){vertical-align:middle}
 .event-standing strong .vip-badge img{display:block}
+/* The jump by hundreds under a board of more than ten pages (30 Oct 2026, the top 1000). */
+#leaderboard-dialog .leaderboard-pages{flex-wrap:wrap}
+#leaderboard-dialog .leaderboard-jump{min-height:38px;padding:4px 10px;border:2px solid var(--btn-second-line,#d9c7a4);border-radius:12px;background:var(--btn-second,#f7f0e3);color:var(--btn-second-text,#5b4520);font:700 13px 'DM Sans',sans-serif}

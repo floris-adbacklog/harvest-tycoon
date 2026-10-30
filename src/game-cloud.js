@@ -7,7 +7,7 @@ import {loadStaff,staffRole} from './staff-badge.js';
 import {addSettingsCopyLinks,addFeedbackCopyLink} from '../public/settings-nav.js';
 import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
-import {renderLeaderboard,updateOnlineIndicators} from './leaderboard.js';
+import {renderLeaderboard,updateOnlineIndicators,boardReadFor,BOARD_PAGE} from './leaderboard.js';
 import {loadFamilies} from '../public/family-badge.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
@@ -126,14 +126,25 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   window.addEventListener('pagehide',()=>{stopPresence?.();clearInterval(boardRefresh);},{once:true});
   let boardRequest=0,board=null,boardPage=0;
   // The board keeps its page when it refreshes (every 30 seconds); a new board, or opening it again, starts on page 1.
-  const drawBoard=()=>{renderLeaderboard(ui.results,{...board,page:boardPage,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id),page=>{boardPage=page;drawBoard();ui.results.scrollIntoView?.({block:'start'});});
+  const drawBoard=()=>{renderLeaderboard(ui.results,{...board,page:boardPage,now:Date.now()+serverOffset},bridge.playerId,id=>profiles.open(id),page=>void showBoardPage(page));
    // The family badges (29 Oct 2026, public/family-badge.js): the farmers on this board, read once a minute; drawn again when one came in.
    const shown=board;void loadFamilies([...(board?.rows??[]).map(r=>r.player_id),board?.own?.player_id]).then(changed=>{if(changed&&ui?.open&&board===shown)drawBoard();});};
+  // A page past the rows read so far reads the hundred it is in first (the top 1000, 30 Oct 2026, src/leaderboard.js boardReadFor); the
+  // 30-second refresh then reads as many as are shown.
+  async function showBoardPage(page){
+   if(board?.more&&page*BOARD_PAGE>=board.rows.length){
+    const request=++boardRequest,category=board.category;ui.results.setAttribute('aria-busy','true');
+    try{const result=await bridge.leaderboard(category,{upTo:boardReadFor(page)});if(request!==boardRequest||ui.category!==category)return;board=result;boardCache.set(category,result);}
+    catch(error){if(request===boardRequest)ui.status('Could not refresh');return;}
+    finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}
+   }
+   boardPage=page;drawBoard();ui.results.scrollIntoView?.({block:'start'});
+  }
   // The last board of each kind shows at once when it opens again (or was read in the background after the farm opened), while
   // the newest loads; a board never seen shows placeholder rows (1 Oct 2026).
   const boardCache=new Map();
   // The Village and Harbour rows show from their level; an admin has no row of their own on a board, so both show (29 Oct 2026).
-  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category);await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own){ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);ui.showHarbour((result.own.level??0)>=WORLD_THREE_LEVEL);}else if(staffRole(bridge.playerId)==='admin'){ui.showVillage(true);ui.showHarbour(true);}if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
+  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category,{upTo:quiet&&board?.category===category?board.rows.length:undefined});await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own){ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);ui.showHarbour((result.own.level??0)>=WORLD_THREE_LEVEL);}else if(staffRole(bridge.playerId)==='admin'){ui.showVillage(true);ui.showHarbour(true);}if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
   startup.stage='game';
   let game=null;try{game=await gameLoad;startup.stage='farm';}catch(error){firstError(error);console.error('The game could not load',error);}
   // A farm start that broke before the game's own error card (11 Oct 2026: its loading screen, or a farm whose models nearly all failed,
