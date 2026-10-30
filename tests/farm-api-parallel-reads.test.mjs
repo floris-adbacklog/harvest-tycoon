@@ -171,3 +171,10 @@ test('an own emblem upload of a full 100 KB picture gets past the size check; ot
  const load=farmApi(),l=await load.send(null,{raw:JSON.stringify({operation:'load',pad:'x'.repeat(136536)})});
  assert.deepEqual([l.status,l.data],[413,{error:'Request is too large.'}]);
 });
+// 30 Oct 2026: reporting an own emblem answered "Unknown request.": the two new operations were missing from the list farm-api knows.
+test('the emblem report and the staff emblem list are requests farm-api knows',async()=>{
+ for(const body of [{operation:'family_emblem_report',familyId:'707c9d10-78be-4f9a-8d3b-a25f25477278'},{operation:'admin_family_emblems'}]){
+  const api=farmApi(),r=await api.send(body);
+  assert.notDeepEqual(r.data,{error:'Unknown request.'},body.operation);
+ }
+});

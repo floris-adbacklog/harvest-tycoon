@@ -53,7 +53,7 @@ test('farm loads carry reloadAfter: read at most every 30 seconds, never failing
  forgetReloadCache();assert.equal(await readReloadAfter({from(){throw new Error('down');}},now),null);
  forgetReloadCache();assert.equal(await readReloadAfter(table({reload_after:null}),now),null);
  const api=read('supabase/functions/farm-api/index.ts');
- assert.match(api,/'admin_email','invite','player_log','admin_reload'\]\.includes\(body\?\.operation\)/);
+ assert.match(api,/'admin_email','invite','player_log','admin_reload','family_emblem_report','admin_family_emblems'\]\.includes\(body\?\.operation\)/);
  assert.match(api,/const reloadAt=body\.operation==='load'\?readReloadAfter\(admin\):null;/);
  assert.match(api,/if\(body\.operation==='admin_reload'\)\{const r=await handleAdminReload\(\{admin,body,user\}\);return reply\(r\.data,r\.status\);\}/);
  assert.equal(api.match(/serverNow:now,(?:xpWeekend,)?reloadAfter:await reloadAt\}\)/g)?.length,4,'every load answer: the admin view, a new or changed farm, an unchanged one');

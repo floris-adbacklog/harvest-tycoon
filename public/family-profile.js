@@ -11,6 +11,7 @@ import {farmNow} from './farm-client.js';
 import {rankArt} from './rank-art.js';
 import {placeLabel} from './place-label.js';
 import {ownWords} from './i18n.js';
+import {confirmAction} from './confirm-dialog.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
@@ -96,7 +97,10 @@ export function createFamilyProfile({emblem,act,openFamily,request=body=>window.
   content.querySelectorAll('[data-player-profile]').forEach(b=>b.onclick=()=>{dialog.close();window.harvestProfiles?.open(b.dataset.playerProfile,{back:null});});
   // Report a family's own picture (30 Oct 2026): once per farmer per picture; the staff see it in Admin › Chat.
   content.querySelector('[data-family-emblem-report]')?.addEventListener('click',async event=>{
-   const b=event.currentTarget;b.disabled=true;
+   const b=event.currentTarget;
+   // Asked first (30 Oct 2026, the owner): a report is for a rude picture or someone else's work.
+   if(!await confirmAction({title:'Report this emblem?',description:'Only when the picture is rude or someone else\'s work. The staff look at it and remove it if it breaks the rules.',confirmLabel:'Report it',cancelLabel:'Cancel',tone:'danger'}))return;
+   b.disabled=true;
    try{await request({operation:'family_emblem_report',familyId:p.id});b.textContent='Thanks, we will look at it.';}catch(error){b.disabled=false;b.textContent=error.message||'That did not work. Please try again.';}
   });
   content.querySelector('[data-family-profile-action]')?.addEventListener('click',async event=>{

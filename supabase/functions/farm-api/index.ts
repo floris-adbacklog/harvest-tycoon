@@ -104,7 +104,7 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
   if(raw.length>bodyMax)return reply({error:'Request is too large.'},413);
   if(!parsed)return reply({error:'Invalid request.'},400);
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload','family_emblem_report','admin_family_emblems'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
   // beside the farm (cached, never fails), so a load waits no longer for it.
   const reloadAt=body.operation==='load'?readReloadAfter(admin):null;
