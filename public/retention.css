@@ -1867,3 +1867,13 @@ html[data-portal] .feedback-copy{display:none!important}
  #leaderboard-dialog .leaderboard-name .staff-badge .game-art{width:16px;height:16px}
  #leaderboard-dialog .leaderboard-you{display:none}
 }
+/* The Plant tile while it asks (30 Oct 2026, the owner picked 1): the question beside its buttons, in the tile's own height, so the jobs
+   below it do not move. The price sits on Plant. */
+#utility-dialog .tractor-tile.is-asking{grid-template-columns:40px minmax(0,1fr) auto;grid-template-areas:"art name ask" "art name ask"}
+#utility-dialog .tractor-tile.is-asking>strong{grid-area:name;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.25}
+#utility-dialog .tractor-tile.is-asking .tractor-ask-buttons{grid-area:ask;flex-wrap:nowrap;width:auto;margin:0;gap:6px}
+#utility-dialog .tractor-tile.is-asking .tractor-ask-buttons>button{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:4px 10px;font-size:13px;white-space:nowrap}
+#utility-dialog .tractor-tile.is-asking .tractor-ask-buttons .tractor-job-cost{display:inline-flex;align-items:center;gap:2px;padding:0;border:0;background:none;color:inherit;font-weight:700}
+#utility-dialog .tractor-tile.is-asking .tractor-ask-buttons .tractor-job-cost .game-art{width:15px;height:15px}
+#utility-dialog .tractor-tile.is-asking .tractor-ask-buttons>.tractor-other{justify-content:center;width:40px;padding:4px}
+#utility-dialog .tractor-tile.is-asking .tractor-ask-buttons>.tractor-other .game-art{width:24px;height:24px}
