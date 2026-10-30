@@ -56,7 +56,7 @@ import { createActivitiesUI } from './activities-ui.js';
 import { createWarehouseUI,isWarehouseFull,warehouseTone,fillText } from './warehouse-ui.js';
 import {createDonkeyCartUI} from './donkey-cart-ui.js';
 import { createNeighboursUI } from './neighbours.js';
-import { ACTIVE_STATIONS,CHORES,choreStatus,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
+import { ACTIVE_STATIONS,CHORES,choreStatus,recipeFor,sellableStock,cropUnlocked,stallStatus,stallNotice,beginnerProgress,medalsWaiting } from './farm-state.js';
 import { newMedals,withMedals,createMedalNotice } from './medal-notice.js';
 import { createFarmAudio,withActionSounds,createProductionCueTracker,soundForAction } from './farm-audio.js';
 import { createSoundSettings } from './sound-settings.js';
@@ -290,6 +290,21 @@ function farmerJoins(action){
 // Settings › My log (30 Oct 2026, the owner: "zet ook onder logs in instellingen"): your own profile on top of Settings, the farm log open;
 // its Back returns to Settings.
 document.getElementById('log-settings-open')?.addEventListener('click',()=>{const me=window.parent?.harvestBridge?.playerId;if(me&&window.harvestProfiles)void window.harvestProfiles.open(me,{back:'Back to Settings',log:true});});
+// The guide's button for step 5 and step 7 (30 Oct 2026, the owner picked 1 and 2): the first egg batch with the starter feed (ready in 30 s,
+// FIRST_BATCH_MS) and the first farm chore, each one tap, as in the Chicken Coop and in Chores; their own lines say what it did.
+function guideQuickStep(id){
+ const now=farmNow();
+ if(id==='produce'){const recipe=RECIPES.eggs;if(!recipe||(state.inventory.feed??0)<1||productionJobs(state.buildings.coop).length)return null;return {label:recipeFor(state,'eggs').name,art:'eggs',run:async()=>{const r=await runAction({type:'produce',recipe:'eggs',count:1});updateUI();toast(`${r.count} ${r.count===1?'batch':'batches'} of ${recipeFor(state,r.recipe).name} started.`);}};}
+ // A guided farm's step 7 (sell_egg): collect the first eggs, then sell them; while the batch runs (30 s) the button waits.
+ if(id==='sell_egg'){
+  const eggs=sellableStock(state,'eggs',now);if(eggs>0)return {label:`Sell all ${eggs}`,art:'eggs',run:from=>economy.sell('eggs',undefined,from)};
+  const jobs=productionJobs(state.buildings.coop);if(jobs.some(j=>j.readyAt<=now))return {label:'Collect',art:'eggs',run:async()=>{const r=await runAction({type:'collect',building:'coop'});updateUI();toast(`Collected ${Object.entries(r.items).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ')} · +${r.xp} XP.`);}};
+  if(jobs.length||(state.inventory.feed??0)<1)return null;
+  return {label:recipeFor(state,'eggs').name,art:'eggs',run:async()=>{const r=await runAction({type:'produce',recipe:'eggs',count:1});updateUI();toast(`${r.count} ${r.count===1?'batch':'batches'} of ${recipeFor(state,r.recipe).name} started.`);}};
+ }
+ if(id==='chore'){const key=Object.keys(CHORES).find(k=>{const c=choreStatus(state,k,now);return !c.locked&&!c.remaining;});if(!key)return null;return {label:CHORES[key].name,art:'chores',run:async()=>{const r=await runAction({type:'chore',id:key});updateUI();toast(`Job well done! +${r.coins} coins and +${r.xp} XP.`);}};}
+ return null;
+}
 function tapOwnFarmer(){const me=window.parent?.harvestBridge?.playerId,landed=walker?.react()??Promise.resolve();if(me&&window.harvestProfiles)void Promise.resolve(landed).then(()=>new Promise(beat=>setTimeout(beat,LANDED_BEAT))).then(()=>window.harvestProfiles.open(me,{back:null}));}
 const utilityInfo={villageroad:{name:'The Village',icon:'mountain',hint:'Travel to the village'},stall:{name:'Farm stall',icon:'store',hint:'Collect your passive income'},chores:{name:'Farm chores',icon:'shovel',hint:'Little jobs, extra coins'},tractor:{name:'Tractor',icon:'tractor',hint:'Work all your fields'},warehouse:{name:'Warehouse',icon:'warehouse',hint:'All your crops and goods'},silo:{name:'Silo research',icon:'warehouse',hint:'Better seeds & faster growth'},cart:{name:'Delivery orders',icon:'truck',hint:'Fresh orders every day'},valleymarket:{name:'Valley Market',icon:'store',hint:'Baskets at a premium price'},ranch:{name:'The Ranch',icon:'house',hint:'One herd works faster'},estateworkshop:{name:'Estate Workshop',icon:'hammer',hint:'Improvements that last'},tradedepot:{name:'Trade Depot',icon:'truck',hint:'Fill an export trailer'},grandfair:{name:'Grand Valley Fair',icon:'trophy',hint:'Ribbons every week'},seedlab:{name:'Seed Lab',icon:'sprout',hint:'Cross crops into heirlooms'},visitors:{name:'Valley visitors',icon:'user',hint:'Rush orders from the road'},valleyprojects:{name:'Valley projects',icon:'landmark',hint:'Works that last'}};
 // The Village market's pin opens the market square (Oct 2026): villagers' requests and the golden brief; the Market button sells.
@@ -2670,7 +2685,7 @@ function bindUI(){
  // The guide (Part A, 11 Oct 2026): showWay shows the way to a step (Show me, and by itself once after each step: auto); the coach must be
  // free for that (idle). At the end the card leads to the next goal (A8, next-goal.js): one green button for it, Thank you beside it.
  // A calm start's step 5 (the buildings come): the farm opens out from the fields (startView).
- beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onStep:(step,before)=>{if(before!==null&&before<4&&(step===null||step>=4)&&ready&&!villageWorld)resetView();},onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'&&goal.kind!=='daily'}),action:goalAction(goal)});},guide:showWay,sellFirst:from=>economy.sell('corn',undefined,from),autoSell:portal()?.name==='crazygames',idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
+ beginner=createBeginnerUI({state,runAction,icons,notify:toast,onChange:updateUI,onStep:(step,before)=>{if(before!==null&&before<4&&(step===null||step>=4)&&ready&&!villageWorld)resetView();},onFinished:result=>{const goal=nextGoal(state);giftPopup({xp:result.xp,diamonds:result.diamonds},{eyebrow:'BEGINNER GUIDE COMPLETE',title:'Well done, farmer!',icon:'diamonds',text:comeBackNote(farmNow(),{lead:goal.kind!=='quest'&&goal.kind!=='daily'}),action:goalAction(goal)});},guide:showWay,sellFirst:from=>economy.sell('corn',undefined,from),quickStep:guideQuickStep,autoSell:portal()?.name==='crazygames',idle:()=>!coach.active,claimQuest:claim,openQuest:id=>quests.openAt(id),openToday:id=>retention.openToday('challenges',{at:id}),village:villageWorld});
  const inviteUI=createInviteUI({notify:toast});
  // Share my farm (Oct 2026): on the level-up card and on your own profile (src/player-profiles.js, through window.harvestShareFarm).
  // The village is another scene, so not there. It takes the invite link Invite a friend already asked for (one ask per visit).
