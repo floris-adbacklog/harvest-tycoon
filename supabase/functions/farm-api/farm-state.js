@@ -465,14 +465,16 @@ export const BEGINNER_QUESTS=Object.freeze([
  // 11 Oct 2026 (Part A A11): one thing to do. The feed sentence went: starter feed and corn cannot be sold in the first 30 minutes anyway
  // (STARTER_KEEP). 20 Oct 2026: it says the first sale pays double (firstSaleDouble).
  {id:'sell',title:'Your first market sale',description:'Open Market and sell your corn. Your first sale pays double.',guide:'market',icon:'store'},
- {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Seeds cost 3 coins.',guide:'plant',icon:'sprout'},
+ // 30 Oct 2026: wheat seeds cost 1 coin (the text said 3), and since one crop a harvest (22 Oct) water and care make a crop ripen sooner,
+ // not bigger (step 9).
+ {id:'plant',title:'Plant a little possibility',description:'Select Wheat and plant it in an empty field. Wheat seeds cost 1 coin.',guide:'plant',icon:'sprout'},
  // 7 Oct 2026: water works only in a crop's first minute, and the starter wheat is past it (9 of 38 new farmers who planted never watered).
  {id:'water',title:'A little water goes a long way',description:'Plant wheat and water it within a minute. It ripens much sooner.',guide:'water',icon:'droplets'},
  {id:'produce',title:'Put your buildings to work',description:'Start a production batch. Try Feed the chickens in the Chicken Coop using your starter feed.',guide:'produce',icon:'egg'},
  {id:'gift',title:'A gift for showing up',description:'Open Today and collect your daily gift. Come back tomorrow for the next one and 30 minutes of double harvest.',guide:'today',icon:'gift'},
  {id:'chore',title:'A helping hand',description:'Complete one Farm chore for extra coins while your crops and buildings work.',guide:'chores',icon:'shovel'},
  {id:'tend',title:'Good things need a little care',description:'Use Care on a growing crop once its care marker appears. It comes quickly while you are starting out.',guide:'tend',icon:'leaf'},
- {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make your harvest bigger.',guide:'harvest',icon:'wheat'},
+ {id:'wheat',title:'Bring in the wheat',description:'Harvest one wheat field when it is ready. Water and care make it ripen sooner.',guide:'harvest',icon:'wheat'},
  {id:'collect',title:'Made on your farm',description:'Collect a finished batch from a building. Chicken feed becomes eggs in 5 minutes.',guide:'collect',icon:'package-check'}
 ]);
 // A guided farm's step 9 is A helping hand (11 Oct 2026, the owner's call; it was "Bring in the wheat", whose wheat was always ripe by
