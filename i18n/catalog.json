@@ -3551,6 +3551,7 @@
 "Make rope, barrels and more in the harbour’s places, then sell them here.":"public/economy-ui.js",
 "Make ship’s lanterns and ship’s tar.":"public/farm-state.js",
 "Make silver candlesticks":"public/live-events-ui.js",
+"Make something in the harbour and it shows up here. {0} goods to discover.":"public/retention-ui.js",
 "Make something in the village and it shows up here. {0} goods to discover.":"public/retention-ui.js",
 "Make the fertilizer at the farm’s Windmill. Village crops sell only at the Village market, and like the farm’s crops their price changes only a little from day to day.":"public/wiki-content.js",
 "Make the goods first: {0}.":"public/farm-state.js",

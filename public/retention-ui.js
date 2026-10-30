@@ -1,6 +1,6 @@
 import {roadmapMarkup} from './progression-ui.js';
 import {questArt,dailyWait} from './quests-ui.js';
-import {xpDoubled,cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,otherWorldItem,worldTwoOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
+import {xpDoubled,cropUnlocked,streakToday,comebackChest,COMEBACK_MIN_DAYS,COMEBACK_EVERY_DAYS,worldTwoItem,worldThreeItem,otherWorldItem,worldTwoOpen,worldThreeOpen,dailyGift,saveReady,BOOSTS,DAILY_BONUS,dailyRewardMultiplier,marketSaleValue,vipActive,replacementOptions,REPLACE_ORDER_COST,DAILY_ORDER_REPLACEMENTS,levelReward,featureUnlocked,featureUnlockHint,CROPS,ITEMS,QUESTS,DAILY_REWARDS,DAILY_DIAMONDS,DAY_MS,utcDay,dailyTasks,dailyOrders,levelOf,seedCost,levelProgress,SILO_COSTS,siloBonus,tractorQuote,fertilizeChoices,FERTILIZER_CUT,TRACTOR_FUEL_BASE,TRACTOR_FUEL_PER_FIELD,TRACTOR_FUEL_SHARE,fullCareQuote,nightShiftQuote,shiftFieldsTaken,shiftHarvests,settleShift,SHIFT_ROUNDS,SHIFT_ROUND_MS,canWater,waterUntil,formatDuration,marketValue,DELIVERY_TIERS,ACTIVE_STATIONS} from './farm-state.js';
 import {farmNow} from './farm-client.js';
 import {art,refreshArt} from './visual-icons.js';
 import {confirmDiamondSpend} from './diamond-confirm.js';
@@ -188,12 +188,14 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   const tile=(icon,value,label)=>`<li>${art(icon)}<strong>${value}</strong><span>${label}</span></li>`;
   // World II's goods (30 Sep 2026) have their own tab, from level 100; the farm's Goods tab and its count stay the farm's.
   const cropKeys=Object.keys(CROPS),goodKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&!ITEMS[k].heirloom&&!otherWorldItem(k)),villageKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&worldTwoItem(k));
-  if(journalTab==='village'&&!worldTwoOpen(state))journalTab='crops';
+  // World III's goods (29 Oct 2026, the owner: they were in no tab) the same way, once the harbour is open.
+  const harbourKeys=Object.keys(ITEMS).filter(k=>!CROPS[k]&&worldThreeItem(k));
+  if(journalTab==='village'&&!worldTwoOpen(state)||journalTab==='harbour'&&!worldThreeOpen(state))journalTab='crops';
   // Honey also comes from the Apiary (a few jars per finished job), not only from the Factory.
   const apiaryHoney=(stats.activity_apiary??state.activities?.completed?.apiary??0)*(ACTIVE_STATIONS.apiary.itemCount??0);
   const count=key=>CROPS[key]?(stats['harvest_'+key]??0)+(stats['made_'+key]??0):(stats['made_'+key]??0)+(key==='honey'?apiaryHoney:0);
   const found=keys=>keys.filter(k=>CROPS[k]?state.discovered.includes(k):count(k)>0).length;
-  const keys=journalTab==='goods'?goodKeys:journalTab==='village'?villageKeys:cropKeys,verb=journalTab==='crops'?'picked':'made';
+  const keys=journalTab==='goods'?goodKeys:journalTab==='village'?villageKeys:journalTab==='harbour'?harbourKeys:cropKeys,verb=journalTab==='crops'?'picked':'made';
   // The collection shows what you have (30 Sep 2026); what is still to find is one tile with a count, not a grid of grey "Not yet".
   const seen=key=>CROPS[key]?state.discovered.includes(key):count(key)>0;
   const card=key=>`<div class="collection-crop discovered">${art(key,'collection-picture')}<strong>${ITEMS[key].name}</strong><small>${number(count(key))} ${verb}</small></div>`;
@@ -202,11 +204,11 @@ export function createRetentionUI({state,runAction,onChange,notify,getCrop,itemL
   // wheat) as the card it will become.
   const first=state.plots?.find(p=>CROPS[p?.crop])?.crop??(cropUnlocked(state,'wheat')?'wheat':cropKeys.find(k=>cropUnlocked(state,k))??'wheat');
   const empty=journalTab==='crops'?`<div class="quest-empty journal-empty is-crops"><div class="collection-crop journal-first">${art(first,'collection-picture')}<strong>${ITEMS[first].name}</strong></div><div><h3>Your first harvest</h3><p>Harvest a crop and it shows up here. ${keys.length} crops to discover.</p></div></div>`
-   :`<div class="quest-empty journal-empty">${art(journalTab==='village'?'village-badge':'buildings')}<div><h3>Nothing collected yet</h3><p>${journalTab==='village'?`Make something in the village and it shows up here. ${keys.length} goods to discover.`:`Collect a batch from a building and it shows up here. ${keys.length} goods to discover.`}</p></div></div>`;
+   :`<div class="quest-empty journal-empty">${art(journalTab==='village'?'village-badge':journalTab==='harbour'?'harbour-badge':'buildings')}<div><h3>Nothing collected yet</h3><p>${journalTab==='village'?`Make something in the village and it shows up here. ${keys.length} goods to discover.`:journalTab==='harbour'?`Make something in the harbour and it shows up here. ${keys.length} goods to discover.`:`Collect a batch from a building and it shows up here. ${keys.length} goods to discover.`}</p></div></div>`;
   const tabButton=(key,label,list)=>`<button type="button" data-journal-tab="${key}" aria-pressed="${journalTab===key}" class="${journalTab===key?'active':''}">${label} <b>${found(list)}/${list.length}</b></button>`;
   $('journal-content').innerHTML=`<section class="journal-hero"><span class="journal-medallion"><small>LVL</small><b>${level}</b></span><div class="journal-hero-copy"><div class="journal-hero-top"><strong>Level ${level+1} in ${number(Math.max(0,target-current))} XP</strong><small>${number(current)} / ${number(target)} XP</small></div><progress max="${target}" value="${current}" aria-label="Level progress"></progress><div class="journal-next"><span>Level-up reward</span><b>${art('coins')}${number(reward.coins)}</b><b>${art('diamonds')}${reward.diamonds}</b></div></div></section>`
    +`<ul class="journal-stats">${tile('harvest',number(crops),'Crops harvested')}${tile('buildings',number(goods),'Goods made')}${tile('quests',`${state.claimed.length}/${QUESTS.length}`,'Quests done')}${tile('cart',number(stats.deliveries??0),'Deliveries')}</ul>`
-   +`<section class="journal-collection"><div class="journal-collection-head"><h3>Your collection</h3><div class="market-tabs journal-tabs" role="group" aria-label="Collection">${tabButton('crops','Crops',cropKeys)}${tabButton('goods','Goods',goodKeys)}${worldTwoOpen(state)?tabButton('village','Village',villageKeys):''}</div></div>${have.length?`<div class="collection-grid">${have.map(card).join('')}${left?`<div class="collection-crop collection-left"><b>${left}</b><small>still to discover</small></div>`:''}</div>`
+   +`<section class="journal-collection"><div class="journal-collection-head"><h3>Your collection</h3><div class="market-tabs journal-tabs" role="group" aria-label="Collection">${tabButton('crops','Crops',cropKeys)}${tabButton('goods','Goods',goodKeys)}${worldTwoOpen(state)?tabButton('village','Village',villageKeys):''}${worldThreeOpen(state)?tabButton('harbour','Harbour',harbourKeys):''}</div></div>${have.length?`<div class="collection-grid">${have.map(card).join('')}${left?`<div class="collection-crop collection-left"><b>${left}</b><small>still to discover</small></div>`:''}</div>`
     :empty}</section>`
    +roadmapMarkup(state);
   document.querySelectorAll('[data-journal-tab]').forEach(b=>b.onclick=()=>{journalTab=b.dataset.journalTab;renderJournal();});

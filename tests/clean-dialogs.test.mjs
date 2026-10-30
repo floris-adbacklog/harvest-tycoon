@@ -71,7 +71,7 @@ test('the leaderboard shows the top 100, ten a page, and keeps the window quiet'
 test('empty states are cards: the journal before your first harvest, and an empty board',()=>{
  // 23 Oct 2026: a small card; on the Crops tab the crop to harvest first, as the card it will become.
  assert.match(read('public/retention-ui.js'),/<div class="quest-empty journal-empty is-crops"><div class="collection-crop journal-first">\$\{art\(first,'collection-picture'\)\}/);
- assert.match(read('public/retention-ui.js'),/<div class="quest-empty journal-empty">\$\{art\(journalTab==='village'\?'village-badge':'buildings'\)\}/);
+ assert.match(read('public/retention-ui.js'),/<div class="quest-empty journal-empty">\$\{art\(journalTab==='village'\?'village-badge':journalTab==='harbour'\?'harbour-badge':'buildings'\)\}/);
  assert.match(read('src/leaderboard.js'),/box\.className='quest-empty leaderboard-empty';box\.innerHTML=`\$\{art\(rankArtKey\(category\)\)\}<h3>The valley is quiet<\/h3><p>Be the first farmer on this board\.<\/p>`/);
 });
 
