@@ -984,7 +984,9 @@ export const wikiTile=(topic,ctx={},{featured=false}={})=>{const h=helpers(ctx);
 // install it: many players do not know there is one.
 export const WIKI_QUICK=Object.freeze([{label:'App',topic:'getting-started',anchor:'sec-play-it-as-an-app'},'Corn','Apples','Cheese','Tractor','VIP','Farm family']);
 export const wikiSearchBox=()=>`<label class="wiki-search">${art('guide')}<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…" aria-label="Search the wiki" autocomplete="off"></label>`;
-export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-quick" aria-label="Quick searches">${WIKI_QUICK.filter(q=>!(!h.install&&q.label==='App')).map(q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:`<a href="${h.href(q.topic)}#${q.anchor}" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</a>`).join('')}</div>`;};
+// On the website App opens the app page itself, /app (30 Oct 2026, the owner: "App in wiki leidt niet naar app"); in How to play it stays the
+// wiki's own part, so the game is not left.
+export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-quick" aria-label="Quick searches">${WIKI_QUICK.filter(q=>!(!h.install&&q.label==='App')).map(q=>typeof q==='string'?`<button type="button" data-wiki-query="${q}">${q}</button>`:q.label==='App'&&h.level==null?`<a href="/app">${q.label}</a>`:`<a href="${h.href(q.topic)}#${q.anchor}" data-wiki-topic="${q.topic}" data-wiki-anchor="${q.anchor}">${q.label}</a>`).join('')}</div>`;};
 
 // Search: topic titles, blurbs and keywords, plus every crop, building and product by name (pointing to its topic).
 const INDEX=[

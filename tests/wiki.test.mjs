@@ -348,7 +348,7 @@ test('the home: Getting started above two even columns, an odd last tile across 
 test('the website has the same search as the game: the box, the quick searches and /wiki/search.json',async t=>{
  const out=tempDir(t,'wiki-search-');await buildWiki(out);
  const index=readFileSync(join(out,'wiki','index.html'),'utf8');
- assert.match(index,/<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…"/);assert.match(index,/<div class="wiki-quick" aria-label="Quick searches"><a href="\/wiki\/getting-started#sec-play-it-as-an-app"/);
+ assert.match(index,/<input type="search" id="wiki-search" placeholder="Search the wiki: corn, cheese, tractor…"/);assert.match(index,/<div class="wiki-quick" aria-label="Quick searches"><a href="\/app">App<\/a>/,"on the website App opens the app page (30 Oct 2026)");
  assert.match(index,/<div id="wiki-results" class="wiki-results" hidden><\/div>/);assert.match(index,/fetch\('\/wiki\/search\.json'\)/);
  const data=JSON.parse(readFileSync(join(out,'wiki','search.json'),'utf8'));
  const cheese=data.items.find(e=>e[0]==='Cheese');assert.deepEqual(cheese.slice(1,4),['Buildings and goods','/wiki/buildings#building-dairy','cheese']);assert.match(data.arts.cheese,/game-art/);
