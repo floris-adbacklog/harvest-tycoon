@@ -59,9 +59,20 @@ export async function handleEmblemReport({admin,body,player}){
  if(saved.error)throw saved.error;
  return {status:200,data:{reported:true}};
 }
-// The staff's list of own emblems (newest first, with how often each is reported) and removing one: the family gets the first
-// emblem back, the file and its reports go. No refund: what breaks the rules goes.
-export async function handleEmblemAdmin({admin,body}){
+// The staff's list of own emblems (the most reported first) and removing one: the family gets the first emblem back, the file and its
+// reports go. No refund: what breaks the rules goes. Is okay (30 Oct 2026, the owner) marks the picture as looked at
+// (family_emblem_checks, supabase/family-emblem-checks.sql) and clears its reports: it leaves the list until someone reports it again
+// or the family uploads another picture. Before that SQL has run the list simply shows every picture, as before.
+export async function handleEmblemAdmin({admin,body,player=null}){
+ if(body?.command==='ok'){
+  const familyId=String(body.familyId??'');if(!/^[0-9a-f-]{36}$/i.test(familyId))return {status:400,data:{error:'Choose a family.'}};
+  const found=await admin.from('families').select('emblem').eq('id',familyId).maybeSingle();if(found.error)throw found.error;
+  if(!customEmblemPath(found.data?.emblem))return {status:200,data:{checked:false}};
+  const saved=await admin.from('family_emblem_checks').upsert({family_id:familyId,emblem:found.data.emblem,checked_by:player,checked_at:new Date().toISOString()},{onConflict:'family_id'});
+  if(saved.error)throw saved.error;
+  await admin.from('family_emblem_reports').delete().eq('family_id',familyId).eq('emblem',found.data.emblem);
+  return {status:200,data:{checked:true}};
+ }
  if(body?.command==='remove'){
   const familyId=String(body.familyId??'');if(!/^[0-9a-f-]{36}$/i.test(familyId))return {status:400,data:{error:'Choose a family.'}};
   const found=await admin.from('families').select('emblem').eq('id',familyId).maybeSingle();if(found.error)throw found.error;
@@ -71,13 +82,16 @@ export async function handleEmblemAdmin({admin,body}){
   await admin.from('family_emblem_reports').delete().eq('family_id',familyId);
   return {status:200,data:{removed:true}};
  }
- const [families,reports]=await Promise.all([
+ const [families,reports,checks]=await Promise.all([
   admin.from('families').select('id,name,emblem').like('emblem','custom:%').is('deleted_at',null).limit(200),
-  admin.from('family_emblem_reports').select('family_id,emblem')
- ]);
+  admin.from('family_emblem_reports').select('family_id,emblem'),
+  admin.from('family_emblem_checks').select('family_id,emblem')
+ ]).then(([f,r,c])=>[f,r,c.error?{data:[]}:c]);
  if(families.error)throw families.error;if(reports.error)throw reports.error;
  const counts=new Map();for(const r of reports.data??[])counts.set(`${r.family_id} ${r.emblem}`,(counts.get(`${r.family_id} ${r.emblem}`)??0)+1);
+ const checked=new Set((checks.data??[]).map(c=>`${c.family_id} ${c.emblem}`));
  const list=(families.data??[]).map(f=>({id:f.id,name:f.name,emblem:f.emblem,reports:counts.get(`${f.id} ${f.emblem}`)??0}))
+  .filter(f=>f.reports>0||!checked.has(`${f.id} ${f.emblem}`))
   .sort((a,b)=>b.reports-a.reports||a.name.localeCompare(b.name));
  return {status:200,data:{emblems:list}};
 }

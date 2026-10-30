@@ -137,7 +137,7 @@ Deno.serve(async(req)=>{
   }
   // A family's own emblem (30 Oct 2026, emblem-upload.js): reporting one, and the staff's list and removal.
   if(body.operation==='family_emblem_report'){const r=await handleEmblemReport({admin,body,player:user.id});return reply({...r.data,profile:{player_id:user.id}},r.status);}
-  if(body.operation==='admin_family_emblems'){if(!(await isStaff(admin,user)))return reply({error:'Not authorized.',profile:{player_id:user.id}},403);const r=await handleEmblemAdmin({admin,body});return reply({...r.data,profile:{player_id:user.id}},r.status);}
+  if(body.operation==='admin_family_emblems'){if(!(await isStaff(admin,user)))return reply({error:'Not authorized.',profile:{player_id:user.id}},403);const r=await handleEmblemAdmin({admin,body,player:user.id});return reply({...r.data,profile:{player_id:user.id}},r.status);}
   if(body.operation==='player_log'){
    const log=await handlePlayerLog({admin,user,body});return reply(log.data,log.status);
   }

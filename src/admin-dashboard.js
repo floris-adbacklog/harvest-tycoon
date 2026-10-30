@@ -155,7 +155,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   +'</div><div data-admin-panel="chat" hidden>'
   +'<section class="admin-card" id="admin-reports" hidden><h3>'+art('alert')+'Chat reports <span id="admin-report-count">0</span></h3><ul id="admin-report-list" class="admin-recent-list admin-report-list"></ul><p class="admin-hint">Delete removes the message for everyone. Mute and ban only close the chat for that farmer, never their farm.</p></section>'
   // Families' own emblems (30 Oct 2026, farm-api emblem-upload.js): the most reported first; Remove gives the family its first emblem back.
-  +'<section class="admin-card" id="admin-emblems" hidden><h3>'+art('family-management')+'Family emblems <span id="admin-emblem-count">0</span></h3><ul id="admin-emblem-list" class="admin-recent-list admin-emblem-list"></ul><p class="admin-hint">Families upload these for 100 diamonds. Remove one that is rude or someone else\'s work: the family gets its first emblem back, without a refund.</p></section>'
+  +'<section class="admin-card" id="admin-emblems" hidden><h3>'+art('family-management')+'Family emblems <span id="admin-emblem-count">0</span></h3><p id="admin-emblem-state" class="admin-emblem-state" hidden></p><ul id="admin-emblem-list" class="admin-recent-list admin-emblem-list"></ul><p class="admin-hint">Families upload these for 100 diamonds. Is okay takes a picture off this list until it is reported again or replaced. Remove one that is rude or someone else\'s work: the family gets its first emblem back, without a refund.</p></section>'
   +'<section class="admin-card admin-guide"><h3>'+art('admin')+'Keeping the valley friendly</h3><ul><li><strong>Delete</strong> a message that is rude, hurtful or shares personal details (an address, a phone number).</li><li><strong>Mute for a day</strong> when someone keeps it up after a message is deleted.</li><li><strong>Ban from chat</strong> only for serious or repeated abuse. It closes the chat, never the farm.</li><li>Not sure? Choose <strong>Nothing wrong</strong> or leave it for the admin.</li></ul></section>'
   +'<section class="admin-card" id="admin-report-log" hidden><h3>'+art('quests')+'Report log</h3><p class="admin-hint">Every reported message, newest first: who reported it and what the staff did with it.</p><ul id="admin-log-list" class="admin-recent-list admin-log-list"></ul></section>'
   +'<section class="admin-card" id="admin-mods" hidden><h3>'+art('admin')+'Moderators</h3><ul id="admin-mod-list" class="admin-recent-list"></ul><p class="admin-hint">Make a farmer a moderator (or not) on their profile.</p></section>'
@@ -446,7 +446,11 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   try{
    const {emblems=[]}=await bridge.request({operation:'admin_family_emblems'});
    dialog.querySelector('#admin-emblems').hidden=false;dialog.querySelector('#admin-emblem-count').textContent=number(emblems.length);
-   list.innerHTML=emblems.length?emblems.map(f=>`<li>${emblemMarkup(f.emblem)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-family-view="${esc(f.id)}" translate="no">${esc(f.name)}</button> <small>${f.reports?`${number(f.reports)} report${f.reports===1?'':'s'}`:'Not reported'}</small></strong></span><button type="button" class="small-button" data-emblem-remove="${esc(f.id)}">Remove</button></li>`).join(''):'<li class="admin-empty">No family has its own emblem yet.</li>';
+   // At a glance (30 Oct 2026, the owner): all is well while nobody has reported one; else how many are reported (they come first).
+   const reported=emblems.filter(f=>f.reports>0).length,state=dialog.querySelector('#admin-emblem-state');
+   state.hidden=false;state.classList.toggle('is-reported',reported>0);
+   state.textContent=reported?`${number(reported)} reported: look at ${reported===1?'it':'them'} first.`:'Everything is OK: nothing is reported.';
+   list.innerHTML=emblems.length?emblems.map(f=>`<li>${emblemMarkup(f.emblem)}<span class="admin-recent-copy"><strong><button type="button" class="admin-log-name" data-family-view="${esc(f.id)}" translate="no">${esc(f.name)}</button> <small>${f.reports?`${number(f.reports)} report${f.reports===1?'':'s'}`:'Not reported'}</small></strong></span><span class="admin-emblem-actions"><button type="button" class="small-button" data-emblem-ok="${esc(f.id)}">Is okay</button><button type="button" class="small-button" data-emblem-remove="${esc(f.id)}">Remove</button></span></li>`).join(''):'<li class="admin-empty">No new emblem to look at.</li>';
   }catch(error){dialog.querySelector('#admin-emblems').hidden=false;list.innerHTML=`<li class="admin-empty">${esc(why(error))}</li>`;}
  }
  async function loadChat(){
@@ -546,6 +550,9 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  dialog.querySelector('#admin-invite-list').addEventListener('click',event=>{const name=event.target.closest('[data-profile]');if(name)window.harvestProfiles?.open(name.dataset.profile,{back:null});});
  dialog.querySelector('#admin-emblem-list').addEventListener('click',async event=>{
   const family=event.target.closest('[data-family-view]');if(family){window.harvestFamilyProfile?.open?.(family.dataset.familyView);return;}
+  // Is okay: the picture is fine, so it leaves this list (until it is reported again or the family uploads another).
+  const ok=event.target.closest('[data-emblem-ok]');
+  if(ok){ok.disabled=true;try{await bridge.request({operation:'admin_family_emblems',command:'ok',familyId:ok.dataset.emblemOk});await loadEmblems();}catch(error){ok.disabled=false;dialog.querySelector('#admin-dashboard-status').textContent=why(error);}return;}
   const remove=event.target.closest('[data-emblem-remove]');if(!remove)return;
   if(!(await confirmAction({title:'Remove this emblem?',description:'The family gets its first emblem back. There is no refund.',confirmLabel:'Remove',tone:'danger'})))return;
   remove.disabled=true;

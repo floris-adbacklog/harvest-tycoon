@@ -127,3 +127,22 @@ test('the emblem row starts with the own picture while it is the emblem, and lea
  assert.match(ui,/customEmblemPath\(f\.emblem\)&&!await confirmAction\(\{title:'Replace your own emblem\?'/);
  assert.match(ui,/if\(!await act\(\{type:'family_emblem_upload',image:picked\.data\}\)\)\{[^\n]*n\.textContent=error\|\|'That did not work\. Please try again\.'/);
 });
+
+// 30 Oct 2026, the owner: Is okay takes a looked-at picture off the staff list until it is reported again or replaced.
+test('Is okay: a looked-at picture leaves the list; a new report or a new picture brings it back; before the SQL all show',async()=>{
+ const {handleEmblemAdmin}=await import('../supabase/functions/farm-api/emblem-upload.js');
+ const F='707c9d10-78be-4f9a-8d3b-a25f25477278',G='0e1d2c3b-4a59-4687-9786-a5b4c3d2e1f0',own=`custom:${F}/${uuid}.png`,other=`custom:${G}/${uuid}.webp`;
+ const db=({families,reports=[],checks=[],noChecks=false})=>{const log=[];const table=name=>{const rows={families,family_emblem_reports:reports,family_emblem_checks:checks}[name];const q={filters:[],select(){return q;},like(){return q;},is(){return q;},limit(){return q;},
+   eq(k,v){q.filters.push([k,v]);return q;},maybeSingle:async()=>({data:rows.find(r=>q.filters.every(([k,v])=>r[k===`id`?'id':k]===v))??null}),
+   upsert:async row=>{log.push(['upsert',name,row]);checks.push(row);return {};},delete(){log.push(['delete',name]);return {eq(k,v){return {eq:async()=>({})};}};},
+   then(ok){return Promise.resolve(name==='family_emblem_checks'&&noChecks?{data:null,error:{code:'42P01'}}:{data:rows}).then(ok);}};return q;};return {from:table,log};};
+ const fams=[{id:F,name:'Corn Beaters',emblem:own},{id:G,name:'Brystones',emblem:other}];
+ const names=r=>r.data.emblems.map(e=>e.name);
+ assert.deepEqual(names(await handleEmblemAdmin({admin:db({families:fams,noChecks:true}),body:{}})),['Brystones','Corn Beaters'],'before the SQL: every picture');
+ assert.deepEqual(names(await handleEmblemAdmin({admin:db({families:fams,checks:[{family_id:F,emblem:own}]}),body:{}})),['Brystones'],'looked at: gone');
+ assert.deepEqual(names(await handleEmblemAdmin({admin:db({families:fams,checks:[{family_id:F,emblem:own}],reports:[{family_id:F,emblem:own}]}),body:{}})),['Corn Beaters','Brystones'],'reported again: back, first');
+ assert.deepEqual(names(await handleEmblemAdmin({admin:db({families:fams,checks:[{family_id:F,emblem:`custom:${F}/0e1d2c3b-4a59-4687-9786-a5b4c3d2e1f0.png`}]}),body:{}})),['Brystones','Corn Beaters'],'a new picture: back');
+ const a=db({families:fams});const r=await handleEmblemAdmin({admin:a,body:{command:'ok',familyId:F},player:'staff-1'});
+ assert.deepEqual(r.data,{checked:true});assert.equal(a.log[0][2].emblem,own);assert.equal(a.log[0][2].checked_by,'staff-1');assert.deepEqual(a.log[1],['delete','family_emblem_reports']);
+ assert.match(read('src/admin-dashboard.js'),/data-emblem-ok="\$\{esc\(f\.id\)\}">Is okay<\/button>/);
+});
