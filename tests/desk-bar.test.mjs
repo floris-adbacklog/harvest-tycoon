@@ -15,11 +15,12 @@ test('the desktop bar: socials, Skyline Topia, Wiki and App, in new tabs so the 
  for(const code of ['nl','de','ja'])assert.match(JSON.parse(read(`public/i18n/${code}.json`))['Play Skyline Topia'],/Skyline Topia/,code);
 });
 
-test('the desktop bar shows only on a computer, outside our apps and the loading screen, and the farm makes room for it',()=>{
+test('the desktop bar shows only on a computer, outside our apps and the loading screen, see-through over the farm',()=>{
  const css=read('public/welcome.css');
  assert.match(css,/\.desk-bar\{display:none\}\nhtml\[data-portal\] \.desk-bar\{display:none!important\}\n@media \(min-width:1024px\) and \(min-height:600px\) and \(hover:hover\) and \(pointer:fine\)\{/);
  assert.match(css,/html:not\(\[data-app\]\) body:is\(\[data-phase=unauthenticated\],\[data-phase=authenticated\],\[data-phase=error\]\) \.desk-bar\{/);
- assert.match(css,/html:not\(\[data-app\]\) body\[data-phase=authenticated\] #farm-host\{bottom:30px\}/);
+ assert.match(css,/html:not\(\[data-app\]\) body\[data-phase=authenticated\] \.desk-bar\{position:fixed;inset-inline:0;bottom:0;z-index:9\}/);
+ assert.doesNotMatch(css,/#farm-host\{bottom:30px\}/,'the farm runs on under the bar');
 });
 
 test('where the bar shows, the footer above it leaves out its social icons, so they are not there twice',()=>{
@@ -32,4 +33,13 @@ test('never on a game portal: their pages have no bar, and a portal page would h
  for(const page of ['crazygames','kongregate','discord'])assert.doesNotMatch(read(`public/${page}.html`),/desk-bar|skylinetopia/i,page);
  assert.match(read('public/welcome.css'),/\nhtml\[data-portal\] \.desk-bar\{display:none!important\}\n/);
  for(const build of ['build-crazygames','build-itch'])assert.doesNotMatch(read(`scripts/${build}.mjs`),/play\.html/,`${build} does not ship the home page`);
+});
+
+test('over the farm the bar covers nothing to tap: the farm page lifts its buttons and windows by the bar\'s height',()=>{
+ assert.match(read('src/main.js'),/page\.src='\/farm\.html';\$\('farm-host'\)\.append\(page\);deskBarRoom\(page\);/);
+ assert.match(read('src/main.js'),/root\.toggleAttribute\('data-desk-bar',shown\)/);
+ assert.match(read('public/styles.css'),/\n:root\[data-desk-bar\]\{--safe-bottom:calc\(env\(safe-area-inset-bottom,0px\) \+ 30px\)\}\n/);
+ assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\[data-desk-bar\]\{--safe-bottom:calc\(max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\)\) \+ 30px\)\}/);
+ assert.match(read('public/styles.css'),/\n:root\[data-desk-bar\] :is\(\.bottom-hud,\.scene-controls\)\{translate:0 -30px\}\n/,'the tools bar and the zoom buttons too');
+ assert.match(read('public/welcome.css'),/\.desk-bar\{[^}]*height:30px/,'the same 30 px as the bar');
 });

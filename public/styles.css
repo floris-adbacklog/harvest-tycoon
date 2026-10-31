@@ -122,3 +122,7 @@ html,body{touch-action:pan-x pan-y}
 /* A swipe or wheel past the end of the farm page or one of its windows stays here (11 Oct 2026, Part A A7, with public/wheel-guard.js):
    on CrazyGames it slid their page, and the game with it, out of view. */
 html,body{overscroll-behavior:none}dialog{overscroll-behavior:contain}
+/* Under the website's see-through desktop bar (31 Oct 2026, src/main.js deskBarRoom): buttons and windows stand 30 px higher. */
+:root[data-desk-bar]{--safe-bottom:calc(env(safe-area-inset-bottom,0px) + 30px)}
+/* The two that stand on the bottom edge on a computer without --safe-bottom (the tools bar and the zoom buttons) move up the same. */
+:root[data-desk-bar] :is(.bottom-hud,.scene-controls){translate:0 -30px}

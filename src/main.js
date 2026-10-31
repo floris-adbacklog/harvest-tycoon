@@ -29,6 +29,20 @@ import {signInOf,passwordMail,passwordSession} from './account-sign-in.js';
 import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER,appleProduct} from '../game/payments.js';
 import {payWays,deviceTimeZone} from './pay-ways.js';
 import {withPayChoice} from './pay-choice-ui.js';
+// The desktop bar over the farm (31 Oct 2026, the owner: "maak de footer meer doorzichtig minder opvallend"): the farm runs on under the
+// see-through bar, and its own buttons and windows stand that much higher (data-desk-bar on the farm page: its --safe-bottom grows by the bar's 30 px, public/styles.css), so
+// the bar covers nothing to tap. Only while the bar shows (public/welcome.css: a computer, not our apps or a portal); again after every
+// page the frame loads (a trip to the village) and when the window changes size.
+function deskBarRoom(frame,{doc=globalThis.document,win=globalThis.window}={}){
+ const bar=doc?.querySelector?.('.desk-bar');if(!frame||!bar)return null;
+ const apply=()=>{try{const shown=win.getComputedStyle(bar).display!=='none',root=frame.contentDocument?.documentElement;if(!root)return;
+  root.toggleAttribute('data-desk-bar',shown);}catch{}};
+ frame.addEventListener?.('load',apply);win.addEventListener?.('resize',apply);
+ // The bar shows once the farm is open (body data-phase), which can be after the frame's page has loaded.
+ try{new win.MutationObserver(apply).observe(doc.body,{attributes:true,attributeFilter:['data-phase']});}catch{}
+ apply();
+ return apply;
+}
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
@@ -254,7 +268,7 @@ async function openFarm(){
   // the start instead of the server and then the page. It only counts as the open farm (frame) once the farm is here; a farm that
   // does not come takes the page away again.
   let release,cancel;const ready=new Promise((resolve,reject)=>{release=resolve;cancel=reject;});ready.catch(()=>{});
-  window.harvestBridge={pending:true,ready};const page=document.createElement('iframe');page.title='Harvest Tycoon farm';page.src='/farm.html';$('farm-host').append(page);
+  window.harvestBridge={pending:true,ready};const page=document.createElement('iframe');page.title='Harvest Tycoon farm';page.src='/farm.html';$('farm-host').append(page);deskBarRoom(page);
   const giveUp=error=>{cancel(error);page.remove();if(window.harvestBridge?.ready===ready)delete window.harvestBridge;};
   let initial;try{const inviteCode=pendingInvite(localStore),partnerCode=pendingRef(localStore);initial=await farmRequest({operation:'load',...(inviteCode?{inviteCode}:{}),...(partnerCode?{partnerCode}:{}),...(pendingSource?{source:pendingSource}:{})});clearInvite(localStore);clearRef(localStore);pendingSource=null;}catch(error){if(ticket!==generation)return;giveUp(error);if(error.code==='USERNAME_REQUIRED'){phase('unauthenticated');setMode('name');return;}throw error;}
   if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}
