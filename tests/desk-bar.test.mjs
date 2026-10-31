@@ -15,18 +15,16 @@ test('the desktop bar: socials, Skyline Topia, Wiki and App, in new tabs so the 
  for(const code of ['nl','de','ja'])assert.match(JSON.parse(read(`public/i18n/${code}.json`))['Play Skyline Topia'],/Skyline Topia/,code);
 });
 
-test('the desktop bar shows only on a computer, outside our apps and the loading screen, see-through over the farm',()=>{
+test('the desktop bar shows only while playing, on a computer, outside our apps, see-through over the farm',()=>{
  const css=read('public/welcome.css');
- assert.match(css,/\.desk-bar\{display:none\}\nhtml\[data-portal\] \.desk-bar\{display:none!important\}\n@media \(min-width:1024px\) and \(min-height:600px\) and \(hover:hover\) and \(pointer:fine\)\{/);
- assert.match(css,/html:not\(\[data-app\]\) body:is\(\[data-phase=unauthenticated\],\[data-phase=authenticated\],\[data-phase=error\]\) \.desk-bar\{/);
- assert.match(css,/html:not\(\[data-app\]\) body\[data-phase=authenticated\] \.desk-bar\{position:fixed;inset-inline:0;bottom:0;z-index:9\}/);
+ assert.match(css,/\.desk-bar\{display:none\}\nhtml\[data-portal\] \.desk-bar\{display:none!important\}\n@media \(min-width:1024px\) and \(min-height:600px\) and \(hover:hover\) and \(pointer:fine\)\{\n html:not\(\[data-app\]\) body\[data-phase=authenticated\] \.desk-bar\{position:fixed;/);
+ assert.doesNotMatch(css,/data-phase=unauthenticated[^{]*\.desk-bar/,'not on the sign-in page');
  assert.doesNotMatch(css,/#farm-host\{bottom:30px\}/,'the farm runs on under the bar');
 });
 
-test('where the bar shows, the footer above it leaves out its social icons, so they are not there twice',()=>{
- const css=read('public/welcome.css'),desk=css.slice(css.indexOf('.desk-bar{display:none}'));
- assert.match(desk,/html:not\(\[data-app\]\) \.site-legal \.footer-social\{display:none\}\n[^]*?\n\}/);
- assert.match(read('public/play.html'),/<footer class="site-legal">[^]*?class="footer-social"/,'phones keep them in the footer');
+test('the sign-in page keeps its footer with the social icons on every screen',()=>{
+ assert.doesNotMatch(read('public/welcome.css'),/\.site-legal \.footer-social\{display:none\}/);
+ assert.match(read('public/play.html'),/<footer class="site-legal">[^]*?class="footer-social"/);
 });
 
 test('never on a game portal: their pages have no bar, and a portal page would hide it anyway',()=>{
