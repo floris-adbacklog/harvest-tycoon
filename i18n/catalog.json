@@ -2566,7 +2566,6 @@
 "Gift baskets":"public/farm-state.js",
 "Gift giver":"public/player-avatars.js",
 "Gifts, challenges, orders and market prices refresh at 00:00 UTC.":"public/wiki-content.js",
-"Gifts, challenges, orders and market prices refresh at 00:00 game time, in {0}.":"public/settings-nav.js",
 "Gifts, hearts and letters":"public/farm.html",
 "Ginger cat":"public/family-ui.js",
 "Give":"public/estate-ui.js",

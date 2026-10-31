@@ -1,7 +1,6 @@
 import {refreshArt,art} from './visual-icons.js';
 import {settingsLink,settingsSlug} from './game-links.js';
 import {WIKI_COPY_ICON} from './wiki-link.js';
-import {formatDuration} from './farm-state.js';
 import {t} from './i18n.js';
 
 // Settings as a short list (30 Sep 2026): your account stays on top; below it one row per part (Profile: the avatar and your look; Email address, Sound, Chat,
@@ -15,9 +14,9 @@ import {t} from './i18n.js';
 export const AWAY='html[data-app=android] #app-settings,html[data-portal] :is(#email-settings,#notify-settings,#app-settings)';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 // The game's time (31 Oct 2026, the owner: "zet game time in settings"): under the list, the time the game's day follows (UTC, from the
-// server's clock, so a phone whose own clock is wrong still shows it right) and how long until the new day at 00:00.
-const DAY=86400000;
-export function gameTime(now){const d=new Date(now),pad=n=>String(n).padStart(2,'0');return {time:`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`,newDay:DAY-now%DAY};}
+// server's clock, so a phone whose own clock is wrong still shows it right). Just the words and the time, in the middle ("puur
+// Speltijd 13:37 in het midden zonder tekst eronder en icon").
+export function gameTime(now){const d=new Date(now),pad=n=>String(n).padStart(2,'0');return {time:`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`};}
 export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis.window,now=()=>Date.now()}={}){
  if(!dialog)return null;
  const parts=()=>[...dialog.querySelectorAll('#avatar-settings,.settings-section')];
@@ -47,7 +46,7 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  const note=doc.createElement('p');note.className='settings-nav-note';note.setAttribute('role','status');note.hidden=true;note.textContent='That part of Settings is not available here.';
  const clock=doc.createElement('p');clock.className='settings-game-time';
  let tick=null;
- function drawClock(){const {time,newDay}=gameTime(now());clock.innerHTML=`<i data-lucide="clock" data-line-icon></i><span><strong>${esc(t('Game time {0}',time))}</strong><small>${esc(t('Gifts, challenges, orders and market prices refresh at 00:00 game time, in {0}.',formatDuration(newDay)))}</small></span>`;try{win?.lucide?.createIcons?.();}catch{}}
+ function drawClock(){clock.textContent=t('Game time {0}',gameTime(now()).time);}
  // Drawn while Settings is open, again every 20 seconds so the minute is right; nothing runs while it is closed.
  function clockOn(on){clearInterval(tick);tick=null;if(on){drawClock();tick=setInterval(drawClock,20000);}}
  let open=null,next=null;
