@@ -255,12 +255,14 @@ html[data-app-os=ios] .site-legal-button[onclick*=harvestConsent]{display:none!i
 /* The desktop bar (31 Oct 2026, the owner: "op desktop een korte kleine footer ... in het midden Play SkylineTopia, links social
    buttons en rechts wiki app, uitgelogd en ingelogd"): one thin cream bar on a computer: at the very bottom of the sign-in page, below
    its footer ("niet sticky maar gewoon onderaan de scroll"), and under the farm, which does not scroll and gets that much less height. Plain, quiet text, the whole bar (the owner: "niet button gewoon
-   tekst en minder opvallend, de hele balk"). Not on phones, tablets or in our apps, not while the farm is loading. */
+   tekst en minder opvallend, de hele balk"). Not on phones, tablets or in our apps, not while the farm is loading. Where it shows, the page's footer above it
+   leaves out its social icons (the owner: "anders is het dubbel"). */
 .desk-bar{display:none}
 @media (min-width:1024px) and (min-height:600px) and (hover:hover) and (pointer:fine){
  html:not([data-app]) body:is([data-phase=unauthenticated],[data-phase=authenticated],[data-phase=error]) .desk-bar{position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;height:30px;padding:0 14px;background:#f7f0e3;border-top:1px solid #e6dccb;font:600 12px/1 'DM Sans',system-ui,sans-serif;color:#9a8a6c}
  html:not([data-app]) body[data-phase=authenticated] .desk-bar{position:fixed;inset-inline:0;bottom:0;z-index:9}
  html:not([data-app]) body[data-phase=authenticated] #farm-host{bottom:30px}
+ html:not([data-app]) .site-legal .footer-social{display:none}
  .desk-bar-socials{display:flex;align-items:center;gap:2px}
  .desk-bar-social{display:grid;place-items:center;width:22px;height:22px;color:#a8987a}
  .desk-bar-social svg{width:13px;height:13px}

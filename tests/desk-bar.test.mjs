@@ -21,3 +21,9 @@ test('the desktop bar shows only on a computer, outside our apps and the loading
  assert.match(css,/html:not\(\[data-app\]\) body:is\(\[data-phase=unauthenticated\],\[data-phase=authenticated\],\[data-phase=error\]\) \.desk-bar\{/);
  assert.match(css,/html:not\(\[data-app\]\) body\[data-phase=authenticated\] #farm-host\{bottom:30px\}/);
 });
+
+test('where the bar shows, the footer above it leaves out its social icons, so they are not there twice',()=>{
+ const css=read('public/welcome.css'),desk=css.slice(css.indexOf('.desk-bar{display:none}'));
+ assert.match(desk,/html:not\(\[data-app\]\) \.site-legal \.footer-social\{display:none\}\n[^]*?\n\}/);
+ assert.match(read('public/play.html'),/<footer class="site-legal">[^]*?class="footer-social"/,'phones keep them in the footer');
+});
