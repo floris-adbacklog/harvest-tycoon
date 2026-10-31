@@ -46,6 +46,12 @@
 /* A link to one part (4 Oct 2026): a part this farmer does not have opens the list with this note above it. */
 .settings-nav-note{margin:12px 0 0;padding:10px 14px;border:1px solid #ecd9a8;border-radius:13px;background:#fbf1d6;color:#6b5320;font:600 14px/1.4 'DM Sans',sans-serif}
 .settings-nav-note[hidden]{display:none}
+/* The game's time under the list (31 Oct 2026, settings-nav.js gameTime): quiet, one line and its rule. */
+.settings-game-time{display:flex;align-items:flex-start;gap:10px;margin:10px 4px 2px;color:#7a6a4c;font:400 13px/1.45 'DM Sans',sans-serif}
+.settings-game-time[hidden]{display:none}
+.settings-game-time>svg,.settings-game-time>i{flex:none;width:18px;height:18px;margin-top:1px;color:#a8987a}
+.settings-game-time strong{display:block;color:#5b4520;font-weight:700;font-variant-numeric:tabular-nums}
+.settings-game-time small{display:block;font-size:12.5px}
 /* Copy link beside a part's heading, for the staff only (settings-nav.js addSettingsCopyLinks): the wiki's small chain button. */
 #sound-dialog .settings-copy{display:inline-flex;align-items:center;gap:6px;flex:none;min-width:30px;height:30px;margin-inline-start:auto;padding:0 7px;border:0;border-radius:999px;background:none;color:#b3a283;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
 #sound-dialog .settings-heading .settings-copy svg,#sound-dialog .settings-copy svg{width:16px;height:16px;color:currentColor}

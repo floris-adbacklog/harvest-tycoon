@@ -1,6 +1,8 @@
 import {refreshArt,art} from './visual-icons.js';
 import {settingsLink,settingsSlug} from './game-links.js';
 import {WIKI_COPY_ICON} from './wiki-link.js';
+import {formatDuration} from './farm-state.js';
+import {t} from './i18n.js';
 
 // Settings as a short list (30 Sep 2026): your account stays on top; below it one row per part (Profile: the avatar and your look; Email address, Sound, Chat,
 // Reminders, Farm app, Language, Privacy) that opens only that part, with a way back to the list. The parts themselves are
@@ -12,7 +14,11 @@ import {WIKI_COPY_ICON} from './wiki-link.js';
 // Farm app on CrazyGames. A test checks these against the CSS.
 export const AWAY='html[data-app=android] #app-settings,html[data-portal] :is(#email-settings,#notify-settings,#app-settings)';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis.window}={}){
+// The game's time (31 Oct 2026, the owner: "zet game time in settings"): under the list, the time the game's day follows (UTC, from the
+// server's clock, so a phone whose own clock is wrong still shows it right) and how long until the new day at 00:00.
+const DAY=86400000;
+export function gameTime(now){const d=new Date(now),pad=n=>String(n).padStart(2,'0');return {time:`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`,newDay:DAY-now%DAY};}
+export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis.window,now=()=>Date.now()}={}){
  if(!dialog)return null;
  const parts=()=>[...dialog.querySelectorAll('#avatar-settings,.settings-section')];
  // The heading's words, without the staff's Copy link button (below) in it.
@@ -39,6 +45,11 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  const nav=doc.createElement('nav');nav.className='settings-nav';nav.setAttribute('aria-label','Settings');
  const back=doc.createElement('button');back.type='button';back.className='back-button settings-back back-round';back.hidden=true;back.innerHTML='<i data-lucide="chevron-left" data-line-icon></i>All settings';
  const note=doc.createElement('p');note.className='settings-nav-note';note.setAttribute('role','status');note.hidden=true;note.textContent='That part of Settings is not available here.';
+ const clock=doc.createElement('p');clock.className='settings-game-time';
+ let tick=null;
+ function drawClock(){const {time,newDay}=gameTime(now());clock.innerHTML=`<i data-lucide="clock" data-line-icon></i><span><strong>${esc(t('Game time {0}',time))}</strong><small>${esc(t('Gifts, challenges, orders and market prices refresh at 00:00 game time, in {0}.',formatDuration(newDay)))}</small></span>`;try{win?.lucide?.createIcons?.();}catch{}}
+ // Drawn while Settings is open, again every 20 seconds so the minute is right; nothing runs while it is closed.
+ function clockOn(on){clearInterval(tick);tick=null;if(on){drawClock();tick=setInterval(drawClock,20000);}}
  let open=null,next=null;
  // Not there for this farmer: hidden, or put aside by the page's CSS (AWAY), so it has no row and a link to it gets the note.
  const away=p=>p.hidden||p.matches(AWAY)||!titleOf(p);
@@ -55,7 +66,7 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
   const title=dialog.querySelector('.dialog-heading h2'),part=id?parts().find(p=>p.id===id):null;if(title)title.textContent=part?titleOf(part)||'Settings':'Settings';
   for(const p of parts())p.classList.toggle('is-open',p.id===id);
   badge(part);
-  back.hidden=!id;nav.hidden=Boolean(id);if(!id)list();
+  back.hidden=!id;nav.hidden=Boolean(id);clock.hidden=Boolean(id);if(!id)list();
   dialog.scrollTop=0;
  }
  // One part from a link: the part itself when this farmer has it, else the list and the note.
@@ -72,13 +83,14 @@ export function createSettingsNav(dialog,{doc=globalThis.document,win=globalThis
  nav.addEventListener('click',event=>{const row=event.target.closest('[data-settings-open]');if(!row)return;const part=parts().find(p=>p.id===row.dataset.settingsOpen),press=part?.dataset.settingsPress;if(press){dialog.querySelector(`#${press}`)?.click();return;}show(row.dataset.settingsOpen);});
  // Back on the list, the focus goes to the row of the part just left (it read open after show(null) cleared it, so found nothing).
  back.addEventListener('click',()=>{const left=open;show(null);nav.querySelector(`[data-settings-open="${esc(left)}"]`)?.focus({preventScroll:true});});
- const anchor=dialog.querySelector('#avatar-settings')??parts()[0];anchor?.before(note,nav);
+ const anchor=dialog.querySelector('#avatar-settings')??parts()[0];anchor?.before(note,nav,clock);
  // The way back sits in the heading, in front of the title (18 Oct 2026, the window shell).
  const heading=dialog.querySelector('.dialog-heading');if(heading)heading.prepend(back);else anchor?.before(back);
  // Every time Settings opens it starts on the list (or the part a link asked for); a part that shows or hides later updates the list.
  new MutationObserver(()=>{if(!dialog.open)return;const id=next;next=null;if(id)reveal(id);else show(null);}).observe(dialog,{attributes:true,attributeFilter:['open']});
  // Only a part that really shows or hides: setting hidden to what it already is (install-ui.js does on every refresh) changes nothing.
  new MutationObserver(records=>{if(!open&&records.some(r=>(r.oldValue!==null)!==r.target.hasAttribute('hidden')))list();}).observe(dialog,{subtree:true,attributes:true,attributeFilter:['hidden'],attributeOldValue:true});
+ new MutationObserver(()=>clockOn(dialog.open)).observe(dialog,{attributes:true,attributeFilter:['open']});
  show(null);
  return {show,list,openAt,reveal};
 }
