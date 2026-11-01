@@ -4,6 +4,7 @@ import {enabledProviders} from './social-login.js';
 import {chosenLanguage} from '../public/i18n.js';
 import {LOAD_STALL_KEY,LOAD_FAILED_KEY} from '../public/loading-screen.js';
 import {noteReloadAfter} from './app-update.js';
+import {clockStorage,CLOCK_KEY} from './clock-storage.js';
 const url=import.meta.env.VITE_SUPABASE_URL?.trim();
 const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const isConfigured=Boolean(url&&key);
@@ -11,9 +12,11 @@ export const functionsUrl=url?`${url.replace(/\/$/,'')}/functions/v1`:null;
 // CrazyGames (Oct 2026): public/crazygames.html (<html data-portal="crazygames">) signs in with sign-ins of its own (portalClient,
 // src/crazygames.js), so there the website's saved sign-in is never read or refreshed. Everything below uses whichever is in use.
 const portalPage=Boolean(globalThis.document?.documentElement?.dataset?.portal);
-export let supabase=isConfigured&&!portalPage?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'}}):null;
+// The sign-in is kept through src/clock-storage.js (31 Oct 2026), so a device with a wrong clock keeps it; without localStorage, as before.
+const storage=(()=>{try{const store=globalThis.localStorage;store.getItem(CLOCK_KEY);return clockStorage(store);}catch{return undefined;}})();
+export let supabase=isConfigured&&!portalPage?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth',storage}}):null;
 export const supabaseKey=key;
-export const portalClient=storageKey=>isConfigured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey}}):null;
+export const portalClient=storageKey=>isConfigured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey,storage}}):null;
 export function useClient(client){supabase=client;}
 // Which of Google / Facebook sign-in are switched on in Supabase (an empty list until they are).
 export const socialProviders=()=>isConfigured?enabledProviders({url,key}):Promise.resolve([]);

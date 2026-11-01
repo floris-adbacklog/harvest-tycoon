@@ -29,6 +29,7 @@ import {signInOf,passwordMail,passwordSession} from './account-sign-in.js';
 import {PLAY_PRODUCTS,APPLE_PRODUCTS,APPLE_SELLS_OFFER,appleProduct} from '../game/payments.js';
 import {payWays,deviceTimeZone} from './pay-ways.js';
 import {withPayChoice} from './pay-choice-ui.js';
+import {clockOffset} from './clock-storage.js';
 const $=id=>document.getElementById(id);
 // Our Android app (Oct 2026): public/android-app.js marked this page before it was drawn (public/android.js says what changes there).
 const inApp=androidApp();
@@ -223,6 +224,8 @@ const keepWebAppleToken=()=>{supabase?.auth.getSession().then(({data})=>{const t
 // The deletion's answer says apple:'manual' when the account signed in with Apple and Apple could not be asked to forget Harvest Tycoon
 // (account-delete-service.js): the farmer is told where to remove it themselves.
 const DELETED_APPLE_LEFT='Your account has been deleted. Harvest Tycoon may still be listed under Sign in with Apple in your Apple Account, where you can remove it.';
+// A sign-in that ended on a device whose clock is wrong (31 Oct 2026, src/clock-storage.js): the sign-in screen says what to change.
+const CLOCK_WRONG='Your session has ended because the clock on your device is set wrong. Turn on automatic date and time in your device settings, then sign in again.';
 function landing(message=''){connection.stop();dispose();if(inApp)forgetAppPushLink(window);if(!message&&pendingOpen?.open==='discord-link')message=DISCORD_SIGN_IN;setMode(message||knownPlayer()?'signin':'register');phase('unauthenticated');browserGate();$('account-message').textContent=message;if(!viewTracked){viewTracked=true;trackAuth('view',{mode});}}
 function unavailable(message='Your farm is safe. Reconnect to continue.',{retrying=false}={}){dispose();phase('error');$('account-title').textContent='A little pause.';$('account-copy').hidden=false;$('account-copy').textContent=message;$('account-message').textContent=retrying?'We are trying again automatically.':'';$('account-form').hidden=true;$('confirm-panel').hidden=true;$('mode-switch-row').hidden=true;document.querySelector('.account-tabs').hidden=true;$('connection-actions').hidden=false;}
 async function signOut(){if(!supabase){landing();return;}connection.stop();try{await notifications?.push?.detach();}catch{}notifications?.dispose?.();notifications=null;dispose();phase('checking','Signing you out…');try{const result=await supabase.auth.signOut();if(result.error)throw result.error;}catch{await supabase.auth.signOut({scope:'local'});}finally{landing();$('password').value='';}}
@@ -266,7 +269,7 @@ async function openFarm(){
    try{const data=await farmRequest(body);if(ticket!==generation||data.profile?.player_id!==user.id)throw new Error('Your session has ended.');connection.ok();return data;}
    catch(error){
     if(ticket===generation&&error.code!=='ACTION_REJECTED'&&error.status!==400){
-     if(error.status===401){await supabase.auth.signOut({scope:'local'});landing('Your session has ended. Please sign in again.');}
+     if(error.status===401){await supabase.auth.signOut({scope:'local'});landing(clockOffset()?CLOCK_WRONG:'Your session has ended. Please sign in again.');}
      else if(error.status===409)unavailable(error.message);
      // A failed request never closes the farm by itself: the connection shows "Reconnecting…", checks again and only after a minute pauses.
      // A refusal (4xx) is an answer, not a connection problem: the screen shows its reason (29 Sep 2026: a refused Help in daily

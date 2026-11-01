@@ -241,8 +241,8 @@ test('crazygames.html: the loading screen and the farm, without tracking, cookie
 test('src/crazygames.js: its own sign-ins, the token on every start, a guest otherwise, never the log-in window by itself',()=>{
  const js=read('src/crazygames.js'),supabase=read('src/supabase.js');
  assert.match(js,/user:'harvest-tycoon:cg-user',guest:'harvest-tycoon:cg-guest'/);
- assert.match(supabase,/const portalPage=Boolean\(globalThis\.document\?\.documentElement\?\.dataset\?\.portal\);\nexport let supabase=isConfigured&&!portalPage\?createClient\(url,key,\{auth:\{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth'\}\}\):null;/,'the website\'s saved sign-in is never read there');
- assert.match(supabase,/detectSessionInUrl:false,storageKey\}/);
+ assert.match(supabase,/const portalPage=Boolean\(globalThis\.document\?\.documentElement\?\.dataset\?\.portal\);\n(?:\/\/.*\n|const storage=.*\n)*export let supabase=isConfigured&&!portalPage\?createClient\(url,key,\{auth:\{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'harvest-tycoon:auth',storage\}\}\):null;/,'the website\'s saved sign-in is never read there');
+ assert.match(supabase,/detectSessionInUrl:false,storageKey,storage\}/);
  assert.match(js,/const token=await link\.token\(\);/);assert.match(js,/askServer\(\{op:'crazygames',token,language:chosenLanguage\(\)\},sent\?\.access_token\)/);assert.match(js,/askServer\(\{op:'guest',language:chosenLanguage\(\)\}\)/);
  assert.match(js,/verifyOtp\(\{token_hash:tokenHash,type:'magiclink'\}\)/);assert.match(js,/`\$\{functionsUrl\}\/crazygames-auth\?forceFunctionRegion=eu-central-1`/,'in Frankfurt, next to the database, as farm-api');
  // Oct 2026 review: the token is asked whenever CrazyGames has accounts here (not only when init named a user); a server that is down is

@@ -7118,6 +7118,7 @@
 "Your rewards so far":"public/family-order-rewards.js",
 "Your saved farm could not load. Please try again.":"public/farm-start.js",
 "Your second world":"public/wiki-content.js",
+"Your session has ended because the clock on your device is set wrong. Turn on automatic date and time in your device settings, then sign in again.":"src/main.js",
 "Your session has ended.":"src/chat-client.js",
 "Your session has ended. Please sign in again.":"public/discord-link-ui.js",
 "Your session is paused. Reconnect to continue.":"src/farm-session.js",
