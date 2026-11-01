@@ -1,7 +1,7 @@
 -- Support for the hourly reminder job (Edge Function notify-hourly). Everything here is for the service role only.
 --
--- notification_job is a single row that makes sure the job runs at most once per clock hour, however often it is
--- called, and counts the emails sent today for the job's daily cap (EMAIL_DAILY_CAP in functions/notify-hourly/job.js).
+-- notification_job is a single row that makes sure the job runs at most once per 10 minutes (since 1 Nov 2026; it was once per
+-- clock hour), however often it is called, and counts the emails sent today for the job's daily cap (EMAIL_DAILY_CAP in functions/notify-hourly/job.js).
 create table if not exists public.notification_job (
  id smallint primary key default 1 check (id = 1),
  last_run_at timestamptz,
@@ -19,7 +19,7 @@ begin
    emails_sent = case when emails_day = (now() at time zone 'utc')::date then emails_sent else 0 end,
    emails_day = (now() at time zone 'utc')::date,
    last_run_at = now()
-  where id = 1 and (last_run_at is null or date_trunc('hour', last_run_at) < date_trunc('hour', now()))
+  where id = 1 and (last_run_at is null or date_bin('10 minutes', last_run_at, timestamptz '2000-01-01') < date_bin('10 minutes', now(), timestamptz '2000-01-01'))
   returning * into v_row;
  if not found then return jsonb_build_object('run', false, 'emails_sent', 0); end if;
  return jsonb_build_object('run', true, 'emails_sent', v_row.emails_sent);

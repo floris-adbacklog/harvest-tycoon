@@ -77,7 +77,7 @@ test('no secret yet (ONESIGNAL_REST_API_KEY not set): nothing is sent, nothing f
  for(const apiKey of ['',undefined,null]){const client=createOneSignal({apiKey,fetchImpl});assert.equal(client.enabled,false);assert.equal((await client.send({ids:['p1'],title:'t',body:'b',url:'/',key:'k'})).size,0);assert.equal((await sendReminders(client,[{player:'p1',push:{title:'t',body:'b',url:'/'}}])).size,0);}
  assert.equal(calls.length,0);assert.equal(createOneSignal({apiKey:'k',fetchImpl:null}).enabled,false);
 });
-test('the hourly reminders: one call per text and link (each language its own), the hour in the key',async()=>{
+test('the reminders: one call per text and link (each language its own), the run\'s 10 minutes in the key',async()=>{
  const {calls,fetchImpl}=oneSignal(),client=createOneSignal({apiKey:'k',fetchImpl}),now=Date.parse('2026-09-21T07:05:00Z');
  const nl={title:'Harvest Tycoon',body:'Je gewassen zijn klaar om te oogsten',tag:'harvest-tycoon',url:'/?source=push'},en={...nl,body:'Your crops are ready to harvest'},gift={...en,body:'Your daily gift is waiting',url:'/?source=push&open=today'};
  const reached=await sendReminders(client,[{player:'a',push:nl},{player:'b',push:en},{player:'c',push:nl},{player:'d',push:gift}],now);
@@ -88,6 +88,9 @@ test('the hourly reminders: one call per text and link (each language its own), 
  // The same farmers and words in another hour: other keys (and the same hour: the same keys).
  const later=oneSignal();await sendReminders(createOneSignal({apiKey:'k',fetchImpl:later.fetchImpl}),[{player:'a',push:nl},{player:'c',push:nl}],now+3600000);
  assert.notEqual(later.calls[0].request.idempotency_key,calls[0].request.idempotency_key);
+ // Twice in one hour is allowed (10:03 and 10:53, 1 Nov 2026): another 10 minutes is another key.
+ const soon=oneSignal();await sendReminders(createOneSignal({apiKey:'k',fetchImpl:soon.fetchImpl}),[{player:'a',push:nl},{player:'c',push:nl}],now+50*60000);
+ assert.notEqual(soon.calls[0].request.idempotency_key,calls[0].request.idempotency_key);
  const same=oneSignal();await sendReminders(createOneSignal({apiKey:'k',fetchImpl:same.fetchImpl}),[{player:'c',push:nl},{player:'a',push:nl}],now+60000);
  assert.equal(same.calls[0].request.idempotency_key,calls[0].request.idempotency_key);
  // The words come from planPlayer in the farmer's own language, as the browser's push.

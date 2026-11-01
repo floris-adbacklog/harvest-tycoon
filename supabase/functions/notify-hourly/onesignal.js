@@ -8,6 +8,7 @@ export const ONESIGNAL_APP_ID='1d8ca7c0-fca0-48a9-b55e-e87b85802fad';   // publi
 export const ONESIGNAL_URL='https://api.onesignal.com/notifications?c=push';
 export const ONESIGNAL_BATCH=2000;    // farmers per call (OneSignal takes up to 20,000)
 export const APP_PUSH_TTL=3600;       // as the browser's push: a reminder that could not arrive within the hour is not shown later
+export const REMINDER_SLOT_MS=600000; // how often the reminder job runs (supabase/notifications-cron.sql)
 const SITE='https://www.harvesttycoon.com',HOSTS=Object.freeze(['www.harvesttycoon.com','harvesttycoon.com']);
 // The app's notification categories in Android's settings (android-app AppPush.java; the ids are part of the contract, never rename them):
 // messages = a private message, a mention (3 Oct 2026), the Crew or a purchase notice; ready = crops & goods ready; daily = the daily gift, the streak and the
@@ -92,13 +93,15 @@ export function createOneSignal({apiKey='',fetchImpl=globalThis.fetch,base=SITE,
 // (a Set, 13 Oct 2026) gets the ones it named as not reachable.
 export async function sendReminders(client,items,now=Date.now(),unreachable=null){
  const reached=new Set();if(!client?.enabled)return reached;
- const groups=new Map(),hour=new Date(now).toISOString().slice(0,13);
+ // The run's 10 minutes in the key (1 Nov 2026, the job runs every 10 minutes; it was the hour): the same farmer can have the same
+ // reminder twice in one hour (10:03 and 10:53), and OneSignal would take the second as the first one sent again.
+ const groups=new Map(),slot=new Date(Math.floor(now/REMINDER_SLOT_MS)*REMINDER_SLOT_MS).toISOString().slice(0,16);
  for(const {player,push} of items??[]){
   const group=JSON.stringify([push.title,push.body,push.url,push.tag,push.channel]);
   if(!groups.has(group))groups.set(group,{push,ids:[]});groups.get(group).ids.push(player);
  }
  for(const {push,ids} of groups.values()){
-  const sent=await client.send({ids,title:push.title,body:push.body,url:push.url,tag:push.tag,channel:push.channel,unreachable,key:`reminder|${hour}|${push.title}|${push.body}|${push.url}|${push.channel??''}`});
+  const sent=await client.send({ids,title:push.title,body:push.body,url:push.url,tag:push.tag,channel:push.channel,unreachable,key:`reminder|${slot}|${push.title}|${push.body}|${push.url}|${push.channel??''}`});
   for(const id of sent)reached.add(id);
  }
  return reached;

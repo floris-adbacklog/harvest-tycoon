@@ -63,7 +63,7 @@ test('notify-hourly: one line per run with how many app farmers were reached and
  const rows=[player(),player({player_id:'p2'}),player({player_id:'p3'}),player({player_id:'p4',push_crops:false,push_production:false})];
  const {log,deps}=jobDeps(rows,{appPlayers:['p1','p2','p3','p4'],missing:['p2','p3']});const stats=await runJob(deps,MORNING);
  assert.deepEqual([stats.appPushes,stats.appPushUnreachable,stats.errors],[1,2,0]);
- assert.deepEqual(log.lines,['app push this hour: 3 farmers, 1 reached, 2 not reachable'],'p4 has nothing due this hour');
+ assert.deepEqual(log.lines,['app push this run: 3 farmers, 1 reached, 2 not reachable'],'p4 has nothing due this hour');
  assert.deepEqual(log.marks,[{reached:['p1'],unreachable:['p2','p3']}]);
  // A farmer not reached keeps the reminder for next hour, as before.
  assert.equal(log.saved.find(([id])=>id==='p1')[1].push_count,1);assert.ok(!log.saved.some(([id,patch])=>id!=='p1'&&patch.push_count));

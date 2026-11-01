@@ -221,3 +221,27 @@ test('job: the daily email only goes to a confirmed address, and an unconfirmed 
  const source=readFileSync(new URL('../supabase/functions/notify-hourly/index.ts',import.meta.url),'utf8');
  assert.match(source,/admin\.rpc\('harvest_email_checked',\{p_player:row\.player_id\}\)/);assert.match(source,/sendEmail:emailOn\?sendEmail:null,emailConfirmed,/);
 });
+
+// A run in seconds (1 Nov 2026): the states saved together, the pushes side by side.
+test('job: states are saved together, one request per set of fields, and a failed request saves them one by one',async()=>{
+ const rows=[waiting({player_id:'a'}),waiting({player_id:'b'}),player({player_id:'c',push_daily:false,crops_seen_at:null},{plots:[]})];
+ const {log,deps:d}=deps(rows);const batches=[];
+ d.db.saveStates=async list=>{batches.push(list.map(r=>r.player));for(const {player,patch} of list)log.saved.push([player,patch]);};
+ const stats=await runJob(d,MORNING);
+ assert.deepEqual([stats.pushes,stats.errors],[2,0]);
+ assert.deepEqual(batches.map(b=>[...b].sort()),[['a','b'],['c']],'two shapes: a push sent, and only the markers moved');
+ for(const list of [batches[0]]){const shapes=new Set(log.saved.filter(([id])=>list.includes(id)).map(([,patch])=>Object.keys(patch).sort().join()));assert.equal(shapes.size,1);}
+ assert.equal(log.saved.find(([id])=>id==='a')[1].push_count,1);
+ const down=deps([waiting({player_id:'bad'}),waiting({player_id:'ok'})]);
+ down.deps.db.saveStates=async()=>{throw new Error('database hiccup');};
+ const save=down.deps.db.saveState;down.deps.db.saveState=async(id,patch)=>{if(id==='bad')throw new Error('still');return save(id,patch);};
+ const run=await runJob(down.deps,MORNING);
+ assert.deepEqual([run.pushes,run.errors,down.log.saved.map(([id])=>id)],[2,1,['ok']]);
+});
+test('job: browsers\' pushes go several at a time, not one farmer after another',async()=>{
+ let open=0,most=0;
+ const slow=async()=>{open++;most=Math.max(most,open);await new Promise(r=>setTimeout(r,5));open--;return {ok:true,status:201};};
+ const rows=Array.from({length:20},(_,i)=>waiting({player_id:`p${i}`,subscriptions:[{endpoint:`https://push.example/${i}`,p256dh:'k',auth:'a'}]}));
+ const {log,deps:d}=deps(rows,{sendPush:slow});const stats=await runJob(d,MORNING);
+ assert.equal(stats.pushes,20);assert.equal(log.saved.length,20);assert(most>1&&most<=8,`at most 8 at once (${most})`);
+});

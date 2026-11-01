@@ -87,11 +87,17 @@ test('the notify-hourly function: config leaks no secret, unsubscribing needs a 
  assert.match(index,/import webpush from 'npm:web-push@/);assert(!/console\.(log|error)\([^)]*(VAPID_PRIVATE|RESEND_KEY)/.test(index),'secrets are never logged');
 });
 
-test('the hourly schedule is written down, runs at :05 and points at the function',()=>{
+test('the schedule is written down, runs every 10 minutes and points at the function',()=>{
  const cron=read('supabase/notifications-cron.sql');
- assert.match(cron,/cron\.schedule\('notify-hourly', '5 \* \* \* \*'/);assert.match(cron,/functions\/v1\/notify-hourly/);assert.match(cron,/create extension if not exists pg_cron/);assert.match(cron,/net\.http_post/);
+ assert.match(cron,/cron\.schedule\('notify-hourly', '3-59\/10 \* \* \* \*'/);assert.match(cron,/functions\/v1\/notify-hourly/);assert.match(cron,/create extension if not exists pg_cron/);assert.match(cron,/net\.http_post/);
  const jobSql=read('supabase/notifications-job.sql');
  for(const fn of ['notification_begin_run','notification_add_emails','notification_candidates']){assert.match(jobSql,new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`));assert.match(jobSql,new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role`));}
- assert.match(jobSql,/date_trunc\('hour', last_run_at\) < date_trunc\('hour', now\(\)\)/,'one run per clock hour');
+ const slot=/date_bin\('10 minutes', last_run_at, timestamptz '2000-01-01'\) < date_bin\('10 minutes', now\(\), timestamptz '2000-01-01'\)/;
+ assert.match(jobSql,slot,'one run per 10 minutes');
+ // The live change (1 Nov 2026) is only the run check and the schedule, so nothing else of the live job is replaced.
+ const live=read('supabase/notifications-every-10-min.sql');
+ assert.match(live,slot);assert.match(live,/cron\.alter_job\(\(select jobid from cron\.job where jobname = 'notify-hourly'\), schedule := '3-59\/10 \* \* \* \*'\)/);
+ assert(!/notification_candidates|create table/.test(live));
+ assert.match(live,/revoke all on function public\.notification_begin_run\(\) from public, anon, authenticated/);
  assert(!/re_[A-Za-z0-9_]{20,}|['"][A-Za-z0-9_-]{43}['"]/.test(cron+jobSql+read('supabase/functions/notify-hourly/index.ts')),'no key pasted into the repo');
 });

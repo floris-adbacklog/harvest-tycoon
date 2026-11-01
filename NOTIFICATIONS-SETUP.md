@@ -56,7 +56,7 @@ Je moet iets zien als `{"enabled":true,"push":true,"email":true,"vapidPublicKey"
 
 ## Stap 4: de uurplanning aanzetten
 
-Zeg tegen mij dat de geheimen erin staan. Dan voer ik `supabase/notifications-cron.sql` uit: dat zet `pg_cron` en `pg_net` aan en plant de taak elk uur op :05. Dit doe ik pas als de geheimen erin staan.
+Zeg tegen mij dat de geheimen erin staan. Dan voer ik `supabase/notifications-cron.sql` uit: dat zet `pg_cron` en `pg_net` aan en plant de taak elke 10 minuten (:03, :13 … :53; tot 1 november 2026 elk uur op :05). Dit doe ik pas als de geheimen erin staan.
 
 ## Wat spelers zien
 
@@ -92,7 +92,7 @@ gaat; anders `ready`.
 Op 13 oktober kende OneSignal 96 van de 180 spelers met app-push niet als bereikbaar (`invalid_aliases`), vooral op Android 13 en
 nieuwer. De reparatie zit vooral in de app (Android 1.3, `android-app/README.md`); de server en de site helpen zo:
 
-- **notify-hourly** schrijft per uur één regel in de log: `app push this hour: N farmers, X reached, Y not reachable`. Dat getal Y
+- **notify-hourly** schrijft per ronde één regel in de log: `app push this run: N farmers, X reached, Y not reachable`. Dat getal Y
   moet na de nieuwe app-versie naar bijna 0.
 - Met `supabase/app-push-reach.sql` (kolom `unreachable_at` op `app_push_players`) onthoudt notify-hourly ook per speler sinds
   wanneer OneSignal hem niet bereikt, en wist dat weer zodra OneSignal hem wel neemt. Tellen:

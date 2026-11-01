@@ -7,7 +7,7 @@ import {createOneSignal,sendReminders} from './onesignal.js';
 import {messagePushes} from './messages.js';
 
 // verify_jwt is off for this function: the hourly cron call carries no user, and the unsubscribe link is opened from an email.
-// Nothing here trusts the caller. The job runs at most once per clock hour (notification_begin_run), so calling it more
+// Nothing here trusts the caller. The job runs at most once per 10 minutes (notification_begin_run), so calling it more
 // often changes nothing, and an unsubscribe needs the private token from the player's own emails.
 const url=Deno.env.get('SUPABASE_URL')!;
 const admin=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -41,16 +41,20 @@ const db={
    const {data,error}=await (last?call.gt('player_id',last):call).order('player_id').limit(1000);if(error)throw error;
    rows.push(...(data??[]));if((data??[]).length<1000)break;
   }
-  const languages=new Map();
-  for(let i=0;i<rows.length;i+=150){
-   const ids=rows.slice(i,i+150).map((r:Record<string,any>)=>r.player_id);
+  // The chunks side by side (1 Nov 2026); a chunk that fails leaves its farmers in English.
+  const languages=new Map(),chunks=[];
+  for(let i=0;i<rows.length;i+=150)chunks.push(rows.slice(i,i+150).map((r:Record<string,any>)=>r.player_id));
+  await Promise.all(chunks.map(async ids=>{
    const seen=await admin.from('player_seen').select('player_id,language').in('player_id',ids);
-   if(seen.error){console.error(`languages: ${seen.error.message}`);break;}
+   if(seen.error){console.error(`languages: ${seen.error.message}`);return;}
    for(const s of seen.data??[])if(s.language)languages.set(s.player_id,s.language);
-  }
+  }));
   return rows.map((r:Record<string,any>)=>({...r,language:languages.get(r.player_id)??null}));
  },
  async saveState(player:string,patch:Record<string,unknown>){const {error}=await admin.from('notification_state').upsert({player_id:player,...patch,updated_at:new Date().toISOString()});if(error)throw error;},
+ // Many farmers in one request (job.js saveAll, 1 Nov 2026): the job only passes farmers whose changes have the same fields, so the
+ // upsert never sets a field one of them did not change.
+ async saveStates(rows:{player:string;patch:Record<string,unknown>}[]){const at=new Date().toISOString();const {error}=await admin.from('notification_state').upsert(rows.map(({player,patch})=>({player_id:player,...patch,updated_at:at})));if(error)throw error;},
  async removeSubscription(endpoint:string){await admin.from('push_subscriptions').delete().eq('endpoint',endpoint);},
  async markSuccess(endpoint:string){await admin.from('push_subscriptions').update({last_success_at:new Date().toISOString(),failures:0}).eq('endpoint',endpoint);},
  async markFailure(endpoint:string){
