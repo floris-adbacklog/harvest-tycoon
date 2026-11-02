@@ -48,6 +48,9 @@ export function createNotificationsSection({onEmailOn}={}){
   const push=Boolean(bridge?.available&&(bridge.config?.push||bridge.config?.appPush)&&bridge.push),email=Boolean(bridge?.available&&bridge.config?.email);
   section.hidden=!(push||email);if(section.hidden)return;
   $('notify-device').hidden=!push;$('notify-push-rows').hidden=!push;$('notify-email-rows').hidden=!email;
+  // In our apps no crops & goods reminder (2 Nov 2026, the owner: the apps' notification allowance; notify-hourly rules.js):
+  // its switch is left out there, the browser keeps it.
+  const ready=$('notify-ready')?.closest?.('label');if(ready)ready.hidden=Boolean(push&&bridge.push?.app);
   // The line that asks to allow notifications only where they can be allowed.
   const intro=section.querySelector?.(':scope>.install-copy');if(intro)intro.hidden=!push;
   // The app answers in its own time (Android's question, the phone's settings): the device line follows it.

@@ -94,15 +94,16 @@ test('the reminders: one call per text and link (each language its own), the run
  const same=oneSignal();await sendReminders(createOneSignal({apiKey:'k',fetchImpl:same.fetchImpl}),[{player:'c',push:nl},{player:'a',push:nl}],now+60000);
  assert.equal(same.calls[0].request.idempotency_key,calls[0].request.idempotency_key);
  // The words come from planPlayer in the farmer's own language, as the browser's push.
- const at=Date.parse('2026-09-21T07:05:00Z'),row={player_id:'p',push_crops:true,push_production:true,push_daily:false,timezone:'Europe/Amsterdam',language:'nl',last_active_at:new Date(at-3*3600000).toISOString(),crops_seen_at:at-7200000,production_seen_at:at-7200000,app_push:true,subscriptions:[],farm:{plots:[{id:0,crop:'wheat',readyAt:at-600000}],buildings:{},login:{lastDay:'2026-09-21',streak:1}}};
+ const at=Date.parse('2026-09-21T07:05:00Z'),row={player_id:'p',push_crops:true,push_production:true,push_daily:false,timezone:'Europe/Amsterdam',language:'nl',last_active_at:new Date(at-3*3600000).toISOString(),crops_seen_at:at-7200000,production_seen_at:at-7200000,app_push:true,subscriptions:[{endpoint:'https://push.example/nl',p256dh:'k',auth:'a'}],farm:{plots:[{id:0,crop:'wheat',readyAt:at-600000}],buildings:{},login:{lastDay:'2026-09-21',streak:1}}};
  assert.equal(planPlayer(row,at,names).push.body,'Je gewassen zijn klaar om te oogsten');
 });
 
 // The job (job.js) with app push: as tests/reminder-rules.test.mjs, plus the farmers with the app's notifications on.
 const MORNING=Date.parse('2026-09-21T07:05:00Z'),HOUR=3600000;
-const player=(over={})=>({player_id:'p1',email:'a@b.nl',username:'Tony',push_crops:true,push_production:true,push_daily:false,email_digest:false,digest_hour:9,timezone:'Europe/Amsterdam',
+// The daily gift is waiting at 09:05 there, and wheat is ready: the apps get only the gift (2 Nov 2026), a browser both.
+const player=(over={})=>({player_id:'p1',email:'a@b.nl',username:'Tony',push_crops:true,push_production:true,push_daily:true,email_digest:false,digest_hour:9,timezone:'Europe/Amsterdam',
  last_active_at:new Date(MORNING-3*HOUR).toISOString(),crops_seen_at:MORNING-2*HOUR,production_seen_at:MORNING-2*HOUR,last_push_at:null,push_day:null,push_count:0,daily_morning_on:null,daily_evening_on:null,digest_on:null,
- subscriptions:[],farm:{plots:[{id:0,crop:'wheat',readyAt:MORNING-10*60000}],buildings:{},login:{lastDay:'2026-09-21',streak:5}},...over});
+ subscriptions:[],farm:{plots:[{id:0,crop:'wheat',readyAt:MORNING-10*60000}],buildings:{},login:{lastDay:'2026-09-20',streak:5}},...over});
 function jobDeps(rows,{appPlayers=[],reach=ids=>ids,web=async()=>({ok:true,status:201}),appFails=false,playersFail=false}={}){
  const log={saved:[],web:[],app:[]};
  return {log,deps:{names,
@@ -112,17 +113,21 @@ function jobDeps(rows,{appPlayers=[],reach=ids=>ids,web=async()=>({ok:true,statu
   sendAppPush:async(items,now)=>{log.app.push({items,now});if(appFails)throw new Error('OneSignal down');return new Set(reach(items.map(i=>i.player)));},log:()=>{}}};
 }
 const device={endpoint:'https://push.example/1',p256dh:'k',auth:'a'};
-test('job: a farmer with only the app gets the reminder there, and it counts as the one reminder of this hour',async()=>{
+test('job: a farmer with only the app gets the daily gift reminder there, never crops or goods, and it counts as the one reminder of this hour',async()=>{
  const {log,deps}=jobDeps([player()],{appPlayers:['p1']});const stats=await runJob(deps,MORNING);
  assert.deepEqual([stats.pushes,stats.appPushes,stats.errors],[1,1,0]);assert.deepEqual(log.web,[]);
- assert.deepEqual(log.app[0].items,[{player:'p1',push:{title:'Harvest Tycoon',body:'Your crops are ready to harvest',tag:'harvest-tycoon',url:'/?source=push',channel:'ready'}}]);assert.equal(log.app[0].now,MORNING);
+ assert.deepEqual(log.app[0].items,[{player:'p1',push:{title:'Harvest Tycoon',body:'Your daily gift is waiting',tag:'harvest-tycoon',url:'/?source=push&open=today',channel:'daily'}}]);assert.equal(log.app[0].now,MORNING);
  assert.equal(log.saved.length,1);assert.equal(log.saved[0][1].push_count,1);assert.equal(log.saved[0][1].crops_seen_at,MORNING);
  // Without the app (and without a browser) there is nothing to send it to: the markers follow the clock, as before.
  const none=jobDeps([player()]);await runJob(none.deps,MORNING);assert.equal(none.log.app.length,0);assert.equal(none.log.saved[0][1].push_count,undefined);
+ // Crops and goods ready (2 Nov 2026, the owner: OneSignal's allowance): nothing in the app, and the markers follow the clock, so a
+ // browser allowed later does not announce what was ready before.
+ const crops=jobDeps([player({push_daily:false})],{appPlayers:['p1']});const quiet=await runJob(crops.deps,MORNING);
+ assert.deepEqual([quiet.pushes,crops.log.app.length,crops.log.saved[0][1].push_count,crops.log.saved[0][1].crops_seen_at],[0,0,undefined,MORNING]);
 });
-test('job: a farmer with a browser and the app gets the same reminder on both, counted once; the hour, day and quiet-hour limits hold for the farmer',async()=>{
+test('job: a farmer with a browser and the app gets the reminder on both (the app without crops and goods), counted once; the hour, day and quiet-hour limits hold for the farmer',async()=>{
  const {log,deps}=jobDeps([player({subscriptions:[device]})],{appPlayers:['p1']});const stats=await runJob(deps,MORNING);
- assert.deepEqual([stats.pushes,stats.appPushes],[1,1]);assert.deepEqual(log.web,[['https://push.example/1','Your crops are ready to harvest']]);assert.equal(log.app[0].items[0].push.body,'Your crops are ready to harvest');
+ assert.deepEqual([stats.pushes,stats.appPushes],[1,1]);assert.deepEqual(log.web,[['https://push.example/1','Your daily gift is waiting. Your crops are ready to harvest.']]);assert.equal(log.app[0].items[0].push.body,'Your daily gift is waiting');
  assert.equal(log.saved.length,1);assert.equal(log.saved[0][1].push_count,1,'one reminder, not two');
  // Sent 20 minutes ago (to either): nothing to anyone. Fourteen today: nothing. 23:05 local: no crops reminder.
  for(const over of [{last_push_at:new Date(MORNING-20*60000).toISOString()},{push_day:'2026-09-21',push_count:14}]){
@@ -131,7 +136,7 @@ test('job: a farmer with a browser and the app gets the same reminder on both, c
  const night=Date.parse('2026-09-21T21:05:00Z'),late=jobDeps([player({last_active_at:new Date(night-3*HOUR).toISOString(),crops_seen_at:night-2*HOUR,farm:{plots:[{id:0,crop:'wheat',readyAt:night-600000}],buildings:{},login:{lastDay:'2026-09-21',streak:5}}})],{appPlayers:['p1']});
  await runJob(late.deps,night);assert.deepEqual(late.log.app,[]);
  // A switch that is off is off in the app too.
- const off=jobDeps([player({push_crops:false,push_production:false})],{appPlayers:['p1']});await runJob(off.deps,MORNING);assert.deepEqual(off.log.app,[]);
+ const off=jobDeps([player({push_daily:false})],{appPlayers:['p1']});await runJob(off.deps,MORNING);assert.deepEqual(off.log.app,[]);
 });
 test('job: an app reminder that did not arrive is tried again next hour; the browser\'s copy still counts; OneSignal down never stops the run',async()=>{
  const missed=jobDeps([player()],{appPlayers:['p1'],reach:()=>[]});const stats=await runJob(missed.deps,MORNING);
@@ -143,7 +148,7 @@ test('job: an app reminder that did not arrive is tried again next hour; the bro
  const noTable=jobDeps([player({subscriptions:[device]})],{playersFail:true});const before=await runJob(noTable.deps,MORNING);
  assert.deepEqual([before.pushes,before.appPushes],[1,0]);assert.deepEqual(noTable.log.app,[]);
  // Many farmers share one call per text: the job hands them over together.
- const many=jobDeps([player(),player({player_id:'p2'}),player({player_id:'p3',push_crops:false,push_production:false})],{appPlayers:['p1','p2','p3']});await runJob(many.deps,MORNING);
+ const many=jobDeps([player(),player({player_id:'p2'}),player({player_id:'p3',push_daily:false})],{appPlayers:['p1','p2','p3']});await runJob(many.deps,MORNING);
  assert.equal(many.log.app.length,1);assert.deepEqual(many.log.app[0].items.map(i=>i.player).sort(),['p1','p2']);
 });
 
@@ -157,7 +162,7 @@ test('the app\'s category per push: messages for chats and purchase notices, dai
  // The hourly reminder: planPlayer picks it from the lines, as it picks the link.
  const at=Date.parse('2026-09-21T07:05:00Z'),evening=Date.parse('2026-09-21T17:05:00Z'),day=24*3600000;
  const row=(over={},farm={})=>({player_id:'p',push_crops:true,push_production:true,push_daily:true,timezone:'Europe/Amsterdam',language:'en',last_active_at:new Date(at-3*3600000).toISOString(),
-  crops_seen_at:at-7200000,production_seen_at:at-7200000,app_push:true,subscriptions:[],farm:{plots:[],buildings:{},login:{lastDay:'2026-09-20',streak:6},...farm},...over});
+  crops_seen_at:at-7200000,production_seen_at:at-7200000,app_push:true,subscriptions:[device],farm:{plots:[],buildings:{},login:{lastDay:'2026-09-20',streak:6},...farm},...over});
  const wheat=[{id:0,crop:'wheat',readyAt:at-600000}],plan=(r,now=at)=>planPlayer(r,now,names).push;
  const gift=plan(row());assert.deepEqual([gift.body,gift.url,gift.channel],['Your daily gift is waiting, with double earnings','/?source=push&open=today','daily']);
  const streak=plan(row({last_active_at:new Date(evening-9*3600000).toISOString(),crops_seen_at:evening,production_seen_at:evening}),evening);
@@ -167,6 +172,9 @@ test('the app\'s category per push: messages for chats and purchase notices, dai
  assert.deepEqual([chest.body,chest.url,chest.channel],['A comeback chest is waiting on your farm','/?source=push','daily']);
  const crops=plan(row({push_daily:false},{plots:wheat}));assert.deepEqual([crops.body,crops.url,crops.channel],['Your crops are ready to harvest','/?source=push','ready']);
  const both=plan(row({},{plots:wheat}));assert.match(both.body,/\. \S/);assert.doesNotMatch(both.body,/·/);assert.deepEqual([both.url,both.channel],['/?source=push','ready'],'a gift line with a crops line: ready');
+ // The apps' copy (2 Nov 2026): only the gift's lines, always daily; none for crops and goods alone.
+ const app=(r,now=at)=>planPlayer(r,now,names).appPush;
+ assert.deepEqual(app(row({},{plots:wheat})),{...gift,channel:'daily'});assert.equal(app(row({push_daily:false},{plots:wheat})),null);assert.equal(app(row({app_push:false})),null);
  // To OneSignal: each request in its category, never two categories in one call.
  const {calls,fetchImpl}=oneSignal();
  await sendReminders(createOneSignal({apiKey:'k',fetchImpl}),[{player:'a',push:gift},{player:'b',push:crops},{player:'c',push:gift},{player:'d',push:{...crops,channel:'daily'}}],at);

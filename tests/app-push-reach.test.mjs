@@ -49,9 +49,10 @@ test('OneSignal\'s "not reachable": the farmers it names are collected, also whe
 
 // The job, as in tests/app-push-server.test.mjs.
 const names={crops:CROP_NAMES,buildings:BUILDING_NAMES},MORNING=Date.parse('2026-09-21T07:05:00Z'),HOUR=3600000;
-const player=(over={})=>({player_id:'p1',email:'a@b.nl',username:'Tony',push_crops:true,push_production:true,push_daily:false,email_digest:false,digest_hour:9,timezone:'Europe/Amsterdam',
+// The daily gift is due at 09:05 there: the apps only get the gift's reminder (2 Nov 2026).
+const player=(over={})=>({player_id:'p1',email:'a@b.nl',username:'Tony',push_crops:true,push_production:true,push_daily:true,email_digest:false,digest_hour:9,timezone:'Europe/Amsterdam',
  last_active_at:new Date(MORNING-3*HOUR).toISOString(),crops_seen_at:MORNING-2*HOUR,production_seen_at:MORNING-2*HOUR,last_push_at:null,push_day:null,push_count:0,daily_morning_on:null,daily_evening_on:null,digest_on:null,
- subscriptions:[],farm:{plots:[{id:0,crop:'wheat',readyAt:MORNING-10*60000}],buildings:{},login:{lastDay:'2026-09-21',streak:5}},...over});
+ subscriptions:[],farm:{plots:[{id:0,crop:'wheat',readyAt:MORNING-10*60000}],buildings:{},login:{lastDay:'2026-09-20',streak:5}},...over});
 function jobDeps(rows,{appPlayers=[],missing=[],appFails=false,markFails=false,mark=true}={}){
  const log={saved:[],marks:[],lines:[]};
  const db={beginRun:async()=>({run:true,emails_sent:0}),candidates:async()=>rows,saveState:async(id,patch)=>log.saved.push([id,patch]),removeSubscription:async()=>{},markSuccess:async()=>{},markFailure:async()=>{},addEmails:async()=>{},appPushPlayers:async()=>new Set(appPlayers)};
@@ -60,7 +61,7 @@ function jobDeps(rows,{appPlayers=[],missing=[],appFails=false,markFails=false,m
   sendAppPush:async(items,now,unreachable)=>{if(appFails)throw new Error('OneSignal down');const ids=items.map(i=>i.player);for(const id of ids)if(missing.includes(id))unreachable.add(id);return new Set(ids.filter(id=>!missing.includes(id)));}}};
 }
 test('notify-hourly: one line per run with how many app farmers were reached and how many are not reachable, and who is marked or unmarked',async()=>{
- const rows=[player(),player({player_id:'p2'}),player({player_id:'p3'}),player({player_id:'p4',push_crops:false,push_production:false})];
+ const rows=[player(),player({player_id:'p2'}),player({player_id:'p3'}),player({player_id:'p4',push_daily:false})];
  const {log,deps}=jobDeps(rows,{appPlayers:['p1','p2','p3','p4'],missing:['p2','p3']});const stats=await runJob(deps,MORNING);
  assert.deepEqual([stats.appPushes,stats.appPushUnreachable,stats.errors],[1,2,0]);
  assert.deepEqual(log.lines,['app push this run: 3 farmers, 1 reached, 2 not reachable'],'p4 has nothing due this hour');

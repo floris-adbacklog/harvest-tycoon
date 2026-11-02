@@ -4570,7 +4570,7 @@
 "Purple cauliflower":"public/farm-state.js",
 "Purple rows":"public/farm-state.js",
 "Purple rows in the Village Fields.":"public/event-goals.js",
-"Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.":"public/wiki-content.js",
+"Push reminders come once you allow notifications on your device (Settings): private messages, the daily gift and crops & goods ready are then on. Crops and goods share one reminder, in a browser only (not in our apps), at most once an hour and not at night. After 3 and 6 days away, the morning gift reminder tells you a comeback chest is waiting. Email reminders, and news and offers by email, stay off until you switch them on. The daily email (at most one a day, only when something is waiting) goes to a confirmed address: signed up with your email? Confirm it first.":"public/wiki-content.js",
 "Push reminders could not be turned on":"supabase/functions/farm-api/player-log.js",
 "Push reminders could not be turned on: notifications are blocked on this device":"supabase/functions/farm-api/player-log.js",
 "Put Harvest Tycoon on your home screen or desktop for one-tap access, without the browser bar.":"public/install-ui.js",

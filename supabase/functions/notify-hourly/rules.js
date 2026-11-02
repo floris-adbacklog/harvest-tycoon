@@ -71,7 +71,7 @@ export function jobsText(jobs,names,t=EN){
 }
 
 // One player at one moment. `player` is a row from notification_candidates(); `names` maps crop and building keys to names.
-// Returns {push, patchAlways, patchOnSend, digest, digestPatch}. patchAlways is saved regardless; patchOnSend only
+// Returns {push, appPush, patchAlways, patchOnSend, digest, digestPatch} (appPush: the apps' copy, daily gift lines only). patchAlways is saved regardless; patchOnSend only
 // once the push was really delivered, so a failed delivery is tried again next hour.
 export function planPlayer(player,now,names={crops:{},buildings:{}}){
  // The texts in the farmer's own game language (texts.js); English when it is not known yet.
@@ -87,15 +87,19 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
  // Days away as the game counts them for the comeback chest: from the farm's last save, or the last activity when that is missing.
  const seen=Number.isFinite(Date.parse(farm.seenAt))?Date.parse(farm.seenAt):lastActive,awayDays=seen===null?0:Math.floor((now-seen)/DAY_MS);
  const chestWaiting=awayDays>=COMEBACK_MIN_DAYS&&comebackWaiting(farm.comeback,seen,now);
- const result={push:null,patchAlways:{},patchOnSend:{},digest:null,digestPatch:null};
+ const result={push:null,appPush:null,patchAlways:{},patchOnSend:{},digest:null,digestPatch:null};
 
  // "Seen" markers only move forward. The first time, and whenever a category is off or cannot be delivered,
  // they follow the clock, so switching something on never announces what was already waiting.
  const seenCrops=number(player.crops_seen_at)??now,seenJobs=number(player.production_seen_at)??now;
  const canPush=!inactive&&(subscriptions.length>0||player.app_push===true);
+ // Crops and goods ready only in a browser (2 Nov 2026, the owner: they took too much of the app's OneSignal allowance). The apps keep
+ // the daily gift, the streak and the comeback chest (appPush below), and messages and purchase notices (index.ts). A farmer with only
+ // the app has their crops markers follow the clock, as with the switch off.
+ const canBrowser=!inactive&&subscriptions.length>0;
  const follow=[];
- if(player.crops_seen_at==null||!player.push_crops||!canPush||active)follow.push('crops_seen_at');
- if(player.production_seen_at==null||!player.push_production||!canPush||active)follow.push('production_seen_at');
+ if(player.crops_seen_at==null||!player.push_crops||!canBrowser||active)follow.push('crops_seen_at');
+ if(player.production_seen_at==null||!player.push_production||!canBrowser||active)follow.push('production_seen_at');
  for(const key of follow)result.patchAlways[key]=now;
 
  if(canPush&&!active){
@@ -110,7 +114,7 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
    if(local.hour===CONFIG.DAILY_EVENING_HOUR&&streak>=CONFIG.STREAK_MIN&&player.daily_evening_on!==today){parts.push(t.pushStreak(streak));onSend.daily_evening_on=today;}
   }
   const giftParts=parts.length;
-  if(!quiet){
+  if(!quiet&&canBrowser){
    // Crops and goods are one setting in the game and one line in the push: only when something new is ready since the last one.
    const crops=Boolean(player.push_crops)&&ready.some(c=>c.readyAt>seenCrops),goods=Boolean(player.push_production)&&jobsReady.some(j=>j.readyAt>seenJobs);
    if(crops||goods)parts.push(readyText(crops,goods,t));
@@ -125,6 +129,8 @@ export function planPlayer(player,now,names={crops:{},buildings:{}}){
    result.push={title:'Harvest Tycoon',body:t.sentences(parts),tag:'harvest-tycoon',url:giftParts===parts.length&&!chestPush?'/?source=push&open=today':'/?source=push',
     channel:giftParts===parts.length?'daily':'ready'};
    result.patchOnSend={...onSend,crops_seen_at:now,production_seen_at:now,last_push_at:new Date(now).toISOString(),push_day:today,push_count:sentToday+1};
+   // The app's copy: only the daily gift's lines, so the same reminder without its crops and goods line.
+   if(player.app_push===true&&giftParts>0)result.appPush={title:'Harvest Tycoon',body:t.sentences(parts.slice(0,giftParts)),tag:'harvest-tycoon',url:chestPush?'/?source=push':'/?source=push&open=today',channel:'daily'};
   }
  }
 

@@ -80,11 +80,11 @@ export async function runJob(deps,now=Date.now()){
   }catch(error){failed(item,error);}
  });
  // The app's copy, for everyone at once; what these farmers' states remember waits for it.
- const toApp=items.filter(({row,plan,failed})=>!failed&&plan.push&&row.app_push&&deps.sendAppPush);
+ const toApp=items.filter(({row,plan,failed})=>!failed&&plan.appPush&&row.app_push&&deps.sendAppPush);
  let reached=new Set();
  if(toApp.length){
   const unreachable=new Set();
-  try{reached=new Set(await deps.sendAppPush(toApp.map(({row,plan})=>({player:row.player_id,push:plan.push})),now,unreachable));}
+  try{reached=new Set(await deps.sendAppPush(toApp.map(({row,plan})=>({player:row.player_id,push:plan.appPush})),now,unreachable));}
   catch(error){deps.log?.(`app push: ${error?.message??error}`);}
   // Reachable or not (13 Oct 2026): one line per run, and the farmers OneSignal named as not reachable are marked (db.markAppPushReach,
   // supabase/app-push-reach.sql), the ones it took unmarked; the game then asks the app to link a marked farmer's phone afresh.
@@ -95,7 +95,7 @@ export async function runJob(deps,now=Date.now()){
  const saves=[];
  for(const item of items){
   if(item.failed)continue;
-  const app=Boolean(item.plan.push&&item.row.app_push&&deps.sendAppPush&&reached.has(item.row.player_id));if(app)stats.appPushes++;
+  const app=Boolean(item.plan.appPush&&item.row.app_push&&deps.sendAppPush&&reached.has(item.row.player_id));if(app)stats.appPushes++;
   if(item.plan.push&&(item.browser||app)){Object.assign(item.patch,item.plan.patchOnSend);stats.pushes++;}
   if(Object.keys(item.patch).length)saves.push(item);
  }
