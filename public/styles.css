@@ -126,3 +126,7 @@ html,body{overscroll-behavior:none}dialog{overscroll-behavior:contain}
 :root[data-desk-bar]{--safe-bottom:calc(env(safe-area-inset-bottom,0px) + 30px)}
 /* The two that stand on the bottom edge on a computer without --safe-bottom (the tools bar and the zoom buttons) move up the same. */
 :root[data-desk-bar] :is(.bottom-hud,.scene-controls){translate:0 -30px}
+/* Windows stay above the bar too (2 Nov 2026, the owner: "sommige dingen vallen achter de footer (dialogen)"): a window in the middle
+   is centred in the room above the bar and is never higher than that room less a margin; the chat, along the side, ends above it. */
+:root[data-desk-bar] dialog:modal{bottom:30px;max-height:calc(100dvh - 54px)}
+:root[data-desk-bar] #boost-dialog{max-height:calc(100dvh - 54px)}:root[data-desk-bar] #chat-dialog{bottom:44px}
