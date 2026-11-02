@@ -300,3 +300,5 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 .farmer-log-row.is-day-total{align-items:center;background:#fdf6e3;border-top:0;border-bottom:1px solid #efe2c2}
 .farmer-log-row.is-day-total>.game-art{flex:none;width:20px;height:20px}
 .farmer-log-row.is-day-total p{font-weight:700;color:#5c4a1e}
+/* A long family name (30 Oct 2026, "Invite to Berry Good Farmers" ran out of its button on a phone): the label wraps inside the button. */
+#player-profile-dialog .farmer-actions .farmer-invite-button{white-space:normal;text-align:center;line-height:1.25;overflow-wrap:anywhere;text-wrap:balance}

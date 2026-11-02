@@ -38,3 +38,9 @@
  #more-dialog .mobile-menu-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){#more-dialog .mobile-menu-grid>button:not(.menu-later){transition:none}}
+/* Other games from us (1 Nov 2026, the owner): Skyline Topia, our second game, as a link tile that looks like the others and opens in
+   a new tab. Never on the portals, which allow no links out of the game (portal.css). */
+#more-dialog .mobile-menu-grid>a.menu-other-game{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;min-width:0;padding:12px 6px 10px;border:2px solid #e6ddd1;border-radius:14px;background:#fbf8f3;box-shadow:0 2px 0 #e6dccb;color:inherit;text-align:center;text-decoration:none;transition:transform .1s,box-shadow .1s}
+#more-dialog .mobile-menu-grid>a.menu-other-game:active{transform:translateY(2px);box-shadow:0 1px 0 #e6dccb}
+#more-dialog .mobile-menu-grid>a.menu-other-game>img{width:56px;height:56px;margin:-8px 0;flex:none;object-fit:contain}
+#more-dialog .mobile-menu-grid>a.menu-other-game>span{display:block;width:100%}

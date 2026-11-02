@@ -198,5 +198,7 @@
  "hour {0} league {1}: {2} is not one of its goals",
  "hour {0}: a farm league's goal changed",
  "hour {0}: not {1} leagues",
- "no higher league drew another goal in 48 hours"
+ "no higher league drew another goal in 48 hours",
+ "The Starter Pack part of the check was not where it was expected.",
+ "The new Starter Pack amounts are not in the check."
 ]

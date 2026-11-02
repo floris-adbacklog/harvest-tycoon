@@ -5,7 +5,9 @@ import {savePlayerAvatar} from './avatar-service.js';
 import {saveLook} from './look-service.js';
 import {handlePlayerDirectory,handleFarmVisit} from './player-profile-service.js';
 import {handleFamily,handleFamilyProfile,familyRejoinRead,handleFamilyShare,handleFamilyCards} from './family-service.js';
-import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount} from './admin-service.js';
+import {handleAdminGrant,handleAdminEmail,handleAdminInvite,isSuperadmin,isAdminAccount,isStaff} from './admin-service.js';
+import {emblemImage,storeEmblem,settleEmblemFiles,familyOf,handleEmblemReport,handleEmblemAdmin} from './emblem-upload.js';
+import {portalOf} from './portal.js';
 import {handleAdminOnline,handleAdminRecentPlayers,handleAdminRetention,handleAdminInvites,handleAdminPlayers,handleAdminPlayer,handleAdminPurchases,handleAdminSources,recordSeen} from './admin-analytics-service.js';
 import {handleAdminReload,readReloadAfter} from './reload-service.js';
 import {readXpWeekend} from './xp-weekend-service.js';
@@ -18,7 +20,7 @@ import {recordLoadStall} from './load-stall-service.js';
 import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog,tallyDay} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
-import {NO_EVENT_ACTIONS,setXpWeekend,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
+import {FAMILY_EMBLEM_UPLOAD_COST,customEmblemPath,NO_EVENT_ACTIONS,setXpWeekend,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
 // 11 Oct 2026: a browser keeps the answer to its preflight (OPTIONS) for up to 2 hours (Max-Age; Chrome's own cap, Safari keeps it
 // shorter), instead of Chrome's 5 seconds: about 50,800 OPTIONS calls a day were over a third of all the calls, and every tap after a pause paid
 // two round trips. Allow-Headers must name every header the browser sends (supabase-js: authorization, apikey, content-type,
@@ -67,7 +69,14 @@ Deno.serve(async(req)=>{
   // that same player; otherwise everything is asked again for the verified account, as before.
   const started=Date.now(),timed=Math.random()<TIMING_SHARE,marks:Record<string,number>={},mark=(name:string)=>{if(timed)marks[name]=Date.now()-started;};
   const raw=await req.text();
-  let body:any,parsed=false;if(raw.length<=4096){try{body=JSON.parse(raw);parsed=true;}catch{}}
+  // Every request fits in 4 KB, except a family's own emblem (30 Oct 2026): its picture (at most 100 KB, base64) comes along, so that
+  // one action may be up to EMBLEM_BODY_MAX (emblem-upload.js keeps the same number, tests/family-emblem-upload.test.mjs). Anything
+  // bigger is not even read as JSON.
+  const EMBLEM_BODY_MAX=140630;
+  let body:any,parsed=false;if(raw.length<=EMBLEM_BODY_MAX){try{body=JSON.parse(raw);parsed=true;}catch{}}
+  const bodyMax=parsed&&body?.operation==='action'&&body?.action?.type==='family_emblem_upload'?EMBLEM_BODY_MAX:4096;
+  // Past its own limit a request is not read at all (no early reads start for it); the 413 below answers it after the account check.
+  if(raw.length>bodyMax){body=undefined;parsed=false;}
   let claims:any={};try{claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))??{};}catch{}
   const named=typeof claims.sub==='string'&&/^[0-9a-f-]{36}$/i.test(claims.sub)?claims.sub:null;
   const early=named&&claims.session_id?{
@@ -93,9 +102,9 @@ Deno.serve(async(req)=>{
   if(user.app_metadata?.portal==='kongregate')user.app_metadata={...user.app_metadata,provider:'kongregate'};
   // And for a Discord account (Oct 2026, discord-auth): signed in through Discord, a made-up address, the bonus quietly.
   if(user.app_metadata?.portal==='discord')user.app_metadata={...user.app_metadata,provider:'discord'};
-  if(raw.length>4096)return reply({error:'Request is too large.'},413);
+  if(raw.length>bodyMax)return reply({error:'Request is too large.'},413);
   if(!parsed)return reply({error:'Invalid request.'},400);
-  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload'].includes(body?.operation))return reply({error:'Unknown request.'},400);
+  if(!['events','admin_events','social','load','action','apple_token','rename','avatar','look','delete_account','family','family_profile','family_share','family_cards','player_search','player_profile','farm_visit','admin_grant','admin_invite','admin_online','admin_recent_players','admin_sources','admin_retention','admin_invites','admin_purchases','admin_players','admin_player','admin_email','invite','player_log','admin_reload','family_emblem_report','admin_family_emblems'].includes(body?.operation))return reply({error:'Unknown request.'},400);
   // Reload everyone now (22 Oct 2026, reload-service.js): a farm load's answer says when the admin last pressed it (reloadAfter). Read
   // beside the farm (cached, never fails), so a load waits no longer for it.
   const reloadAt=body.operation==='load'?readReloadAfter(admin):null;
@@ -126,6 +135,9 @@ Deno.serve(async(req)=>{
    if(done.status===200&&done.data?.changed)later(writeLog(admin,String(body.playerId),inviteClosedLog(done.data.closed),user.id));
    return reply(done.data,done.status);
   }
+  // A family's own emblem (30 Oct 2026, emblem-upload.js): reporting one, and the staff's list and removal.
+  if(body.operation==='family_emblem_report'){const r=await handleEmblemReport({admin,body,player:user.id});return reply({...r.data,profile:{player_id:user.id}},r.status);}
+  if(body.operation==='admin_family_emblems'){if(!(await isStaff(admin,user)))return reply({error:'Not authorized.',profile:{player_id:user.id}},403);const r=await handleEmblemAdmin({admin,body,player:user.id});return reply({...r.data,profile:{player_id:user.id}},r.status);}
   if(body.operation==='player_log'){
    const log=await handlePlayerLog({admin,user,body});return reply(log.data,log.status);
   }
@@ -278,9 +290,23 @@ Deno.serve(async(req)=>{
    // Every answer names whose farm it is; the game checks that before it trusts the answer (src/main.js).
    if(body.operation==='invite')return reply({...await handleInvite({admin,player:user.id,username,state,now}),profile});
    if(body.operation==='family_profile'){const shown=await handleFamilyProfile({admin,body,state,player:user.id});return reply(shown.data,shown.status);}
+   // Uploading a family's own emblem (30 Oct 2026): the picture is checked and stored first, once (a retry of this loop finds the
+   // action turned into family_emblem_custom already), then the family action takes the diamonds and makes it the emblem.
+   if(body.operation==='action'&&body.action?.type==='family_emblem_upload'){
+    if(portalOf(user))return reply({error:'Own emblems are not available here.',code:'ACTION_REJECTED'},422);
+    let picture;try{picture=emblemImage(body.action.image);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
+    const current=await familyOf(admin,user.id);if(!current)return reply({error:'Join a family first.',code:'ACTION_REJECTED'},422);
+    if((state.diamonds??0)<FAMILY_EMBLEM_UPLOAD_COST)return reply({error:`You need ${FAMILY_EMBLEM_UPLOAD_COST} diamonds for your own emblem.`,code:'ACTION_REJECTED'},422);
+    let path;try{path=await storeEmblem(admin,current.id,picture);}catch(error){return reply({error:error.message,code:'ACTION_REJECTED'},422);}
+    body.action={type:'family_emblem_custom',path};body.uploaded={path,previous:current.emblem};
+   }
+   // Back to a built-in emblem: the own picture's file goes too, once the change is in.
+   if(body.operation==='action'&&body.action?.type==='family_emblem'&&!body.uploaded){const current=await familyOf(admin,user.id);if(customEmblemPath(current?.emblem))body.uploaded={path:null,previous:current.emblem};}
    if(body.operation==='family'||(body.operation==='action'&&String(body.action.type).startsWith('family_'))){
     const familyBefore=snapshot(state),familyResponse=await handleFamily({admin,body,row,state,player:user.id,username});
     if(!familyResponse)continue;
+    // The old own emblem's file goes once the new one is in; a refused upload takes its own file back out (emblem-upload.js).
+    if(body.uploaded)later(settleEmblemFiles(admin,user.id,body.uploaded as {path:string|null,previous:string}));
     if(familyResponse.status===200&&body.operation==='action'){const after=(familyResponse.data as {state?:unknown})?.state;later(writeLog(admin,user.id,familyLog(body.action,familyBefore,after??null)));}
     return reply(familyResponse.data,familyResponse.status);
    }

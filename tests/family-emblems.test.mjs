@@ -75,7 +75,9 @@ test('every family can pick any of the 100 again: the row is the same for every 
  assert.deepEqual(familyEmblemChoices('17').map(e=>e.id),row,'no family gets its own row any more');
 });
 test('the old emblems still show everywhere: the family window, the flag and a farmer profile look them up in the whole list',()=>{
- assert.match(read('public/family-ui.js'),/const emblem=id=>\{const e=FAMILY_EMBLEMS\.find\(x=>x\.id===id\)\?\?FAMILY_EMBLEMS\[0\];/);
+ // Since 30 Oct 2026 through one helper (public/family-emblem-art.js), which also draws a family's own picture.
+ assert.match(read('public/family-ui.js'),/const emblem=id=>emblemMarkup\(id\);/);
+ assert.match(read('public/family-emblem-art.js'),/export const emblemOf=id=>FAMILY_EMBLEMS\.find\(e=>e\.id===String\(id\)\)\?\?FAMILY_EMBLEMS\[0\];/);
  assert.match(read('public/family-flag.js'),/emblem=FAMILY_EMBLEMS\.find\(e=>e\.id===family\.emblem\)\?\?FAMILY_EMBLEMS\[0\]/);
  const profile=emblem=>renderPlayerProfile({username:'Floris',level:41,online:true,stats:{},badges:[],family:{id:'f',name:'Meadow',emblem,role:'Leader'}});
  assert.match(profile('17'),/<span class="farmer-family-emblem"[^>]*><span class="game-art game-art-sprite " data-art="cheese"/);

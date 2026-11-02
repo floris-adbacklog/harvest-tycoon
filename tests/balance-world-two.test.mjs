@@ -38,7 +38,7 @@ function sweep(s,rounds,check){
 // World II and 2 in World III (World I gives about half a minute's worth). Before, both paid about 30 a slot-hour, the Village Fields 20.
 test('XP follows the world: 1 a minute of the batch in the village, 2 in the harbour',()=>{
  const village=Object.keys(RECIPES).filter(id=>worldTwoBuilding(RECIPES[id].building)),harbour=Object.keys(RECIPES).filter(id=>RECIPES[id].building&&BUILDINGS[RECIPES[id].building]?.world===3);
- assert.equal(village.length,24);assert.equal(harbour.length,20);
+ assert.equal(village.length,24);assert.equal(harbour.length,21,'with shipwright tools (30 Oct 2026)');
  for(const id of village)assert.equal(RECIPES[id].xp,Math.round(RECIPES[id].duration/60000),id);
  for(const id of harbour)assert.equal(RECIPES[id].xp,Math.round(RECIPES[id].duration/60000*2),id);
 });

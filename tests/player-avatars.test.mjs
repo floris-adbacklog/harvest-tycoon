@@ -12,9 +12,10 @@ scheduleSeason('autumn-2026',null);
 import {handlePlayerDirectory} from '../supabase/functions/farm-api/player-profile-service.js';
 import {renderPlayerProfile,renderPlayerSearch} from '../src/player-profiles.js';
 
-test('19 additional avatars, the original, 10 level avatars, 10 achievement avatars and the Halloween Pass face resolve to unique, shipped images',()=>{
- assert.equal(PLAYER_AVATARS.length,41);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,41);
- assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,41);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,41,'no two faces share a name');
+// 30 Oct 2026: 30 more (10 level avatars, 120-300, and 20 goal avatars), so 71.
+test('19 additional avatars, the original, 20 level avatars, 30 achievement avatars and the Halloween Pass face resolve to unique, shipped images',()=>{
+ assert.equal(PLAYER_AVATARS.length,71);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.id)).size,71);
+ assert.equal(new Set(PLAYER_AVATARS.map(a=>a.src)).size,71);assert.equal(new Set(PLAYER_AVATARS.map(a=>a.name)).size,71,'no two faces share a name');
  for(const a of PLAYER_AVATARS){assert.ok(existsSync(new URL('../public'+a.src,import.meta.url)),a.src);assert.ok(isPlayerAvatar(a.id));}
  assert.equal(readFileSync(new URL('../public/player-avatars.js',import.meta.url),'utf8'),readFileSync(new URL('../supabase/functions/farm-api/player-avatars.js',import.meta.url),'utf8'));
 });
@@ -33,7 +34,12 @@ test('the database accepts exactly the avatars the game offers',()=>{
  const latest=readFileSync(new URL(`../supabase/migrations/${migrations.at(-1)}`,import.meta.url),'utf8');
  const listed=[...latest.match(/check \(avatar_id in \(([^)]*)\)\)/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
  // 4 Oct 2026: the Lantern keeper joined the live list through supabase/lantern-keeper-avatar.sql, after the last of these migrations.
- assert.deepEqual([...listed,'lantern-keeper'],PLAYER_AVATARS.map(a=>a.id),'same IDs in the same order as public/player-avatars.js');
+ // 30 Oct 2026: the 30 new ones through supabase/avatars-thirty.sql, after the Lantern keeper.
+ const thirty=readFileSync(new URL('../supabase/avatars-thirty.sql',import.meta.url),'utf8');
+ const added=[...thirty.match(/definition:=replace\(definition,'''lantern-keeper''::text\]','''lantern-keeper''::text, ([^\]]*)\]'\);/)[1].matchAll(/''([a-z-]+)''::text/g)].map(m=>m[1]);
+ const levels=PLAYER_AVATARS.filter(a=>a.level>100).map(a=>a.id),goals=PLAYER_AVATARS.slice(PLAYER_AVATARS.findIndex(a=>a.id==='lantern-keeper')+1).map(a=>a.id);
+ assert.deepEqual(added,[...levels,...goals],'the 30 in the SQL: the level ones, then the goal ones');
+ assert.deepEqual([...listed.slice(0,30),...levels,...listed.slice(30),'lantern-keeper',...goals],PLAYER_AVATARS.map(a=>a.id),'same IDs in the same order as public/player-avatars.js');
  assert.match(readFileSync(new URL('../supabase/lantern-keeper-avatar.sql',import.meta.url),'utf8'),/definition:=replace\(definition,'''valley-regular''::text\]','''valley-regular''::text, ''lantern-keeper''::text\]'\);/);
 });
 test('unknown avatar IDs cannot become an image path or injected HTML',()=>{
@@ -72,9 +78,9 @@ test('avatar save is authenticated, session-checked and separate from farm rewar
  assert.ok(route>index.indexOf("admin.rpc('harvest_session_active'"));assert.ok(route<index.indexOf('for(let attempt=0;attempt<5;attempt++)'));
  assert.doesNotMatch(index.match(/const FARM_OPERATIONS=new Set\(\[[^\]]*\]\)/)[0],/'avatar'/,'and no farm is read early for it (26 Oct 2026)');assert.match(index,/savePlayerAvatar\(\{admin,player:user.id,avatarId:body.avatarId,owner:isSuperadmin\(user\)\}\)/);
  assert.match(index,/avatar_id:profile\?\.avatar_id\?\?'default'/);
- const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,41);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
+ const html=avatarSettingsMarkup('berry-gardener');assert.equal((html.match(/type="radio" name="avatar"/g)||[]).length,71);assert.equal((html.match(/ checked/g)||[]).length,1);assert.match(html,/value="berry-gardener" checked/);
  assert.equal((html.match(/data-emblem-step=/g)||[]).length,2,'one row of faces with an arrow on each side, not a wall of squares');
- assert.match(html,/<span>3 of 41<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
+ assert.match(html,/<span>3 of 71<\/span>/);assert(!html.includes('<details'),'no folded-away grid');
 });
 function uiHarness(){
  const nodes=new Map(),events=[],pending=[];
@@ -127,8 +133,8 @@ test('one avatar opens at every 10 levels, 10 to 100; the first 20 are open from
 test('the picker: the 10 level avatars are grey with a lock and "Lv. N" until reached, then a gold badge with an open lock; the others carry no badge',()=>{
  const html=avatarSettingsMarkup('default',25);
  assert.equal((html.match(/class="avatar-level is-open"/g)||[]).length,2,'Family farmer and Tractor driver are open at level 25');
- assert.equal((html.match(/class="avatar-level is-locked"><svg[^]*?<\/svg>Lv\./g)||[]).length,8,'eight level avatars still closed');
- assert.equal((html.match(/class="avatar-tile is-locked"/g)||[]).length,19,'and the ten achievement avatars and the Halloween Pass face of a new farm');
+ assert.equal((html.match(/class="avatar-level is-locked"><svg[^]*?<\/svg>Lv\./g)||[]).length,18,'eighteen level avatars still closed (8 to 100, 10 from 120 to 300)');
+ assert.equal((html.match(/class="avatar-tile is-locked"/g)||[]).length,49,'and the thirty achievement avatars and the Halloween Pass face of a new farm');
  assert.match(html,/value="truffle-hunter"[^>]*aria-label="Truffle hunter, opens at level 30 avatar"/);
  assert.match(avatarBadge('truffle-hunter',25),/is-locked"><svg[^]*<\/svg>Lv\. 30<\/span>$/);assert.match(avatarBadge('family-farmer',25),/is-open"><svg[^]*<\/svg>Lv\. 10<\/span>$/);
  assert.equal(avatarBadge('berry-gardener',1),'');
@@ -178,24 +184,24 @@ test('the level-up screen shows the avatar a level opened, and the wiki lists th
  assert.match(wiki,/Velvet farmer<\/span><\/td><td>Be VIP for 90 days in total<\/td>/);assert.match(wiki,/Valley regular<\/span><\/td><td>Play on 100 days<\/td>/);
  assert.match(wiki,/Diamonds spent and VIP days count from 25 September 2026\./);
 });
-test('the maker\'s own face: everyone sees it on the admin, only the admin can pick it, other farmers still have their 41',async()=>{
+test('the maker\'s own face: everyone sees it on the admin, only the admin can pick it, other farmers still have their 71',async()=>{
  const {OWNER_AVATAR,playerAvatar:face,isPlayerAvatar:known}=await import('../public/player-avatars.js');
  assert.equal(OWNER_AVATAR.id,'owner');assert.ok(existsSync(new URL('../public'+OWNER_AVATAR.src,import.meta.url)));
  assert.equal(face('owner').src,'/assets/avatars/owner.webp','shown beside the admin\'s name everywhere');
- assert.equal(known('owner'),false,'not one of the farmers\' avatars');assert.equal(PLAYER_AVATARS.length,41);
- assert.equal((avatarSettingsMarkup('default').match(/type="radio" name="avatar"/g)||[]).length,41);
- assert.equal((avatarSettingsMarkup('default',1,{owner:true}).match(/type="radio" name="avatar"/g)||[]).length,43,'the admins get Tony and Gerard first in the row');
+ assert.equal(known('owner'),false,'not one of the farmers\' avatars');assert.equal(PLAYER_AVATARS.length,71);
+ assert.equal((avatarSettingsMarkup('default').match(/type="radio" name="avatar"/g)||[]).length,71);
+ assert.equal((avatarSettingsMarkup('default',1,{owner:true}).match(/type="radio" name="avatar"/g)||[]).length,73,'the admins get Tony and Gerard first in the row');
  const service=readFileSync(new URL('../supabase/functions/farm-api/avatar-service.js',import.meta.url),'utf8');
  assert.match(service,/if\(isOwnerAvatar\(avatarId\)\)\{\n  if\(!owner\)return \{status:403/);
  assert.match(readFileSync(new URL('../supabase/functions/farm-api/index.ts',import.meta.url),'utf8'),/savePlayerAvatar\(\{admin,player:user\.id,avatarId:body\.avatarId,owner:isSuperadmin\(user\)\}\)/);
  assert.match(readFileSync(new URL('../supabase/owner-avatar.sql',import.meta.url),'utf8'),/ARRAY\[''default''::text, ''owner''::text,/);
 });
-test('Gerard\'s face (Oct 2026): like Tony\'s, only for the admins, never among the farmers\' 41',async()=>{
+test('Gerard\'s face (Oct 2026): like Tony\'s, only for the admins, never among the farmers\' 71',async()=>{
  const {GERARD_AVATAR,OWNER_AVATARS,isOwnerAvatar,playerAvatar:face,isPlayerAvatar:known}=await import('../public/player-avatars.js');
  assert.deepEqual(OWNER_AVATARS.map(a=>a.id),['owner','gerard']);assert.equal(GERARD_AVATAR.name,'Gerard, the owner');
  assert.ok(existsSync(new URL('../public'+GERARD_AVATAR.src,import.meta.url)));assert.equal(face('gerard').src,'/assets/avatars/gerard.webp');
  assert.ok(isOwnerAvatar('gerard')&&isOwnerAvatar('owner')&&!isOwnerAvatar('default'));assert.equal(known('gerard'),false);
- assert.equal(PLAYER_AVATARS.length,41);
+ assert.equal(PLAYER_AVATARS.length,71);
  assert.match(readFileSync(new URL('../supabase/gerard.sql',import.meta.url),'utf8'),/''owner''::text, ''gerard''::text/);
 });
 

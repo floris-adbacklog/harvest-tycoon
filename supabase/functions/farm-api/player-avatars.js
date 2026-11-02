@@ -1,4 +1,4 @@
-// Public cosmetic choices: 20 painted farmers (the first is everyone's default), 10 that open at levels 10, 20 … 100 (`level`), and
+// Public cosmetic choices: 20 painted farmers (the first is everyone's default), 20 that open at levels 10, 20 … 100 and 120 … 300 (`level`), and
 // achievement avatars earned with a goal (AVATAR_GOALS). avatar-service.js refuses one that is not open yet; the picker shows it grey
 // with a lock. Keep IDs stable; accounts store only the ID (player_stats.avatar_id has a CHECK on the list, see the player_avatars
 // migrations).
@@ -164,6 +164,66 @@ export const PLAYER_AVATARS=Object.freeze([
     "level": 100
   },
   {
+    "id": "village-mayor",
+    "name": "Village mayor",
+    "src": "/assets/avatars/village-mayor.webp",
+    "level": 120
+  },
+  {
+    "id": "stonemason",
+    "name": "Stonemason",
+    "src": "/assets/avatars/stonemason.webp",
+    "level": 140
+  },
+  {
+    "id": "silversmith",
+    "name": "Silversmith",
+    "src": "/assets/avatars/silversmith.webp",
+    "level": 160
+  },
+  {
+    "id": "mine-foreman",
+    "name": "Mine foreman",
+    "src": "/assets/avatars/mine-foreman.webp",
+    "level": 180
+  },
+  {
+    "id": "harbour-pilot",
+    "name": "Harbour pilot",
+    "src": "/assets/avatars/harbour-pilot.webp",
+    "level": 200
+  },
+  {
+    "id": "rope-maker",
+    "name": "Rope maker",
+    "src": "/assets/avatars/rope-maker.webp",
+    "level": 220
+  },
+  {
+    "id": "galley-cook",
+    "name": "Galley cook",
+    "src": "/assets/avatars/galley-cook.webp",
+    "level": 240
+  },
+  {
+    "id": "cooper",
+    "name": "Cooper",
+    "src": "/assets/avatars/cooper.webp",
+    "level": 260
+  },
+  {
+    "id": "harbour-master",
+    "name": "Harbour master",
+    "src": "/assets/avatars/harbour-master.webp",
+    "level": 280
+  },
+  {
+    "id": "valley-admiral",
+    "name": "Valley admiral",
+    "src": "/assets/avatars/valley-admiral.webp",
+    "level": 300
+  },
+  {
     "id": "gem-collector",
     "name": "Gem collector",
     "src": "/assets/avatars/gem-collector.webp"
@@ -217,6 +277,106 @@ export const PLAYER_AVATARS=Object.freeze([
     "id": "lantern-keeper",
     "name": "Lantern keeper",
     "src": "/assets/avatars/lantern-keeper.webp"
+  },
+  {
+    "id": "golden-harvester",
+    "name": "Golden harvester",
+    "src": "/assets/avatars/golden-harvester.webp"
+  },
+  {
+    "id": "royal-baker",
+    "name": "Royal baker",
+    "src": "/assets/avatars/royal-baker.webp"
+  },
+  {
+    "id": "egg-merchant",
+    "name": "Egg merchant",
+    "src": "/assets/avatars/egg-merchant.webp"
+  },
+  {
+    "id": "tractor-ace",
+    "name": "Tractor ace",
+    "src": "/assets/avatars/tractor-ace.webp"
+  },
+  {
+    "id": "moonlight-farmer",
+    "name": "Moonlight farmer",
+    "src": "/assets/avatars/moonlight-farmer.webp"
+  },
+  {
+    "id": "pet-whisperer",
+    "name": "Pet whisperer",
+    "src": "/assets/avatars/pet-whisperer.webp"
+  },
+  {
+    "id": "seal-friend",
+    "name": "Seal friend",
+    "src": "/assets/avatars/seal-friend.webp"
+  },
+  {
+    "id": "master-angler",
+    "name": "Master angler",
+    "src": "/assets/avatars/master-angler.webp"
+  },
+  {
+    "id": "heirloom-breeder",
+    "name": "Heirloom breeder",
+    "src": "/assets/avatars/heirloom-breeder.webp"
+  },
+  {
+    "id": "gift-giver",
+    "name": "Gift giver",
+    "src": "/assets/avatars/gift-giver.webp"
+  },
+  {
+    "id": "shipping-clerk",
+    "name": "Shipping clerk",
+    "src": "/assets/avatars/shipping-clerk.webp"
+  },
+  {
+    "id": "fair-star",
+    "name": "Fair star",
+    "src": "/assets/avatars/fair-star.webp"
+  },
+  {
+    "id": "giant-grower",
+    "name": "Giant grower",
+    "src": "/assets/avatars/giant-grower.webp"
+  },
+  {
+    "id": "sea-captain",
+    "name": "Sea captain",
+    "src": "/assets/avatars/sea-captain.webp"
+  },
+  {
+    "id": "water-bearer",
+    "name": "Water bearer",
+    "src": "/assets/avatars/water-bearer.webp"
+  },
+  {
+    "id": "caretaker",
+    "name": "Caretaker",
+    "src": "/assets/avatars/caretaker.webp"
+  },
+  {
+    "id": "chore-champion",
+    "name": "Chore champion",
+    "src": "/assets/avatars/chore-champion.webp"
+  },
+  {
+    "id": "delivery-driver",
+    "name": "Delivery driver",
+    "src": "/assets/avatars/delivery-driver.webp"
+  },
+  {
+    "id": "miller",
+    "name": "Miller",
+    "src": "/assets/avatars/miller.webp"
+  },
+  {
+    "id": "glasshouse-gardener",
+    "name": "Glasshouse gardener",
+    "src": "/assets/avatars/glasshouse-gardener.webp"
   }
 ].map(Object.freeze));
 // Season avatars (the Season Pass, Oct 2026 on; game/farm-state.js SEASON_LOOKS): three a season, earned only in its pass (one free,
@@ -264,6 +424,28 @@ export const AVATAR_GOALS=Object.freeze({
  'seed-keeper':{text:'Earn all 64 crop medals',target:64,count:f=>f.state?.stats?.mastery_medals},
  'coin-baron':{text:'Earn 5,000,000 coins',target:5000000,count:f=>f.state?.stats?.earned},
  'valley-regular':{text:'Play on 100 days',target:100,count:f=>f.state?.login?.visits},
+ // 30 Oct 2026 (the owner's 30 new avatars): ten more level avatars, every 20 levels from 120 to 300, and twenty goals, each read
+ // from a counter the farm keeps already (state.stats; lake_fish_kinds: the lake's 20 kinds, World II).
+ 'golden-harvester':{text:'Harvest 50,000 crops',target:50000,count:f=>f.state?.stats?.harvested},
+ 'royal-baker':{text:'Bake 1,000 loaves of bread',target:1000,count:f=>f.state?.stats?.bread},
+ 'egg-merchant':{text:'Sell 2,500 eggs',target:2500,count:f=>f.state?.stats?.sold_eggs},
+ 'tractor-ace':{text:'Do 1,000 tractor jobs',target:1000,count:f=>f.state?.stats?.tractor},
+ 'moonlight-farmer':{text:'Run 25 tractor night shifts',target:25,count:f=>f.state?.stats?.tractor_shifts},
+ 'pet-whisperer':{text:'Pat your pets 500 times',target:500,count:f=>f.state?.stats?.pets_patted},
+ 'seal-friend':{text:'Pat the seal 100 times',target:100,count:f=>f.state?.stats?.seal_pats},
+ 'master-angler':{text:'Catch all 20 fish of the lake',target:20,count:f=>f.state?.stats?.lake_fish_kinds},
+ 'heirloom-breeder':{text:'Make 100 crosses in the Seed Lab',target:100,count:f=>f.state?.stats?.lab_crosses},
+ 'gift-giver':{text:'Give your neighbours 50 gifts',target:50,count:f=>f.state?.stats?.neighbour_gifts},
+ 'shipping-clerk':{text:'Ship 5,000 goods in the shipping bin',target:5000,count:f=>f.state?.stats?.bin_shipped},
+ 'fair-star':{text:'Win 25 stars at the fair',target:25,count:f=>f.state?.stats?.fair_stars},
+ 'giant-grower':{text:'Weigh 10 giant pumpkins',target:10,count:f=>f.state?.stats?.giant_weighed},
+ 'sea-captain':{text:'Send 100 ships',target:100,count:f=>f.state?.stats?.ships_sent},
+ 'water-bearer':{text:'Water crops 20,000 times',target:20000,count:f=>f.state?.stats?.watered},
+ 'caretaker':{text:'Care for crops 10,000 times',target:10000,count:f=>f.state?.stats?.tended},
+ 'chore-champion':{text:'Finish 500 chores',target:500,count:f=>f.state?.stats?.chores},
+ 'delivery-driver':{text:'Make 100 deliveries',target:100,count:f=>f.state?.stats?.deliveries},
+ 'miller':{text:'Finish 1,000 Windmill batches',target:1000,count:f=>f.state?.stats?.windmill_batches},
+ 'glasshouse-gardener':{text:'Finish 500 Glasshouse batches',target:500,count:f=>f.state?.stats?.glasshouse_batches},
  // The paid Halloween Pass (4 Oct 2026): the Lantern keeper is yours the moment the pass is bought, also before the season starts. The
  // farm keeps the passes it bought (state.passPremium, game/farm-state.js SEASON_PASS.id 'halloween-2026'; a test keeps the two equal).
  'lantern-keeper':{text:'Get the Halloween Pass',target:1,pass:'halloween-2026',count:f=>Array.isArray(f.state?.passPremium)&&f.state.passPremium.includes('halloween-2026')?1:0},

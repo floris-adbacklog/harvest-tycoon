@@ -68,7 +68,9 @@ const GOAL_FOLDED_KEY='harvest-tycoon:next-goal';
 // mobile-ui.js mobileLayout, which this file cannot import: it asks the browser as it loads).
 // sellFirst(from): sells the first basket's corn as Sell all in Market does (game.js, economy-ui.js sell), the coins flying from the rect from.
 // autoSell: inside CrazyGames the first basket sells itself.
-export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,onStep=null,sellFirst=null,autoSell=false,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
+// quickStep(id): the same button for another step (30 Oct 2026: 19% stopped at step 5 and 17% at step 7, a minute after the step before):
+// {label, art, run(from)} for the first egg batch or the first chore, or null when the step cannot be done from here.
+export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,onFinished,onStep=null,sellFirst=null,autoSell=false,quickStep=null,idle=()=>true,claimQuest=null,openQuest=null,openToday=null,village=false,phone=()=>globalThis.matchMedia?.('(max-width: 900px), (max-height: 550px) and (pointer: coarse)')?.matches??false,storage=(()=>{try{return globalThis.localStorage;}catch{return null;}})()}){
  const $=id=>document.getElementById(id),dialog=$('beginner-dialog');
  let busy=false,lastMarkup='',finaleShown=false,lastStep=null,lastBanner='',pending=null,goalKey='',goalBusy=false,goalWait=0,goalDay='',calm;
  // The calm start's step on <html>; what came glows for CALM_GLOW_MS (only after a step during play, never as the farm opens).
@@ -88,7 +90,9 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
  // Twice a second (public/game.js): only the banner, for its batch time, and only while it is on screen (phones). The phone's goal line once the
  // moment it names has come (Plan F, proposal 2): then it shows what is next; and at midnight, when "tomorrow at 07:05" becomes "at 07:05"
  // (review, 13 Oct 2026: it waited for the next farm action).
- function tick(){autoCheck();if(goalWait&&(goalWait<=farmNow()||new Date(farmNow()).toDateString()!==goalDay)){goalKey='';goalCard(true);}if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
+ function tick(){autoCheck();
+  // The guide's button follows the farm (30 Oct 2026): ready eggs bring Collect without a tap elsewhere.
+  if(quickStep&&!village){const c=beginnerProgress(state).find(q=>q.current),q=c&&!c.ready?quickStep(c.id):null;if((q?.label??null)!==(quick?.label??null))refresh();}if(goalWait&&(goalWait<=farmNow()||new Date(farmNow()).toDateString()!==goalDay)){goalKey='';goalCard(true);}if($('beginner-mobile').hidden||!$('beginner-mobile').getClientRects().length)return;const steps=beginnerProgress(state);banner(steps,steps.find(q=>q.current),steps.filter(q=>q.done).length);}
  function refresh(){
   const steps=beginnerProgress(state),current=steps.find(q=>q.current),done=steps.filter(q=>q.done).length,complete=done===steps.length;
   const finished=complete&&state.onboarding?.rewardClaimed===true;
@@ -132,8 +136,10 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   // Step 2 sells right from the guide (29 Oct 2026, the CrazyGames launch: two thirds of its new farmers harvested and left within seconds,
   // their corn unsold): one green button on the card, and on a phone beside the banner. Market stays lit for the farmer who goes there.
   const corn=current?.id==='sell'&&!village&&sellFirst?sellableStock(state,'corn',farmNow()):0;
-  for(const id of ['beginner-sell','beginner-mobile-sell']){const el=$(id);if(!el)continue;el.hidden=!corn;el.disabled=selling;if(corn&&el.dataset.count!==String(corn)){el.dataset.count=String(corn);el.innerHTML=`${art('coins')}<span>Sell all ${corn}</span>`;}}
-  $('beginner-mobile')?.classList.toggle('has-sell',corn>0);document.querySelector('.beginner-card')?.classList.toggle('has-sell',corn>0);
+  quick=!corn&&current&&!current.ready&&!village&&quickStep?quickStep(current.id):null;
+  const label=corn?`${art('coins')}<span>Sell all ${corn}</span>`:quick?`${art(quick.art)}<span>${quick.label}</span>`:'';
+  for(const id of ['beginner-sell','beginner-mobile-sell']){const el=$(id);if(!el)continue;el.hidden=!label;el.disabled=selling;if(label&&el.dataset.label!==label){el.dataset.label=label;el.innerHTML=label;}}
+  $('beginner-mobile')?.classList.toggle('has-sell',Boolean(label));document.querySelector('.beginner-card')?.classList.toggle('has-sell',Boolean(label));
   document.querySelector('.beginner-prize').classList.toggle('claimed',complete);
   $('beginner-prize-title').textContent=complete?`${BEGINNER_REWARD} diamonds earned`:`${BEGINNER_REWARD} diamonds`;
   $('beginner-prize-note').textContent=complete?'Well done, farmer!':'After all 10 steps';
@@ -156,9 +162,10 @@ export function createBeginnerUI({state,runAction,icons,notify,onChange,guide,on
   catch(error){notify(error.message);}
   finally{busy=false;refresh();if(dialog.open)(dialog.querySelector('[data-beginner-claim]:not(:disabled)')??dialog.querySelector('[data-beginner-help]')??dialog.querySelector('.close-dialog')).focus({preventScroll:true});}
  }
- let selling=false;
+ let selling=false,quick=null;
  async function sellCorn(from){if(selling||!sellFirst)return;selling=true;refresh();try{await sellFirst(from);}finally{selling=false;refresh();}}
- for(const id of ['beginner-sell','beginner-mobile-sell'])$(id)?.addEventListener('click',event=>void sellCorn(event.currentTarget.getBoundingClientRect()));
+ async function doQuick(from){const q=quick;if(selling||!q)return;selling=true;refresh();try{await q.run(from);}catch(error){notify(error.message);}finally{selling=false;refresh();}}
+ for(const id of ['beginner-sell','beginner-mobile-sell'])$(id)?.addEventListener('click',event=>{const from=event.currentTarget.getBoundingClientRect();if(quick)void doQuick(from);else void sellCorn(from);});
  function help(){const current=beginnerProgress(state).find(q=>q.current);if(!current)return;dialog.close();guide(current.guide);}
  $('claim-reward').addEventListener('click',claim);$('beginner-help').addEventListener('click',help);$('all-quests-mobile').addEventListener('click',open);$('beginner-mobile').addEventListener('click',open);
  dialog.addEventListener('click',event=>{if(event.target.closest('[data-beginner-claim]'))claim();if(event.target.closest('[data-beginner-help]'))help();});

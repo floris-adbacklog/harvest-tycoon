@@ -8,7 +8,7 @@ export function createMobileUI({openUtility,resetView}){
  const grid=menu.querySelector('.mobile-menu-grid'),later=grid.querySelector('[data-menu-later]');
  function arrange(){
   let heading=null;const open=new Map();
-  for(const el of grid.children){if(el.matches('[data-section-heading]')){heading=el;open.set(el,false);}else if(heading&&el.tagName==='BUTTON'&&!el.hidden&&!el.classList.contains('locked')&&!el.matches('[data-menu-later]'))open.set(heading,true);}
+  for(const el of grid.children){if(el.matches('[data-section-heading]')){heading=el;open.set(el,false);}else if(heading&&(el.tagName==='BUTTON'||el.tagName==='A')&&!el.hidden&&!el.classList.contains('locked')&&!el.matches('[data-menu-later]'))open.set(heading,true);}
   for(const [el,any] of open)el.hidden=!any;
   const locked=grid.querySelectorAll('button.locked:not([hidden])').length;
   later.hidden=!locked;later.querySelector('[data-later-count]').textContent=locked;

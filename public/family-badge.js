@@ -1,4 +1,4 @@
-import {FAMILY_EMBLEMS} from './farm-state.js';
+import {emblemMarkup} from './family-emblem-art.js';
 import {art} from './visual-icons.js';
 // The family badge beside a farmer's name outside the chat (29 Oct 2026, the owner: "Zet de family badge ook bij leaderboard en
 // andere waar profielnaam en vip badge en admin/moderator badge etc voorkomt"): the leaderboard and the event standings. The family's
@@ -23,8 +23,7 @@ export async function loadFamilies(ids,{lookup=chatFamilies(),now=Date.now()}={}
 // is a span; the click below opens the family instead.
 export function familyBadge(playerId){
  const f=known.get(playerId);if(!f)return '';
- const e=FAMILY_EMBLEMS.find(x=>x.id===String(f.emblem))??FAMILY_EMBLEMS[0];
- return `<span class="name-family" data-family-view="${esc(f.id)}" translate="no" title="${esc(f.name)}" role="img" aria-label="${esc(f.name)}"><span class="family-emblem" style="--family-color:${e.color}">${art(e.icon)}</span></span>`;
+ return `<span class="name-family" data-family-view="${esc(f.id)}" translate="no" title="${esc(f.name)}" role="img" aria-label="${esc(f.name)}">${emblemMarkup(f.emblem)}</span>`;
 }
 // One tap rule for every badge: caught before the row's own button, it opens the family's profile.
 if(typeof document!=='undefined')document.addEventListener('click',event=>{

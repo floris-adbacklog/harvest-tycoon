@@ -25,7 +25,11 @@ test('the asking tile: the crop, the price of the job, "Plant 6 × Barley?", the
  assert.match(html,/^<div class="tractor-tile is-asking" role="group" data-tractor-ask>/);
  assert.match(html,/data-art="barley"/,'the crop picture');assert.match(html,/<span class="tractor-job-cost">.*144<\/span>/);
  assert.match(html,/<strong>Plant 6 × Barley\?<\/strong>/);
- assert.match(html,/<button type="button" class="primary-button" data-tractor-go>Plant<\/button><button type="button" class="small-button" data-tractor-other>Other crop<\/button><\/span><\/div>$/);
+ // 30 Oct 2026 (the owner picked 1, the window jumped): the price on Plant and Other crop as the seed shop's picture, so the question
+ // and both buttons fit the tile's own height.
+ assert.match(html,/<button type="button" class="primary-button" data-tractor-go>Plant<span class="tractor-job-cost">.*144<\/span><\/button><button type="button" class="small-button tractor-other" data-tractor-other aria-label="Other crop" title="Other crop">.*data-art="tool-seeds".*<\/button><\/span><\/div>$/);
+ const css=readFileSync(new URL('../public/retention.css',import.meta.url),'utf8');
+ assert.match(css,/#utility-dialog \.tractor-tile\.is-asking\{grid-template-columns:40px minmax\(0,1fr\) auto;grid-template-areas:"art name ask" "art name ask"\}/,'the question beside the buttons, in one tile height');
  assert.equal(html.match(/<button/g).length,2);
 });
 

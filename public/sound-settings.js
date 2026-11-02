@@ -2,11 +2,12 @@ import {refreshArt} from './visual-icons.js';
 import {createInstallSection} from './install-ui.js';
 import {createNotificationsSection} from './notifications-ui.js';
 import {createSettingsNav} from './settings-nav.js';
+import {farmNow} from './farm-client.js';
 import {settingsPart} from './game-links.js';
 import {MUSIC_TRACKS} from './farm-audio.js';
 export function createSoundSettings(audio,{onEmailOn}={}){
  const $=id=>document.getElementById(id),dialog=$('sound-dialog'),install=createInstallSection(),reminders=createNotificationsSection({onEmailOn});
- const nav=createSettingsNav(dialog);
+ const nav=createSettingsNav(dialog,{now:farmNow});
  // Music (4 Oct 2026): the farmer picks the farm's music; Listen plays a track's 20-second preview first, and tapping it again
  // (Playing, with a stop sign) ends it.
  const tracks=$('music-tracks');

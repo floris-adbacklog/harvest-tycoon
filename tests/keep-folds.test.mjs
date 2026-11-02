@@ -118,7 +118,7 @@ test('the Farm family window: every fold-out has its key, one per member menu, a
  assert.match(ui,/keepFolds\(content,view\.family\?\(\(\{week,sharing,members,tournament,stats,settings\}\[tab\]\)\?\?week\)\(\):landing\(\)\);/,'This week, Members, Tournament, Stats, Settings and the landing');
  assert.doesNotMatch(ui,/content\.innerHTML=view\.family/);
  const fixed=[...(ui+tour).matchAll(/data-fold="([a-z-]+)"/g)].map(m=>m[1]);
- assert.deepEqual(fixed.sort(),['chest','create','gives','how-rewards','order-done','order-later','order-rewards','past-weeks','tournament-goods'],'unique in the window');
+ assert.deepEqual(fixed.sort(),['chest','create','gives','how-rewards','order-done','order-later','order-rewards','own-emblem','past-weeks','tournament-goods'],'unique in the window');
  assert.match(ui,/<details class="family-member-menu" data-fold="member-\$\{m\.id\}">/,'each member\'s menu its own');
  // A member's menu still closes once an option is picked.
  assert.match(ui,/const type=b\.dataset\.familyAction;\n[^\n]*\n   const menu=b\.closest\('\.family-member-menu'\);if\(menu\)menu\.open=false;/);

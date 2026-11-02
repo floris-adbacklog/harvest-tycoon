@@ -11,6 +11,7 @@ export function plantAsk(){
  let at=0;
  return {start(now){at=now;},stop(){at=0;},open:now=>at>0&&now-at<ASK_MS,answers:now=>at>0&&now-at>=ASK_GUARD_MS&&now-at<ASK_MS};
 }
-// The Plant tile as it asks: the crop, the price of the whole job, the question and its two buttons. A group, not a button: a button
-// may hold no other buttons.
-export const askTile=(crop,name,q)=>`<div class="tractor-tile is-asking" role="group" data-tractor-ask><span class="tractor-tile-art">${art(crop)}</span><span class="tractor-job-cost">${art('coins')}${q.total}</span><strong>Plant ${q.count} × ${name}?</strong><span class="tractor-ask-buttons"><button type="button" class="primary-button" data-tractor-go>Plant</button><button type="button" class="small-button" data-tractor-other>Other crop</button></span></div>`;
+// The Plant tile as it asks: the crop, the question and its two buttons, the price of the whole job on Plant. A group, not a button: a
+// button may hold no other buttons. Since 30 Oct 2026 (the owner picked 1: "the window jumps") the question and the buttons sit side by
+// side in the tile's own height, so nothing below it moves while it asks; Other crop is the seed shop's picture (its name the label).
+export const askTile=(crop,name,q)=>`<div class="tractor-tile is-asking" role="group" data-tractor-ask><span class="tractor-tile-art">${art(crop)}</span><strong>Plant ${q.count} × ${name}?</strong><span class="tractor-ask-buttons"><button type="button" class="primary-button" data-tractor-go>Plant<span class="tractor-job-cost">${art('coins')}${q.total}</span></button><button type="button" class="small-button tractor-other" data-tractor-other aria-label="Other crop" title="Other crop">${art('tool-seeds')}</button></span></div>`;
