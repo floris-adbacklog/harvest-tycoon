@@ -246,6 +246,14 @@ html[data-visit-view] :is(.building-label,.utility-label,.activity-label,.pond-l
 .layout-inventory-grid button:active{transform:translateY(2px);box-shadow:none}
 .layout-inventory-grid .game-art{width:100%;height:100%}
 .layout-inventory-grid b{position:absolute;right:-4px;bottom:-4px;min-width:22px;padding:1px 6px;border-radius:999px;background:#3f8a4a;color:#fffef3;font:700 12px/18px 'Outfit',sans-serif;text-align:center}
+/* Just bought (3 Nov 2026, src: layout-edit.js flyToThings): the tile lights up and shows "+1" for a moment. */
+.layout-inventory-grid button.is-new{animation:things-new 1.2s ease-out;border-color:#3f8a4a}
+.layout-inventory-grid button.is-new::after{content:'+1';position:absolute;top:-10px;left:50%;transform:translateX(-50%);padding:0 6px;border-radius:999px;background:#f5ca62;color:#5c3a0c;font:700 12px/18px 'Outfit',sans-serif;animation:things-up 1.2s ease-out forwards}
+@keyframes things-new{0%{box-shadow:0 0 0 0 #3f8a4a66}40%{box-shadow:0 0 0 8px #3f8a4a00;transform:scale(1.08)}100%{transform:none}}
+@keyframes things-up{0%{opacity:0;transform:translate(-50%,6px)}25%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+@media (prefers-reduced-motion:reduce){.layout-inventory-grid button.is-new,.layout-inventory-grid button.is-new::after{animation:none}}
+/* How many things wait in Your things, on Move things (outside Build too). */
+#layout-button{position:relative}#layout-count{position:absolute;inset-inline-end:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#3f8a4a;box-shadow:0 1px 3px #47372320;color:#fffef3;font:700 10px/1 'DM Sans',sans-serif;font-style:normal;pointer-events:none}#layout-count[hidden]{display:none}
 .layout-inventory-empty{margin:0;font:400 13px/1.35 'Outfit',sans-serif;color:#7a6a50}
 .layout-inventory-empty[hidden]{display:none}
 

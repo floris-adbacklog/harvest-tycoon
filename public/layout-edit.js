@@ -221,9 +221,23 @@ export function createLayoutEditor({doc=document,root=doc.documentElement,bar,in
  shopRow.addEventListener('click',async event=>{
   const b=event.target.closest?.('[data-kind]');if(!b)return;const kind=b.dataset.kind,price=DECOR[kind].coins;
   if(coins()<price){notify(`You need ${price} coins.`);return;}
-  try{await buy(kind);notify(`${DECOR[kind].name}: in Your things.`);}catch(error){notify(error.message);}
+  // Where it went (3 Nov 2026, a player: "het is niet duidelijk waar mijn gekochte spullen gebleven zijn"; the owner: all three): it flies
+  // from its tile to Your things, which lights up with "+1", and the message says where it waits and what to do with it.
+  let bought=false;
+  try{await buy(kind);bought=true;notify(`${DECOR[kind].name} is waiting in Your things (top right). Drag it onto your farm.`);}catch(error){notify(error.message);}
   stocked=null;show();
+  if(bought)flyToThings(b,kind);
  });
+ function flyToThings(from,kind){
+  const to=inventory?.querySelector(`[data-kind="${kind}"]`);if(!to||inventory.hidden)return;
+  to.classList.remove('is-new');void to.offsetWidth;to.classList.add('is-new');setTimeout(()=>to.classList.remove('is-new'),1400);
+  const pic=from.querySelector('.game-art,i,img,svg');if(!pic||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
+  const a=pic.getBoundingClientRect(),z=to.getBoundingClientRect(),ghost=pic.cloneNode(true);
+  Object.assign(ghost.style,{position:'fixed',left:`${a.left}px`,top:`${a.top}px`,width:`${a.width}px`,height:`${a.height}px`,margin:'0',zIndex:'9999',pointerEvents:'none'});
+  doc.body.append(ghost);
+  const move=ghost.animate?.([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${z.left+z.width/2-a.left-a.width/2}px,${z.top+z.height/2-a.top-a.height/2}px) scale(.6)`,opacity:.9}],{duration:550,easing:'cubic-bezier(.4,0,.2,1)'});
+  if(move)move.onfinish=()=>ghost.remove();else ghost.remove();
+ }
  // Out of Your things with a drag (24 Oct 2026, the owner: "dat je ziet hoe het eruit komt te zien als je hem uit de Your things
  // haalt"): it appears under your finger and follows it over the farm, green or red; let go and it waits there for Place. A tap puts it
  // on the nearest free spot in view instead.

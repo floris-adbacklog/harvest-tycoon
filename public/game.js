@@ -1908,8 +1908,15 @@ function hudNumbers(){
  if(worth){const text=worth.toLocaleString('en-US');if(badge.dataset.worth!==text){badge.dataset.worth=text;badge.innerHTML=`${art('coins')}${text}`;}market.setAttribute('aria-label',`Market: your basket is worth ${text} coins`);}
  else{if(badge.dataset.worth){delete badge.dataset.worth;}badge.textContent='';market.removeAttribute('aria-label');}
 }
+// How many things wait in Your things (3 Nov 2026, a player: "het is niet duidelijk waar mijn gekochte spullen gebleven zijn"): a count on
+// Move things, and on its More tile the line says so, so a tree or a tile bought for later is found again outside Build too.
+function layoutCount(){
+ const n=Object.values(state.layout?.stored??{}).reduce((a,b)=>a+(Number(b)>0?Number(b):0),0),badge=$('layout-count'),hint=$('layout-menu-hint');
+ if(badge){badge.hidden=n<1;badge.textContent=n>99?'99+':String(n);$('layout-button')?.setAttribute('aria-label',n?`Move things on your farm, ${n} waiting in Your things`:'Move things on your farm');}
+ if(hint)hint.textContent=n===1?'1 thing waits in Your things':n>1?`${n} things wait in Your things`:'Arrange your own farm';
+}
 function updateUI(){
- hudNumbers();if(renderer)renderer.shadowMap.needsUpdate=true;warehouse?.refresh();
+ hudNumbers();if(renderer)renderer.shadowMap.needsUpdate=true;layoutCount();warehouse?.refresh();
  const lp=levelProgress(state),lvl=lp.level;
  // World II (30 Sep 2026): the way to the village from level 100, in the side tools and in the More menu. Its count: the places with a
  // batch ready, and the market square when the golden brief or a landmark can be built (Oct 2026; no pop-up). Not a villager you could
