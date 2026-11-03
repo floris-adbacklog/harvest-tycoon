@@ -28,7 +28,11 @@ export function prizeWords(p){
  const d=Number(p?.diamonds)||0,c=Number(p?.coins)||0;
  return d&&c?`${num(d)} diamond${d===1?'':'s'} and ${num(c)} coins`:d?`${num(d)} diamond${d===1?'':'s'}`:c?`${num(c)} coins`:'';
 }
-export function createTournamentUI({notify,refreshFarm,onClaimed,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge,now=farmNow}){
+// Village Helper and Harbour Captain (3 Nov 2026, the owner: "Als je niet lvl 100 of lvl 200 bent toon dan ook niet het supertournooi",
+// "alleen deze 2 om klachten te voorkomen"): a farmer below the world's level never sees them, no button, no tile, no "!".
+const WORLD_KINDS=['village','harbour'];
+export const tournamentTooEarly=(kind,level)=>WORLD_KINDS.includes(kind)&&level<TOURNAMENT_KINDS[kind].from;
+export function createTournamentUI({notify,refreshFarm,onClaimed,document:doc=globalThis.document,bridge=globalThis.parent?.harvestBridge,now=farmNow,level=()=>Infinity}){
  const button=doc.getElementById('tournament-button'),dot=doc.getElementById('tournament-dot'),tile=doc.getElementById('tournament-menu-entry'),hint=doc.getElementById('tournament-menu-hint');
  const dialog=doc.createElement('dialog');dialog.id='tournament-dialog';dialog.className='game-dialog wide-dialog events-dialog tournament-dialog is-sheet is-m';dialog.setAttribute('aria-labelledby','tournament-title');doc.body.append(dialog);
  let data=null,error='',busy=false,timer=0,clock=0,background=0;
@@ -38,7 +42,8 @@ export function createTournamentUI({notify,refreshFarm,onClaimed,document:doc=gl
  const live=()=>Boolean(t()?.running)&&Date.parse(t().endsAt)>now();
  // The button and the tile: shown while there is something to see; the "!" for a prize to collect, or a new tournament not opened yet.
  function badge(){
-  const show=Boolean(t()||data?.owed?.length),alert=Boolean(data?.owed?.length)||(live()&&seen()!==String(t().id));
+  const owed=Boolean(data?.owed?.length),early=Boolean(t())&&tournamentTooEarly(t().kind,level());
+  const show=Boolean(t()&&!early)||owed,alert=owed||(live()&&!early&&seen()!==String(t().id));
   for(const el of [button,tile])if(el)el.hidden=!show;
   if(dot)dot.hidden=!alert;tile?.classList.toggle('has-dot',alert);
   if(hint)hint.textContent=live()?`Ends in ${formatDuration(Date.parse(t().endsAt)-now())}`:data?.owed?.length?'Your prize is ready':'Results';
