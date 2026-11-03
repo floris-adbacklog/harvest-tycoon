@@ -136,3 +136,19 @@
  #pass-dialog .pass-cell.is-locked>.pass-lock{position:absolute;top:50%;margin-top:-7px;inset-inline-end:0}
  #pass-dialog .pass-lock .game-art{width:14px;height:14px}
 }
+/* The Super Tournament (3 Nov 2026, public/tournament-ui.js): its header button the same as the pass's, and the same narrower header
+   while it shows (a phone has its tile in More). Its window uses the events' look (events-dialog), plus the pick and the pot. */
+#tournament-button{position:relative;flex-shrink:0}#tournament-button .game-art{width:28px;height:28px;object-fit:contain}
+#tournament-dot{position:absolute;inset-inline-end:-5px;top:-5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid #fffdf5;border-radius:7px;background:#f5ca62;box-shadow:0 1px 3px #47372320;color:#754d1b;font:700 10px/1 'DM Sans',sans-serif;pointer-events:none}
+#tournament-button[hidden],#tournament-dot[hidden],#tournament-menu-entry[hidden]{display:none}
+@media(max-width:900px),(max-height:550px) and (pointer:coarse){#tournament-button{display:none}}
+@media(min-width:901px) and (max-width:1365px){
+ .topbar .resources:has(>#tournament-button:not([hidden])){gap:3px}
+ .topbar .resources:has(>#tournament-button:not([hidden]))>:is(#pass-button,#season-button,#tournament-button,#family-button,#chat-button,#admin-button,#sound-button,#feedback-button,#help-button){width:36px;padding-inline:3px}
+}
+.tournament-pick{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-weight:700}.tournament-pick .game-art{width:28px;height:28px}
+.tournament-head{display:flex;align-items:center;gap:12px;margin-top:8px}.tournament-head>.game-art{flex:none;width:56px;height:56px;object-fit:contain}.tournament-head h3{margin:0}
+.tournament-pot-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.tournament-pot-head>span{flex-basis:100%;font-size:12px;font-weight:700;color:#8a7a5c}
+.tournament-pot-head strong{display:inline-flex;align-items:center;gap:5px;font:700 20px/1.2 'Outfit',sans-serif;color:#3b2c12;font-variant-numeric:tabular-nums}.tournament-pot-head .game-art{width:24px;height:24px}
+.tournament-pot .event-podium.is-three ol{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tournament-collect>.game-art{width:48px;height:48px}

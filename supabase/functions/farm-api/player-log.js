@@ -230,6 +230,10 @@ export function noteLog(notes){
 export function eventRewardLog(title,reward){
  return [line('rewards','event_reward',`Collected the reward of the event ${title?`“${title}”`:''}`.trim(),changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:reward?.coins??0,diamonds:reward?.diamonds??0,xp:0,inventory:{}}))];
 }
+// A Super Tournament's prize (3 Nov 2026, tournament-service.js): its name, the place and what it paid.
+export function tournamentPrizeLog(title,prize){
+ return [line('rewards','tournament_prize',`Collected the prize of the Super Tournament ${title?`“${title}” `:''}(#${prize?.place??'?'})`,changes({coins:0,diamonds:0,xp:0,inventory:{}},{coins:prize?.coins??0,diamonds:prize?.diamonds??0,xp:0,inventory:{}}))];
+}
 // The admin closed or opened Invite a friend for this farmer (18 Oct 2026, cheating with it).
 export const inviteClosedLog=closed=>[line('staff',closed?'invite_close':'invite_open',closed?'The admin closed Invite a friend':'The admin opened Invite a friend again')];
 // A removal (a minus in diamonds, 17 Oct 2026) says so: "The admin took back diamonds · −50 diamonds".

@@ -26,6 +26,7 @@ import {GIFT_AUDIENCES,giftCount,giftMatches,giftLabel,PLAYER_FILTERS,PLAYER_SOR
 import {purchaseState,purchaseCounts,PURCHASE_LABELS} from './admin-purchases.js';
 import {createNewsMail} from './admin-news-mail.js';
 import {createReloadCard} from './admin-reload.js';
+import {createTournamentCard} from './admin-tournament.js';
 import {ADMIN_TABS,tabsFor,firstTab,partsFor,QUICK_ACTIONS,overviewTiles,searchPlayers,euro as euros,earnedByDay,hourBars} from './admin-overview.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -219,6 +220,8 @@ export function createAdminDashboard(bridge,{chat=null}={}){
  const newsMail=createNewsMail({dialog,bridge});
  // Reload everyone now (22 Oct 2026): its own card on Settings, for the admin only (src/admin-reload.js).
  const reloadCard=createReloadCard({dialog,bridge});
+ // The Super Tournament (3 Nov 2026): its own card on Money, beside the Sale, for the admin only (src/admin-tournament.js).
+ const tournamentCard=createTournamentCard({dialog,bridge});
  dialog.querySelector('.admin-dashboard-close').onclick=()=>dialog.close();
  // Escape in the search box empties it first; a second Escape closes the window, as everywhere.
  // The tabs (src/admin-overview.js): one shows at a time; a tab this role may not see is never shown, whoever asks for it.
@@ -394,6 +397,7 @@ export function createAdminDashboard(bridge,{chat=null}={}){
   if(role==='admin')void loadSources();
   if(role==='admin')newsMail.show();
   if(role==='admin')void reloadCard.show();
+  if(role==='admin')void tournamentCard.show();
   if(role==='admin')void bridge.request({operation:'admin_purchases'}).then(data=>{overview.purchases=data?.purchases??[];renderPurchases(data);renderOverview();}).catch(()=>{dialog.querySelector('#admin-purchase-list').innerHTML='<li class="admin-empty">Purchases could not be loaded.</li>';});
   if(players){playersAt=Date.now();showPlayers(players);}
   if(online){await loadFaces(online.players.map(p=>p.playerId));renderOnline(online);}

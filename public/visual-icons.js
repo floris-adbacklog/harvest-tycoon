@@ -101,6 +101,8 @@ for(const key of ['family-chest-wood','family-chest-iron','family-chest-silver',
 // Your own farm layout (24 Oct 2026, painted for the owner): Move things, Rotate, Clear, Store, drawing and erasing a path, the land that
 // opens later and Visit farm.
 for(const key of ['shipping-bin','friendship-heart'])webpPictures.add(key);
+// The Super Tournament (3 Nov 2026, the owner's ChatGPT pictures): its finish flag, and the flag with the cup for its prizes.
+for(const key of ['tournament','tournament-winner']){pictures[key]=key;webpPictures.add(key);}
 // World III, the harbour (27 Oct 2026, the owner's ChatGPT pictures): its badge, the harbour master and the first harbour goods.
 for(const key of ['harbour-badge','harbour-master','harbour-crate','seal-pet','rope','barrel','shipsbiscuits','sailcloth','provisions','anchor','fishingnet','anchorchain','shipwrighttools']){pictures[key]=key;webpPictures.add(key);}   // shipwright tools: 30 Oct 2026, the owner's ChatGPT picture
 // The harbour's pins: the harbour master on the office, the seal, and each place's picture (27 Oct 2026, the owner's ChatGPT pictures,

@@ -3,7 +3,7 @@
    and the open chat reports, the menu is My farm, How to play, Chat, Admin panel and More. Every rule starts with html[data-admin-view].
    29 Oct 2026, the owner ("ja alleen bekijken"): the diamond button stays, so the shop with its Village and Harbour tabs can be looked at;
    every buy in it is off (src/admin-view.js lockShop). */
-html[data-admin-view] .resources>:is(.coin-counter,#rookie-button,#pass-button,#season-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
+html[data-admin-view] .resources>:is(.coin-counter,#rookie-button,#pass-button,#season-button,#tournament-button,#starter-pack-chip,#offer-chip,#chat-button,#admin-button,#help-button),
 html[data-admin-view] :is(#starter-pack-button,#offer-button,#event-rail,#active-boosts,.beginner-card,#beginner-mobile,#next-goal-card,#next-goal-mobile,#next-goal-claim-mobile,.touch-instructions,#more-dot),
 html[data-admin-view] .bottom-hud>:is(.tool-dock,.context-hint,.bottom-note),
 html[data-admin-view] .mobile-menu-grid>:is([data-menu-action="all-quests-mobile"],#pass-menu-entry,#season-menu-entry){display:none!important}

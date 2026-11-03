@@ -38,10 +38,13 @@ export function createMobileUI({openUtility,resetView}){
   // The Halloween Pass (Oct 2026) the same way, under Every day: its tile follows its header button and its "!".
   const pass=$('pass-button'),passTile=$('pass-menu-entry');
   if(pass&&passTile){passTile.hidden=pass.hidden;passTile.classList.toggle('has-dot',!pass.hidden&&!($('pass-dot')?.hidden??true));}
+  // The Super Tournament (3 Nov 2026) the same way: its tile follows its header button and its "!".
+  const tour=$('tournament-button'),tourTile=$('tournament-menu-entry');
+  if(tour&&tourTile){tourTile.hidden=tour.hidden;tourTile.classList.toggle('has-dot',!tour.hidden&&!($('tournament-dot')?.hidden??true));}
   // The Season Pass (Oct 2026) beside it, the same way.
   const season=$('season-button'),seasonTile=$('season-menu-entry');
   if(season&&seasonTile){seasonTile.hidden=season.hidden;seasonTile.classList.toggle('has-dot',!season.hidden&&!($('season-dot')?.hidden??true));}
-  const passWaiting=mobileLayout.matches&&Boolean(passTile?.classList.contains('has-dot')||seasonTile?.classList.contains('has-dot'));
+  const passWaiting=mobileLayout.matches&&Boolean(passTile?.classList.contains('has-dot')||seasonTile?.classList.contains('has-dot')||tourTile?.classList.contains('has-dot'));
   const chat=$('chat-button'),chatDot=$('chat-dot'),chatTile=$('chat-menu-entry'),chatPill=$('chat-menu-pill');
   if(chat&&chatTile){chatTile.hidden=chat.hidden;chatPill.hidden=chat.hidden||(chatDot?.hidden??true);chatPill.textContent=chatDot?.textContent??'';chatTile.setAttribute('aria-label',chat.getAttribute('aria-label')??'Open chat');}
   const chatWaiting=mobileLayout.matches&&Boolean(chatPill&&!chatPill.hidden);
@@ -79,5 +82,7 @@ export function createMobileUI({openUtility,resetView}){
  // The chat counts on its own (src/chat-ui.js, live messages): its tile and the More dot follow its button and its dot.
  const chatWatch=new MutationObserver(()=>{badges();if(menu.open)arrange();});
  for(const id of ['chat-button','chat-dot'])if($(id))chatWatch.observe($(id),{attributes:true,attributeFilter:['hidden','aria-label'],childList:true,characterData:true,subtree:true});
+ // The Super Tournament's button and "!" (3 Nov 2026, public/tournament-ui.js) change on their own too: its tile and the More dot follow.
+ for(const id of ['tournament-button','tournament-dot'])if($(id))chatWatch.observe($(id),{attributes:true,attributeFilter:['hidden']});
  return {refresh:badges};
 }

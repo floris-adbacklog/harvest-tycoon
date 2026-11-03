@@ -270,7 +270,7 @@ test('farm-api counts the note beside the load, for every account, never in its 
  const line="if(body.operation==='load'&&body.loadStall)later(Promise.resolve().then(()=>recordLoadStall({admin,note:body.loadStall,platform:body.platform,agent:req.headers.get('user-agent'),portal:user.app_metadata?.portal,staff:isAdminAccount(user)})).catch(()=>{}));";
  assert.ok(api.includes(line),'beside the load (later), its failure caught');assert.doesNotMatch(api,/await recordLoadStall/);
  const at=api.indexOf(line);
- assert.ok(api.indexOf("if(!['events','admin_events','social','load'")<at,'a known request only');
+ assert.ok(api.indexOf("if(!['events','admin_events','tournament','admin_tournament','social','load'")<at,'a known request only');
  assert.ok(at<api.indexOf('const profileResponse=await (mine?.profile')&&at<api.indexOf("if(body.operation==='load'&&isAdminAccount(user)){"),'before anything that may end the load first, the admin\'s showcase included');
  assert.match(api,/if\(raw\.length>bodyMax\)return reply\(\{error:'Request is too large\.'\},413\);/,'the note fits a load under the size limit');assert.match(api,/family_emblem_upload'\?EMBLEM_BODY_MAX:4096;/,'4 KB for every request but an own emblem');
  assert.ok(JSON.stringify({operation:'load',timeZone:'America/Argentina/ComodRivadavia',language:'nl',platform:'browser',loadStall:{...GOOD,kind:'reload_hung',files:Array(5).fill(`/${'a'.repeat(99)}`)}}).length<1200);

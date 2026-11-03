@@ -2,6 +2,7 @@ import './dialog-shell.js';
 import './pill-menu.js';
 import './event-rail.js';
 import {createLiveEventsUI} from './live-events-ui.js';
+import {createTournamentUI} from './tournament-ui.js';
 import {createToast} from './toast-ui.js';
 import {haptic} from './haptics.js';
 import {showWelcomeBack} from './welcome-ui.js';
@@ -2629,6 +2630,8 @@ function bindUI(){
  $('zoom-in').addEventListener('click',()=>villageWorld?zoomFarm(1.25):stepFarm(1));$('zoom-out').addEventListener('click',()=>villageWorld?zoomFarm(1/1.25):stepFarm(-1));$('zoom-reset').addEventListener('click',resetView);$('fields-view').addEventListener('click',focusFields);$('zoom-fit').addEventListener('click',showOverview);
  window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;const t={1:'plant',2:'water',3:'tend',4:'harvest'}[e.key];if(t){e.preventDefault();setTool(t);}});
  liveEvents=createLiveEventsUI({state,notify:toast,refreshFarm:()=>client.refresh(),onClaimed:reward=>{farmAudio.play('eventwin');if(reward?.coins>0||reward?.diamonds>0)farmerCheers();}});
+ // The Super Tournament (3 Nov 2026, public/tournament-ui.js): its button shows while one runs or a prize waits; a prize cheers like an event's.
+ createTournamentUI({notify:toast,refreshFarm:()=>client.refresh(),onClaimed:()=>{farmAudio.play('eventwin');farmerCheers();}});
  // Confirm your email for 10 diamonds: a button in the left sidebar (desktop) and a card in the More menu, only for an email sign-up
  // that has not been paid yet. After the code, a farm reload pays the diamonds (the gift pop-up) and both disappear.
  emailCheckUI=createEmailCheck({bridge:window.parent.harvestBridge,email:()=>emailAccount.email,canChange:()=>emailAccount.canChange===true,onDone:()=>client.refresh(),

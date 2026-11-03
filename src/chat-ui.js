@@ -375,7 +375,9 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
  function noticeRow(n,fresh){
   // News in the farmer's own language when the admin wrote it in that language too.
   const news=n.kind==='news'?inLanguage(n):{own:new Set()};
-  const picture=n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp?v=20261023" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':n.kind==='family'?'family-members':'bell');
+  // A Super Tournament's News shows its finish flag (3 Nov 2026, the owner: "Toon bij News niet HT logo maar het tournament icon"):
+  // farm-api and the weekly plans post it with texts.art 'tournament' (supabase/super-tournament.sql); any other News has the logo.
+  const picture=n.kind==='news'&&n.texts?.art==='tournament'?art('tournament'):n.kind==='news'?'<img src="/assets/harvest-tycoon-logo.webp?v=20261023" alt="" width="44" height="44" draggable="false">':art(n.kind==='moderation'?'admin':n.kind==='gift'||n.kind==='donation'?'gift':n.kind==='purchase'?'diamonds':n.kind==='family'?'family-members':'bell');
   return `<li class="chat-notice${fresh?' is-new':''}"><span class="chat-notice-art">${picture}</span><div class="chat-msg-main"><div class="chat-msg-top"><strong>${esc(NOTICES[n.kind]??'Harvest Tycoon')}</strong><time datetime="${esc(n.created_at)}" title="${esc(exact(n.created_at))}">${ago(n.created_at)}</time></div><p class="chat-text"${news.own.has('body')?' translate="no"':''}>${n.kind==='gift'||n.kind==='donation'?giftBody(n.body):n.kind==='news'?linkify(news.body):ownLine(n.body,noticeNames(n.body))}</p></div></li>`;
  }
  function foundRow(p){
