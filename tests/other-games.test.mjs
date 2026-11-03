@@ -11,5 +11,6 @@ test('the More menu links to Skyline Topia under Other games from us',()=>{
  assert.match(read('public/mobile-ui.js'),/\(el\.tagName==='BUTTON'\|\|el\.tagName==='A'\)/,'a link tile keeps its group heading open');
  assert.match(read('public/portal.css'),/html\[data-portal\] \.menu-other-games,html\[data-portal\] \.menu-other-game\{display:none!important\}/);
  assert.ok(readFileSync(new URL('../public/assets/skyline-topia.webp',import.meta.url)).subarray(8,12).toString()==='WEBP','the logo is a WebP');
+ assert.match(menu,/<a class="menu-other-game" href="https:\/\/www\.thundersiege\.com\/\?utm_source=harvesttycoon&amp;utm_medium=more_menu" target="_blank" rel="noopener"><img src="\/assets\/thunder-siege\.webp"[^>]*><span><strong>Thunder Siege<\/strong>/,'Thunder Siege too (3 Nov 2026)');
  for(const code of ['nl','de','es','fr','ja'])assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Other games from us'],code);
 });
