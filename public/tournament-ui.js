@@ -8,6 +8,7 @@ import {formatDuration,CROPS,ITEMS} from './farm-state.js';
 import {keepFolds} from './keep-folds.js';
 import {ownWords,ownText} from './i18n.js';
 import {placeLabel} from './place-label.js';
+import {hintsButton} from './dialog-shell.js';
 import {TOURNAMENT_KINDS,TOURNAMENT_DEFAULTS,TOURNAMENT_PRIZE_MAX,TOURNAMENT_WIDE_FROM} from './tournament.js';
 // The Super Tournament's screen (3 Nov 2026, the owner; rules in tournament.js, farm-api tournament-service.js). Its button (the finish
 // flag) sits with the passes in the header, and its tile in the More menu on phones; both show only while a tournament runs, the
@@ -110,6 +111,8 @@ export function createTournamentUI({notify,refreshFarm,onClaimed,document:doc=gl
   const heading='<div class="dialog-heading">'+art('tournament','dialog-badge')+'<div class="dialog-titles"><h2 id="tournament-title">Super Tournament</h2></div><button class="icon-button close-dialog" data-close aria-label="Close"><i data-lucide="x"></i></button></div>';
   keepFolds(dialog,heading+(data?collect()+hero()+pot()+standings()+rules():error?`<p class="event-loading">${esc(error)}</p>`:skeleton('Opening the tournament…',{hero:true,rows:3,avatar:false}))+'<p class="event-feedback" role="status" data-status></p>');
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+  // The ⓘ to the rules in How to play (public/dialog-shell.js WINDOW_WIKI), again after every redraw of the heading.
+  if(dialog.open)try{hintsButton(dialog);}catch{}
   dialog.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claim(b));
   dialog.querySelectorAll('[data-tournament-profile]').forEach(b=>b.onclick=()=>window.harvestProfiles?.open(b.dataset.tournamentProfile,{back:'Back to the tournament'}));
   refreshVipBadges(dialog,farmNow());refreshArt();

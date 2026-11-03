@@ -28,7 +28,7 @@ export const WINDOW_WIKI=Object.freeze({
  'today-dialog':['daily','sec-a-gift-every-day'],'market-dialog':['market','sec-selling'],'warehouse-dialog':['market','sec-warehouse'],
  'buildings-dialog':['buildings','sec-how-buildings-work'],'building-dialog':['buildings','sec-how-buildings-work'],
  'tasks-dialog':['quests','sec-quests'],'journal-dialog':['quests','sec-level-rewards'],'seed-dialog':['crops','sec-planting'],
- 'boost-dialog':['diamonds','sec-boosts'],'events-dialog':['events','sec-how-it-works'],'season-dialog':['daily','sec-season-pass'],
+ 'boost-dialog':['diamonds','sec-boosts'],'events-dialog':['events','sec-how-it-works'],'tournament-dialog':['events','sec-super-tournament'],'season-dialog':['daily','sec-season-pass'],
  'pass-dialog':['daily','sec-halloween-pass'],'family-dialog':['family','sec-together-is-better'],'utility-dialog':['helpers','sec-tractor'],
  'estate-dialog':['estate','sec-estate-chapters'],'activities-hub-dialog':['helpers','sec-a-helping-hand'],'activities-dialog':['helpers','sec-a-helping-hand'],
  'valley-dialog':['estate','sec-valley-projects'],'village-square-dialog':['village','sec-your-second-world'],'boat-dialog':['village','sec-your-second-world'],'harbour-dialog':['harbour','sec-ship-orders'],
