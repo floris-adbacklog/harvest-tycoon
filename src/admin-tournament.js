@@ -14,7 +14,7 @@ const num=n=>Number(n??0).toLocaleString('en-US');
 const why=error=>error?.raw??error?.message;
 export const WEEKDAYS=Object.freeze(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']);
 export const GOODS=Object.freeze(Object.fromEntries(Object.entries(ITEMS).filter(([key,item])=>!Object.hasOwn(CROPS,key)&&!item.heirloom&&(item.world??1)===1)));
-const SETTINGS=[['diamondsPerPlayer','Diamonds per farmer who counts'],['coinsPerPlayer','Coins per farmer who counts'],['maxDiamonds','Pot at most (diamonds)'],['maxCoins','Pot at most (coins)'],['placeStep','One winning place per … farmers (from 80)'],['minScore','Points to count']];
+const SETTINGS=[['diamondsPerPlayer','Diamonds per farmer who counts'],['coinsPerPlayer','Coins per farmer who counts'],['maxDiamonds','Pot at most (diamonds)'],['maxCoins','Pot at most (coins)'],['winners','Number of winners (0 = one per 10 farmers)'],['minScore','Points to count']];
 export const clock=minute=>`${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;
 export const kindLabel=(kind,pick)=>{const k=TOURNAMENT_KINDS[kind];if(!k)return kind;const name=pick?(CROPS[pick]?.name??ITEMS[pick]?.name??pick):'';return name?`${k.title}: ${name}`:k.title;};
 // The example the card shows under the prizes: what the top 3 and the last paid place win at a few sizes, with these settings.
@@ -33,7 +33,7 @@ export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=global
   +`<label>Title<input id="admin-tour-title" maxlength="80" placeholder="${esc(TOURNAMENT_KINDS.harvest.title)}"></label><label>Hours (${TOURNAMENT_HOURS[0]} to ${TOURNAMENT_HOURS[1]})<input id="admin-tour-hours" type="number" min="${TOURNAMENT_HOURS[0]}" max="${TOURNAMENT_HOURS[1]}" step="1" value="24" inputmode="numeric" required></label></div>`
   +'<p class="admin-popup-note" id="admin-tour-rule"></p>'
   +'<details class="admin-tour-prizes"><summary>Prizes</summary><div class="admin-popup-fields">'+SETTINGS.map(([key,label])=>`<label>${label}<input id="admin-tour-${key}" type="number" min="${TOURNAMENT_LIMITS[key][0]}" max="${TOURNAMENT_LIMITS[key][1]}" step="1" value="${TOURNAMENT_DEFAULTS[key]}" inputmode="numeric"></label>`).join('')+'</div>'
-  +`<p class="admin-popup-note">One farmer wins at most ${num(TOURNAMENT_PRIZE_MAX.diamonds)} diamonds and ${num(TOURNAMENT_PRIZE_MAX.coins)} coins. Below 80 farmers who count the top 3 win (50, 30 and 20% of the pot); from 80 one more place per the number above, the top 3 25, 15 and 10%, the rest the other half in equal parts.</p><p class="admin-popup-note" id="admin-tour-example"></p></details>`
+  +`<p class="admin-popup-note">One farmer wins at most ${num(TOURNAMENT_PRIZE_MAX.diamonds)} diamonds and ${num(TOURNAMENT_PRIZE_MAX.coins)} coins. Below 80 farmers who count the top 3 win (50, 30 and 20% of the pot). From 80, the number of winners above win (0: one per 10 farmers who count): the top 3 25, 15 and 10%, the other winners the other half in equal parts.</p><p class="admin-popup-note" id="admin-tour-example"></p></details>`
   +'<div class="admin-popup-fields"><label>Repeat<select id="admin-tour-repeat"><option value="">No, start it now</option>'+WEEKDAYS.map((d,i)=>`<option value="${i}">Every ${d}</option>`).join('')+'</select></label><label id="admin-tour-at-label" hidden>At (UTC)<input id="admin-tour-at" type="time" value="09:16" step="60"></label></div>'
   +'<p class="admin-popup-note">Everyone takes part from level 1, on the website, the apps and the game portals. When it starts, every farmer gets a News message with the finish flag, in their own language. A weekly plan starts it by itself at that time (UTC); a week when another tournament still runs is skipped.</p>'
   +'<div class="admin-offer-actions"><button type="submit" class="primary-button" id="admin-tour-submit">Start tournament</button></div>'
@@ -42,7 +42,7 @@ export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=global
   +'<h4 class="admin-subtitle">Tournaments</h4><ul id="admin-tour-list" class="admin-recent-list"></ul><div id="admin-tour-results" hidden></div>';
  const after=money.querySelector('#admin-xp-weekend');if(after?.after)after.after(section);else money.append(section);
  const $=id=>section.querySelector(`#admin-tour-${id}`);
- const settings=()=>Object.fromEntries(SETTINGS.map(([key])=>[key,Number($(key).value)]));
+ const settings=()=>({...Object.fromEntries(SETTINGS.map(([key])=>[key,Number($(key).value)])),placeStep:TOURNAMENT_DEFAULTS.placeStep});
  function kindChanged(){
   const k=TOURNAMENT_KINDS[$('kind').value];
   $('pick-label').hidden=!k?.pick;$('pick').innerHTML=k?.pick==='crop'?crops:k?.pick==='good'?goods:'';

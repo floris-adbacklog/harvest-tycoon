@@ -101,7 +101,7 @@ export function createTournamentUI({notify,refreshFarm,onClaimed,document:doc=gl
 <li>Each tournament counts one thing, such as crops harvested or goods made. What you did before it started does not count.</li>
 <li>From ${num(s.minScore)} points you count for the pot. Every farmer who counts adds ${num(s.diamondsPerPlayer)} diamonds and ${num(s.coinsPerPlayer)} coins to it, up to ${num(s.maxDiamonds)} diamonds and ${num(s.maxCoins)} coins.</li>
 <li>With fewer than ${num(TOURNAMENT_WIDE_FROM)} farmers who count, the top 3 win: 50%, 30% and 20% of the pot.</li>
-<li>From ${num(TOURNAMENT_WIDE_FROM)} farmers, every ${num(s.placeStep)} farmers add one winning place. The top 3 win 25%, 15% and 10% of the pot, and the other winning places share the rest equally.</li>
+<li>${Number(s.winners)>0?`From ${num(TOURNAMENT_WIDE_FROM)} farmers, the top ${num(s.winners)} win. The top 3 win 25%, 15% and 10% of the pot, and the other winning places share the rest equally.`:`From ${num(TOURNAMENT_WIDE_FROM)} farmers, every ${num(s.placeStep)} farmers add one winning place. The top 3 win 25%, 15% and 10% of the pot, and the other winning places share the rest equally.`}</li>
 <li>One farmer wins at most ${num(TOURNAMENT_PRIZE_MAX.diamonds)} diamonds and ${num(TOURNAMENT_PRIZE_MAX.coins)} coins.</li>
 <li>The same score? Who reached it first ranks higher.</li>
 <li>When it ends, collect your prize here. It waits for you for 30 days.</li></ul></details>`;

@@ -13,7 +13,7 @@ create table if not exists public.harvest_tournaments(
  title text not null check (char_length(title) between 3 and 80),
  -- [["harvested",1],["produced",2]]: the counters it scores and their weights (game/tournament.js tournamentScoring).
  scoring jsonb not null check (jsonb_typeof(scoring)='array' and jsonb_array_length(scoring) between 1 and 6),
- -- {"diamondsPerPlayer":2,"coinsPerPlayer":2000,"maxDiamonds":2000,"maxCoins":4000000,"placeStep":10,"minScore":10}
+ -- {"diamondsPerPlayer":2,"coinsPerPlayer":2000,"maxDiamonds":2000,"maxCoins":4000000,"placeStep":10,"minScore":10,"winners":0}
  settings jsonb not null,
  starts_at timestamptz not null default now(),
  ends_at timestamptz not null,
@@ -91,7 +91,8 @@ begin
  select count(*) into n from public.harvest_tournament_players where tournament_id=t.id and score>=(s->>'minScore')::bigint;
  pd:=least((s->>'maxDiamonds')::bigint,n*(s->>'diamondsPerPlayer')::bigint);
  pc:=least((s->>'maxCoins')::bigint,n*(s->>'coinsPerPlayer')::bigint);
- v_places:=case when n<80 then least(3,n) else least(n,greatest(3,floor(n/(s->>'placeStep')::numeric)::integer)) end;
+ -- winners: a set number of winning places (the owner, 3 Nov 2026); 0 or none: one per placeStep farmers.
+ v_places:=case when n<80 then least(3,n) when coalesce((s->>'winners')::integer,0)>0 then least(n,greatest(3,(s->>'winners')::integer)) else least(n,greatest(3,floor(n/(s->>'placeStep')::numeric)::integer)) end;
  rest:=case when v_places>3 then 0.5/(v_places-3) else 0 end;
  with ranked as (
   select player_id,row_number() over(order by score desc,scored_at,player_id) as place

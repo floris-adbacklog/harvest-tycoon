@@ -33,8 +33,10 @@ export const TOURNAMENT_KINDS=Object.freeze({
 // The prize settings, as the owner approved them (3 Nov 2026); the admin may change each within its limits. maxDiamonds and maxCoins
 // cap the pot; one farmer wins at most TOURNAMENT_PRIZE_MAX whatever the pot (the owner: "Max. te winnen supertournament is 500
 // diamanten", "0-1.000.000 coins", "per speler"): with the pot's top share of 25 %, a pot of 2,000 diamonds pays the first place 500.
-export const TOURNAMENT_DEFAULTS=Object.freeze({diamondsPerPlayer:2,coinsPerPlayer:2000,maxDiamonds:2000,maxCoins:4000000,placeStep:10,minScore:10});
-export const TOURNAMENT_LIMITS=Object.freeze({diamondsPerPlayer:[0,10],coinsPerPlayer:[0,20000],maxDiamonds:[0,5000],maxCoins:[0,10000000],placeStep:[5,100],minScore:[1,1000]});
+// winners (3 Nov 2026, the owner: "Aantal winnaars"): a set number of winning places from TOURNAMENT_WIDE_FROM farmers who count;
+// 0 keeps one place per placeStep farmers.
+export const TOURNAMENT_DEFAULTS=Object.freeze({diamondsPerPlayer:2,coinsPerPlayer:2000,maxDiamonds:2000,maxCoins:4000000,placeStep:10,minScore:10,winners:0});
+export const TOURNAMENT_LIMITS=Object.freeze({diamondsPerPlayer:[0,10],coinsPerPlayer:[0,20000],maxDiamonds:[0,5000],maxCoins:[0,10000000],placeStep:[5,100],minScore:[1,1000],winners:[0,500]});
 export const TOURNAMENT_PRIZE_MAX=Object.freeze({diamonds:500,coins:1000000});
 export const TOURNAMENT_HOURS=Object.freeze([1,72]);
 // Below this many counted farmers only the top 3 win (50 / 30 / 20 %); from it one more place per placeStep farmers, the top 3 25 /
@@ -66,7 +68,8 @@ export function tournamentScore(counters,baseline,scoring){
 export function tournamentPot(counted,settings=TOURNAMENT_DEFAULTS){
  const n=Math.max(0,Math.floor(counted)||0);
  const diamonds=Math.min(settings.maxDiamonds,n*settings.diamondsPerPlayer),coins=Math.min(settings.maxCoins,n*settings.coinsPerPlayer);
- const places=n<TOURNAMENT_WIDE_FROM?Math.min(3,n):Math.min(n,Math.max(3,Math.floor(n/settings.placeStep)));
+ const winners=Number(settings.winners)||0;
+ const places=n<TOURNAMENT_WIDE_FROM?Math.min(3,n):Math.min(n,Math.max(3,winners>0?winners:Math.floor(n/settings.placeStep)));
  return {counted:n,diamonds,coins,places};
 }
 // The share of the pot for each paid place, top first; together they are 1. Each place's prize is its share of the pot rounded down,

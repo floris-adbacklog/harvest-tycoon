@@ -2514,6 +2514,7 @@
 "From the moderators":"src/chat-ui.js",
 "From the valley to the busiest stalls in town.":"public/farm-state.js",
 "From {0} farmers, every {1} farmers add one winning place. The top 3 win 25%, 15% and 10% of the pot, and the other winning places share the rest equally.":"public/tournament-ui.js",
+"From {0} farmers, the top {1} win. The top 3 win 25%, 15% and 10% of the pot, and the other winning places share the rest equally.":"public/tournament-ui.js",
 "From {0} points you count for the pot. Every farmer who counts adds {1} diamonds and {2} coins to it, up to {3} diamonds and {4} coins.":"public/tournament-ui.js",
 "From {0} points you count for the pot. Every farmer who counts adds {1} diamonds and {2} coins to it, up to {3} diamonds and {4} coins. So the more farmers take part, the bigger the prizes.":"public/wiki-content.js",
 "From {0} to {1}. Every daily gift gives {2} lanterns, every daily challenge and every delivery {3}. Every {4} lanterns open the next of {5} tiers. Collect each reward with its own button, until {6}.":"public/wiki-content.js",

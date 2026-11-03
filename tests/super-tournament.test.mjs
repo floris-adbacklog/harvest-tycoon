@@ -12,7 +12,7 @@ test('the rules are one file, copied to the site and farm-api',()=>{
 });
 
 test('the owner\'s numbers: 2 diamonds and 2,000 coins a farmer who counts, from 10 points; at most 500 diamonds and 1,000,000 coins for one farmer',()=>{
- assert.deepEqual(TOURNAMENT_DEFAULTS,{diamondsPerPlayer:2,coinsPerPlayer:2000,maxDiamonds:2000,maxCoins:4000000,placeStep:10,minScore:10});
+ assert.deepEqual(TOURNAMENT_DEFAULTS,{diamondsPerPlayer:2,coinsPerPlayer:2000,maxDiamonds:2000,maxCoins:4000000,placeStep:10,minScore:10,winners:0});
  assert.deepEqual(TOURNAMENT_PRIZE_MAX,{diamonds:500,coins:1000000});
  assert.equal(TOURNAMENT_WIDE_FROM,80);
 });
@@ -61,6 +61,9 @@ test('the pot and its places: top 3 below 80, one place per 10 from 80, a lower 
  const p=tournamentPrizes(300);assert.deepEqual([p.length,p[0],p[1],p[2],p[3]],[30,{diamonds:150,coins:150000},{diamonds:90,coins:90000},{diamonds:60,coins:60000},{diamonds:11,coins:11111}]);
  assert.deepEqual(tournamentPrizes(1000)[0],{diamonds:500,coins:500000});
  assert.deepEqual(tournamentPrizes(5000)[0],{diamonds:500,coins:1000000});
+ // A set number of winners (3 Nov 2026, the owner: "Aantal winnaars"): 50 from 80 farmers who count, the top 3 below that.
+ const fifty={...TOURNAMENT_DEFAULTS,winners:50};
+ assert.deepEqual([tournamentPot(79,fifty).places,tournamentPot(80,fifty).places,tournamentPot(350,fifty).places,tournamentPot(2000,fifty).places],[3,50,50,50]);
 });
 
 test('supabase/super-tournament.sql: own tables for farm-api only, the score from receipts, the same pot, the caps, the weekly plans every minute',()=>{
@@ -71,7 +74,7 @@ test('supabase/super-tournament.sql: own tables for farm-api only, the score fro
  assert.match(sql,/check \(ends_at>starts_at and ends_at<=starts_at\+interval '72 hours'\)/);
  assert.match(sql,/if receipt is null or receipt->>'id' is not distinct from old\.receipts->-1->>'id' then return new; end if;/,'only a farm action counts');
  assert.match(sql,/exception when others then return new;\nend \$function\$;/,'a tournament never stops a farm from saving');
- assert.match(sql,/v_places:=case when n<80 then least\(3,n\) else least\(n,greatest\(3,floor\(n\/\(s->>'placeStep'\)::numeric\)::integer\)\) end;/);
+ assert.match(sql,/v_places:=case when n<80 then least\(3,n\) when coalesce\(\(s->>'winners'\)::integer,0\)>0 then least\(n,greatest\(3,\(s->>'winners'\)::integer\)\) else least\(n,greatest\(3,floor\(n\/\(s->>'placeStep'\)::numeric\)::integer\)\) end;/);
  assert.match(sql,/diamonds=least\(500,floor\(pd\*share\.part\)\)::integer,coins=least\(1000000,floor\(pc\*share\.part\)\)::integer/);
  assert.match(sql,/select cron\.schedule\('harvest-tournament-autostart','\* \* \* \* \*','select public\.harvest_tournament_autostart\(\)'\);/);
  assert.doesNotMatch(sql,/public\.live_event/,'the hourly events are not touched');
