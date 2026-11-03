@@ -4,7 +4,7 @@
 import {isSuperadmin} from './admin-service.js';
 import {writeLog,tournamentPrizeLog} from './player-log.js';
 import {CROPS,ITEMS} from './farm-state.js';
-import {TOURNAMENT_KINDS,TOURNAMENT_HOURS,tournamentScoring,tournamentSettings,tournamentPot,tournamentPrizes} from './tournament.js';
+import {TOURNAMENT_KINDS,TOURNAMENT_HOURS,TOURNAMENT_RANDOM,TOURNAMENT_POOL,tournamentRandom,tournamentScoring,tournamentSettings,tournamentPot,tournamentPrizes} from './tournament.js';
 
 const HOUR_MS=3600000,DAY_MS=86400000,TOP=20;
 // The goods a Goods Tournament may pick: the farm's own (World I), not crops or heirlooms, as the admin's gift list groups them.
@@ -33,7 +33,9 @@ export const TOURNAMENT_NEWS=Object.freeze({
 });
 
 // What the admin sent for a tournament or a plan, checked against the rules: the kind and its pick, a title, hours and settings.
-export function validateTournament(config){
+export function validateTournament(config,random=Math.random){
+ // Random started now: one of the pool's kinds (3 Nov 2026, game/tournament.js TOURNAMENT_POOL).
+ if(config?.kind===TOURNAMENT_RANDOM){const p=tournamentRandom(config?.recent??[],random);config={...config,kind:p.kind,pick:null,title:''};}
  const kind=String(config?.kind??''),def=TOURNAMENT_KINDS[kind];if(!def)throw Error('Choose a kind of tournament.');
  const pick=def.pick?String(config?.pick??''):null;
  const scoring=tournamentScoring(kind,pick,{crops:CROPS,goods:TOURNAMENT_GOODS});if(!scoring)throw Error(def.pick==='crop'?'Choose a crop.':'Choose a good.');
@@ -41,7 +43,15 @@ export function validateTournament(config){
  const hours=Math.round(Number(config?.hours));if(!Number.isFinite(hours)||hours<TOURNAMENT_HOURS[0]||hours>TOURNAMENT_HOURS[1])throw Error(`A tournament lasts ${TOURNAMENT_HOURS[0]} to ${TOURNAMENT_HOURS[1]} hours.`);
  return {kind,pick,title,scoring,hours,settings:tournamentSettings(config?.settings)};
 }
+// A random plan (3 Nov 2026, the owner: "random 3 per week", "de tijd is ook random", "24 tot 48 uur"): perWeek starts a week at random
+// days and times, each 24 to 48 hours (supabase/super-tournament.sql harvest_tournament_slots), a random kind from the pool each time.
+export const RANDOM_PLAN=Object.freeze({perWeek:[1,3]});
 export function validatePlan(config){
+ if(config?.kind===TOURNAMENT_RANDOM||config?.perWeek!=null){
+  const perWeek=Number(config?.perWeek??3);if(!Number.isInteger(perWeek)||perWeek<RANDOM_PLAN.perWeek[0]||perWeek>RANDOM_PLAN.perWeek[1])throw Error(`A random plan starts ${RANDOM_PLAN.perWeek[0]} to ${RANDOM_PLAN.perWeek[1]} tournaments a week.`);
+  const first=TOURNAMENT_POOL[0];
+  return {kind:TOURNAMENT_RANDOM,pick:null,title:'Random Super Tournament',scoring:first.scoring,hours:24,settings:tournamentSettings(config?.settings),weekday:0,atMinute:0,perWeek,pool:TOURNAMENT_POOL,active:config?.active!==false};
+ }
  const base=validateTournament(config);
  const weekday=Number(config?.weekday),atMinute=Number(config?.atMinute);
  if(!Number.isInteger(weekday)||weekday<0||weekday>6)throw Error('Choose a day of the week.');
@@ -120,7 +130,9 @@ export async function handleTournament({admin,body,user,now=Date.now()}){
 async function manage(admin,body,user,now){
  const iso=new Date(now).toISOString();
  if(body.command==='start'){
-  const c=validateTournament(body.config);
+  const recent=body.config?.kind===TOURNAMENT_RANDOM?await admin.from('harvest_tournaments').select('kind').order('starts_at',{ascending:false}).limit(3):{data:[]};
+  if(recent.error)throw recent.error;
+  const c=validateTournament({...body.config,recent:recent.data.map(r=>r.kind)});
   const busy=await admin.from('harvest_tournaments').select('id').is('settled_at',null).is('stopped_at',null).gt('ends_at',iso).limit(1);
   if(busy.error)throw busy.error;if(busy.data.length)throw Error('A tournament is running already. Stop it first.');
   const ends=new Date(now+c.hours*HOUR_MS).toISOString();
@@ -137,7 +149,7 @@ async function manage(admin,body,user,now){
  }
  if(body.command==='plan_save'){
   const c=validatePlan(body.config);
-  const row={kind:c.kind,pick:c.pick,title:c.title,scoring:c.scoring,settings:c.settings,weekday:c.weekday,at_minute:c.atMinute,hours:c.hours,active:c.active,news:body.news===false?null:TOURNAMENT_NEWS};
+  const row={kind:c.kind,pick:c.pick,title:c.title,scoring:c.scoring,settings:c.settings,weekday:c.weekday,at_minute:c.atMinute,hours:c.hours,active:c.active,news:body.news===false?null:TOURNAMENT_NEWS,per_week:c.perWeek??null,pool:c.pool??null};
   const saved=body.planId?await admin.from('harvest_tournament_plans').update(row).eq('id',body.planId).select():await admin.from('harvest_tournament_plans').insert({...row,created_by:user.id}).select();
   if(saved.error)throw saved.error;if(!saved.data?.length)throw Error('This plan no longer exists.');
   return {plan:saved.data[0]};
@@ -167,5 +179,5 @@ async function manage(admin,body,user,now){
  const live=tournaments.find(t=>t.running);
  if(live){const [a,b]=await Promise.all([admin.from('harvest_tournament_players').select('player_id',{count:'exact',head:true}).eq('tournament_id',live.id),admin.from('harvest_tournament_players').select('player_id',{count:'exact',head:true}).eq('tournament_id',live.id).gte('score',live.settings?.minScore??10)]);
   for(const r of [a,b])if(r.error)throw r.error;live.participants=a.count??0;live.counted=b.count??0;live.pot=tournamentPot(live.counted,live.settings);}
- return {tournaments,plans:plans.data.map(p=>({id:p.id,kind:p.kind,pick:p.pick,title:p.title,settings:p.settings,weekday:p.weekday,atMinute:p.at_minute,hours:p.hours,active:p.active,lastStart:p.last_start,news:Boolean(p.news)}))};
+ return {tournaments,plans:plans.data.map(p=>({id:p.id,kind:p.kind,pick:p.pick,title:p.title,settings:p.settings,weekday:p.weekday,atMinute:p.at_minute,hours:p.hours,perWeek:p.per_week??null,active:p.active,lastStart:p.last_start,news:Boolean(p.news)}))};
 }

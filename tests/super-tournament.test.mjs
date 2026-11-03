@@ -78,6 +78,10 @@ test('supabase/super-tournament.sql: own tables for farm-api only, the score fro
  assert.match(sql,/diamonds=least\(500,floor\(pd\*share\.part\)\)::integer,coins=least\(1000000,floor\(pc\*share\.part\)\)::integer/);
  assert.match(sql,/select cron\.schedule\('harvest-tournament-autostart','\* \* \* \* \*','select public\.harvest_tournament_autostart\(\)'\);/);
  assert.doesNotMatch(sql,/public\.live_event/,'the hourly events are not touched');
+ // Random plans (3 Nov 2026, the owner): up to 3 a week, any minute of the day, 24 to 48 hours, waiting while another runs.
+ assert.match(sql,/\(\('x'\|\|substr\(md5\(p_plan::text\|\|p_week::text\|\|'m'\|\|d\),1,8\)\)::bit\(32\)::bigint%1440\)/);
+ assert.match(sql,/24\+\(\('x'\|\|substr\(md5\(p_plan::text\|\|p_week::text\|\|'h'\|\|d\),1,8\)\)::bit\(32\)::bigint%25\)::integer/);
+ assert.match(sql,/where not \(e->>'kind'=any\(coalesce\(recent,'\{\}'\)\)\) order by random\(\) limit 1;/,'never one of the last three kinds');
 });
 
 test('farm-api: its two requests, the admin\'s only for the superadmin, News with the finish flag in every language',async()=>{
@@ -94,6 +98,10 @@ test('farm-api: its two requests, the admin\'s only for the superadmin, News wit
  assert.deepEqual(validateTournament({kind:'crop',pick:'corn',hours:2}).scoring,[['harvest_corn',1]]);
  assert.throws(()=>validatePlan({kind:'harvest',hours:2,weekday:7,atMinute:0}),/day of the week/);
  assert.equal(validatePlan({kind:'harvest',hours:2,weekday:3,atMinute:556}).atMinute,556,'Wednesday 09:16 UTC');
+ const random=validatePlan({kind:'random',perWeek:3});
+ assert.deepEqual([random.kind,random.perWeek,random.pool.length],['random',3,12]);
+ assert.throws(()=>validatePlan({kind:'random',perWeek:4}),/1 to 3 tournaments a week/);
+ assert.equal(validateTournament({kind:'random',hours:24,recent:[]},()=>0).kind,'harvest','a random start takes a kind from the pool');
 });
 
 test('the game: a header button and a More tile that show only when there is something, News with the flag, the wiki section',async()=>{

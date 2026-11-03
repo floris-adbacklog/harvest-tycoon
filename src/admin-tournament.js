@@ -7,7 +7,7 @@ import {art} from '../public/visual-icons.js';
 import {confirmAction} from '../public/confirm-dialog.js';
 import {dateTime} from './admin-players.js';
 import {CROPS,ITEMS,CROP_LEVELS,RECIPE_LEVELS} from '../game/farm-state.js';
-import {TOURNAMENT_KINDS,TOURNAMENT_DEFAULTS,TOURNAMENT_LIMITS,TOURNAMENT_HOURS,TOURNAMENT_PRIZE_MAX,tournamentPrizes} from '../game/tournament.js';
+import {TOURNAMENT_KINDS,TOURNAMENT_DEFAULTS,TOURNAMENT_LIMITS,TOURNAMENT_HOURS,TOURNAMENT_PRIZE_MAX,TOURNAMENT_RANDOM,TOURNAMENT_POOL,tournamentPrizes} from '../game/tournament.js';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=n=>Number(n??0).toLocaleString('en-US');
@@ -16,7 +16,7 @@ export const WEEKDAYS=Object.freeze(['Sunday','Monday','Tuesday','Wednesday','Th
 export const GOODS=Object.freeze(Object.fromEntries(Object.entries(ITEMS).filter(([key,item])=>!Object.hasOwn(CROPS,key)&&!item.heirloom&&(item.world??1)===1)));
 const SETTINGS=[['diamondsPerPlayer','Diamonds per farmer who counts'],['coinsPerPlayer','Coins per farmer who counts'],['maxDiamonds','Pot at most (diamonds)'],['maxCoins','Pot at most (coins)'],['winners','Number of winners (0 = one per 10 farmers)'],['minScore','Points to count']];
 export const clock=minute=>`${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;
-export const kindLabel=(kind,pick)=>{const k=TOURNAMENT_KINDS[kind];if(!k)return kind;const name=pick?(CROPS[pick]?.name??ITEMS[pick]?.name??pick):'';return name?`${k.title}: ${name}`:k.title;};
+export const kindLabel=(kind,pick)=>{if(kind===TOURNAMENT_RANDOM)return 'Random kind';const k=TOURNAMENT_KINDS[kind];if(!k)return kind;const name=pick?(CROPS[pick]?.name??ITEMS[pick]?.name??pick):'';return name?`${k.title}: ${name}`:k.title;};
 // The example the card shows under the prizes: what the top 3 and the last paid place win at a few sizes, with these settings.
 export function potExample(settings){
  return [50,300,1000].map(n=>{const p=tournamentPrizes(n,settings),last=p[p.length-1];return `${num(n)} farmers: #1 ${num(p[0]?.diamonds)} diamonds and ${num(p[0]?.coins)} coins, ${num(p.length)} winning places${p.length>3?`, the last ${num(last.diamonds)} diamonds`:''}`;}).join('. ')+'.';
@@ -25,7 +25,7 @@ export function potExample(settings){
 export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=globalThis.document}){
  const money=dialog.querySelector('[data-admin-panel="money"]');if(!money)return {show(){}};
  const section=doc.createElement('section');section.className='admin-card';section.id='admin-tournament';section.hidden=true;
- const kinds=Object.entries(TOURNAMENT_KINDS).map(([key,k])=>`<option value="${key}">${esc(k.title)}${k.from>1?` (from level ${k.from})`:''}</option>`).join('');
+ const kinds=Object.entries(TOURNAMENT_KINDS).map(([key,k])=>`<option value="${key}">${esc(k.title)}${k.from>1?` (from level ${k.from})`:''}</option>`).join('')+`<option value="${TOURNAMENT_RANDOM}">Random (a different kind each time)</option>`;
  const crops=Object.entries(CROPS).map(([key,c])=>`<option value="${key}" data-kind="crop">${esc(c.name)} (level ${CROP_LEVELS[key]??1})</option>`).join('');
  const goods=Object.entries(GOODS).map(([key,g])=>`<option value="${key}" data-kind="good">${esc(g.name)} (level ${RECIPE_LEVELS[key]??1})</option>`).join('');
  section.innerHTML='<h3>'+art('tournament')+'Super Tournament</h3><form id="admin-tour-form" class="admin-news admin-offer">'
@@ -34,7 +34,7 @@ export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=global
   +'<p class="admin-popup-note" id="admin-tour-rule"></p>'
   +'<details class="admin-tour-prizes"><summary>Prizes</summary><div class="admin-popup-fields">'+SETTINGS.map(([key,label])=>`<label>${label}<input id="admin-tour-${key}" type="number" min="${TOURNAMENT_LIMITS[key][0]}" max="${TOURNAMENT_LIMITS[key][1]}" step="1" value="${TOURNAMENT_DEFAULTS[key]}" inputmode="numeric"></label>`).join('')+'</div>'
   +`<p class="admin-popup-note">One farmer wins at most ${num(TOURNAMENT_PRIZE_MAX.diamonds)} diamonds and ${num(TOURNAMENT_PRIZE_MAX.coins)} coins. Below 80 farmers who count the top 3 win (50, 30 and 20% of the pot). From 80, the number of winners above win (0: one per 10 farmers who count): the top 3 25, 15 and 10%, the other winners the other half in equal parts.</p><p class="admin-popup-note" id="admin-tour-example"></p></details>`
-  +'<div class="admin-popup-fields"><label>Repeat<select id="admin-tour-repeat"><option value="">No, start it now</option>'+WEEKDAYS.map((d,i)=>`<option value="${i}">Every ${d}</option>`).join('')+'</select></label><label id="admin-tour-at-label" hidden>At (UTC)<input id="admin-tour-at" type="time" value="09:16" step="60"></label></div>'
+  +'<div class="admin-popup-fields"><label>Repeat<select id="admin-tour-repeat"><option value="">No, start it now</option>'+WEEKDAYS.map((d,i)=>`<option value="${i}">Every ${d}</option>`).join('')+'<option value="random3">3 times a week, random days and times, 24 to 48 hours</option></select></label><label id="admin-tour-at-label" hidden>At (UTC)<input id="admin-tour-at" type="time" value="09:16" step="60"></label></div>'
   +'<p class="admin-popup-note">Everyone takes part from level 1, on the website, the apps and the game portals. When it starts, every farmer gets a News message with the finish flag, in their own language. A weekly plan starts it by itself at that time (UTC); a week when another tournament still runs is skipped.</p>'
   +'<div class="admin-offer-actions"><button type="submit" class="primary-button" id="admin-tour-submit">Start tournament</button></div>'
   +'<p class="admin-hint" id="admin-tour-status" role="status"></p></form>'
@@ -44,12 +44,13 @@ export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=global
  const $=id=>section.querySelector(`#admin-tour-${id}`);
  const settings=()=>({...Object.fromEntries(SETTINGS.map(([key])=>[key,Number($(key).value)])),placeStep:TOURNAMENT_DEFAULTS.placeStep});
  function kindChanged(){
+  if($('kind').value===TOURNAMENT_RANDOM){$('pick-label').hidden=true;$('pick').innerHTML='';$('title').placeholder='The kind\'s own title';$('rule').textContent=`Each time one of: ${TOURNAMENT_POOL.map(p=>p.title).join(', ')}, never one of the last three tournaments\' kinds.`;return;}
   const k=TOURNAMENT_KINDS[$('kind').value];
   $('pick-label').hidden=!k?.pick;$('pick').innerHTML=k?.pick==='crop'?crops:k?.pick==='good'?goods:'';
   $('title').placeholder=k?.title??'';$('rule').textContent=`${k?.rule??''}${k?.from>1?` Only farmers from level ${k.from} can score in it.`:''}`;
  }
  const example=()=>{$('example').textContent=`With these settings: ${potExample({...TOURNAMENT_DEFAULTS,...settings()})}`;};
- function repeatChanged(){const weekly=$('repeat').value!=='';$('at-label').hidden=!weekly;$('submit').textContent=weekly?'Save weekly plan':'Start tournament';}
+ function repeatChanged(){const weekly=$('repeat').value!=='';const random=$('repeat').value==='random3';$('at-label').hidden=!weekly||random;$('hours').disabled=random;if(random){$('kind').value=TOURNAMENT_RANDOM;kindChanged();}$('submit').textContent=weekly?'Save weekly plan':'Start tournament';}
  $('kind').onchange=kindChanged;$('repeat').onchange=repeatChanged;section.querySelector('.admin-tour-prizes').addEventListener('input',example);
  kindChanged();repeatChanged();example();
  const config=()=>({kind:$('kind').value,pick:$('pick').value||null,title:$('title').value.trim(),hours:Number($('hours').value),settings:settings()});
@@ -58,7 +59,7 @@ export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=global
   section.hidden=false;
   try{
    const data=await call({command:'list'});
-   $('plans').innerHTML=data.plans.length?data.plans.map(p=>`<li><span class="admin-recent-copy"><strong>${esc(kindLabel(p.kind,p.pick))}${p.title!==TOURNAMENT_KINDS[p.kind]?.title?`: ${esc(p.title)}`:''}</strong><small>Every ${WEEKDAYS[p.weekday]} at ${clock(p.atMinute)} UTC, ${p.hours} hours${p.active?'':', off'}${p.lastStart?`. Last started ${dateTime(p.lastStart)}`:''}</small></span><button type="button" class="secondary-button" data-plan-toggle="${esc(p.id)}" data-on="${p.active?'1':''}">${p.active?'Turn off':'Turn on'}</button><button type="button" class="secondary-button" data-plan-delete="${esc(p.id)}">Remove</button></li>`).join(''):'<li class="admin-empty">No weekly plan yet.</li>';
+   $('plans').innerHTML=data.plans.length?data.plans.map(p=>`<li><span class="admin-recent-copy"><strong>${esc(kindLabel(p.kind,p.pick))}${p.title!==TOURNAMENT_KINDS[p.kind]?.title?`: ${esc(p.title)}`:''}</strong><small>${p.perWeek?`${p.perWeek} a week, random days and times (UTC), 24 to 48 hours`:`Every ${WEEKDAYS[p.weekday]} at ${clock(p.atMinute)} UTC, ${p.hours} hours`}${p.active?'':', off'}${p.lastStart?`. Last started ${dateTime(p.lastStart)}`:''}</small></span><button type="button" class="secondary-button" data-plan-toggle="${esc(p.id)}" data-on="${p.active?'1':''}">${p.active?'Turn off':'Turn on'}</button><button type="button" class="secondary-button" data-plan-delete="${esc(p.id)}">Remove</button></li>`).join(''):'<li class="admin-empty">No weekly plan yet.</li>';
    $('list').innerHTML=data.tournaments.length?data.tournaments.map(t=>{const state=t.running?'Running':t.settledAt?'Ended':t.stoppedAt?'Stopped':'Ended';
     const counts=t.participants!=null?`, ${num(t.participants)} taking part, ${num(t.counted)} counted`:'';const pot=t.pot?`, pot ${num(t.pot.diamonds)} diamonds and ${num(t.pot.coins)} coins, ${num(t.pot.places)} winning places`:'';
     return `<li><span class="admin-recent-copy"><strong>${esc(state)}: ${esc(t.title)}</strong><small>${esc(kindLabel(t.kind,t.pick))}, ${dateTime(t.startsAt)} until ${dateTime(t.stoppedAt??t.endsAt)} (UTC)${counts}${pot}</small></span>${t.running?`<button type="button" class="secondary-button" data-tour-stop="${esc(t.id)}">Stop</button>`:''}<button type="button" class="secondary-button" data-tour-results="${esc(t.id)}">Results</button></li>`;}).join(''):'<li class="admin-empty">No tournament yet.</li>';
@@ -79,7 +80,10 @@ export function createTournamentCard({dialog,bridge,ask=confirmAction,doc=global
  $('form').addEventListener('submit',async event=>{
   event.preventDefault();const c=config(),weekly=$('repeat').value!=='',label=c.title||kindLabel(c.kind,c.pick);
   try{
-   if(weekly){
+   if($('repeat').value==='random3'){
+    if(!await ask({title:'Save this random plan?',description:'Three tournaments a week, on random days and at random times (UTC), each 24 to 48 hours, a different kind each time, with a News message for everyone. Never two at once: one waits until the other has ended.',confirmLabel:'Save',cancelLabel:'Cancel',picture:'tournament'}))return;
+    await call({command:'plan_save',config:{kind:TOURNAMENT_RANDOM,perWeek:3,settings:c.settings,active:true}});$('status').textContent='Saved. Three random tournaments a week.';
+   }else if(weekly){
     const [h,m]=String($('at').value||'').split(':').map(Number);if(!Number.isInteger(h)||!Number.isInteger(m)){$('status').textContent='Choose a time.';return;}
     const weekday=Number($('repeat').value),atMinute=h*60+m;
     if(!await ask({title:'Save this weekly plan?',description:`“${label}” starts by itself every ${WEEKDAYS[weekday]} at ${clock(atMinute)} UTC and runs ${c.hours} hours, with a News message for everyone.`,confirmLabel:'Save',cancelLabel:'Cancel',picture:'tournament'}))return;

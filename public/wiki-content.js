@@ -23,7 +23,7 @@ import {FARMER_REWARDS} from './farmer-parts.js';
 import {EVENTS_LEVEL,EVENT_GOALS} from './live-events-ui.js';
 import {EVENT_HOUR_POOLS,EVENT_GOAL_GROUPS} from './event-goals.js';
 import {HOUR_EVENT_REWARDS,eventPrizes} from './farm-state.js';
-import {TOURNAMENT_DEFAULTS,TOURNAMENT_PRIZE_MAX,TOURNAMENT_WIDE_FROM,tournamentPrizes} from './tournament.js';
+import {TOURNAMENT_KINDS,TOURNAMENT_DEFAULTS,TOURNAMENT_PRIZE_MAX,TOURNAMENT_WIDE_FROM,tournamentPrizes} from './tournament.js';
 import {currentSeason,seasonUpcoming,seasonPhase,seasonTotals,SEASON_POINTS,SEASON_DAY_CAP,SEASON_WEEK_BONUS,SEASON_SKIP_COST,SEASON_CHEST_POINTS,SEASON_CHEST_COINS,SEASON_TIERS,SEASON_LEVEL,SEASON_BUY_LEVEL,SEASON_CROPS,APPLE_SELLS_SEASON_PASS} from './farm-state.js';
 import {portal as portalAround,privacyContact} from './portal.js';
 import {androidApp,appPushOffered,playBilling,appStoreBilling,webBilling} from './android.js';
@@ -122,7 +122,7 @@ const SECTION_ART={
  'sec-earning-diamonds':'diamonds','sec-finish-now':'instant-harvest','sec-coins-for-diamonds':'coin-cart','sec-boosts':'boost','sec-vip':'vip','sec-buying-diamonds':'pack-chest',
  'sec-the-chat':'chat','sec-your-choice':'settings','sec-the-admins-and-the-moderators':'admin','sec-house-rules':'alert',
  'sec-your-account':'farm','sec-settings':'settings','sec-feedback':'feedback','sec-avatars':'vip-farmer','sec-my-farmer':'farmhand','sec-confirm-your-email':'letter',
- 'sec-invite-a-friend':'invite-friends','sec-privacy':'lock','sec-super-tournament':'tournament'
+ 'sec-invite-a-friend':'invite-friends','sec-privacy':'lock','sec-super-tournament':'tournament','sec-kinds-of-super-tournament':'tournament-winner'
 };
 // A league's section (Events): a cup.
 const sectionArt=id=>SECTION_ART[id]??(/-(?:league|legends)$/.test(id)?'grand-fair':null)??TOPIC_ART;
@@ -623,8 +623,13 @@ const BODIES={
     ['diamonds','The prize pot',`From ${number(s.minScore)} points you count for the pot. Every farmer who counts adds ${number(s.diamondsPerPlayer)} diamonds and ${number(s.coinsPerPlayer)} coins to it, up to ${number(s.maxDiamonds)} diamonds and ${number(s.maxCoins)} coins. So the more farmers take part, the bigger the prizes.`],
     ['rank-gold','Who wins',`When fewer than ${number(TOURNAMENT_WIDE_FROM)} farmers count, the top 3 win 50%, 30% and 20% of the pot. From ${number(TOURNAMENT_WIDE_FROM)} farmers, every ${number(s.placeStep)} farmers add one winning place: the top 3 win 25%, 15% and 10%, and the other winning places share the rest equally. One farmer wins at most ${number(TOURNAMENT_PRIZE_MAX.diamonds)} diamonds and ${number(TOURNAMENT_PRIZE_MAX.coins)} coins. With the same score, who reached it first ranks higher.`],
     ['tournament-winner','An example',`With 300 farmers who count, the pot holds ${number(300*s.diamondsPerPlayer)} diamonds and ${number(300*s.coinsPerPlayer)} coins, and there are ${number(p.length)} winning places. First place wins ${number(p[0].diamonds)} diamonds and ${number(p[0].coins)} coins, second ${number(p[1].diamonds)} diamonds and ${number(p[1].coins)} coins, third ${number(p[2].diamonds)} diamonds and ${number(p[2].coins)} coins, and places 4 to ${number(p.length)} each ${number(p[3].diamonds)} diamonds and ${number(p[3].coins)} coins.`],
-    ['gift','Your prize','When the tournament ends, open it and collect your prize. It waits for you for 30 days.']
-   ]));})();
+    ['gift','Your prize','When the tournament ends, open it and collect your prize. It waits for you for 30 days.'],
+    ['live-events','How often','Up to three times a week a Super Tournament starts by itself, on a different day and at a different time each time, so farmers in every time zone get their chance. Each one runs for one to two days, and each time it is a different kind.']
+   ]))
+   // Every kind with what to do and the level it is for (3 Nov 2026, the owner: "zet in wiki welke soorten tournamenten er zijn voor
+   // spelers en wat ze concreet moeten doen"): one row each, from game/tournament.js; the Village and Harbour ones only once those are open, as
+   // the rest of How to play.
+   +section('Kinds of Super Tournament',`<p>Each Super Tournament is one of these. The tournament window says which one runs and what counts.</p>`+table(['Tournament','What you do','For'],Object.values(TOURNAMENT_KINDS).filter(k=>k.from<WORLD_TWO_LEVEL||h.level==null||h.level>=k.from).map(k=>`<tr><td><strong>${k.title}</strong></td><td>${k.how}</td><td>${k.from>1?`From level ${number(k.from)}`:'Everyone'}</td></tr>`)));})();
  },
  helpers(h){
   // Every number below comes from the game rules (27 Sep 2026: the wiki named these helpers without saying what they pay or cost).

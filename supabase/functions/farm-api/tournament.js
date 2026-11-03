@@ -9,26 +9,38 @@
 // pick: the kind needs a crop or a good from the admin, whose own counter is the score; from: the level its counters open at (a kind
 // from level 1 suits everyone, the owner's wish; a later one is offered with that level beside it).
 export const TOURNAMENT_KINDS=Object.freeze({
- harvest:{title:'Harvest Champion',rule:'Who harvests the most crops?',score:[['harvested',1]],from:1},
- crop:{title:'Crop Tournament',rule:'Who harvests the most of this crop?',pick:'crop',from:1},
- produce:{title:'Production Tournament',rule:'Who makes the most goods?',score:[['produced',1]],from:1},
- good:{title:'Goods Tournament',rule:'Who makes the most of this good?',pick:'good',from:1},
- deliveries:{title:'Delivery Tournament',rule:'Who delivers the most orders?',score:[['deliveries',1]],from:1},
- market:{title:'Market Trader',rule:'Who sells the most at the Market?',score:[['sold',1]],from:1},
- earned:{title:'Coin Collector',rule:'Who earns the most coins?',score:[['earned',1]],from:1},
- spender:{title:'Big Spender',rule:'Who spends the most coins?',score:[['coins_spent',1]],from:1},
- chores:{title:'Chore Champion',rule:'Who does the most chores?',score:[['chores',1]],from:1},
- quests:{title:'Quest Hunter',rule:'Who completes the most quests?',score:[['quests_claimed',1]],from:1},
- xp:{title:'XP Race',rule:'Who earns the most XP?',score:[['xp',1]],from:1},
- builder:{title:'Master Builder',rule:'Who upgrades the most buildings?',score:[['upgrades',1]],from:1},
- grain:{title:'Grain Rush',rule:'Who harvests the most wheat, barley and corn?',score:[['harvest_wheat',1],['harvest_barley',1],['harvest_corn',1]],from:1},
- vegetables:{title:'Vegetable Market',rule:'Who harvests the most lettuce, cabbage, cauliflower, red cabbage and green beans?',score:[['harvest_lettuce',1],['harvest_cabbage',1],['harvest_cauliflower',1],['harvest_redcabbage',1],['harvest_greenbeans',1]],from:3},
- autumn:{title:'Autumn Harvest',rule:'Who harvests the most pumpkins and squash?',score:[['harvest_pumpkin',1],['harvest_squash',1]],from:13},
- fruit:{title:'Fruit Festival',rule:'Who harvests the most apples, berries, cider apples and cherries?',score:[['harvest_apples',1],['harvest_berries',1],['harvest_ciderapples',1],['harvest_cherries',1]],from:20},
- allround:{title:'Farmer of the Week',rule:'Points for everything: 1 a harvest, 2 a good, 3 a chore, 5 an order.',score:[['harvested',1],['produced',2],['chores',3],['deliveries',5]],from:1},
- village:{title:'Village Helper',rule:'Who helps the most villagers?',score:[['village_requests',1]],from:100},
- harbour:{title:'Harbour Captain',rule:'Who sends the most ships?',score:[['ships_sent',1]],from:200}
+ harvest:{title:'Harvest Champion',rule:'Who harvests the most crops?',score:[['harvested',1]],how:'Harvest ready fields. Every crop you harvest is 1 point.',from:1},
+ crop:{title:'Crop Tournament',rule:'Who harvests the most of this crop?',pick:'crop',how:'Plant and harvest this one crop. Every one you harvest is 1 point.',from:1},
+ produce:{title:'Production Tournament',rule:'Who makes the most goods?',score:[['produced',1]],how:'Collect goods from your buildings. Every good you collect is 1 point.',from:1},
+ good:{title:'Goods Tournament',rule:'Who makes the most of this good?',pick:'good',how:'Make and collect this one good. Every one you collect is 1 point.',from:1},
+ deliveries:{title:'Delivery Tournament',rule:'Who delivers the most orders?',score:[['deliveries',1]],how:'Fill delivery orders. Every order you deliver is 1 point.',from:1},
+ market:{title:'Market Trader',rule:'Who sells the most at the Market?',score:[['sold',1]],how:'Sell crops and goods at the Market. Every item you sell is 1 point.',from:1},
+ earned:{title:'Coin Collector',rule:'Who earns the most coins?',score:[['earned',1]],how:'Earn coins: sell, deliver and do chores. Every coin you earn is 1 point.',from:1},
+ spender:{title:'Big Spender',rule:'Who spends the most coins?',score:[['coins_spent',1]],how:'Spend coins on seeds, buildings and upgrades. Every coin you spend is 1 point.',from:1},
+ chores:{title:'Chore Champion',rule:'Who does the most chores?',score:[['chores',1]],how:'Do farm chores. Every chore you finish is 1 point.',from:1},
+ quests:{title:'Quest Hunter',rule:'Who completes the most quests?',score:[['quests_claimed',1]],how:'Complete quests and collect them. Every quest is 1 point.',from:1},
+ xp:{title:'XP Race',rule:'Who earns the most XP?',score:[['xp',1]],how:'Earn XP with anything you do on the farm. Every XP is 1 point.',from:1},
+ builder:{title:'Master Builder',rule:'Who upgrades the most buildings?',score:[['upgrades',1]],how:'Upgrade your buildings. Every upgrade is 1 point.',from:1},
+ grain:{title:'Grain Rush',rule:'Who harvests the most wheat, barley and corn?',score:[['harvest_wheat',1],['harvest_barley',1],['harvest_corn',1]],how:'Harvest wheat, barley and corn. Every one you harvest is 1 point.',from:1},
+ vegetables:{title:'Vegetable Market',rule:'Who harvests the most lettuce, cabbage, cauliflower, red cabbage and green beans?',score:[['harvest_lettuce',1],['harvest_cabbage',1],['harvest_cauliflower',1],['harvest_redcabbage',1],['harvest_greenbeans',1]],how:'Harvest lettuce, cabbage, cauliflower, red cabbage and green beans. Every one you harvest is 1 point.',from:3},
+ autumn:{title:'Autumn Harvest',rule:'Who harvests the most pumpkins and squash?',score:[['harvest_pumpkin',1],['harvest_squash',1]],how:'Harvest pumpkins and squash. Every one you harvest is 1 point.',from:13},
+ fruit:{title:'Fruit Festival',rule:'Who harvests the most apples, berries, cider apples and cherries?',score:[['harvest_apples',1],['harvest_berries',1],['harvest_ciderapples',1],['harvest_cherries',1]],how:'Harvest apples, berries, cider apples and cherries. Every one you harvest is 1 point.',from:20},
+ allround:{title:'Farmer of the Week',rule:'Points for everything: 1 a harvest, 2 a good, 3 a chore, 5 an order.',score:[['harvested',1],['produced',2],['chores',3],['deliveries',5]],how:'Do a bit of everything: a harvest is 1 point, a good 2, a chore 3 and an order 5.',from:1},
+ village:{title:'Village Helper',rule:'Who helps the most villagers?',score:[['village_requests',1]],how:'Help the villagers in the Village. Every request you fill is 1 point.',from:100},
+ harbour:{title:'Harbour Captain',rule:'Who sends the most ships?',score:[['ships_sent',1]],how:'Send ships from the Harbour. Every ship you send is 1 point.',from:200}
 });
+
+// how: what a farmer does to score, in one sentence (the wiki lists every kind with it, 3 Nov 2026, the owner: "zet in wiki welke soorten
+// tournamenten er zijn voor spelers en wat ze concreet moeten doen").
+// Random (3 Nov 2026, the owner: "start er random 3 per week van 24 uur, met normale prijspot, random tournament soort, elke keer een
+// ander"): a plan or a start may name 'random'; it then takes one of these, every one open to everyone from level 1 and needing no
+// crop or good chosen, and never one of the last three tournaments' kinds (supabase/super-tournament.sql harvest_tournament_autostart).
+export const TOURNAMENT_RANDOM='random';
+export const TOURNAMENT_POOL=Object.freeze(Object.entries(TOURNAMENT_KINDS).filter(([,k])=>k.from===1&&!k.pick).map(([kind,k])=>Object.freeze({kind,title:k.title,scoring:k.score})));
+export function tournamentRandom(recent=[],random=Math.random){
+ const fresh=TOURNAMENT_POOL.filter(p=>!recent.includes(p.kind)),from=fresh.length?fresh:TOURNAMENT_POOL;
+ return from[Math.floor(random()*from.length)%from.length];
+}
 
 // The prize settings, as the owner approved them (3 Nov 2026); the admin may change each within its limits. maxDiamonds and maxCoins
 // cap the pot; one farmer wins at most TOURNAMENT_PRIZE_MAX whatever the pot (the owner: "Max. te winnen supertournament is 500

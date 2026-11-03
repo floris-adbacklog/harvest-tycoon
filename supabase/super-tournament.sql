@@ -158,14 +158,60 @@ alter table public.harvest_tournament_plans enable row level security;
 revoke all on public.harvest_tournament_plans from public, anon, authenticated;
 grant select, insert, update, delete on public.harvest_tournament_plans to service_role;
 
--- Every minute (cron): settle what ended, then start a plan whose moment came this week (once a week each; not while another one
--- runs: that week's start is skipped). Its News goes to everyone, for as long as the tournament runs.
+-- Random plans (3 Nov 2026, the owner: "start er random 3 per week", "elke keer een ander", "de tijd is ook random", "max 3 per week",
+-- "zodat ook spelers buiten UTC kans maken", "24 tot 48 uur", "anders komt het in de knoei"): per_week set means the plan picks, every
+-- week (Monday 00:00 UTC), that many different days with a time anywhere in the 24 hours, and each start its own length of 24 to 48 hours; pool: the kinds
+-- it draws from (game/tournament.js TOURNAMENT_POOL, written by farm-api), never one of the last three tournaments' kinds.
+alter table public.harvest_tournament_plans add column if not exists pool jsonb;
+alter table public.harvest_tournament_plans add column if not exists per_week smallint;
+do $$ begin
+ if not exists(select 1 from pg_constraint where conname='harvest_tournament_plans_per_week_check') then
+  alter table public.harvest_tournament_plans add constraint harvest_tournament_plans_per_week_check check (per_week is null or per_week between 1 and 7);
+ end if;
+end $$;
+
+-- A random plan's moments of one week (Monday 00:00 UTC at p_week): per_week different days, each at a minute of the day and with its
+-- hours, the same every time it is asked (from the plan's id and the week), oldest first.
+create or replace function public.harvest_tournament_slots(p_plan uuid, p_count integer, p_week timestamptz)
+ returns table(at timestamptz, hours integer) language sql stable set search_path to '' as $f$
+ select p_week+make_interval(days=>d,mins=>(('x'||substr(md5(p_plan::text||p_week::text||'m'||d),1,8))::bit(32)::bigint%1440)::integer),
+  24+(('x'||substr(md5(p_plan::text||p_week::text||'h'||d),1,8))::bit(32)::bigint%25)::integer
+ from (select d from generate_series(0,6) d order by md5(p_plan::text||p_week::text||'d'||d) limit greatest(1,least(7,p_count))) days
+ order by 1;
+$f$;
+revoke all on function public.harvest_tournament_slots(uuid,integer,timestamptz) from public, anon, authenticated;
+
+-- Every minute (cron): settle what ended, then start what a plan has due. A weekly plan: its day and time this week, within the hour
+-- after it, once; skipped while another tournament runs. A random plan: its next moment this week that has come; while another runs it
+-- waits and starts when that one has ended (still this week), so at most per_week a week and never two at once. Its News goes to
+-- everyone, for as long as the tournament runs.
 create or replace function public.harvest_tournament_autostart()
  returns void language plpgsql security definer set search_path to '' as $function$
-declare p public.harvest_tournament_plans; slot timestamptz; tid uuid;
+declare p public.harvest_tournament_plans; slot timestamptz; len integer; tid uuid; week timestamptz; pick jsonb; recent text[];
+ v_kind text; v_pick text; v_title text; v_scoring jsonb;
 begin
  perform public.harvest_tournament_settle(t.id) from public.harvest_tournaments t where t.settled_at is null and (t.stopped_at is not null or t.ends_at<=now());
  for p in select * from public.harvest_tournament_plans where active for update skip locked loop
+  if p.per_week is not null then
+   week:=date_trunc('week',now() at time zone 'UTC') at time zone 'UTC';
+   select s.at,s.hours into slot,len from public.harvest_tournament_slots(p.id,p.per_week,week) s
+    where s.at<=now() and (p.last_start is null or s.at>p.last_start) order by s.at limit 1;
+   if slot is null then continue; end if;
+   if exists(select 1 from public.harvest_tournaments where settled_at is null and stopped_at is null and ends_at>now()) then continue; end if;
+   select array_agg(kind) into recent from (select kind from public.harvest_tournaments order by starts_at desc limit 3) r;
+   select e into pick from jsonb_array_elements(coalesce(p.pool,'[]'::jsonb)) e where not (e->>'kind'=any(coalesce(recent,'{}'))) order by random() limit 1;
+   if pick is null then select e into pick from jsonb_array_elements(coalesce(p.pool,'[]'::jsonb)) e order by random() limit 1; end if;
+   v_kind:=coalesce(pick->>'kind',p.kind);v_pick:=null;v_title:=coalesce(pick->>'title',p.title);v_scoring:=coalesce(pick->'scoring',p.scoring);
+   if v_kind='random' then continue; end if;
+   update public.harvest_tournament_plans set last_start=slot where id=p.id;
+   insert into public.harvest_tournaments(kind,pick,title,scoring,settings,starts_at,ends_at,created_by)
+    values(v_kind,v_pick,v_title,v_scoring,p.settings,now(),now()+make_interval(hours=>len),p.created_by) returning id into tid;
+   if p.news?'body' then
+    insert into public.player_notices(player_id,kind,body,expires_at,texts,min_level,no_portals)
+     values(null,'news',left(p.news->>'body',400),now()+make_interval(hours=>len),p.news->'texts',null,false);
+   end if;
+   continue;
+  end if;
   -- This week's moment of the plan: the last time its weekday and minute came, now or before.
   slot:=date_trunc('day',now() at time zone 'UTC') at time zone 'UTC'
    -make_interval(days=>((extract(dow from now() at time zone 'UTC')::integer-p.weekday+7)%7))+make_interval(mins=>p.at_minute);
