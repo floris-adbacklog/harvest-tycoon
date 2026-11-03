@@ -48,3 +48,17 @@ test('the pond, the lake and the yard in bloom: after the rest, with their own g
  assert.match(game,/import\('\.\/lake-plants\.js'\)\.then\(/,'loaded only in the village, once it is on screen');
  assert.match(game,/console\.warn\('The lake plants were skipped\.',error\)/,'a failure leaves the village as it is');
 });
+
+test('Settings › Graphics: Automatic or one of the four seasons, kept on this device, and the farm opens again with it',async()=>{
+ const {farmSeason,chosenSeason,chooseSeason,SEASON_CHOICE_KEY}=await import('../public/season-look.js');
+ const kept=new Map(),storage={getItem:k=>kept.get(k)??null,setItem:(k,v)=>kept.set(k,v),removeItem:k=>kept.delete(k)},now=Date.UTC(2026,10,3,12);
+ assert.equal(chosenSeason(storage),'');assert.equal(farmSeason(now,'',storage),'autumn','Automatic: the game\'s');
+ chooseSeason('winter',storage);assert.equal(kept.get(SEASON_CHOICE_KEY),'winter');assert.equal(farmSeason(now,'',storage),'winter');
+ assert.equal(farmSeason(now,'?season=spring',storage),'spring','the harness\'s ?season= first');
+ chooseSeason('',storage);assert.equal(kept.has(SEASON_CHOICE_KEY),false,'Automatic keeps nothing');
+ kept.set(SEASON_CHOICE_KEY,'monsoon');assert.equal(farmSeason(now,'',storage),'autumn','anything else: the game\'s');
+ assert.equal(farmSeason(now,'',{getItem(){throw new Error('blocked');}}),'autumn','no storage: the game\'s');
+ const html=read('public/farm.html'),game=read('public/game.js');
+ assert.match(html,/<section id="graphics-settings"[^]*<select id="season-look" data-pretty="compact"><option value="">Automatic<\/option><option value="spring">Spring<\/option><option value="summer">Summer<\/option><option value="autumn">Autumn<\/option><option value="winter">Winter<\/option><\/select>/);
+ assert.match(game,/season\.onchange=\(\)=>\{chooseSeason\(season\.value\);\$\('graphics-status'\)\.textContent='Opening your farm again…';reopen\(\);\};/);
+});

@@ -12,10 +12,15 @@ import {SEASON_IDS,seasonById,seasonPhase} from './farm-state.js';
 export const FARM_SEASONS=Object.freeze(['spring','summer','autumn','winter']);
 // The season the farm shows: the Season Pass's open season (Autumn 2026 until 22 December, then Winter), else the date's (the same
 // astronomical seasons the passes follow): winter from 22 December, spring from 21 March, summer from 21 June, autumn from 22 September.
-// ?season=spring|summer|autumn|winter shows another one (the harness; it changes nothing else).
-export function farmSeason(now=Date.now(),search=globalThis.location?.search??''){
+// A farmer can pick one in Settings › Graphics (3 Nov 2026, the owner: "Zet in Settings het seizoen"), kept on this device; Automatic
+// (nothing kept) follows the game's. ?season=spring|summer|autumn|winter shows another one (the harness; it changes nothing else).
+export const SEASON_CHOICE_KEY='harvest-tycoon:season-look';
+export function chosenSeason(storage=globalThis.localStorage){try{const kept=storage?.getItem(SEASON_CHOICE_KEY);return FARM_SEASONS.includes(kept)?kept:'';}catch{return '';}}
+export function chooseSeason(season,storage=globalThis.localStorage){try{if(FARM_SEASONS.includes(season))storage?.setItem(SEASON_CHOICE_KEY,season);else storage?.removeItem(SEASON_CHOICE_KEY);}catch{}}
+export function farmSeason(now=Date.now(),search=globalThis.location?.search??'',storage=globalThis.localStorage){
  let asked=null;try{asked=new URLSearchParams(search).get('season');}catch{}
  if(FARM_SEASONS.includes(asked))return asked;
+ const chosen=chosenSeason(storage);if(chosen)return chosen;
  const open=SEASON_IDS.map(seasonById).find(s=>seasonPhase(s,now)==='open'),named=open?.name?.toLowerCase();
  if(FARM_SEASONS.includes(named))return named;
  const d=new Date(now),day=(d.getUTCMonth()+1)*100+d.getUTCDate();

@@ -79,7 +79,7 @@ import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
 import { seasonLook, seasonCrop } from './farm-state.js';
-import { farmSeason, seasonFile } from './season-look.js';
+import { farmSeason, seasonFile, chosenSeason, chooseSeason } from './season-look.js';
 import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
@@ -2595,6 +2595,9 @@ function bindGraphicsSetting(){
  // Lighter graphics (25 Oct 2026): on by itself when the farm runs slowly (runLighter); off here means never again by itself on this device.
  const light=$('graphics-lighter');
  if(light){light.checked=lighter>=1;light.disabled=graphicsSimple;light.onchange=()=>{setLighter(gfxStore,light.checked?2:-1);$('graphics-status').textContent='Opening your farm again…';reopen();};}
+ // The season's trees and bushes (3 Nov 2026, season-look.js): Automatic or one of the four, on this device; the farm opens again with it.
+ const season=$('season-look');
+ if(season){season.value=chosenSeason();season.onchange=()=>{chooseSeason(season.value);$('graphics-status').textContent='Opening your farm again…';reopen();};}
  function reopen(){const again=document.querySelector('#error .primary-button');setTimeout(()=>{if(typeof again?.onclick==='function')again.onclick();else try{window.parent.location.reload();}catch{location.reload();}},300);}
 }
 function bindUI(){
