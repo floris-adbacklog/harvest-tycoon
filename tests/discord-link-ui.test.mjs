@@ -519,8 +519,9 @@ test('the privacy policy says that Discord confirms the account before a link (i
  assert.match(policy,/While you sign in, our website remembers the link in that browser tab for at most 10 minutes \(<code>harvest-tycoon:open<\/code>, <a href="#cookies">section 8<\/a>\)\./);
  assert.match(policy,/Before linking, our website asks Discord to confirm that you are the same Discord account that asked \(Discord’s <em>identify<\/em> permission\): Discord sends you back with a one-time code, our server exchanges it for an access token, uses that token once to read your Discord user ID and links only if it matches; the token is not stored\./);
  // Updated today, as the sitemap says.
- const day=/Last updated: (\d+) October 2026/.exec(policy)?.[1];
- assert.match(read('public/sitemap.xml'),new RegExp(`<loc>https://www\\.harvesttycoon\\.com/privacy</loc><lastmod>2026-10-${day.padStart(2,'0')}</lastmod>`));
+ const [,day,month]=/Last updated: (\d+) (October|November|December) 2026/.exec(policy)??[];
+ const mm={October:'10',November:'11',December:'12'}[month];
+ assert.match(read('public/sitemap.xml'),new RegExp(`<loc>https://www\\.harvesttycoon\\.com/privacy</loc><lastmod>2026-${mm}-${day.padStart(2,'0')}</lastmod>`));
  assert.doesNotMatch(policy,/ · /);
 });
 

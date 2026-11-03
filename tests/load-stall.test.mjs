@@ -310,7 +310,7 @@ test('the privacy policy says what the report holds, that it is not linked to th
  assert.ok(kept.includes('<li><strong>Reports of a game that did not finish loading</strong>: 90 days, then they are deleted. They are not linked to your account.</li>'),'and in How long we keep data');
  const storage=policy.slice(policy.indexOf('<h2 id="cookies">'),policy.indexOf('<h3>Analytics and advertising</h3>'));
  assert.match(storage,/<tr><td data-label="Name"><code>harvest-tycoon:load-stall<\/code><\/td><td data-label="What it does">Session storage: [^<]*/);
- assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: (1[5-9]|2\d|3[01]) October 2026/,'15 Oct 2026 or a later update');
+ assert.ok(storage.includes(`<code>${LOAD_STALL_KEY}</code>`));assert.match(policy,/Last updated: ((1[5-9]|2\d|3[01]) October|\d{1,2} (November|December)) 2026/,'15 Oct 2026 or a later update');
  // 21 Oct 2026 (public/graphics-mode.js): the two graphics keys on the device are listed too.
  for(const key of ['harvest-tycoon:graphics-choice','harvest-tycoon:graphics-run'])assert.match(storage,new RegExp(`<tr><td data-label="Name"><code>${key}</code></td><td data-label="What it does">Local storage: `),key);assert.doesNotMatch(policy,/ · /);
 });
