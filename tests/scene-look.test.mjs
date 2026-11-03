@@ -11,7 +11,9 @@ test('every model carries its baked shade (vertex colours), and the models stay 
   const json=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString('utf8'));
   for(const mesh of json.meshes)for(const p of mesh.primitives)assert.ok(p.attributes.COLOR_0!=null,`${f} has no baked shade`);
  }
- assert.ok(bytes<12.5e6,`models are ${(bytes/1e6).toFixed(1)} MB`);
+ // 13.5 MB since 3 Nov 2026: the 25 Vegetation models (1.1 MB, 0.43 MB as the site sends them) are mostly the seasons' swaps, and a farm
+ // fetches only its own season's (season-look.js), none in summer.
+ assert.ok(bytes<13.5e6,`models are ${(bytes/1e6).toFixed(1)} MB`);
 });
 test('the light: true colours (neutral tone mapping), a warm low sun and a soft sky, and mown stripes where the fields grow',()=>{
  const game=read('public/game.js'),polish=read('public/scene-polish.js');
@@ -41,7 +43,7 @@ test('one shared colour palette for every model, with a softer red on the buildi
  const {softenRed}=await import('../public/soft-red.js');
  const px=softenRed(new Uint8ClampedArray([198,40,40,255, 76,175,80,255, 239,154,154,255]));
  assert.ok(px[0]>198&&px[1]>40,'the barn red is lighter');assert.deepEqual([...px.slice(4)],[76,175,80,255,239,154,154,255],'green and light pink stay as they are');
- assert.match(read('public/game.js'),/shareAtlas\(object,name\);/);
+ assert.match(read('public/game.js'),/shareAtlas\(object,file\);/,'by the file it came from: a season\'s veg_ model paints from its own palette');
 });
 test('crops: fuller fields in rows, growing in steps (sprout, young, growing, ripe), and every field the same each time',async()=>{
  const {ROW_CROPS,growthStage,fieldSpots,hop}=await import('../public/crop-growth.js');

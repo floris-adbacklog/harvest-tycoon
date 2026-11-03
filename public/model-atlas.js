@@ -8,7 +8,10 @@ import {softenRed} from './soft-red.js';
 const BUILDING=/^(house|hangar|tower|coop|stall|greenhouse)_/;
 // The Village pack (village_*, 27 Sep 2026: stalls, boats, a pier) paints from its own small palette; its models share that one.
 const VILLAGE=/^village_/;
-let base=null,soft=null,villageBase=null;
+// The Vegetation pack (veg_*, 3 Nov 2026: the seasons' trees and bushes, the pond's plants, the yard's flowers) paints from its own,
+// with soft gradients; its models share that one (veg-palette.png).
+const VEG=/^veg_/;
+let base=null,soft=null,villageBase=null,vegBase=null;
 
 // The palette goes over the network once (6 Oct 2026). The copies inside the .glb files were 144 times the same 10 KB picture (and
 // 10 times the Village one): 1.7 MB of the 12 MB of models, about 0.35 MB of the 3.6 MB sent (the site sends models brotli-packed),
@@ -20,7 +23,7 @@ let base=null,soft=null,villageBase=null;
 // same. A model is only ready once its palette has arrived, so nothing is ever drawn without it. A palette that does not come is
 // asked for again past the browser's cache (as fetchModel in game.js does for a model; paletteImage below); if it still fails, the
 // model fails to load, and game.js puts its invisible stand-in there instead of an unpainted model.
-const PALETTE=/(^|\/)(village-)?palette\.png$/;
+const PALETTE=/(^|\/)(village-|veg-)?palette\.png$/;
 // The palettes' colours change now and then (6 Oct 2026: deeper greens, like the loading screen's painted valley; 7 Oct: half of
 // that). /assets/ is kept for a day, so the version makes a returning farmer fetch the new palette at once instead of yesterday's.
 export const PALETTE_VERSION='20261007';
@@ -110,6 +113,7 @@ export function shareAtlas(object,name){
    const map=material.map;if(!map)continue;
    let shared;
    if(VILLAGE.test(name))shared=villageBase??=map;
+   else if(VEG.test(name))shared=vegBase??=map;
    else {
     shared=base??=map;
     if(BUILDING.test(name)){try{soft??=softTwin(base);shared=soft;}catch{}}
@@ -118,7 +122,7 @@ export function shareAtlas(object,name){
    material.map=shared;
    // A picture from palette.png is the one every model shares, so it is never closed; only a model's own copy (an old .glb from
    // the browser's cache, which keeps /assets/ for a day) is freed.
-   if(map!==base&&map!==villageBase){map.dispose();if(!map.userData.sharedPalette)map.image?.close?.();}
+   if(map!==base&&map!==villageBase&&map!==vegBase){map.dispose();if(!map.userData.sharedPalette)map.image?.close?.();}
   }
  });
 }

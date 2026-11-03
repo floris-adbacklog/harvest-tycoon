@@ -204,3 +204,39 @@ download (Creative_Characters.blend, its .fbx and .glb zips) stays out of the re
   `game/farmer-parts.js` (the parts, their groups, which go together, free or earned).
 - `scripts/build-farmer-pictures.mjs` (the game's own code in a muted headless Chrome): a picture sheet a slot for My farmer
   (`thumbs/`, only the parts it offers, 12 files, 127 KB) and My farmer's own picture (`public/assets/icons/my-farmer.webp`).
+
+## Vegetation pack: seasons, pond plants, flowers (3 Nov 2026)
+
+23 models from ithappy Studios' **Vegetation** pack, bought by the owner (paid licence, 5 seats; https://ithappystudios.com/). Licence: use
+inside a finished game is allowed, commercial too; the assets may not be shared or sold on their own. So the download
+(`Vegetation_glb.zip`, 504 models) stays out of the repository, and the game ships only the models it uses, renamed `veg_<pack name>`.
+The owner picked three things, look only: the trees and bushes in the season's colours, water lilies and cattails on the pond and the
+village lake, and tulips and leafy tufts round the yard. No crops: the pack has no vegetables or grain, and its berry bush and fruit
+tree are the Farm pack's own, already in the game.
+
+| Model (pack name) | Purpose |
+| --- | --- |
+| veg_bush_001, veg_bush_002 | Spring: two of the young trees (tree_002, tree_005) in pink and salmon blossom |
+| veg_tree_020, 021, 025, 026, 035; veg_bush_003, 009 | Autumn: the scenery's trees (tree_001-008) and the bigger bushes (bush_002, bush_004) in orange and yellow |
+| veg_fir_snow_001, 003, 004; veg_deadwood_snow_009, 010; veg_bush_011, 013, 014 | Winter: snowy firs (the firs and most trees), the oak and the birch bare with snow, white bushes |
+| veg_water_lily_001, veg_reed_002 | Water lilies and cattails on the farm's pond (scenery.js, 9) and the village lake (public/lake-plants.js) |
+| veg_flower_001, 010, 011; veg_grass_014 | Red tulips, pink and white flowers and leafy tufts by the houses, fences, verges and open grass of the home view |
+
+public/season-look.js says which farm model is drawn from which file in each season (SEASON_SWAPS); game.js loadModel fetches only the
+season's files (summer none) and the model keeps the farm's name, so the scenery, the sway, Move things and the clearing round the
+pond and the roads work as before. The bushes are the Farm pack's bushes in other colours, triangle for triangle. The small round bush
+(bush_001) stays green in autumn, and the crops' models (tree_009, tree_010, tree_011, bush_003) never change. The season is the
+Season Pass's open one, else the date's; `?season=spring|summer|autumn|winter` shows another (the harness).
+
+They paint from the pack's own palette, with soft gradients the Farm one does not have: `veg-palette.png`, the pack's 1024 px
+Textures1.png at 256 px without its metadata (37 KB). public/model-atlas.js shares it like the other two, and scripts/share-palette.mjs
+takes the pack's picture out of a model by its hash. They carry the farm's baked shade (bake-ao.py, strength .45, floor .55), except the
+flat water lily, whose shade is left open (a ground plane under a flat pad only darkened it). 1.03 MB in all, about 0.45 MB as the site
+sends them; a farm fetches its season's 5-8 and the 6 plants. A new one from the pack, from the repository:
+
+    cp <pack>/<name>.glb <src>/veg_<name>.glb
+    SRC=<src> OUT=<ao> blender -b --factory-startup --python scripts/model-shade/bake-ao.py
+    node scripts/model-shade/apply-ao.mjs <src> <ao> public/assets/models
+    node scripts/share-palette.mjs
+
+tests/season-look.test.mjs checks the seasons, the swaps (files there, no crop, about as many triangles) and the plants' rules.

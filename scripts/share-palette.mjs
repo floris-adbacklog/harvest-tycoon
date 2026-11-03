@@ -2,7 +2,7 @@
 // One palette file instead of a copy in every model (6 Oct 2026). Every model of the Farm pack paints from the same palette
 // picture, and every .glb carried its own copy of it: 144 copies of one 10 KB PNG, and 10 copies of the Village pack's 23 KB one,
 // 1.7 MB of the 12 MB of models (about 0.35 MB once the site has brotli-packed them). This writes the picture once beside the models
-// (palette.png, and village-palette.png for village_*) and points each model's image at that file instead of its own copy.
+// (palette.png, village-palette.png for village_* and veg-palette.png for veg_*) and points each model's image at that file instead of its own copy.
 // public/model-atlas.js (sharePalette) then fetches each file once for all the models.
 // Only a picture that is byte for byte the palette is taken out; a model with a picture of its own keeps it. Everything else in the
 // file stays as it was (the geometry and the baked shade are checked byte for byte), and the file names stay the same.
@@ -12,7 +12,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 const dir=path.resolve(process.argv[2]??'public/assets/models');
-const PALETTES=[{file:'palette.png',models:name=>!/^village_/.test(name)},{file:'village-palette.png',models:name=>/^village_/.test(name)}];
+// The Vegetation pack (veg_*, 3 Nov 2026: the seasons' trees and bushes, pond plants, flowers) paints from a palette of its own, with
+// soft gradients the Farm one does not have. Its picture as it comes in the pack (Textures1.png, 1024 px, 248 KB) is taken out by its
+// hash, and the models point at veg-palette.png: that same picture at 256 px without its metadata (37 KB; the colours are wide bands and
+// gradients, so nothing is lost at the distance the farm is seen from).
+const VEG_PACK_PICTURE='d7d461f003a35a790b53ae3ed1aa1c10037e7f8db2dece4495a2a909de36492f';
+const PALETTES=[{file:'palette.png',models:name=>!/^(village|veg)_/.test(name)},{file:'village-palette.png',models:name=>/^village_/.test(name)},
+ {file:'veg-palette.png',models:name=>/^veg_/.test(name),source:VEG_PACK_PICTURE}];
 const GLB=0x46546c67,JSON_CHUNK=0x4e4f534a,BIN_CHUNK=0x004e4942;
 const pad4=n=>(n+3)&~3,sha=data=>crypto.createHash('sha256').update(data).digest('hex');
 
@@ -85,8 +91,9 @@ for(const palette of PALETTES){
  }
  for(const {f,buf,glb} of group){
   before+=buf.length;
-  const images=embedded(glb).filter(e=>e.hash===hash).map(e=>[e.index,palette.file]);
-  for(const e of embedded(glb))if(e.hash!==hash)own.push(`${f} (image ${e.index}, ${e.bytes.length} bytes)`);
+  const ours=e=>e.hash===hash||e.hash===palette.source;
+  const images=embedded(glb).filter(ours).map(e=>[e.index,palette.file]);
+  for(const e of embedded(glb))if(!ours(e))own.push(`${f} (image ${e.index}, ${e.bytes.length} bytes)`);
   if(!images.length){after+=buf.length;continue;}
   const original=readGlb(Buffer.from(buf)),shared=externalise(glb,images),out=writeGlb(shared.json,shared.bin);
   sameData(original,readGlb(out),f);

@@ -15,7 +15,9 @@ import {wildflowers} from './scene-polish.js';
 const FIRS=['fir_tree_001','fir_tree_003','fir_tree_004','fir_tree_006','fir_tree_007','fir_tree_010'];
 const FARM_PIECES=['chicken_002','chicken_003','toilet_001','firewood_005','cart_003','cart_006','lawn_mower_001','car_005','dray_001'];
 const FRONT=['bush_001','bush_002','bush_003','bush_004','tree_002','tree_005','tree_007','tree_008'];
-export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','plant_008','grass_001','grass_004','hay_001',...FARM_PIECES]);
+// The pond's water lilies and cattails and the yard's tulips, daisies and leafy tufts (3 Nov 2026, the Vegetation pack: 9 below).
+const TULIPS=['veg_flower_001','veg_flower_010','veg_flower_011'],POND_PLANTS=['veg_water_lily_001','veg_reed_002'],LEAFY='veg_grass_014';
+export const SCENERY_MODELS=Object.freeze([...FIRS,...FRONT,'mountain_001','mountain_007','mountain_008','plant_008','grass_001','grass_004','hay_001',...FARM_PIECES,...POND_PLANTS,...TULIPS,LEAFY]);
 
 // The same ring as the mountains (scene-polish.js): laid out in screen directions around the home view, sides and back only,
 // so nothing stands between the camera and the farm.
@@ -27,7 +29,8 @@ const ringPoint=(degrees,a,b)=>{const phi=degrees*Math.PI/180,far=eastRoom(degre
 // of the scenery stands where it always did; a piece in the way is simply left out.
 // keepOff: [[minX, maxX, minZ, maxZ], ...] where nothing of it may stand either (game.js keptOff: the pastures, where the animals walk
 // all over, and the Dairy Barn's yard as it stands since 22 Oct 2026), also asked once all is chosen.
-export function buildScenery({scene,models,mobile=false,clear=null,keepOff=[]}){
+// season: the farm's season (season-look.js); in winter no tulips stand in the snow.
+export function buildScenery({scene,models,mobile=false,clear=null,keepOff=[],season='autumn'}){
  const rand=seeded(20260924),group=new THREE.Group();group.name='Scenery';scene.add(group);
  const keptOff=(x,z,r)=>keepOff.some(([a,b,c,d])=>x>a-r&&x<b+r&&z>c-r&&z<d+r);
  // The trees and bushes sway in the wind (scene-polish.js): they are measured upright, or a spot beside one would be free at one
@@ -331,6 +334,95 @@ export function buildScenery({scene,models,mobile=false,clear=null,keepOff=[]}){
   const across=(rand()*2-1)*(mobile?16:30),back=mobile?rand()*74-30:(rand()*2-1)*30,p=!mobile&&i%8===7?ringPoint(rand()*360,(30+rand()*10)*RING,(28+rand()*10)*RING):{x:1.4+(across-back)*K,z:1.5+(-across-back)*K};
   if(plant(p.x,p.z,pick([['flowers',.7],['bush',.15],['bushes',.15]])))made++;
  }
+
+ // 9. The pond and the yard in bloom (3 Nov 2026, the owner, from the Vegetation pack): water lilies on the pond, cattails on its bank,
+ // and tulips, daisies and leafy tufts where the grass is still bare beside the house's yard, the roads and the fences of the home
+ // view. After everything else and with their own generator, so all of 1-8 stands where it always stood; only the spots fits() still
+ // allows, so nothing stands on a field, a road, a yard, under a name or in an animal's way. Low (the tulips at most 0.6, a tuft 0.45),
+ // and their own budget: a phone at most 10,000 triangles more, a computer 30,000 (about 4% of what a computer draws).
+ const bloom=seeded(20261103),lilies=[],reeds=[],tulips=Object.fromEntries(TULIPS.map(n=>[n,[]])),leafy=[];
+ let bloomSpent=0;const bloomBudget=mobile?10000:30000;
+ {
+  // The lilies float in the water's outer ring, clear of the pier, the boats, the stones and the fishing line (from the pier's end
+  // to the middle, pond-scene.js), so the float, the fish and the duck keep open water.
+  const lily=models.get(POND_PLANTS[0]),flat=lily?lily.size.y/Math.max(lily.size.x,lily.size.z):0;
+  const pier=scene.children.find(o=>o.userData.model==='village_pier_001'),line=pier?(()=>{const b=new THREE.Box3().setFromObject(pier),m=b.getCenter(new THREE.Vector3()),a=Math.atan2(pondX-m.x,pondZ-m.z);return [m.x,m.z,m.x+Math.sin(a)*4.6,m.z+Math.cos(a)*4.6];})():null;
+  const offLine=(x,z)=>{if(!line)return true;const [ax,az,bx,bz]=line,dx=bx-ax,dz=bz-az,t=THREE.MathUtils.clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(x-ax-dx*t,z-az-dz*t)>1.3;};
+  for(let i=0,made=0,want=mobile?9:14;i<want*8&&made<want&&lily;i++){
+   const a=bloom()*Math.PI*2,k=.6+bloom()*.3,x=pondX+POND.rx*k*Math.cos(a),z=pondZ+POND.rz*k*Math.sin(a);
+   // A group of two or three pads, 0.45 to 0.7 across.
+   if(!offLine(x,z)||stands(x,z,.9)||!roomy(x,z,.7))continue;claim(x,z,.7);made++;
+   for(let n=0,count=2+Math.floor(bloom()*2);n<count;n++){const w=.45+bloom()*.25;lilies.push([x+(bloom()-.5)*.8,z+(bloom()-.5)*.8,w*flat,bloom()*Math.PI*2,.084]);bloomSpent+=36;}
+  }
+  // Cattails on the sand at the water, in clumps of three, 1.1 to 1.5 tall.
+  for(let i=0,made=0,want=mobile?6:10;i<want*8&&made<want;i++){
+   const a=bloom()*Math.PI*2,x=pondX+(POND.rx+.55)*Math.cos(a),z=pondZ+(POND.rz+.55)*Math.sin(a);
+   if(!offLine(x,z)||!fits(x,z,.45,0))continue;claim(x,z,.45);made++;
+   for(let n=0;n<3;n++){reeds.push([x+(bloom()-.5)*.6,z+(bloom()-.5)*.6,1.1+bloom()*.4,bloom()*Math.PI*2]);bloomSpent+=tris(POND_PLANTS[1]);}
+  }
+ }
+ // Red tulips (636 triangles a stem) now and then, mostly the light pink and white flowers (under 180).
+ const tulip=u=>TULIPS[u<.12?0:u<.56?1:2];
+ // A clump of tulips (red, pink or white, 3 to 5) or a leafy tuft, by its spot.
+ const flowerbed=(x,z)=>{
+  if(bloomSpent>=bloomBudget)return false;
+  const kind=bloom(),r=kind<.7?.4:.35;if(!fits(x,z,r))return false;claim(x,z,r);
+  if(kind<.7){
+   const name=tulip(kind/.7);
+   for(let n=0,count=3+Math.floor(bloom()*3);n<count;n++){const a=bloom()*Math.PI*2,d=Math.sqrt(bloom())*.35,height=.45+bloom()*.15;if(season!=='winter')tulips[name].push([x+Math.cos(a)*d,z+Math.sin(a)*d,height,bloom()*Math.PI*2]);bloomSpent+=tris(name);}
+  }else{leafy.push([x,z,.3+bloom()*.15,bloom()*Math.PI*2]);bloomSpent+=tris(LEAFY);}
+  return true;
+ };
+ // Beside a line at x,z, out along ox,oz: the first spot from 0.7 to 2.2 off it that is free.
+ const along=(x,z,ox,oz)=>{for(let off=.7;off<2.3;off+=.3)if(flowerbed(x+ox*off,z+oz*off))return true;return false;};
+ // A border of tulips along the two walls of each house the camera sees (it looks from +x,+z), on its yard, half a step from the wall,
+ // where nothing else stands (a porch, a bench, a barrel), not on the path to its door (a road) and not on your farmer's loop.
+ // The yard's packed earth (ground_* tiles, a few centimetres high) counts as ground here, not as something standing on it.
+ const standsTall=(x,z,r)=>{let hit=false;cells(x-r,x+r,z-r,z+r,key=>{if(!hit)hit=(fixed.get(key)??[]).some(b=>b.max.y-b.min.y>.2&&x>b.min.x-r&&x<b.max.x+r&&z>b.min.z-r&&z<b.max.z+r);});return hit;};
+ const border=(x,z)=>{
+  if(bloomSpent>=bloomBudget||clear?.(x,z,.35)||standsTall(x,z,.25)||!roomy(x,z,.3)||onRoad(x-.3,x+.3,z-.3,z+.3)||!outsideFields(x,z,.6)||!animals.every(([ax,az])=>Math.hypot(x-ax,z-az)>2))return false;
+  claim(x,z,.3);const name=tulip(bloom());
+  for(let n=0;n<3;n++){const a=bloom()*Math.PI*2,d=bloom()*.22;if(season!=='winter')tulips[name].push([x+Math.cos(a)*d,z+Math.sin(a)*d,.42+bloom()*.12,bloom()*Math.PI*2]);bloomSpent+=tris(name);}
+  return true;
+ };
+ for(const o of scene.children){
+  const id=o.userData.building??o.userData.utility;if(!id||!o.userData.model||YARD_THEME[id]!=='home'||!o.visible||ANIMAL.test(o.userData.model))continue;
+  const b=new THREE.Box3().setFromObject(o);if(b.isEmpty()||!inView((b.min.x+b.max.x)/2,(b.min.z+b.max.z)/2))continue;
+  // Half a step from the wall, or a little further where a porch or a bench stands against it.
+  for(let x=b.min.x+.4;x<b.max.x-.2;x+=1.1)[.5,.9,1.3].some(off=>border(x,b.max.z+off));
+  for(let z=b.min.z+.4;z<b.max.z-.2;z+=1.1)[.5,.9,1.3].some(off=>border(b.max.x+off,z));
+ }
+ // Round the house's yard (the Farmhouse and the other homes), then beside the fences and the road verges of the home view.
+ for(const [a0,b0,c0,d0,id] of yards){
+  if(!id||YARD_THEME[id]!=='home')continue;
+  const [ax,az]=YARD_EXTENT[id]?anchorAt(id):[0,0],[a,b,c,d]=YARD_EXTENT[id]?[ax+YARD_EXTENT[id][0],ax+YARD_EXTENT[id][1],az+YARD_EXTENT[id][2],az+YARD_EXTENT[id][3]]:[a0,b0,c0,d0];
+  if(!inView((a+b)/2,(c+d)/2))continue;
+  for(let i=0,made=0,want=mobile?5:9;i<want*4&&made<want;i++){
+   const side=Math.floor(bloom()*4),t=bloom(),x=side<2?(side?b:a):a+(b-a)*t,z=side<2?c+(d-c)*t:(side===2?d:c);
+   if(side<2?along(x,z,side?1:-1,0):along(x,z,0,side===2?1:-1))made++;
+  }
+ }
+ for(const f of fences){
+  const x=(f.min.x+f.max.x)/2,z=(f.min.z+f.max.z)/2;if(!inView(x,z)||bloom()>.35*thin)continue;
+  const long=f.max.x-f.min.x>f.max.z-f.min.z,side=bloom()<.5?-1:1;
+  if(long)along(x,z,0,side)||along(x,z,0,-side);else along(x,z,side,0)||along(x,z,-side,0);
+ }
+ for(const r of roadRects()){
+  const length=r.horizontal?r.maxX-r.minX:r.maxZ-r.minZ,start=r.horizontal?r.minX:r.minZ;
+  for(const side of [-1,1])for(let d=1+bloom()*3;d<length-1;d+=(5+bloom()*4)/thin){
+   const edge=r.horizontal?(side<0?r.minZ:r.maxZ):(side<0?r.minX:r.maxX),x=r.horizontal?start+d:edge,z=r.horizontal?edge:start+d;
+   if(!inView(x,z))continue;
+   if(r.horizontal)along(x,z,0,side);else along(x,z,side,0);
+  }
+ }
+ // And where the open grass of the home view is still bare.
+ for(let i=0,made=0,want=mobile?20:50;i<want*14&&made<want;i++){
+  const across=(bloom()*2-1)*(mobile?16:30),back=mobile?bloom()*74-30:(bloom()*2-1)*30;
+  if(flowerbed(1.4+(across-back)*K,1.5+(-across-back)*K))made++;
+ }
+ instanced(POND_PLANTS[0],lilies,{shadow:false});instanced(POND_PLANTS[1],reeds);
+ for(const [name,list] of Object.entries(tulips))instanced(name,list,{shadow:false});
+ instanced(LEAFY,leafy,{shadow:false});
 
  for(const [name,list] of Object.entries(tufts))instanced(name,list,{shadow:false});
  for(const [name,list] of Object.entries(front))instanced(name,list,{shadow:!name.startsWith('hay')});

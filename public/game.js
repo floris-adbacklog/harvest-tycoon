@@ -79,6 +79,7 @@ import { portal,portalOff } from './portal.js';
 // The Fishing pond (11 Oct 2026, part C): its screen and 3D pieces load on the farm only once the switch is on (pond-ui.js).
 import { POND_OPEN } from './farm-state.js';
 import { seasonLook, seasonCrop } from './farm-state.js';
+import { farmSeason, seasonFile } from './season-look.js';
 import { POND_LOADING_TIP } from './loading-screen.js';
 // The village lake (12 Oct 2026, plan D): the same screen at the rowboat in the village, once its own switch is on.
 import { LAKE_OPEN } from './farm-state.js';
@@ -480,16 +481,20 @@ async function fetchModel(name){
   catch(error){console.warn(`The model ${name} could not load; the farm opens without it.`,error);return null;}
  }
 }
+// The trees and bushes in the season's colours (public/season-look.js, 3 Nov 2026): the model keeps its name and is drawn from its
+// season's file; if that file cannot come, from its own.
+const farmLook=farmSeason();
 async function loadModel(name){
  // Every model's palette comes from one palette.png, fetched once for all of them (model-atlas.js sharePalette, 6 Oct 2026).
  gltfLoader??=sharePalette(new GLTFLoader());
- const gltf=await fetchModel(name);
+ let file=seasonFile(name,farmLook),gltf=await fetchModel(file);
+ if(!gltf&&file!==name){file=name;gltf=await fetchModel(name);}
  if(!gltf){missingModels++;const group=new THREE.Group(),stand=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({visible:false}));stand.position.y=.5;group.add(stand);models.set(name,{object:group,size:new THREE.Vector3(1,1,1)});return;}
  const object=gltf.scene;
  const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
  object.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));const group=new THREE.Group();group.add(object);
  object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.material.roughness=1;n.material.metalness=0;}});
- shareAtlas(object,name);
+ shareAtlas(object,file);
  models.set(name,{object:group,size});
 }
 // The forest belt, hills, sunflowers, pigsty and the other extras (public/scenery.js) come after the farm is on screen, so the
@@ -503,7 +508,7 @@ async function addScenery(){
   const {SCENERY_MODELS,buildScenery}=await import('./scenery.js');
   const [farmerSpots]=await Promise.all([walking,loadInBatches(SCENERY_MODELS.filter(name=>!models.has(name)),loadModel,4)]);
   if(farmerSpots)placeBench(farmerSpots.FARM_BENCH);
-  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff}));clearPropsFromMountains();obstacleMap=null;hideUnderLayout();renderer.shadowMap.needsUpdate=true;shootMinimap();
+  const keepOff=keptOff();asBefore(()=>buildScenery({scene,models,mobile:mobileLayout.matches,clear:farmerSpots?.inFarmerWay??null,keepOff,season:farmLook}));clearPropsFromMountains();obstacleMap=null;hideUnderLayout();renderer.shadowMap.needsUpdate=true;shootMinimap();
  }catch(error){console.warn('The extra scenery was skipped.',error);}
  void addAnimals();
 }
@@ -2299,6 +2304,8 @@ async function addVillageExtras(){
   }catch(error){console.warn('The Village Fields were skipped.',error);}
   syncVillageExtras();renderer.shadowMap.needsUpdate=true;
   import('./village-animals.js').then(m=>m.addVillageAnimals({scene,village:villageGroup,extras:villageExtras,canvas:renderer.domElement,simple:graphicsSimple})).catch(error=>console.warn('The village animals were skipped.',error));
+  // Water lilies and cattails on the lake (public/lake-plants.js, 3 Nov 2026), only to look at.
+  import('./lake-plants.js').then(async m=>{await loadInBatches(m.LAKE_PLANTS.filter(name=>!models.has(name)),loadModel,2);const plants=m.lakePlants({village:villageGroup,also:[villageExtras.group],models,mobile:mobileLayout.matches});if(plants){scene.add(plants);renderer.shadowMap.needsUpdate=true;}}).catch(error=>console.warn('The lake plants were skipped.',error));
  }catch(error){console.warn('The village extras were skipped.',error);}
 }
 // A place's props show once it is built, and the Fields a strip for every crop they can sow; the landmarks are placeLandmarks's.

@@ -15,18 +15,20 @@ const glb=buf=>{
 
 // 6 Oct 2026: every .glb carried its own copy of the palette (144 of the Farm one, 10 of the Village one, 1.7 MB of the models).
 // The models now point at one palette.png (village-palette.png for village_*) beside them, fetched once a page.
-test('the palette goes over the network once: every model points at palette.png or village-palette.png and carries no copy of it',()=>{
- const palette=readFileSync(new URL('palette.png',dir)),village=readFileSync(new URL('village-palette.png',dir));
- assert.equal(palette.subarray(1,4).toString(),'PNG');assert.equal(village.subarray(1,4).toString(),'PNG');
+// 3 Nov 2026: the Vegetation pack's models (veg_*) point at veg-palette.png, the pack's own palette at 256 px.
+test('the palette goes over the network once: every model points at palette.png, village-palette.png or veg-palette.png and carries no copy of it',()=>{
+ const palette=readFileSync(new URL('palette.png',dir)),village=readFileSync(new URL('village-palette.png',dir)),veg=readFileSync(new URL('veg-palette.png',dir));
+ assert.equal(palette.subarray(1,4).toString(),'PNG');assert.equal(village.subarray(1,4).toString(),'PNG');assert.equal(veg.subarray(1,4).toString(),'PNG');
+ assert.equal(veg.readUInt32BE(16),256,'the pack\'s 1024 px palette at 256 px');
  for(const f of readdirSync(dir).filter(f=>f.endsWith('.glb'))){
   const {json,bin}=glb(readFileSync(new URL(f,dir)));
   for(const image of json.images??[]){
    if(image.bufferView!=null){
     const v=json.bufferViews[image.bufferView],bytes=bin.subarray(v.byteOffset??0,(v.byteOffset??0)+v.byteLength);
-    assert.ok(!bytes.equals(palette)&&!bytes.equals(village),`${f} carries its own copy of the palette again: run node scripts/share-palette.mjs`);
+    assert.ok(!bytes.equals(palette)&&!bytes.equals(village)&&!bytes.equals(veg),`${f} carries its own copy of the palette again: run node scripts/share-palette.mjs`);
     continue;
    }
-   assert.equal(image.uri,f.startsWith('village_')?'village-palette.png':'palette.png',`${f} points at the wrong palette`);
+   assert.equal(image.uri,f.startsWith('village_')?'village-palette.png':f.startsWith('veg_')?'veg-palette.png':'palette.png',`${f} points at the wrong palette`);
   }
  }
 });
@@ -35,7 +37,7 @@ test('one request and one decode per palette: GLTFLoader gets the shared palette
  const game=read('public/game.js'),atlas=read('public/model-atlas.js');
  assert.match(game,/gltfLoader\?\?=sharePalette\(new GLTFLoader\(\)\);/,'the models\' loader shares the palette');
  assert.match(atlas,/export function sharePalette\(gltfLoader\)\{\n return gltfLoader\.register\(/);
- assert.match(atlas,/const PALETTE=\/\(\^\|\\\/\)\(village-\)\?palette\\\.png\$\/;/);
+ assert.match(atlas,/const PALETTE=\/\(\^\|\\\/\)\(village-\|veg-\)\?palette\\\.png\$\/;/);
  assert.match(atlas,/let image=palettes\.get\(url\);/,'one fetch per palette address, shared by every model');
  assert.match(atlas,/const current=`\$\{url\}\?v=\$\{PALETTE_VERSION\}`;/,'the current palette, its version past a day-old cache');
  assert.match(atlas,/loader\.loadAsync\(tries\+\+\?`\$\{current\}&fresh=\$\{Date\.now\(\)\}`:current\)/,'asked again past the browser\'s cache');
@@ -44,7 +46,7 @@ test('one request and one decode per palette: GLTFLoader gets the shared palette
  assert.match(atlas,/if\(tries===PALETTE_WAITS\.length\)return;/,'after the third try it keeps waiting: no give-up, no stand-ins for a slow palette');
  assert.match(atlas,/const loader=parser\.textureLoader;/,'the same ImageBitmap or <img> loader GLTFLoader chose for this browser');
  assert.match(atlas,/return parser\.loadTextureImage\(index,source,once\)\.then\(texture=>\{\n   if\(!texture\)throw new Error/,'no palette: the model fails (and gets its stand-in), it is never drawn unpainted');
- assert.match(atlas,/if\(map!==base&&map!==villageBase\)\{map\.dispose\(\);if\(!map\.userData\.sharedPalette\)map\.image\?\.close\?\.\(\);\}/,'closing the shared picture would blank every model');
+ assert.match(atlas,/if\(map!==base&&map!==villageBase&&map!==vegBase\)\{map\.dispose\(\);if\(!map\.userData\.sharedPalette\)map\.image\?\.close\?\.\(\);\}/,'closing the shared picture would blank every model');
 });
 
 test('scripts/share-palette.mjs takes a copy out again, keeps the rest byte for byte, and changes nothing on a second run',()=>{
@@ -105,7 +107,9 @@ async function loadFarm(rule){
  const models=new Map(),game=read('public/game.js'),from=game.indexOf('let gltfLoader=null;'),to=game.indexOf(' models.set(name,{object:group,size});\n}',from);
  const quiet={warn:(...a)=>net.warned.push(a.map(String).join(' ')),error:(...a)=>net.warned.push(a.map(String).join(' '))},{warn,error}=console;
  Object.assign(console,quiet);
- const {loadModel,missing}=new Function('THREE','GLTFLoader','sharePalette','shareAtlas','download','models','console',`${game.slice(from,to)} models.set(name,{object:group,size});\n}\nreturn {loadModel,missing:()=>missingModels};`)(THREE,GLTFLoader,sharePalette,shareAtlas,download,models,quiet);
+ // In summer: no model is swapped for its season's (season-look.js), so these count the Farm pack's files as before.
+ const {seasonFile}=await import('../public/season-look.js'),farmSeason=()=>'summer';
+ const {loadModel,missing}=new Function('THREE','GLTFLoader','sharePalette','shareAtlas','download','models','console','farmSeason','seasonFile',`${game.slice(from,to)} models.set(name,{object:group,size});\n}\nreturn {loadModel,missing:()=>missingModels};`)(THREE,GLTFLoader,sharePalette,shareAtlas,download,models,quiet,farmSeason,seasonFile);
  const farm={net,models,missing,loaded:0,done:false,restore:()=>Object.assign(console,{warn,error}),
   standIns:()=>[...models.values()].filter(m=>m.object.children[0]?.material?.visible===false).length,
   painted:()=>[...models.values()].filter(m=>{let map=null;m.object.traverse(n=>{if(n.isMesh)map??=n.material.map;});return map?.image?.width===1024;}).length,
