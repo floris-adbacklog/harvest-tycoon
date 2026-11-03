@@ -103,3 +103,5 @@ html[data-portal] .settings-copy{display:none!important}
 /* My farmer belongs to the Avatar card (the owner, 21 Oct 2026: "onder kopje avatar"): the card's lower part, under a thin line. */
 #sound-dialog.settings-one #avatar-settings.is-open:has(+#farmer-settings:not([hidden])){margin-bottom:0;border-bottom:0;border-radius:18px 18px 0 0;padding-bottom:16px}
 #sound-dialog.settings-one #avatar-settings.is-open+#farmer-settings{margin:0 0 10px;padding:14px;border:1px solid #e8ded2;border-top:1px dashed #e3dad0;border-radius:0 0 18px 18px;background:#fbf8f2}
+/* Season on your farm (3 Nov 2026, the owner's screenshot: the pill stuck out of the card): the pill on its own line under the words, so a long translation never pushes it out. */
+.notify-row.season-choice{flex-wrap:wrap;cursor:default}.notify-row.season-choice>span{flex:1 1 100%;min-width:0}.notify-row.season-choice .pretty-select{flex:none;min-width:150px;max-width:100%}
