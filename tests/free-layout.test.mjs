@@ -145,9 +145,13 @@ test('no visits for the admins, both ways, and no Neighbours on their showcase f
  assert.equal((await visit(FARMER)).status,200,'an ordinary farm');
  assert.deepEqual([(await visit(ADMIN)).status,(await visit(ADMIN)).data.code],[403,'VISIT_REFUSED'],'never an admin\'s farm');
  assert.equal((await visit(FARMER,true)).status,403,'an admin visits nobody');
- // The profile shows no Visit farm for an admin (noVisit), and the admin's own game has no Neighbours (farm-api refuses their actions).
+ // The profile shows no Visit farm for an admin (noVisit) but three wiki pages (3 Nov 2026), and the admin's own game has no Neighbours
+ // (farm-api refuses their actions).
  assert.match(read('supabase/functions/farm-api/player-profile-service.js'),/\.\.\.\(a\.admin\?\{noVisit:true\}:\{\}\)/);
- assert.match(read('src/player-profiles.js'),/if\(!box\|\|typeof visit!=='function'\|\|player\.noVisit\)return;/);
+ const profiles=read('src/player-profiles.js');
+ assert.match(profiles,/function showVisit\(player\)\{\n  if\(player\.noVisit\)return showStaffWiki\(\);/);
+ assert.match(profiles,/const STAFF_WIKI=Object\.freeze\(\['getting-started','chat','account'\]\);/);
+ assert.match(profiles,/wiki\(button\.dataset\.wikiTopic,'',\{from:\{label:'Farmer profile',/,'How to play leads back to the profile');
  assert.match(read('public/game.js'),/if\(adminView\)document\.querySelector\('\[data-menu-utility="neighbours"\]'\)\?\.setAttribute\('hidden',''\);\n else neighbours=createNeighboursUI\(/);
 });
 

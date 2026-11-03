@@ -212,6 +212,8 @@ button.farmer-stat{cursor:pointer;transition:border-color .15s,transform .15s}bu
 #player-profile-dialog .farmer-actions .farmer-invite-button{order:2}
 /* Visit farm (24 Oct 2026) right after Send message, the same size as the other buttons in the row. */
 #player-profile-dialog .farmer-actions .farmer-visit-button{order:1}
+/* An admin's three wiki pages (3 Nov 2026): a long title wraps onto a second line instead of being cut off. */
+#player-profile-dialog .farmer-actions .farmer-wiki-button{white-space:normal;text-align:start;line-height:1.2}
 #player-profile-dialog .farmer-actions .farmer-invite-button:not(:disabled){border:1px solid #8cc06a;background:#fffdf4;box-shadow:0 2px 0 #b9d9a0,0 0 0 2px #d9ecc9 inset;color:#42632e}
 #player-profile-dialog .farmer-actions .farmer-invite-button:not(:disabled):hover{background:#f3f8ec}
 #player-profile-dialog .farmer-actions .farmer-chat-report{order:3;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;width:auto;min-height:44px;margin:0;padding:4px 12px;font-size:13px}

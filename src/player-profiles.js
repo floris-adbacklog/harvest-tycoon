@@ -9,9 +9,12 @@ import {CROPS,ITEMS,MASTERY_TIERS,FAMILY_EMBLEMS,seasonLook,GIFT_PASSES,giftPass
 import {framed,lookBadge,lookTitle,lookBackground,lookColor} from '../public/look-marks.js';
 import {keepFolds} from '../public/keep-folds.js';
 import {emblemColor,emblemInner} from '../public/family-emblem-art.js';
+import {wikiSectionTitle} from '../public/wiki-content.js';
 
 export const escapeProfileText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const esc=escapeProfileText;
+// The wiki pages an admin's profile shows where Visit farm would be.
+const STAFF_WIKI=Object.freeze(['getting-started','chat','account']);
 const fmt=value=>Math.max(0,Number(value)||0).toLocaleString('en-US');
 const two=value=>String(value).padStart(2,'0');
 // Dates are shown as DD-MM-YYYY, in UTC, so every viewer sees the same day. Never a time.
@@ -231,11 +234,21 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
  // that is possible and sends the invitation; the reason shows on the button when it is not).
  // Visit farm (24 Oct 2026, the owner: "Zorg ook dat je andermans boerderij kan visiten"): someone else's farm as it stands, to look at
  // (the game opens it over your own: public/game.js harvestVisit). Not from the village, an admin's view or a farm you are visiting.
- // Never an admin's showcase farm (25 Oct 2026, farm-api noVisit).
+ // Never an admin's showcase farm (25 Oct 2026, farm-api noVisit): there, three wiki pages instead (3 Nov 2026, the owner: "Doe net
+ // zoals bij ST bij admins 3 links naar wiki"), opened in How to play in the game, with its way back to this profile.
  function showVisit(player){
-  const box=content.querySelector('[data-farmer-visit]'),visit=window.harvestVisit;if(!box||typeof visit!=='function'||player.noVisit)return;
+  if(player.noVisit)return showStaffWiki();
+  const box=content.querySelector('[data-farmer-visit]'),visit=window.harvestVisit;if(!box||typeof visit!=='function')return;
   box.hidden=false;box.innerHTML=`<button type="button" class="secondary-button farmer-visit-button">${art('visit-farm')}Visit farm</button>`;
   box.querySelector('button').onclick=()=>{dialog.close();visit(player.playerId,player.username);};
+ }
+ function showStaffWiki(){
+  const box=content.querySelector('[data-farmer-visit]'),wiki=window.harvestWiki;if(!box||typeof wiki!=='function'||!document.getElementById('help-dialog'))return;
+  box.hidden=false;box.innerHTML=STAFF_WIKI.map(id=>`<button type="button" class="secondary-button farmer-visit-button farmer-wiki-button" data-wiki-topic="${id}">${art('guide')}${esc(wikiSectionTitle(id))}</button>`).join('');
+  box.querySelectorAll('[data-wiki-topic]').forEach(button=>button.onclick=()=>{
+   dialog.close();
+   wiki(button.dataset.wikiTopic,'',{from:{label:'Farmer profile',go:()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());dialog.showModal();}}});
+  });
  }
  function showInvite(player){
   const box=content.querySelector('[data-farmer-invite]'),family=window.harvestFamilyInvite,offer=box&&family?.offer?.(player);
