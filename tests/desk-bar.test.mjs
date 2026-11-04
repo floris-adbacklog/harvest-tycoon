@@ -5,14 +5,14 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 // The desktop bar (31 Oct 2026, the owner): socials left, Play Skyline Topia in the middle, Wiki and App right, on the sign-in page and
 // under the farm, only on a computer and never in our apps.
-test('the desktop bar: socials, Skyline Topia, Wiki and App, in new tabs so the farm stays open',()=>{
+test('the desktop bar: socials, the copyright line, Wiki and App, in new tabs so the farm stays open',()=>{
  const home=read('public/play.html'),bar=/<nav class="desk-bar">([^]*?)<\/nav>/.exec(home)?.[1];
  assert.ok(bar,'the bar is on the home page');
  assert.equal(home.indexOf('<nav class="desk-bar">')>home.indexOf('<div id="farm-host"'),true,'outside the sign-in page, so it stays when the farm opens');
  assert.equal((bar.match(/class="desk-bar-social"/g)??[]).length,7);
- assert.match(bar,/<a class="desk-bar-play" href="https:\/\/www\.skylinetopia\.com\/[^"]*" target="_blank" rel="noopener">Play Skyline Topia<\/a>/);
+ // In the middle since 4 Nov 2026 (the owner: "Haal Play Skyline Topia uit midden van de footer, zet neer Copyright 2026 Harvest Tycoon", "copyright icoon ipv copyright"): the same in every language.
+ assert.match(bar,/<span class="desk-bar-play">© 2026 Harvest Tycoon<\/span>/);assert.doesNotMatch(bar,/Play Skyline Topia/);
  assert.match(bar,/<a href="\/wiki" target="_blank" rel="noopener">Wiki<\/a><a href="\/app" target="_blank" rel="noopener">App<\/a>/);
- for(const code of ['nl','de','ja'])assert.match(JSON.parse(read(`public/i18n/${code}.json`))['Play Skyline Topia'],/Skyline Topia/,code);
 });
 
 test('the desktop bar shows only while playing, on a computer, outside our apps, see-through over the farm',()=>{

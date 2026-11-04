@@ -267,7 +267,7 @@ html[data-portal] .desk-bar{display:none!important}
  .desk-bar-social svg{width:13px;height:13px}
  .desk-bar-social:hover{color:#4a3a1c}
  .desk-bar-play,.desk-bar-links a{color:#7d6c4e;text-decoration:none;white-space:nowrap}
- .desk-bar-play:hover,.desk-bar-links a:hover{color:#4a3a1c;text-decoration:underline}
+ a.desk-bar-play:hover,.desk-bar-links a:hover{color:#4a3a1c;text-decoration:underline}
  .desk-bar-links{display:flex;justify-content:flex-end;gap:16px}
 }
 
