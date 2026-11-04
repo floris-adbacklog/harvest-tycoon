@@ -39,6 +39,13 @@ function deskBarRoom(frame,{doc=globalThis.document,win=globalThis.window}={}){
  const apply=()=>{try{const shown=win.getComputedStyle(bar).display!=='none',root=frame.contentDocument?.documentElement;if(!root)return;
   root.toggleAttribute('data-desk-bar',shown);}catch{}};
  frame.addEventListener?.('load',apply);win.addEventListener?.('resize',apply);
+ // Its Wiki (4 Nov 2026, the owner: "Kan je wiki in footer naar ingelogde wiki leiden als ingelogd", "nu opent die in new tab"): with the
+ // farm open it opens How to play inside the game (public/game.js harvestWiki, its home), not the website's wiki in a new tab; before
+ // that, or if the game cannot, the link stays as it is.
+ bar.querySelector?.('a[href="/wiki"]')?.addEventListener?.('click',event=>{
+  try{const game=frame.contentWindow;if(typeof game?.harvestWiki!=='function'||!frame.contentDocument?.getElementById('help-dialog'))return;
+   event.preventDefault();frame.contentDocument.querySelectorAll('dialog[open]').forEach(d=>d.close());game.harvestWiki();game.focus?.();}catch{}
+ });
  // The bar shows once the farm is open (body data-phase), which can be after the frame's page has loaded.
  try{new win.MutationObserver(apply).observe(doc.body,{attributes:true,attributeFilter:['data-phase']});}catch{}
  apply();

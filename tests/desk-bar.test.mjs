@@ -35,6 +35,9 @@ test('never on a game portal: their pages have no bar, and a portal page would h
 
 test('over the farm the bar covers nothing to tap: the farm page lifts its buttons and windows by the bar\'s height',()=>{
  assert.match(read('src/main.js'),/page\.src='\/farm\.html';\$\('farm-host'\)\.append\(page\);deskBarRoom\(page\);/);
+ // Its Wiki opens How to play inside the game while the farm is open (4 Nov 2026, the owner), the website's wiki only before that.
+ assert.match(read('src/main.js'),/bar\.querySelector\?\.\('a\[href="\/wiki"\]'\)\?\.addEventListener\?\.\('click',event=>\{\n  try\{const game=frame\.contentWindow;if\(typeof game\?\.harvestWiki!=='function'/);
+ assert.match(read('src/main.js'),/event\.preventDefault\(\);frame\.contentDocument\.querySelectorAll\('dialog\[open\]'\)\.forEach\(d=>d\.close\(\)\);game\.harvestWiki\(\);/);
  assert.match(read('src/main.js'),/root\.toggleAttribute\('data-desk-bar',shown\)/);
  assert.match(read('public/styles.css'),/\n:root\[data-desk-bar\]\{--safe-bottom:calc\(env\(safe-area-inset-bottom,0px\) \+ 30px\)\}\n/);
  assert.match(read('public/pwa-layout.css'),/html\[data-app-mode=standalone\]\[data-desk-bar\]\{--safe-bottom:calc\(max\(0px,calc\(env\(safe-area-inset-bottom,0px\) - var\(--viewport-shortfall,0px\)\)\) \+ 30px\)\}/);
