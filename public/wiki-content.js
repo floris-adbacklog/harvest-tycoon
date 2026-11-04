@@ -43,7 +43,7 @@ export const WIKI_TOPICS=Object.freeze([
  {id:'quests',title:'Quests and levels',art:'quests',blurb:'Goals, XP, levels and what opens when.',keywords:'xp level unlock journal quest claim'},
  {id:'daily',title:'Daily rewards and orders',art:'gift',blurb:'The daily gift, challenges and delivery orders.',keywords:'streak gift challenges deliveries orders cart commission comeback chest away return'},
  {id:'family',title:'Farm family',art:'family-members',blurb:'Playing together: the Family Chest, weekly orders, sharing and the tournament.',keywords:'family team guild members tournament sharing invite chest level flag join order points stats goods'},
- {id:'events',title:'Events',art:'live-events',blurb:'A short shared goal every hour.',keywords:'event goals qualify podium league'},
+ {id:'events',title:'Events',art:'live-events',blurb:'A short shared goal every hour.',keywords:'event goals qualify podium league tournament supertournament super tournament race prize pot'},
  {id:'helpers',title:'Farm helpers',art:'tractor',blurb:'Tractor, silo research, farm stall, chores and a helping hand.',keywords:'tractor silo stall chores helping hand greenhouse apiary paddock workshop fertilize'},
  {id:'village',title:'The Village',art:'village-badge',blurb:'World II from level 100: villagers’ requests, the mine, the forest, the smithy and master tools for your farm.',keywords:'village world ii second world mine lumber camp smithy windmill iron silver ruby pickaxe master tools packed lunch stone log plank level 15 double batch travel requests villagers brief golden market square fields potatoes canteen pasty market week crate clay roof tile kiln potter flax linen loft weaver builder crate lavender soap sachet jeweller candlestick pier boat cargo landmark landmarks wind pump longhouse quay lookout tower great hall'},
  {id:'harbour',title:'The Harbour',art:'harbour-badge',blurb:'World III from level 200: ships that pay twice, harbour places and goods, and your own flagship at 300.',keywords:'harbour harbor port world iii third world ship ships orders quay quays crane cranes tugboat container cargo ropewalk rope cooperage barrel galley biscuits provisions sailcloth forge anchor chain fishing net seal pigeons flagship voyage rail siding shipyard harbour master'},
@@ -1011,6 +1011,10 @@ export const wikiQuick=(ctx={})=>{const h=helpers(ctx);return `<div class="wiki-
 const INDEX=[
  ...WIKI_TOPICS.map(t=>({topic:t.id,label:t.title,art:t.art,text:`${t.title} ${t.blurb} ${t.keywords}`.toLowerCase()})),
  ...Object.entries(CROPS).map(([k,c])=>({topic:'crops',label:c.name,art:k,text:c.name.toLowerCase(),anchor:`crop-${k}`})),
+ // The Super Tournament (4 Nov 2026, the owner: "ik typ supertournament in maar zie niks", "update met alle info"): its rules, and
+ // every kind by its name, pointing to its sections on Events. Single English words beside the names, like the Farmhouse's entry.
+ {topic:'events',label:'Super Tournament',art:'tournament',text:['super tournament','supertournament','tournament','race','prize pot','pot','winners','prizes','diamonds','coins'].join(' '),anchor:'sec-super-tournament'},
+ ...Object.values(TOURNAMENT_KINDS).map(k=>({topic:'events',label:k.title,art:'tournament-winner',text:`${k.title} super tournament supertournament`.toLowerCase(),anchor:'sec-kinds-of-super-tournament',...(k.from>=WORLD_TWO_LEVEL?{minLevel:k.from}:{})})),
  // The Farmhouse and the Family Hall (Oct 2026): "farmhouse" and "expand" found nothing. Single words, so no text to translate.
  {topic:'buildings',label:BUILDINGS.farmhouse.name,art:'farmhouse',text:[BUILDINGS.farmhouse.name.toLowerCase(),'expand','expansion','fields','field','land','plots'].join(' '),anchor:'building-farmhouse'},
  {topic:'buildings',label:BUILDINGS.familyhall.name,art:'familyhall-model',text:BUILDINGS.familyhall.name.toLowerCase(),anchor:'building-familyhall'},
