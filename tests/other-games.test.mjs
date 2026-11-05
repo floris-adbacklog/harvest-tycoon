@@ -13,4 +13,7 @@ test('the More menu links to Skyline Topia under Other games from us',()=>{
  assert.ok(readFileSync(new URL('../public/assets/skyline-topia.webp',import.meta.url)).subarray(8,12).toString()==='WEBP','the logo is a WebP');
  assert.match(menu,/<a class="menu-other-game" href="https:\/\/www\.thundersiege\.com\/\?utm_source=harvesttycoon&amp;utm_medium=more_menu" target="_blank" rel="noopener"><img src="\/assets\/thunder-siege\.webp"[^>]*><span><strong>Thunder Siege<\/strong>/,'Thunder Siege too (3 Nov 2026)');
  for(const code of ['nl','de','es','fr','ja'])assert.ok(JSON.parse(read(`public/i18n/${code}.json`))['Other games from us'],code);
+ // Hangilo (5 Nov 2026, the owner: "voeg Hangilo toe aan andere games van ons"), after Thunder Siege, its logo a WebP too.
+ assert.match(menu,/<a class="menu-other-game" href="https:\/\/www\.hangilo\.com\/\?utm_source=harvesttycoon&amp;utm_medium=more_menu" target="_blank" rel="noopener"><img src="\/assets\/hangilo\.webp"[^>]*><span><strong>Hangilo<\/strong>/);
+ assert.ok(readFileSync(new URL('../public/assets/hangilo.webp',import.meta.url)).subarray(8,12).toString()==='WEBP');
 });
