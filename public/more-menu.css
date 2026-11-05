@@ -44,3 +44,4 @@
 #more-dialog .mobile-menu-grid>a.menu-other-game:active{transform:translateY(2px);box-shadow:0 1px 0 #e6dccb}
 #more-dialog .mobile-menu-grid>a.menu-other-game>img{width:56px;height:56px;margin:-8px 0;flex:none;object-fit:contain}
 #more-dialog .mobile-menu-grid>a.menu-other-game>span{display:block;width:100%}
+#more-dialog .mobile-menu-grid>a.menu-other-game small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
