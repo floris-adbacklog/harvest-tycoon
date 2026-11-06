@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as m from '../game/farm-state.js';
-import {INSTANT_ACTIONS} from '../public/farm-client.js';
+import {INSTANT_ACTIONS,DIAMOND_ACTIONS} from '../public/farm-client.js';
 import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {harbourLine,harbourMessage} from '../public/harbour-shop-ui.js';
 import {untilText,waitButton} from '../public/village-shop-ui.js';
@@ -72,7 +72,7 @@ test('Harbour supplies: the work\'s missing goods at their price of the moment; 
  const done=farm(300,{works:m.HARBOUR_WORKS.map(w=>w.id)});assert.equal(m.harbourShopStatus(done.s,'supplies',done.now).shown,false);
 });
 test('the buys are harbour actions, wait for the server, and show in the player log and the shop numbers',()=>{
- for(const type of ['ship_now','harbour_supplies']){assert.equal(m.actionWorld({type}),3,type);assert.ok(!INSTANT_ACTIONS.has(type),type);assert.ok(!m.NO_EVENT_ACTIONS.has(type),type);
+ for(const type of ['ship_now','harbour_supplies']){assert.equal(m.actionWorld({type}),3,type);assert.ok(!INSTANT_ACTIONS.has(type),type);assert.ok(DIAMOND_ACTIONS.has(type),type);assert.ok(!m.NO_EVENT_ACTIONS.has(type),type);
   assert.ok(read('public/farm-client.js').includes(`'${type}'`),type);assert.match(read('src/analytics.js'),new RegExp(`action:new Set\\(\\[[^\\]]*'${type}'`),type);}
  const {s,now}=farm(205,{works:['office']});skipped(s,now);
  for(const [action,text] of [[m.harbourShopAction(m.harbourShopStatus(s,'ship',now)),'Called a ship to the quay with diamonds'],[m.harbourShopAction(m.harbourShopStatus(s,'supplies',now)),'Bought the goods for the Ropewalk with diamonds']]){

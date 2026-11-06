@@ -1,6 +1,6 @@
 // The farm no longer waits for the server after a tap that already shows (24 Oct 2026, a farmer and the owner: "Beeld blijft hangen";
 // after "Round complete!" the farm took no tap or drag for about a second while the chore's three taps were on their way). Only an action
-// that cannot show at once (a diamond spend) keeps taps off the farm until its answer is back, and dragging the farm never waits.
+// that cannot show at once (since 6 Nov 2026 no diamond spend: those show at once too; a family action, an upgrade of the farm stall) keeps taps off the farm until its answer is back, and dragging the farm never waits.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -19,8 +19,8 @@ test('a tap that shows at once saves without locking the farm; an action that wa
  // A harvest: on the screen now, saving on its way, the farm open.
  await client.runAction({type:'field',id:0,action:'harvest'});
  assert.ok(classes.has('farm-saving'),'the saving status (an app update waits for it)');assert.ok(!classes.has('farm-waiting'),'taps go on');
- // A diamond spend waits for the server: taps wait with it, behind the harvest in the line.
- const spend=client.runAction({type:'finish_crop',id:1});await tick();
+ // An action that waits for the server: taps wait with it, behind the harvest in the line.
+ const spend=client.runAction({type:'stall_upgrade'});await tick();
  assert.ok(classes.has('farm-waiting'));
  gates.shift()();await tick();await tick();assert.ok(classes.has('farm-waiting'),'until its own answer, not the harvest\'s');
  gates.shift()();await spend;await tick();

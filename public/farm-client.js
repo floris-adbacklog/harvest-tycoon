@@ -11,8 +11,8 @@ export const bridgeClock=bridge=>Number.isFinite(bridge?.serverNow)?bridge.serve
 // Taps that show at once (1 Oct 2026, "a harvest took over five seconds"): the frame works the action out with the same rules as
 // the server (farm-state.js), shows it straight away and sends it; the server's answer then takes over. The everyday taps (fields,
 // selling, batches), and since the same day the claims, building, helping hands and the daily gift (and the comeback chest, Oct 2026:
-// it spends nothing and only opens what the server put there). Purchases, the family and anything that spends diamonds wait for
-// the server as before. Farm chores show at once since 26 Oct 2026 (they waited about a second for the server's roll of their lucky
+// it spends nothing and only opens what the server put there). Purchases with money and the family wait for the server as before;
+// spending diamonds shows at once since 6 Nov 2026 (DIAMOND_ACTIONS below). Farm chores show at once since 26 Oct 2026 (they waited about a second for the server's roll of their lucky
 // find): the find is fixed by the farm itself now (farm-state.js choreRoll), as a fish is. A Halloween Pass reward
 // (Oct 2026) shows at once too: a claim like the others, worked out from the farm alone. So does a fish (11 Oct 2026, the Fishing pond):
 // every fish is fixed in advance from the farm itself (farm-state.js pondFish), so the catch shows the fish the server pays. A fish at the
@@ -20,18 +20,23 @@ export const bridgeClock=bridge=>Number.isFinite(bridge?.serverNow)?bridge.serve
 // Your own farm layout (24 Oct 2026, game/farm-map.js): moving, clearing a tree or bush, buying, placing and storing show at once too
 // (coins only, worked out from the farm alone).
 export const INSTANT_ACTIONS=Object.freeze(new Set(['field','fields','sell','produce','collect','collect_all','quest','beginner_claim','daily','checkin','comeback','delivery','mastery','activity_start','activity_work','upgrade','warehouse_upgrade','construct','expand','tractor','lake_fish','stall_collect','pass_claim','fish','layout_move','layout_clear','layout_buy','layout_place','layout_store','layout_draw','layout_purchase','chore']));
+// Diamond spends show at once too (6 Nov 2026, the owner: "doe alle", the game should feel faster): they waited about 0.6 s for farm-api.
+// Each is worked out by the same rules farm-api runs (farm-state.js applyFarmAction, nothing rolled by the server), so the screen shows
+// what the server will save; the server still decides, and a refusal puts the diamonds back (DIAMONDS_BACK). The family's diamond
+// actions (family_*) are worked out by another service on the server and still wait.
+export const DIAMOND_ACTIONS=Object.freeze(new Set(['finish_crop','finish_batch','buy_boost','buy_coins','buy_vip','replace_order','season_skip','tractor_care','tractor_shift','ship_now','harbour_supplies','village_cart','donkey_cart_buy','boat_now','villager_now','lake_casts','landmark_supplies']));
+// What a refused diamond spend says after the server's own reason ({0}): the diamonds shown as spent are back.
+export const DIAMONDS_BACK='{0} Your diamonds are back.';
 // No lucky double batch on the screen before the server has rolled for it (its answer shows it when it comes).
 const noLuck=()=>1;
-// Whether a tap can show at once: an everyday action that the rules accept. A level-up shows at once too (the rules pay its reward
-// themselves, a new farm levels up on its very first harvest), except the one that pays an invited friend's reward: only the server
-// adds that. Spending diamonds (an upgrade paid in diamonds) always waits for the server. Returns the worked-out farm and result,
-// or null to wait for the server.
+// Whether a tap can show at once: an everyday action or a diamond spend that the rules accept. A level-up shows at once too (the rules
+// pay its reward themselves, a new farm levels up on its very first harvest), except the one that pays an invited friend's reward: only
+// the server adds that. Returns the worked-out farm and result, or null to wait for the server.
 export function instantResult(state,action,now){
- if(!INSTANT_ACTIONS.has(action?.type))return null;
+ if(!INSTANT_ACTIONS.has(action?.type)&&!DIAMOND_ACTIONS.has(action?.type))return null;
  const trial=structuredClone(state);let result;
  // A refused action throws, as the server would; a slip in the rules here (not a refusal) leaves the decision to the server.
  try{result=applyFarmAction(trial,action,now,noLuck);}catch(error){if(error instanceof TypeError||error instanceof RangeError||error instanceof ReferenceError)return null;throw error;}
- if((trial.diamonds??0)<(state.diamonds??0))return null;
  return inviteeReward(structuredClone(trial),now)?null:{trial,result};
 }
 // What a whole sweep did, as one 'fields' result (the shape the server gives back): the fields in the order they were passed, with the
@@ -121,7 +126,9 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   const action=entry.action;
   send(action).then(data=>{pending.splice(pending.indexOf(entry),1);replace(data);track(action,data.result??shown);},error=>{
    pending.splice(pending.indexOf(entry),1);rebase();onChange();
-   onStatus(error.code==='ACTION_REJECTED'?'saved':'error');onError?.(error.message);
+   // A refused diamond spend says so: the diamonds it showed as spent are back (only a refusal: a lost answer is read again below).
+   const back=error.code==='ACTION_REJECTED'&&entry.diamonds>0;
+   onStatus(error.code==='ACTION_REJECTED'?'saved':'error');onError?.(back?DIAMONDS_BACK.replace('{0}',String(error.message??'').trim()):error.message);
    if(!pending.length&&!waiting)void refresh().catch(()=>{});
   });
  }
@@ -130,7 +137,7 @@ export function createFarmClient(state,{onChange,onStatus,onLevelReward,onChapte
   const instant=instantResult(state,action,farmNow());
   if(instant){
    // Shown now; the server's answer replaces it.
-   const entry={action};pending.push(entry);show(instant.trial);onChange();
+   const entry={action,diamonds:(state.diamonds??0)-(instant.trial.diamonds??0)};pending.push(entry);show(instant.trial);onChange();
    settle(entry,instant.result);
    return instant.result;
   }

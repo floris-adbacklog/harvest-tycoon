@@ -1591,7 +1591,7 @@ html[data-portal] .feedback-copy{display:none!important}
 /* Phones: the email pop-up is the same full-width sheet as every other dialog (its 380px desktop width left a gap on the right). */
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){.email-check-dialog{width:100%}}
 /* A message in the middle of the screen, over an open window (public/center-notice.js, 29 Sep 2026): the toast's card, centred. */
-.center-notice{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:24px;background:#3a301c33;animation:center-notice-in .18s ease-out}
+.center-notice{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:24px;background:#3a301c33;animation:center-notice-in .13s ease-out}
 .center-notice-card{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(340px,100%);padding:20px 20px 16px;border:1px solid #e3d8c6;border-radius:22px;background:#fffdf5;box-shadow:0 18px 48px #3a301c40,0 2px 0 #e8dcc4;text-align:center}
 .center-notice.is-warn .center-notice-card{border-color:#ecd3a8}
 .center-notice.is-warn .toast-icon{background:#f8ead2}

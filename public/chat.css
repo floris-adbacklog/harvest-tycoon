@@ -9,7 +9,7 @@
 @media(max-width:900px),(max-height:550px) and (pointer:coarse){#chat-button{display:none}}
 
 #chat-dialog{position:fixed;inset:14px auto 14px 14px;margin:0;width:min(420px,calc(100vw - 28px));max-width:none;height:auto;max-height:none;box-sizing:border-box;padding:0;display:none;flex-direction:column;overflow:hidden;border:1px solid #d1c6ba;border-radius:22px;background:var(--cream,#fffdf5);color:var(--ink,#3d382a);text-align:start;box-shadow:0 25px 80px #302d1938}
-#chat-dialog[open]{display:flex;animation:chat-in .18s ease-out}
+#chat-dialog[open]{display:flex;animation:chat-in .13s ease-out}
 @keyframes chat-in{from{transform:translateX(-28px);opacity:0}}
 @media(prefers-reduced-motion:reduce){#chat-dialog[open]{animation:none}}
 #chat-dialog::backdrop{background:#1f2a1a30;backdrop-filter:none;-webkit-backdrop-filter:none}

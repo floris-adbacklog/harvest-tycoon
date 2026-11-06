@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createFarmClient,instantResult,INSTANT_ACTIONS} from '../public/farm-client.js';
-import {createFarm,levelOf,xpForLevel,applyFarmAction,CHORES} from '../public/farm-state.js';
+import {createFarmClient,instantResult,INSTANT_ACTIONS,DIAMOND_ACTIONS,DIAMONDS_BACK} from '../public/farm-client.js';
+import {createFarm,levelOf,xpForLevel,applyFarmAction,boostOffer,CHORES} from '../public/farm-state.js';
 import {createLegacyFarm} from './legacy-farm.mjs';
 function setup(request){
  globalThis.localStorage={getItem(){throw new Error('Legacy save must not be read');},setItem(){throw new Error('Farm state must not be saved locally');}};
@@ -46,7 +46,7 @@ test('a tap the server refuses goes back to the saved farm and says why',async()
 test('what the rules refuse is refused at once, without asking the server; other actions still wait for the server',async()=>{
  let asked=0;const {state,client}=farmSetup(async()=>{asked++;throw new Error('Unavailable');});await client.load();
  await assert.rejects(client.runAction({type:'sell',item:'corn',quantity:50}));assert.equal(asked,0);
- await assert.rejects(client.runAction({type:'buy_boost',boost:'double_harvest'}),/Unavailable/);assert.equal(asked,1);assert.equal(state.inventory.wheat,4);
+ await assert.rejects(client.runAction({type:'stall_upgrade'}),/Unavailable/);assert.equal(asked,1);assert.equal(state.inventory.wheat,4);
 });
 test('a level-up shows at once too (a new farm levels up on its first harvest); only the invited friend\'s reward waits for the server',()=>{
  const now=Date.now(),farm=createFarm(now),ready=farm.plots.findIndex(p=>p.crop&&p.readyAt<=now);
@@ -54,7 +54,7 @@ test('a level-up shows at once too (a new farm levels up on its first harvest); 
  assert.ok(first,'the first harvest shows at once');assert(levelOf(first.trial)>levelOf(farm));assert.ok(first.result.levelReward,'with its level reward, from the same rules as the server');
  const invited=structuredClone(farm);invited.invite={code:'ANNA12',by:'Anna',at:now};invited.xp=xpForLevel(10)-1;
  assert.equal(instantResult(invited,{type:'field',id:ready,action:'harvest'},now),null,'reaching level 10 as an invited friend waits for the server');
- assert.equal(instantResult(farm,{type:'buy_vip',plan:'week'},now),null,'not an everyday tap');
+ assert.equal(instantResult(farm,{type:'family_leave'},now),null,'a family action waits for the server');
  // A fish (11 Oct 2026, the Fishing pond) shows at once too: every fish is fixed in advance from the farm itself. So does a fish at
  // the village lake (12 Oct 2026, lake_fish).
  assert.deepEqual([...INSTANT_ACTIONS].sort(),['activity_start','activity_work','beginner_claim','checkin','chore','collect','collect_all','comeback','construct','daily','delivery','expand','field','fields','fish','lake_fish','layout_buy','layout_clear','layout_draw','layout_move','layout_place','layout_purchase','layout_store','mastery','pass_claim','produce','quest','sell','stall_collect','tractor','upgrade','warehouse_upgrade']);   // the Warehouse's upgrade (22 Oct 2026): coins only, like a building's; your own farm layout's actions (24 Oct 2026) too
@@ -68,8 +68,21 @@ test('a level-up shows at once too (a new farm levels up on its first harvest); 
   assert.deepEqual(shown.result,paid,`attempt ${attempt}: the same find, coins and XP as the server`);assert.deepEqual(shown.trial,server);
   applyFarmAction(chores,{type:'chore',id:'weeds'},at);
  }
- assert.match(readFileSync(new URL('../public/farm-client.js',import.meta.url),'utf8'),/if\(\(trial\.diamonds\?\?0\)<\(state\.diamonds\?\?0\)\)return null;/,'spending diamonds waits for the server');
  assert.equal(instantResult({coins:1},{type:'quest',id:'x'},now),null,'a slip in the rules (not a refusal) leaves it to the server');
+});
+// 6 Nov 2026 (the owner: the game should feel faster): a diamond spend shows at once, as the server will save it; the server still
+// decides, and a refusal puts the diamonds back and says so after the server's own reason. No family action is among them.
+test('a diamond spend shows at once; a refusal puts the diamonds back and says so',async()=>{
+ const answers=[];const {state,client,errors}=farmSetup(()=>new Promise((resolve,reject)=>answers.push({resolve,reject})));
+ state.xp=xpForLevel(12);state.diamonds=500;await client.load();
+ const cost=boostOffer('harvest','30m').cost;
+ const result=await client.runAction({type:'buy_boost',boost:'harvest',length:'30m',expectedCost:cost});
+ assert.equal(state.diamonds,500-cost,'spent on the screen before the server answered');assert.equal(result.cost,cost);assert.equal(answers.length,1);
+ answers.shift().reject(Object.assign(new Error('You need more diamonds.'),{code:'ACTION_REJECTED'}));
+ await new Promise(r=>setTimeout(r,0));await new Promise(r=>setTimeout(r,0));
+ assert.equal(state.diamonds,500,'the diamonds are back');assert.deepEqual(errors,['You need more diamonds. Your diamonds are back.']);
+ assert.equal(DIAMONDS_BACK,'{0} Your diamonds are back.');
+ for(const type of DIAMOND_ACTIONS)assert.ok(!type.startsWith('family_')&&!INSTANT_ACTIONS.has(type),type);
 });
 test('direct game access cannot create a client without an authenticated parent',()=>{
  globalThis.window={parent:{}};assert.throws(()=>createFarmClient({},{}),/Sign in/);

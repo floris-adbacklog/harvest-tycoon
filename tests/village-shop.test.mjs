@@ -7,7 +7,7 @@ import {createFarm,normalizeFarm,applyFarmAction,xpForLevel,worldTwoBuilding,lev
  VILLAGE_SHOP,VILLAGER_CALLS_PER_DAY,LANDMARK_COINS_PER_DIAMOND,PRICES_CHANGED,BOOSTS,COIN_PACK,NO_EVENT_ACTIONS,FEATURE_LEVELS,
  BUILDINGS,BUILDING_LEVELS,MAX_BUILDING_LEVEL,WORLD_TWO_LEVEL,LAKE_LEVEL,LAKE_WATER,POND_MAX_CASTS,POND_MIN_GAP_MS,VILLAGE_LANDMARKS,ITEMS,
  VALLEY_PROJECTS,BOAT_DIAMOND_TRIPS,familyWeek} from '../game/farm-state.js';
-import {INSTANT_ACTIONS,instantResult} from '../public/farm-client.js';
+import {INSTANT_ACTIONS,DIAMOND_ACTIONS,instantResult} from '../public/farm-client.js';
 import {farmLog,snapshot} from '../supabase/functions/farm-api/player-log.js';
 import {squareMarkup} from '../public/village-square-ui.js';
 import {boatMarkup} from '../public/boat-ui.js';
@@ -52,21 +52,23 @@ test('the shop: prices, levels and the rates as the owner chose them',()=>{
  assert.match(read('game/farm-state.js'),/case 'buy_coins':\{[^]*?throw new Error\(PRICES_CHANGED\);/);
 });
 
-test('each of the five: diamonds spent, boosts only for the time-skips, events count it, never instant, no gate, no new village keys',()=>{
+test('each of the five: diamonds spent, boosts only for the time-skips, events count it, shown at once, no gate, no new village keys',()=>{
  const s=world(165,{stock:{rooftile:10}});
  const gates=read('game/farm-state.js').match(/const gates=\{([^}]+)\}/)[1];
  const steps=[['village_cart',statusAction(s,'supplycart'),0],['village_cart',statusAction(s,'tilecart'),0],['boat_now',statusAction(s,'boat'),1],['villager_now',statusAction(s,'villager'),1],['lake_casts',statusAction(s,'casts'),1],['landmark_supplies',statusAction(s,'landmark'),0]];
  for(const [type,action,boosts] of steps){
   assert.equal(action.type,type);
   const villageKeys=Object.keys(s.village),boatKeys=Object.keys(s.village.boat),spent=s.stats.village_diamonds_spent??0,used=s.stats.boosts_used??0,diamonds=s.diamonds;
-  const r=act(s,action);
+  // 6 Nov 2026 (the game should feel faster): a diamond spend shows at once, worked out exactly as the server will save it.
+  const shown=instantResult(s,action,now);assert.ok(shown,`${type} shows at once`);
+  const r=act(s,action);assert.deepEqual(shown.result,r,type);assert.deepEqual(shown.trial,s,type);
   assert.equal(r.cost,action.expectedCost,type);assert.equal(s.diamonds,diamonds-action.expectedCost,type);
   assert.equal(s.stats.village_diamonds_spent,spent+action.expectedCost,`${type}: village_diamonds_spent`);   // 27 Oct 2026: the village's own count
   assert.equal((s.stats.boosts_used??0)-used,boosts,`${type}: boosts_used (the owner: the time-skips count, the carts and supplies do not)`);
   assert.deepEqual(Object.keys(s.village),villageKeys,type);assert.deepEqual(Object.keys(s.village.boat),boatKeys,type);
  }
  for(const type of TYPES){
-  assert.ok(!NO_EVENT_ACTIONS.has(type),type);assert.ok(!INSTANT_ACTIONS.has(type),type);assert.equal(instantResult(s,{type},now),null,type);
+  assert.ok(!NO_EVENT_ACTIONS.has(type),type);assert.ok(!INSTANT_ACTIONS.has(type),type);assert.ok(DIAMOND_ACTIONS.has(type),type);
   assert.doesNotMatch(gates,new RegExp(`\\b${type}:`),type);assert.ok(!Object.hasOwn(FEATURE_LEVELS,type),type);
  }
  assert.deepEqual(['village_carts','boat_calls','villager_calls','lake_refills','landmark_supplies'].map(k=>s.stats[k]),[2,1,1,1,1]);

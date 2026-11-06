@@ -25,7 +25,8 @@ function start({fail=false}={}){
   showPaymentReturn:()=>calls.push('payment'),
   createStarterPackUI:async()=>calls.push('starter'),
   createPopupUI:()=>({start(){calls.push('popup');}}),
-  createOfferUI:()=>calls.push('offer'),createAccountDelete:()=>null,errorLine:()=>'error'
+  createOfferUI:()=>calls.push('offer'),createAccountDelete:()=>null,errorLine:()=>'error',
+  warmOnPress:()=>()=>{},keptView:()=>null,keepView:()=>false
  });
  const done=vm.runInContext(`(async()=>{${source}})()`,context);
  return{calls,watched,done,finish,refuse};

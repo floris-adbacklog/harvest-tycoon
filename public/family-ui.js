@@ -1,5 +1,6 @@
 import {confirmAction} from './confirm-dialog.js';
 import {skeleton} from './skeleton.js';
+import {keptView,keepView,warmOnPress} from './kept-views.js';
 import {createSocialUI} from './social-ui.js';
 import {avatarImage} from './player-avatars.js';
 import {framed,lookBadge,lookTitle} from './look-marks.js';
@@ -364,7 +365,7 @@ export function createFamilyUI({state,runAction,notify,isReady}){
  async function load(force=false){
   if(busy||reading||!familyUnlocked(state)||!isReady()||!force&&Date.now()-lastRead<30000)return;
   reading=true;const ticket=generation;
-  try{const data=await window.parent.harvestBridge.request({operation:'family'});if(ticket!==generation)return;view=data.family;lastRead=Date.now();error='';keepFamilyShirt(view);
+  try{const data=await window.parent.harvestBridge.request({operation:'family'});if(ticket!==generation)return;view=data.family;lastRead=Date.now();error='';keepFamilyShirt(view);keepView('family',me(),view);
    // Do not disturb a form while a farmer is typing into it.
    if(tab!=='sharing'&&(!content.contains(document.activeElement)||!(['INPUT','SELECT'].includes(document.activeElement.tagName)||document.activeElement.closest('[data-emblem-picker]'))))render();
   }catch(e){if(ticket===generation){error=e.message;lastRead=Date.now();render();}}finally{reading=false;refresh();}
@@ -384,7 +385,16 @@ export function createFamilyUI({state,runAction,notify,isReady}){
   const shareNote=dialog.querySelector('[data-family-share-note]');if(shareNote&&view?.family){const r=familyShareState(view.family,farmNow()),line=shareLine();if(shareNote.dataset.line!==line){shareNote.dataset.line=line;shareNote.textContent=line;}const b=shareNote.closest('[data-family-share]');if(b&&!busy)b.disabled=!r.can;}
   if(!busy&&!reading&&isReady()&&!document.hidden&&Date.now()-lastRead>=30000)void load();
  }
- function open(){if(!familyUnlocked(state))return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());browseShown=FAMILY_BROWSE_PAGE;dialog.showModal();render();void load(true);}
+ // The Family window as it was last time, also after a new start (6 Nov 2026, keptView): kept on this device, shown at once
+ // while the newest is read, and only for the family this farm is in now (none kept for a farmer without one). A press on the Family
+ // button or its More-menu tile starts that read before the click.
+ const me=()=>{try{return window.parent.harvestBridge?.playerId??null;}catch{return null;}};
+ function lastView(){
+  if(view)return;const kept=keptView('family',me());
+  if(kept&&typeof kept==='object'&&(kept.family?.id??null)===(state.family?.familyId??null)&&kept.family)view=kept;
+ }
+ warmOnPress(['family-button'],()=>{if(!dialog.open&&familyUnlocked(state))return load(true);});
+ function open(){if(!familyUnlocked(state))return;document.querySelectorAll('dialog[open]').forEach(d=>d.close());browseShown=FAMILY_BROWSE_PAGE;lastView();dialog.showModal();render();void load(true);}
  dialog.addEventListener('close',()=>{inviteSearch.unmount();social.unmount();});
  // A farmer's profile (src/player-profiles.js) asks whether you can invite them, and sends the invitation through here.
  window.harvestFamilyInvite={

@@ -23,7 +23,7 @@ test('the game reads what a page needs before it shows it, and both bridges pass
  const cloud=read('src/game-cloud.js');
  assert.match(cloud,/if\(board\?\.more&&page\*BOARD_PAGE>=board\.rows\.length\)\{/);
  assert.match(cloud,/bridge\.leaderboard\(category,\{upTo:boardReadFor\(page\)\}\)/);
- assert.match(cloud,/bridge\.leaderboard\(category,\{upTo:quiet&&board\?\.category===category\?board\.rows\.length:undefined\}\)/,'the refresh keeps what is shown');
+ assert.match(cloud,/quiet\?bridge\.leaderboard\(category,\{upTo:board\?\.category===category\?board\.rows\.length:undefined\}\):boardRead\(category\)/,'the refresh keeps what is shown');
  for(const f of ['src/main.js','src/farm-session.js'])assert.match(read(f),/async leaderboard\(category='level',\{upTo\}=\{\}\)\{[^}]*\{counts:true,now:Date\.now\(\)\+clock,upTo\}\)/,f);
  assert.match(read('src/leaderboard.js'),/jump\.setAttribute\('aria-label','Go to places'\)/,'a jump by hundreds past ten pages');
 });

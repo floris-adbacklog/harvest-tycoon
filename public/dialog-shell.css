@@ -27,7 +27,7 @@ dialog.is-sheet,dialog.is-card{
 }
 .is-s{--w:var(--w-s)}.is-m{--w:var(--w-m)}.is-l{--w:var(--w-l)}
 dialog.is-sheet::backdrop,dialog.is-card::backdrop{background:var(--dim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-dialog.is-sheet[open],dialog.is-card[open]{animation:shell-in .18s ease-out}
+dialog.is-sheet[open],dialog.is-card[open]{animation:shell-in .13s ease-out}
 @keyframes shell-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){dialog.is-sheet[open],dialog.is-card[open]{animation:none}}
 /* Celebrations: one warm glow at the top, the title centred and big. Confirms and money cards stay plain. */

@@ -36,7 +36,7 @@ export function createFarmSession({
    if(!user){signedOut();return;}playerId=user.id;phase('checking','Opening your farm…');
    // The game page starts loading now, while the farm is on its way from the server (as on the website, 1 Oct 2026).
    let release,cancel;const ready=new Promise((resolve,reject)=>{release=resolve;cancel=reject;});ready.catch(()=>{});
-   win.harvestBridge={pending:true,ready};const page=doc.createElement('iframe');page.title='Harvest Tycoon farm';page.src=farmUrl;host().append(page);
+   win.harvestBridge={pending:true,ready,playerId:user.id};const page=doc.createElement('iframe');page.title='Harvest Tycoon farm';page.src=farmUrl;host().append(page);
    const giveUp=error=>{cancel(error);page.remove();if(win.harvestBridge?.ready===ready)delete win.harvestBridge;};
    let initial;try{const extra=firstLoad();initial=await farmRequest({operation:'load',...(extra??{})});}catch(error){if(ticket!==generation)return;giveUp(error);throw error;}
    if(ticket!==generation)return;if(initial.profile?.player_id!==user.id){giveUp();reopen=true;return;}

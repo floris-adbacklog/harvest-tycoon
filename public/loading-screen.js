@@ -171,8 +171,13 @@ export function createLoadingScreen(doc,modelCount,{loading='Loading your farm',
   const done=(models+Number(account)+Number(finished))/(modelCount+2);
   const percent=finished?100:Math.min(99,FARM_START+Math.floor(done*(100-FARM_START)));
   get('load-progress').value=percent;
+  // The step (8 Oct 2026) and, since 6 Nov 2026, also as data-step: with public/loading-feel.js on the page (data-load-creep) the bar
+  // that moves, the percent beside it and the line are that script's, and it reads the real value and step from here.
+  const step=finished?'Ready!':models<modelCount?loading:!account?'Opening your saved farm':'Planting the fields',line=get('load-text');
+  line.setAttribute?.('data-step',step);
+  if(doc.documentElement?.hasAttribute?.('data-load-creep'))return;
   get('load-percent').textContent=`${percent}%`;
-  get('load-text').textContent=finished?'Ready!':models<modelCount?loading:!account?'Opening your saved farm':'Planting the fields';
+  line.textContent=step;
  }
  render();
  return {

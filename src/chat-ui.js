@@ -22,6 +22,7 @@ import {wikiSectionTitle} from '../public/wiki-content.js';
 import {SITE,appPath,settingsPart} from '../public/game-links.js';
 import {androidApp} from '../public/android.js';
 import {LANGUAGES} from '../public/languages.js';
+import {keptView,keepView,warmOnPress} from '../public/kept-views.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // A message the staff changed: the new text and the "edited" mark; the rest (such as the farmer's VIP mark as it is now) stays.
@@ -461,10 +462,12 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
   busy=false;
   if(tab==='private'&&!thread){messages=[];paint();return;}
   if(tab==='notices'){
+   // News as it was last time, also after a new start (6 Nov 2026, public/kept-views.js): shown at once while the newest is read.
+   if(!noticesRead&&!notices.length){const kept=keptView('notices',me);if(Array.isArray(kept)&&kept.length){notices=kept.filter(n=>n&&typeof n==='object'&&(n.kind!=='news'||newsShown()));noticesRead=true;}}
    busy=!noticesRead;paint();const fresh=unread().notices;
    // News from before you signed up (and a gift for everyone you could not have received) is not yours to read.
    try{const rows=await chat.notices(),joined=Date.parse(overview?.joined??'')||0;if(ticket!==loading)return;notices=rows.filter(n=>(n.player_id||Date.parse(n.created_at)>joined)&&(n.kind!=='news'||newsShown()));freshNotices=fresh;}catch(error){if(ticket===loading)note(error.message);}
-   if(ticket!==loading)return;busy=false;noticesRead=true;paint();markRead('notices');return;
+   if(ticket!==loading)return;busy=false;noticesRead=true;keepView('notices',me,notices);paint();markRead('notices');return;
   }
   const name=channelOf();if(!name){messages=[];paint();return;}
   const kept=recent.get(name);
@@ -487,11 +490,20 @@ const keepRecent=name=>{if(!name||!messages.length)return;recent.delete(name);re
  }
  // A channel comes from a notification or a link (public/app-links.js): a private chat opens that conversation, a family chat the
  // Family tab.
+ // A press on the Chat button or its More-menu tile (6 Nov 2026, public/kept-views.js warmOnPress) starts what the chat opens with: the
+ // overview it waits for when it has none yet, and Global's newest page, kept beside the other recent chats for the click.
+ let overviewRead=null;
+ const readOverview=()=>overviewRead??=refreshOverview().finally(()=>{overviewRead=null;});
+ warmOnPress(['chat-button'],()=>{
+  if(switchedOff||disposed||dialog.open)return;
+  if(!overview)void readOverview();
+  if(!recent.has('global'))return chat.messages('global',PAGE).then(rows=>{if(!disposed&&!recent.has('global')&&Array.isArray(rows)&&rows.length){recent.set('global',{rows,more:rows.length>=PAGE});while(recent.size>RECENT_CHATS)recent.delete(recent.keys().next().value);}});
+ },{doc});
  async function open({tab:wanted,with:other,channel}={}){
   if(switchedOff)return;
   doc.querySelectorAll('dialog[open]').forEach(d=>d.close());
   resetThreads();
-  if(!overview||channel)await refreshOverview();
+  if(!overview||channel)await readOverview();
   if(!overview)return;
   if(channel?.startsWith('dm:')){const t=findThread(channel)??await threadFromCard(channel);if(t)other={id:t.otherId,name:t.otherName,avatar:t.otherAvatar};else wanted='private';}
   else if(channel?.startsWith('family:'))wanted='family';

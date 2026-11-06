@@ -9,6 +9,7 @@ import {createChatUI} from './chat-ui.js';
 import {createCloudUI} from './ui.js';
 import {renderLeaderboard,updateOnlineIndicators,boardReadFor,BOARD_PAGE} from './leaderboard.js';
 import {loadFamilies} from '../public/family-badge.js';
+import {keptView,keepView,warmOnPress} from '../public/kept-views.js';
 import {showPaymentReturn} from './payment-ui.js';
 import {createStarterPackUI} from './starter-pack-ui.js';
 import {stopPageZoom} from './page-zoom.js';
@@ -134,7 +135,7 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   async function showBoardPage(page){
    if(board?.more&&page*BOARD_PAGE>=board.rows.length){
     const request=++boardRequest,category=board.category;ui.results.setAttribute('aria-busy','true');
-    try{const result=await bridge.leaderboard(category,{upTo:boardReadFor(page)});if(request!==boardRequest||ui.category!==category)return;board=result;boardCache.set(category,result);}
+    try{const result=await bridge.leaderboard(category,{upTo:boardReadFor(page)});if(request!==boardRequest||ui.category!==category)return;board=result;keepBoard(result);}
     catch(error){if(request===boardRequest)ui.status('Could not refresh');return;}
     finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}
    }
@@ -143,8 +144,15 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
   // The last board of each kind shows at once when it opens again (or was read in the background after the farm opened), while
   // the newest loads; a board never seen shows placeholder rows (1 Oct 2026).
   const boardCache=new Map();
+  // Kept on this device too (6 Nov 2026, public/kept-views.js): the first look after a new start shows the last board at once. A press on
+  // the Leaderboard button starts reading the board it opens on (warmBoard), and the click then waits for that same read.
+  const keepBoard=result=>{boardCache.set(result.category,result);keepView(`board:${result.category}`,bridge.playerId,result);};
+  const lastBoard=category=>boardCache.get(category)??keptView(`board:${category}`,bridge.playerId);
+  let warmBoard=null;
+  const boardRead=category=>{const warm=warmBoard;warmBoard=null;return warm&&warm.category===category&&Date.now()-warm.at<5000?warm.read:bridge.leaderboard(category);};
+  if(ui)part(()=>warmOnPress(['leaderboard-button'],()=>{if(!ui||ui?.open)return;const category=ui?.category;warmBoard={category,at:Date.now(),read:bridge.leaderboard(category)};warmBoard.read.catch(()=>{});}));
   // The Village and Harbour rows show from their level; an admin has no row of their own on a board, so both show (29 Oct 2026).
-  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&boardCache.get(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await bridge.leaderboard(category,{upTo:quiet&&board?.category===category?board.rows.length:undefined});await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own){ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);ui.showHarbour((result.own.level??0)>=WORLD_THREE_LEVEL);}else if(staffRole(bridge.playerId)==='admin'){ui.showVillage(true);ui.showHarbour(true);}if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;boardCache.set(result.category,result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
+  async function openBoard(quiet=false){const request=++boardRequest,category=ui.category,cached=!quiet&&lastBoard(category);if(cached){board=cached;boardPage=0;drawBoard();}else if(!quiet)ui.results.innerHTML=skeleton('Gathering the latest scores…',{rows:6});ui.results.setAttribute('aria-busy','true');try{const result=await (quiet?bridge.leaderboard(category,{upTo:board?.category===category?board.rows.length:undefined}):boardRead(category));await loadStaff(bridge.chat);if(request!==boardRequest)return;if(result.own){ui.showVillage((result.own.level??0)>=WORLD_TWO_LEVEL);ui.showHarbour((result.own.level??0)>=WORLD_THREE_LEVEL);}else if(staffRole(bridge.playerId)==='admin'){ui.showVillage(true);ui.showHarbour(true);}if(!quiet&&!cached||board?.category!==result.category)boardPage=0;board=result;keepBoard(result);drawBoard();ui.status('');}catch(error){if(request===boardRequest){if(!quiet)ui.message(error.message);ui.status('Could not refresh');}}finally{if(request===boardRequest)ui.results.setAttribute('aria-busy','false');}}
   startup.stage='game';
   let game=null;try{game=await gameLoad;startup.stage='farm';}catch(error){firstError(error);console.error('The game could not load',error);}
   // A farm start that broke before the game's own error card (11 Oct 2026: its loading screen, or a farm whose models nearly all failed,
@@ -159,7 +167,7 @@ if(!bridge){if(!waited)location.replace('/play.html');}else{
    // CrazyGames' SDK (src/crazygames.js): the farm is loaded and can be played.
    if(portal){portal.event('loadingStop');portal.event('gameplayStart');}
    // The board the leaderboard opens on, read once in the background, so the first look needs no wait.
-   if(ui)setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))boardCache.set(result.category,result);}).catch(()=>{});},8000);
+   if(ui)setTimeout(()=>{const category=ui.category;if(!boardCache.has(category))bridge.leaderboard(category).then(result=>{if(!boardCache.has(result.category))keepBoard(result);}).catch(()=>{});},8000);
    // No purchases on CrazyGames (their rule): no payment return, special offer or Starter Pack there. On Kongregate only once it sells
    // Kreds (public/portal.js portalSells, 15 Oct 2026).
    const shop=!portal||portalSells(portal);

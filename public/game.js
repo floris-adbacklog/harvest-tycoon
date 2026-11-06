@@ -2477,6 +2477,22 @@ function shootFarmPhoto(width,height){
  finally{farmerBack?.();renderer.setDrawingBufferSize(viewportWidth,viewportHeight,viewportRatio);renderer.render(scene,camera);highlight(was);}
  return out;
 }
+// Your own farm as the loading screen (6 Nov 2026, the owner: the game should feel faster; public/loading-feel.js): a small copy of the farm as
+// it is on screen, kept on this device now and then and when the page goes out of view, shows behind the next loading screen. Copied
+// straight after the farm is drawn (the screen buffer is not kept after a frame), so it costs no frame of its own; WebP, or JPEG where a
+// browser makes no WebP (Safari). Only your own farm: not the village or harbour, a visit, the admin view or a lost 3D view.
+const LOOK_WIDTH=480,LOOK_FIRST_MS=15000,LOOK_EVERY_MS=120000;let lookDue=false;
+function keepFarmLook(){
+ lookDue=false;
+ const keep=window.harvestFarmLook?.keep;let player=null;try{player=window.parent?.harvestBridge?.playerId??null;}catch{}
+ if(!keep||!player||!ready||!renderer||villageWorld||visitView||adminView||visitLayer||renderer.getContext().isContextLost())return;
+ const from=renderer.domElement,width=Math.min(LOOK_WIDTH,from.width),height=Math.round(from.height*width/Math.max(1,from.width));if(!width||!height)return;
+ const out=document.createElement('canvas');out.width=width;out.height=height;const ctx=out.getContext('2d');if(!ctx)return;ctx.imageSmoothingQuality='high';
+ // The ground colour behind the 3D view first: what the farm leaves clear shows that, never the painting behind the loading screen.
+ try{ctx.fillStyle=getComputedStyle(world).backgroundColor||'#cab091';ctx.fillRect(0,0,width,height);ctx.drawImage(from,0,0,width,height);}catch{return;}
+ const kept=blob=>{if(blob)void keep(blob,player);};
+ try{out.toBlob(blob=>{if(blob&&blob.type!=='image/webp')out.toBlob(kept,'image/jpeg',.72);else kept(blob);},'image/webp',.62);}catch{}
+}
 const mapProject=(x,z)=>{const v=new THREE.Vector3(x,0,z).project(mapCamera);return [(v.x+1)/2*mapBuffer.width,(1-v.y)/2*mapBuffer.height];};
 function mapUnproject(cx,cy){
  const p=new THREE.Vector3(cx/mapBuffer.width*2-1,1-cy/mapBuffer.height*2,-1).unproject(mapCamera),dir=new THREE.Vector3();mapCamera.getWorldDirection(dir);
@@ -2744,7 +2760,7 @@ function frame(now){
   const t=clock.getElapsedTime();farmLife?.animate(t,dt,farmNow());pets?.animate(dt);herd?.animate(dt,camera);walker?.animate(dt,camera);for(const other of familyWalkers)other.animate(dt,camera);scenePolish?.animate(t);atmosphere?.animate(t,dt);if(villageExtras?.fields?.animate?.())renderer.shadowMap.needsUpdate=true;if(cropMotion?.animate()){cropsMoving=true;if(now-lastShadows>CROP_SHADOWS){renderer.shadowMap.needsUpdate=true;lastShadows=now;}}else if(cropsMoving){cropsMoving=false;renderer.shadowMap.needsUpdate=true;lastShadows=now;}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.velocity.y-=dt*3;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.material.opacity=Math.max(0,p.life);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  }
- renderer.render(scene,camera);
+ renderer.render(scene,camera);if(lookDue)keepFarmLook();
  if(spot){const target=spotTarget();if(target)spot.show(target.rect??null,{all:Boolean(target.all)});else spot.hide();}
 }
 function registerAgentTools(){
@@ -2969,6 +2985,11 @@ async function init(){
   ready=true;if(!villageWorld)setupMinimap();positionBuildingLabels();updateUI();if(!villageWorld)sceneryDone=addScenery();if(villageWorld)void addVillageExtras();void addPets();void addFarmer();arrive();const ripe=state.plots.filter(p=>p.crop&&p.readyAt<=farmNow()).length;if(!adminView){if(harbourWorld)toast('Welcome to the harbour! The ships come soon.');else if(villageWorld)toast('Welcome to the village! '+(briefWaits()?'A golden brief waits at the market square.':'Your farm keeps growing while you are here.'));else if(state.stats.harvested>0&&calmStep(state)===null&&(!initialWelcome||initialChapterReward?.diamonds))toast(`Welcome back! ${ripe?`${ripe} crops are ready to harvest.`:'Your farm is right where you left it.'}${initialChapterReward?.diamonds?` Completed chapters: +${initialChapterReward.diamonds} diamonds!`:''}`);}renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);markChain('render');loadingUI.complete();
   // The farm is on screen; a minute of play from here and this start was a good one (graphics-mode.js): its mark goes.
   markRun(gfxStore,{stage:'ready',step:villageWorld?'village':'scene',percent:100});setTimeout(()=>{runHealthy=true;endRun(gfxStore);},HEALTHY_MS);$('loading').classList.add('fade');if(!graphicsSimple&&lighter>=0){speedCheck=createSpeedCheck();checkFrom=performance.now()+CHECK_AFTER_MS;}registerAgentTools();requestAnimationFrame(frame);
+  // The look for the next loading screen (keepFarmLook): soon after the farm opens, every two minutes, and as the page goes out of view
+  // (drawn once more there: a hidden page draws no frames).
+  if(!villageWorld&&!visitView&&!adminView){setTimeout(()=>{lookDue=true;},LOOK_FIRST_MS);setInterval(()=>{lookDue=true;},LOOK_EVERY_MS);
+   const lastLook=()=>{if(!ready||visitLayer||!renderer||renderer.getContext().isContextLost())return;try{renderer.render(scene,camera);keepFarmLook();}catch{}};
+   document.addEventListener('visibilitychange',()=>{if(document.hidden)lastLook();});window.addEventListener('pagehide',lastLook);}
   // Kongregate in a small window (16 Oct 2026, the owner): a Full screen button by the camera buttons where Kongregate's frame allows full
   // screen, else one tip on this device (public/small-window.js). Nothing of it on the website, in the apps or on another portal.
   createFullScreenOffer({button:$('fullscreen-button'),show:text=>toast(text),storage:(()=>{try{return localStorage;}catch{return null;}})(),quiet:()=>modalOpen()||calmStep(state)!==null});
