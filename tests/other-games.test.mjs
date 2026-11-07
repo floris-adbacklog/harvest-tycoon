@@ -16,4 +16,8 @@ test('the More menu links to Skyline Topia under Other games from us',()=>{
  // Hangilo (5 Nov 2026, the owner: "voeg Hangilo toe aan andere games van ons"), after Thunder Siege, its logo a WebP too: the wordmark without a background, wider (more-menu.css .menu-other-wordmark).
  assert.match(menu,/<a class="menu-other-game" href="https:\/\/www\.hangilo\.com\/\?utm_source=harvesttycoon&amp;utm_medium=more_menu" target="_blank" rel="noopener"><img src="\/assets\/hangilo\.webp"[^>]*><span><strong>Hangilo<\/strong>/);
  assert.ok(readFileSync(new URL('../public/assets/hangilo.webp',import.meta.url)).subarray(8,12).toString()==='WEBP');
+ // Lootvale (7 Nov 2026, the owner): after Hangilo, its logo a WebP; an 18+ game with slots, so the website only, never in our apps.
+ assert.match(menu,/<a class="menu-other-game menu-other-web" href="https:\/\/lootvale\.com\/\?utm_source=harvesttycoon&amp;utm_medium=more_menu" target="_blank" rel="noopener"><img src="\/assets\/lootvale\.webp"[^>]*><span><strong>Lootvale<\/strong><small>Slots 18\+<\/small>/);
+ assert.ok(readFileSync(new URL('../public/assets/lootvale.webp',import.meta.url)).subarray(8,12).toString()==='WEBP');
+ assert.match(read('public/more-menu.css'),/html\[data-app\] #more-dialog \.mobile-menu-grid>a\.menu-other-web\{display:none!important\}/);
 });

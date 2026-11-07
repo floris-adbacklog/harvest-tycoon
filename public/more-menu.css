@@ -45,3 +45,6 @@
 #more-dialog .mobile-menu-grid>a.menu-other-game>img{width:56px;height:56px;margin:-8px 0;flex:none;object-fit:contain}
 #more-dialog .mobile-menu-grid>a.menu-other-game>span{display:block;width:100%}
 #more-dialog .mobile-menu-grid>a.menu-other-game small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Lootvale (7 Nov 2026, the owner): an 18+ game with slots, so only on the website: never in our iPhone and Android apps (html[data-app],
+   public/android-app.js); the portals hide every Other games tile (portal.css). */
+html[data-app] #more-dialog .mobile-menu-grid>a.menu-other-web{display:none!important}
