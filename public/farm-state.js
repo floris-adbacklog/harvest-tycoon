@@ -5532,7 +5532,9 @@ export function doChore(state,id,now=Date.now()){
  state.chorePractice??={};state.chorePractice[id]=chore.attempts+1;
  state.chores[id]=now+chore.cooldown;
  const rewards=choreRewards(chore,bonus),{coins,xp,items}=rewards;
- state.coins+=coins;state.xp+=xp;{state.stats.chores++;state.stats['chore_'+id]=(state.stats['chore_'+id]??0)+1;}
+ // A chore's coins count as earned (7 Nov 2026, a farmer: the Earn coins event did not count them; its goal text and the
+ // Coin Collector tournament both say chores count).
+ state.coins+=coins;state.xp+=xp;state.stats.earned+=coins;{state.stats.chores++;state.stats['chore_'+id]=(state.stats['chore_'+id]??0)+1;}
  for(const [item,count] of Object.entries(items))state.inventory[item]=(state.inventory[item]??0)+count;
  return {success:true,bonus,coins,xp,items,chance:chore.chance,nextChance:Math.min(chore.maxChance,chore.chance+CHORE_PRACTICE_STEP),attempts:chore.attempts+1,readyAt:state.chores[id]};
 }
