@@ -39,3 +39,39 @@ test('Settings › My log opens your own log at once, under Graphics; the log ke
  assert.match(read('src/player-profiles.js'),/Last 60 days/);
  assert.match(read('supabase/player-logs-60-days.sql'),/interval '60 days'/);
 });
+
+// 9 Nov 2026, a farmer's request, the owner: "alle 3".
+test('a day total and an action line are saved together: every row names its time', async ()=>{
+ const {writeLog}=await import('../supabase/functions/farm-api/player-log.js');
+ let inserted;const admin={from:()=>({insert:async rows=>{inserted=rows;return {error:null};}})};
+ await writeLog(admin,'p1',[{category:'account',action:'day_total',text:'Day total',at:'2026-11-08T12:00:00.000Z'},{category:'market',action:'sell',text:'Sold'}]);
+ assert.equal(inserted[0].created_at,'2026-11-08T12:00:00.000Z');
+ assert.match(inserted[1].created_at,/^\d{4}-\d{2}-\d{2}T/);
+ assert.deepEqual(Object.keys(inserted[0]).sort(),Object.keys(inserted[1]).sort(),'mixed columns make the database refuse the whole insert');
+});
+
+test('the shipping bin gets its line once, on the save that pays it, and counts in that day', async ()=>{
+ const {binPaidRows}=await import('../supabase/functions/farm-api/player-log.js');
+ const now=Date.parse('2026-11-09T08:00:00Z');
+ const state={coins:5000,shipPaid:{day:'2026-11-09',coins:5000,count:120},dayTally:{day:'2026-11-08',coinsIn:7,coinsOut:0,diamondsIn:0,diamondsOut:0,xp:0}};
+ const rows=binPaidRows('2026-11-08',state,now);
+ assert.deepEqual(rows.map(r=>r.action),['day_total','bin_paid']);
+ assert.equal(rows[1].text,'Shipping bin paid for 120 items · +5,000 coins');assert.equal(rows[1].category,'market');
+ assert.equal(state.dayTally.day,'2026-11-09');assert.equal(state.dayTally.coinsIn,5000);
+ assert.deepEqual(binPaidRows(undefined,state,now),[],'no unpaid bin in the save: already paid');
+ assert.deepEqual(binPaidRows('2026-11-09',state,now),[],'today’s bin is not paid yet');
+ const api=read('supabase/functions/farm-api/index.ts');
+ assert.ok(api.indexOf('const binDay=row.state?.shipBin?.day;')>0&&api.indexOf('const binDay=row.state?.shipBin?.day;')<api.indexOf('normalizeFarm(row.state,now)'),'read before normalizeFarm pays it');
+ assert.match(api,/dayRows\.push\(\.\.\.binPaidRows\(binDay,state,now\)\);/);
+ assert.match(api,/logged\.push\(\.\.\.binPaidRows\(binDay,state,now\)\);\n\s*const saved=await admin\.rpc\('harvest_commit_farm'/);
+});
+
+test('the log has one heading per day with its total first, and a Days tab with only the totals', async ()=>{
+ const ui=read('src/player-profiles.js');
+ assert.match(ui,/\['all','days',\.\.\.\(data\.categories\?\?\[\]\)\]/);assert.match(ui,/days:'Days'/);
+ const {handlePlayerLog}=await import('../supabase/functions/farm-api/player-log.js');
+ const calls=[],chain={select:()=>chain,eq:(k,v)=>{calls.push([k,v]);return chain;},neq:()=>chain,order:()=>chain,limit:()=>chain,lt:()=>chain,maybeSingle:async()=>({data:null}),then:r=>r({data:[],error:null})};
+ const id='00000000-0000-0000-0000-000000000001';
+ await handlePlayerLog({admin:{from:()=>chain},user:{id},body:{category:'days'}});
+ assert.ok(calls.some(([k,v])=>k==='action'&&v==='day_total'));assert.ok(!calls.some(([k])=>k==='category'));
+});

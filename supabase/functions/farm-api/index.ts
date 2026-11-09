@@ -18,7 +18,7 @@ import {handleDeleteAccount} from './account-delete-service.js';
 import {handleAppleToken} from './apple-sign-in-service.js';
 import {recordSource} from './source-service.js';
 import {recordLoadStall} from './load-stall-service.js';
-import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog,tallyDay} from './player-log.js';
+import {handlePlayerLog,writeLog,snapshot,farmLog,familyLog,loadLog,accountLog,adminGrantLog,inviteClosedLog,noteLog,tallyDay,binPaidRows} from './player-log.js';
 import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import {randomPlayerName,firstFreeName} from './account-form.js';
 import {FAMILY_EMBLEM_UPLOAD_COST,customEmblemPath,NO_EVENT_ACTIONS,setXpWeekend,grantEmailBonus,EMAIL_BONUS,familyUnlocked,createFarm,applyFarmAction,normalizeFarm,levelOf,xpForLevel,grantLevelRewards,grantChapterRewards,inviteeReward,inviterRewards,receiveDonations,offerComeback,createShowcaseFarm,SHOWCASE_LEVEL} from './farm-state.js';
@@ -284,6 +284,7 @@ Deno.serve(async(req)=>{
    // An admin account's Family window and invite card read the showcase farm too (3 Oct 2026), with the real farm's family: its real
    // level may be under the Family's level 10. These are reads (p_write_farm false), so the showcase is never stored; family actions
    // are locked above.
+   const binDay=row.state?.shipBin?.day;   // normalizeFarm pays the bin in this same object
    const showcase=isAdminAccount(user)&&['family','family_profile','invite'].includes(body.operation);
    const state=showcase?createShowcaseFarm(now,{family:row.state?.family&&typeof row.state.family==='object'?row.state.family:null}):normalizeFarm(row.state,now);
    // Whether this account can still confirm its email for the bonus: only email sign-ups, until the bonus is paid.
@@ -360,6 +361,7 @@ Deno.serve(async(req)=>{
     if(back&&!back.inFamily&&state.family?.familyId)state.family={familyId:null,unclaimedCount:state.family.unclaimedCount??0};
     const logged=loadLog({away:now-(Date.parse(row.updated_at)||now),gift:donations.length?fromStaff:null,inviteReward,emailBonus:emailBonusPaid,comeback,from:body.opened});
     if(welcome||levelReward.levels.length||chapterReward.chapters.length||gift||inviteReward||friends.length||emailBonusPaid){
+     logged.push(...binPaidRows(binDay,state,now));
      const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:row.receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});
      if(saved.error)throw saved.error;if(!saved.data)continue;
      later(writeLog(admin,user.id,logged));
@@ -385,6 +387,7 @@ Deno.serve(async(req)=>{
    const inviteReward=inviteeReward(state,now);if(inviteReward)result.inviteReward=inviteReward;
    // The day's totals (30 Oct 2026, player-log.js tallyDay): kept in the farm with this save; a new day's first action logs the last day's.
    const dayRows=tallyDay(state,before,snapshot(state),now);
+   dayRows.push(...binPaidRows(binDay,state,now));
    // The tractor's diamond work counts for no event (NO_EVENT_ACTIONS): saved as no event action, so its stats only move the baselines.
    const receipts=[...row.receipts,{id:body.requestId,result,eventAction:NO_EVENT_ACTIONS.has(body.action.type)?null:body.action.type}].slice(-100);
    const saved=await admin.rpc('harvest_commit_farm',{p_player:user.id,p_expected:row.revision,p_state:state,p_receipts:receipts,p_username:username,p_currency:state.coins,p_level:levelOf(state)});

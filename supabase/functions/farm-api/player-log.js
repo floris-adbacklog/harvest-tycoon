@@ -173,6 +173,15 @@ export function tallyDay(state,before,after,now=Date.now()){
  if(xp>0)t.xp+=xp;
  state.dayTally=t;return rows;
 }
+// The shipping bin's money (9 Nov 2026, a farmer's request, the owner: all three): its own line in the log, and in the totals of the day it arrives.
+// binDay is the day of the bin as it was saved, read before normalizeFarm pays it. A farm read is often not saved, so this only runs right before a save.
+export function binPaidRows(binDay,state,now=Date.now()){
+ const paid=state?.shipPaid,day=utcDayOf(now);
+ if(!(typeof binDay==='string'&&binDay<day&&paid?.day===day&&paid.coins>0))return [];
+ const rows=tallyDay(state,{coins:0,diamonds:0,xp:0},{coins:paid.coins,diamonds:0,xp:0},now);
+ rows.push(line('market','bin_paid',`Shipping bin paid for ${number(paid.count)} ${paid.count===1?'item':'items'}`,`+${number(paid.coins)} coins`));
+ return rows;
+}
 // The log lines for one farm action: the action itself (when it is one worth logging) and a level reached on the way.
 export function farmLog(action,before,state,result){
  const rows=[],after=snapshot(state),known=FARM_ACTIONS[action?.type];
@@ -245,7 +254,8 @@ export function adminGrantLog(granted){
 // Adds the lines for one farmer; a problem only costs the log lines, never the action.
 export async function writeLog(admin,playerId,rows,byPlayer=null){
  if(!rows?.length||!playerId)return;
- try{const saved=await admin.from('player_logs').insert(rows.map(r=>({player_id:playerId,category:r.category,action:r.action,text:r.text,by_player:byPlayer,...(r.at?{created_at:r.at}:{})})));if(saved.error)console.error('Log failed',saved.error.code);}
+ // When one row has its own time, all do (9 Nov 2026): the other rows otherwise get an empty time and the database refuses them all.
+ try{const written=rows.some(r=>r.at)?new Date().toISOString():null,saved=await admin.from('player_logs').insert(rows.map(r=>({player_id:playerId,category:r.category,action:r.action,text:r.text,by_player:byPlayer,...(written?{created_at:r.at??written}:{})})));if(saved.error)console.error('Log failed',saved.error.code);}
  catch(error){console.error('Log failed',error?.name);}
 }
 
@@ -256,10 +266,11 @@ export async function handlePlayerLog({admin,user,body}){
  const playerId=String(body?.playerId??user.id),own=playerId===user.id;
  if(!/^[0-9a-f-]{36}$/i.test(playerId))return respond({error:'Choose a farmer.'},400);
  if(!own&&!(await isStaff(admin,user)))return respond({error:'Not authorized.'},403);
- const category=body?.category&&LOG_CATEGORIES.includes(body.category)?body.category:null,purchases=own||isSuperadmin(user);
+ // Days (9 Nov 2026): only each day's totals.
+ const days=body?.category==='days',category=body?.category&&LOG_CATEGORIES.includes(body.category)?body.category:null,purchases=own||isSuperadmin(user);
  if(category==='purchase'&&!purchases)return respond({entries:[],more:false,categories:LOG_CATEGORIES.filter(c=>c!=='purchase')});
  let query=admin.from('player_logs').select('id,created_at,category,action,text,by_player').eq('player_id',playerId).order('id',{ascending:false}).limit(LOG_PAGE+1);
- if(category)query=query.eq('category',category);else if(!purchases)query=query.neq('category','purchase');
+ if(days)query=query.eq('action','day_total');else if(category)query=query.eq('category',category);else if(!purchases)query=query.neq('category','purchase');
  if(Number.isSafeInteger(Number(body?.before))&&Number(body.before)>0)query=query.lt('id',Number(body.before));
  const found=await query;if(found.error)throw found.error;
  const rows=found.data??[],more=rows.length>LOG_PAGE,shown=rows.slice(0,LOG_PAGE);

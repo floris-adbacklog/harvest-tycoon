@@ -80,11 +80,15 @@ let adminCheck=null;
 // The farm log (supabase/functions/farm-api/player-log.js): newest first, grouped by day, each line with its time and category, and
 // who of the staff did it when that was not the farmer. Your own on your profile; the admin and the moderators see everyone's.
 // Since 23 Oct 2026 in a fold under the profile (it is read as before, right after the profile).
-export const LOG_LABELS=Object.freeze({all:'All',account:'Account',farm:'Farm',production:'Production',market:'Market',rewards:'Rewards',diamonds:'Diamonds',social:'Social',staff:'Staff',purchase:'Purchases'});
+export const LOG_LABELS=Object.freeze({all:'All',days:'Days',account:'Account',farm:'Farm',production:'Production',market:'Market',rewards:'Rewards',diamonds:'Diamonds',social:'Social',staff:'Staff',purchase:'Purchases'});
 const logDay=(ms,now)=>{const day=new Date(ms),today=new Date(now);const key=d=>d.toDateString();if(key(day)===key(today))return 'Today';const yesterday=new Date(now-86400000);if(key(day)===key(yesterday))return 'Yesterday';return day.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});};
 export function renderLogEntries(entries,now=Date.now()){
+ // One heading per day, with the day's totals first: a day's total is written after the next day has begun (9 Nov 2026).
+ const byDay=new Map();
+ for(const e of entries){const label=logDay(Date.parse(e.at),now);if(!byDay.has(label))byDay.set(label,[]);byDay.get(label).push(e);}
+ const ordered=[...byDay.values()].flatMap(list=>[...list.filter(e=>e.action==='day_total'),...list.filter(e=>e.action!=='day_total')]);
  let html='',day=null;
- for(const e of entries){
+ for(const e of ordered){
   const at=Date.parse(e.at),label=logDay(at,now);
   if(label!==day){if(day!==null)html+='</ol>';html+=`<h4 class="farmer-log-day">${esc(label)}</h4><ol class="farmer-log-list">`;day=label;}
   // A day's totals (30 Oct 2026, farm-api player-log.js tallyDay): the day's first line, without a time.
@@ -184,7 +188,7 @@ export function createPlayerProfiles(bridge,{showBoard,village}={}){
    const data=await bridge.request({operation:'player_log',playerId:player,category:log.category==='all'?null:log.category,before:older?log.entries.at(-1)?.id:null});
    if(disposed||ticket!==log.ticket||log.player!==player||!dialog.open)return;
    log.entries=[...log.entries,...(data.entries??[])];log.more=Boolean(data.more);if(!older)log.today=data.today??null;
-   logFilters.innerHTML=['all',...(data.categories??[])].map(c=>`<button type="button" data-log-filter="${c}" aria-pressed="${c===log.category}">${esc(LOG_LABELS[c]??c)}</button>`).join('');
+   logFilters.innerHTML=['all','days',...(data.categories??[])].map(c=>`<button type="button" data-log-filter="${c}" aria-pressed="${c===log.category}">${esc(LOG_LABELS[c]??c)}</button>`).join('');
    const shown=log.today?[{at:new Date(Date.now()+clockOffset).toISOString(),category:'account',action:'day_total',text:log.today},...log.entries]:log.entries;
    logEntries.innerHTML=shown.length?renderLogEntries(shown,Date.now()+clockOffset):`<p class="farmer-empty">${log.category==='all'?'Nothing in the log yet. It fills up as the farm is played.':'Nothing in this category yet.'}</p>`;
    logMore.hidden=!log.more;
