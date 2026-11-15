@@ -237,17 +237,15 @@ test('level 99 sees nothing new in How to play or on the screens: no search hit,
  const {readFileSync}=await import('node:fs'),read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
  const names=[...Object.values(VILLAGE_GOODS).map(g=>g.name),...Object.keys(BUILDINGS).filter(worldTwoBuilding).map(k=>BUILDINGS[k].name),'Golden loaf','Heirloom pie','village','master tools','market square','golden brief'];
  for(const name of names){
-  assert.deepEqual(wikiSearch(name,{level:99}),[],name);
+  assert.ok(wikiSearch(name,{level:99}).length>=1,`${name} at 99`);
   assert.ok(wikiSearch(name,{level:100}).length>=1,`${name} at 100`);assert.ok(wikiSearch(name).length>=1,`${name} on the website`);
  }
  const ctx={level:99,href:id=>`#wiki-${id}`};
- assert.doesNotMatch(wikiGroups(ctx),/data-wiki-topic="village"/);assert.equal(wikiArticle('village',ctx),null);
- // The Harbour (World III, from level 200) is hidden at 99 too.
- assert.equal(wikiArticle('harbour',ctx),null);
+ // 9 Nov 2026: The Village and The Harbour show at every level; the farm's topics still leave them out of their text.
+ assert.match(wikiGroups(ctx),/data-wiki-topic="village"/);assert.match(wikiGroups(ctx),/data-wiki-topic="harbour"/);assert.ok(wikiArticle('village',ctx));assert.ok(wikiArticle('harbour',ctx));
  for(const t of WIKI_TOPICS.filter(t=>t.id!=='village'&&t.id!=='harbour')){
   const a=wikiArticle(t.id,ctx);
   assert.doesNotMatch(a.html,/data-wiki-topic="village"|market square|golden brief|packed lunch|master tools|heirloom pie|golden loaf|from the village/i,t.id);
-  assert.ok(a.related.every(r=>r.id!=='village'),t.id);
  }
  assert.match(wikiArticle('buildings',{level:100}).html,/master tools/);
  // The building windows and the Market list what buildingRecipes and marketItems list; the wiki's search gets the farmer's level.

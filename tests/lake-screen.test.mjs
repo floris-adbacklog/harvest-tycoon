@@ -174,7 +174,6 @@ test('the wiki: a Village lake section in The Village only, from the rules; page
  const lake=html=>{const from=html.lastIndexOf('<section',html.indexOf('id="sec-village-lake"'));return from<0?'':html.slice(from,html.indexOf('</section>',html.lastIndexOf('id="sec-village-lake')+1)+10);};
  if(C.LAKE_OPEN)assert.ok(wikiArticle('village',{level:120}).html.includes('sec-village-lake'),'open as it ships (step 2, 12 Oct 2026)');
  else for(const ctx of [{},{level:120},{level:150}])assert.ok(!wikiArticle('village',ctx).html.includes('sec-village-lake'),`closed: ${JSON.stringify(ctx)}`);
- assert.equal(O.wikiArticle('village',{level:99}),null,'below 100 there is no village topic at all');
  for(const id of ['helpers','getting-started'])assert.equal(O.wikiArticle(id,{level:150}).html,wikiArticle(id,{level:150}).html,`${id}: the farm's topics as they were (the pond's section too)`);
  for(const level of [100,119]){
   const html=O.wikiArticle('village',{level}).html,part=lake(html);

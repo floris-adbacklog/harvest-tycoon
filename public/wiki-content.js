@@ -956,9 +956,9 @@ const featureTitle=key=>({family:'Farm family',boosts:'Diamond boosts'})[key]??{
 const RELATED={harbour:['village','estate','diamonds'],'getting-started':['crops','daily','quests'],crops:['buildings','market','helpers'],buildings:['crops','market','daily'],market:['buildings','daily','family'],quests:['getting-started','crops','buildings'],daily:['market','events','diamonds'],family:['chat','events','daily'],events:['family','daily','diamonds'],helpers:['crops','estate','buildings'],estate:['helpers','buildings','quests'],village:['estate','buildings','market'],diamonds:['daily','events','account'],chat:['family','account','events'],account:['chat','diamonds','getting-started']};
 
 export function wikiArticle(id,ctx={}){
- const topic=TOPIC[id];if(!topic||!topicShown(id,ctx))return null;const h=helpers(ctx);
+ const topic=TOPIC[id];if(!topic)return null;const h=helpers(ctx);
  let html;scope=h;TOPIC_ART=topic.art;try{html=BODIES[id](h);}finally{scope=null;TOPIC_ART='guide';}
- return {...topic,...(h.portal&&PORTAL_BLURBS[id]?{blurb:PORTAL_BLURBS[id]}:{}),html,related:(RELATED[id]??[]).filter(r=>topicShown(r,ctx)).map(r=>TOPIC[r])};
+ return {...topic,...(h.portal&&PORTAL_BLURBS[id]?{blurb:PORTAL_BLURBS[id]}:{}),html,related:(RELATED[id]??[]).map(r=>TOPIC[r])};
 }
 // The heading of a spot on a topic (Oct 2026; the chat shows a wiki link as a chip with it): a section's or a building's title, a crop's
 // or a level's name, or the topic's own title where the page has no such spot (now: a season that is over, the app, CrazyGames). null:
@@ -984,15 +984,12 @@ export function wikiJump(article){
  const chips=[...article.html.matchAll(/<(?:section|details) class="wiki-section[^"]*" id="([^"]+)">(?:<summary>)?<h3>(.*?)<\/h3>/g)].map(([,id,label])=>`<a href="#${id}" data-wiki-jump="${id}">${label}</a>`);
  return chips.length>1?`<div class="wiki-jump-wrap"><nav class="wiki-jump" aria-label="On this page">${chips.join('')}</nav></div>`:'';
 }
-// In the game The Village shows from level WORLD_TWO_LEVEL (Oct 2026, the owner's choice: it showed from 90), in the list, in search and
-// when a link (from the chat, say) opens it; below it a farmer sees the closed bridge on the farm and nothing more. The website shows
-// every topic.
-// The harbour (27 Oct 2026) the same way from level WORLD_THREE_LEVEL (it ships with World III's v1, when the harbour is live).
-const topicShown=(id,ctx)=>ctx.level==null||(id==='harbour'?ctx.level>=WORLD_THREE_LEVEL:id!=='village'||ctx.level>=WORLD_TWO_LEVEL);
+// The Village and The Harbour show at every level, in the game and on the website (9 Nov 2026, the owner: "altijd"; a farmer asked what
+// levels 11-20 cost, to plan for them). Their tables say from which level each thing opens.
 // Getting started, while it is the one to read first, stands above its group's grid; the grid has two columns (one on a phone),
 // and an odd last tile takes the whole row, so a group never ends in a gap (wiki.css).
 export const wikiGroups=(ctx={},{featured=true}={})=>WIKI_GROUPS.map(g=>{
- const ids=g.ids.filter(id=>topicShown(id,ctx)),first=featured&&ids[0]==='getting-started';
+ const ids=g.ids,first=featured&&ids[0]==='getting-started';
  return `<section class="wiki-group"><h3>${wikiIcon(g.art)}${g.title}</h3>${first?wikiTile(TOPIC[ids[0]],ctx,{featured:true}):''}<div class="wiki-tiles">${ids.slice(first?1:0).map(id=>wikiTile(TOPIC[id],ctx)).join('')}</div></section>`;
 }).join('');
 // "Read next" under a topic: a short row per topic, picture and title.
@@ -1036,6 +1033,6 @@ export const wikiSearchIndex=()=>INDEX.map(entry=>({...entry,topicTitle:TOPIC[en
 export function wikiSearch(query,{level=null}={}){
  const words=String(query).toLowerCase().trim().split(/\s+/).filter(Boolean);if(!words.length)return [];
  const seen=new Set(),hits=[];
- for(const entry of INDEX){if(!topicShown(entry.topic,{level})||(entry.minLevel&&level!=null&&level<entry.minLevel)||!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
+ for(const entry of INDEX){if((entry.minLevel&&level!=null&&level<entry.minLevel)||!words.every(w=>entry.text.includes(w)))continue;const key=`${entry.topic}:${entry.label}`;if(seen.has(key))continue;seen.add(key);hits.push({...entry,topicTitle:TOPIC[entry.topic].title});}
  return hits.slice(0,12);
 }
