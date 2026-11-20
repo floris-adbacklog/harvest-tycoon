@@ -84,7 +84,14 @@ Deno.serve(async(req)=>{
    session:ask(admin.rpc('harvest_session_active',{p_player:named,p_session:claims.session_id})),
    ...(parsed&&FARM_OPERATIONS.has(body?.operation)?{profile:ask(admin.from('player_stats').select(PROFILE_FIELDS).eq('player_id',named).maybeSingle()),farm:ask(admin.from('player_farms').select('*').eq('player_id',named).maybeSingle())}:{})
   }:null;
-  const {data:{user},error:authError}=await admin.auth.getUser(token);
+  // 20 Nov 2026 (half the sign-ins refused from 19:26 UTC): the account check that never reached the sign-in service (no answer, status 0)
+  // was answered 401, and the game signed the farmer out. Now it asks twice more, and then says "try again" (503): only the sign-in
+  // service's own No (4xx) signs a farmer out.
+  const unreached=(e:{name?:string,status?:number})=>e?.name==='AuthRetryableFetchError'||e?.status===0||Number(e?.status)>=500;
+  let checked=await admin.auth.getUser(token);
+  for(let i=0;i<2&&checked.error&&unreached(checked.error);i++){await new Promise(r=>setTimeout(r,150*(i+1)));checked=await admin.auth.getUser(token);}
+  const {data:{user},error:authError}=checked;
+  if(authError&&unreached(authError)){console.error('Account check failed',authError.name,authError.status,String(authError.message).slice(0,120));return reply({error:'No connection right now. Try again in a moment.'},503);}
   if(authError||!user||user.is_anonymous)return reply({error:'Please sign in with your account.'},401);
   if(!claims.session_id)return reply({error:'Your session has ended. Please sign in again.'},401);
   const mine=early&&user.id===named?early:null;
